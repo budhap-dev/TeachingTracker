@@ -1,0 +1,92 @@
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    padding-bottom: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .sidebar .mobile-nav-toggle {
+    display: inline-flex;
+  }
+
+  .sidebar .sidebar-nav {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .sidebar.mobile-open .sidebar-nav {
+    display: flex;
+  }
+
+  .sidebar .sidebar-nav button {
+    flex: 1 1 100%;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .main-content {
+    padding: 16px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sidebar {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .sidebar h1 {
+    font-size: 1.4rem;
+  }
+
+  .sidebar .sidebar-nav button {
+    flex: 1 1 100%;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-form {
+    grid-template-columns: 1fr;
+
+    textarea,
+    button {
+      grid-column: span 1;
+    }
+  }
+
+  .table-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .student-item,
+  .payment-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

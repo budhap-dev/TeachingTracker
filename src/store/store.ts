@@ -2,6 +2,8 @@ import { configureStore, createAsyncThunk, createSlice, PayloadAction } from '@r
 import { initialStudents, Student } from '../data/students';
 import { createStudent, fetchStudents, updateStudentProgress } from '../api/studentApi';
 
+type StudentDetailField = keyof Pick<Student, 'parentName' | 'contactNumber' | 'address' | 'notes'>;
+
 type StudentState = {
   students: Student[];
   loading: boolean;
@@ -41,15 +43,23 @@ const studentSlice = createSlice({
   initialState,
   reducers: {
     addStudent: (state, action: PayloadAction<Omit<Student, 'id'>>) => {
+      const generatedStudentId = `STU-${Date.now().toString().slice(-6)}`;
       state.students.push({
         id: Date.now(),
         ...action.payload,
+        studentId: action.payload.studentId || generatedStudentId,
       });
     },
     updateProgress: (state, action: PayloadAction<{ id: number; progress: number }>) => {
       const student = state.students.find((item) => item.id === action.payload.id);
       if (student) {
         student.progress = action.payload.progress;
+      }
+    },
+    updateStudentDetails: (state, action: PayloadAction<{ id: number; field: StudentDetailField; value: string }>) => {
+      const student = state.students.find((item) => item.id === action.payload.id);
+      if (student) {
+        student[action.payload.field] = action.payload.value as never;
       }
     },
   },
@@ -76,7 +86,7 @@ const studentSlice = createSlice({
   },
 });
 
-export const { addStudent, updateProgress } = studentSlice.actions;
+export const { addStudent, updateProgress, updateStudentDetails } = studentSlice.actions;
 
 export const store = configureStore({
   reducer: {
