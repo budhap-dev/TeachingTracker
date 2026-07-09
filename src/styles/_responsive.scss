@@ -72,9 +72,22 @@
   .student-form {
     grid-template-columns: 1fr;
 
+    .subjects-control {
+      grid-column: span 1;
+    }
+
     textarea,
     button {
       grid-column: span 1;
+    }
+  }
+
+  .modal-form .MuiDialogActions-root {
+    justify-content: stretch;
+    gap: 8px;
+
+    button {
+      flex: 1;
     }
   }
 
@@ -88,5 +101,36 @@
   .payment-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .student-details {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid-full {
+    grid-column: span 1;
+  }
+
+  .calendar-card {
+    grid-column: span 1;
+  }
+
+  .session-item {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .student-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .calendar-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Student } from '../data/students';
 
 type PaymentsViewProps = {
@@ -8,21 +8,24 @@ type PaymentsViewProps = {
 type SortKey = 'student' | 'subject' | 'school' | 'mode';
 type SortDirection = 'asc' | 'desc';
 
-const rowsPerPage = 5;
+const pageSizeOptions = [5, 10, 20];
 
 export const PaymentsView = ({ students }: PaymentsViewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('student');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const sortedStudents = useMemo(() => {
     const copy = [...students];
     copy.sort((left, right) => {
       const leftValue = `${left.firstName} ${left.lastName}`.toLowerCase();
       const rightValue = `${right.firstName} ${right.lastName}`.toLowerCase();
+      const leftSubjects = left.subjects.join(', ').toLowerCase();
+      const rightSubjects = right.subjects.join(', ').toLowerCase();
       const values = {
         student: [leftValue, rightValue],
-        subject: [left.subject.toLowerCase(), right.subject.toLowerCase()],
+        subject: [leftSubjects, rightSubjects],
         school: [left.school.toLowerCase(), right.school.toLowerCase()],
         mode: [left.mode.toLowerCase(), right.mode.toLowerCase()],
       }[sortKey];
@@ -36,6 +39,10 @@ export const PaymentsView = ({ students }: PaymentsViewProps) => {
 
   const totalPages = Math.max(1, Math.ceil(sortedStudents.length / rowsPerPage));
   const currentPageStudents = sortedStudents.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -89,7 +96,7 @@ export const PaymentsView = ({ students }: PaymentsViewProps) => {
                   <tr key={student.id}>
                     <td>{(page - 1) * rowsPerPage + index + 1}</td>
                     <td>{student.firstName} {student.lastName}</td>
-                    <td>{student.subject}</td>
+                    <td>{student.subjects.join(', ')}</td>
                     <td>{student.school}</td>
                     <td style={modeStyle}>{student.mode}</td>
                   </tr>
@@ -99,6 +106,21 @@ export const PaymentsView = ({ students }: PaymentsViewProps) => {
           </table>
         </div>
         <div className="table-footer">
+          <div className="page-size-control">
+            <label htmlFor="rows-per-page">Rows per page</label>
+            <select
+              id="rows-per-page"
+              value={rowsPerPage}
+              onChange={(event) => {
+                setRowsPerPage(Number(event.target.value));
+                setPage(1);
+              }}
+            >
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
+          </div>
           <span>Page {page} of {totalPages}</span>
           <div className="pagination-controls">
             <button type="button" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>Previous</button>

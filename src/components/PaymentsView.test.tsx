@@ -10,7 +10,7 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
   firstName: overrides.firstName ?? 'Asha',
   lastName: overrides.lastName ?? 'Perera',
   dob: overrides.dob ?? '2011-05-14',
-  subject: overrides.subject ?? 'Mathematics',
+  subjects: overrides.subjects ?? ['Mathematics'],
   school: overrides.school ?? 'Kingston Grammar School',
   year: overrides.year ?? '10',
   progress: overrides.progress ?? 88,
@@ -29,7 +29,7 @@ describe('PaymentsView', () => {
         id: index + 1,
         firstName: `Student${index + 1}`,
         lastName: 'Example',
-        subject: index % 2 === 0 ? 'Biology' : 'Chemistry',
+        subjects: [index % 2 === 0 ? 'Biology' : 'Chemistry'],
       })
     );
 
@@ -47,6 +47,28 @@ describe('PaymentsView', () => {
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     expect(screen.getByText(/page 2 of 2/i)).toBeInTheDocument();
+    expect(screen.getByText('Student6 Example')).toBeInTheDocument();
+  });
+
+  it('lets users change rows per page from a dropdown', async () => {
+    const user = userEvent.setup();
+    const students = Array.from({ length: 6 }, (_, index) =>
+      buildStudent({
+        id: index + 1,
+        firstName: `Student${index + 1}`,
+        lastName: 'Example',
+        subjects: ['Mathematics'],
+      })
+    );
+
+    render(<PaymentsView students={students} />);
+
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
+    expect(screen.queryByText('Student6 Example')).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /rows per page/i }), '10');
+
+    expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument();
     expect(screen.getByText('Student6 Example')).toBeInTheDocument();
   });
 });

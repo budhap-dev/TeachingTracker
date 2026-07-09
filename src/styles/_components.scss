@@ -42,6 +42,25 @@
   color: var(--muted);
 }
 
+.page-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  label {
+    font-size: 0.9rem;
+  }
+
+  select {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 0.9rem;
+  }
+}
+
 .pagination-controls {
   display: flex;
   gap: 8px;
@@ -65,6 +84,19 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 
+  .MuiInputBase-root {
+    min-height: 40px;
+  }
+
+  .MuiSelect-select {
+    display: flex;
+    align-items: center;
+  }
+
+  .MuiFormControlLabel-root {
+    margin-right: 8px;
+  }
+
   input,
   select,
   textarea {
@@ -84,6 +116,10 @@
 
 .modal-form {
   padding-top: 8px;
+
+  .subjects-control {
+    grid-column: span 2;
+  }
 
   .MuiDialogActions-root {
     grid-column: span 2;
@@ -151,20 +187,60 @@
   font-size: 0.9rem;
 }
 
+.student-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.student-link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
 .rotated {
   transform: rotate(180deg);
 }
 
 .student-details {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: 16px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
 }
 
-.student-detail-text p {
-  margin: 0 0 6px;
+.student-detail-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.detail-grid-full {
+  grid-column: span 2;
 }
 
 .edit-fields {
@@ -182,12 +258,51 @@
 .student-meta {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   min-width: 180px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-alt) 70%, transparent);
 
   input {
     width: 100%;
   }
+}
+
+.meta-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-value {
+  color: var(--accent);
+}
+
+.meta-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mode-pill,
+.subject-count-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.subjects-line,
+.school-line {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .section-header {
@@ -211,4 +326,106 @@
 .pending {
   color: #dc2626;
   font-weight: 700;
+}
+
+.calendar-card {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.calendar-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.calendar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.calendar-connect-btn {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.calendar-list {
+  display: grid;
+  gap: 10px;
+}
+
+.session-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--surface-alt) 60%, transparent);
+}
+
+.session-date-pill {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.session-content {
+  strong {
+    display: block;
+  }
+
+  p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+}
+
+.session-mode {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+}
+
+.session-mode.online {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.session-mode.face {
+  color: #92400e;
+  background: #ffedd5;
+}
+
+.student-page .card {
+  min-height: 320px;
+}
+
+.student-page-details {
+  margin-top: 8px;
 }

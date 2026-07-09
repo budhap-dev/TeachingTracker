@@ -12,7 +12,7 @@ describe('StudentFormModal', () => {
           firstName: '',
           lastName: '',
           dob: '',
-          subject: '',
+          subjects: [],
           school: '',
           year: '',
           progress: 0,
@@ -30,7 +30,7 @@ describe('StudentFormModal', () => {
 
     expect(screen.getByRole('heading', { name: /add a new student/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/subject/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/subjects/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save student/i })).toBeInTheDocument();
   });
 });

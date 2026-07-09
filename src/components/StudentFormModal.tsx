@@ -1,15 +1,15 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, ListItemText, MenuItem, Select, TextField } from '@mui/material';
 import type { FormEvent } from 'react';
 import type { Student } from '../data/students';
 
-const subjectOptions = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English'];
+const subjectOptions = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'History'];
 const yearOptions = Array.from({ length: 8 }, (_, index) => String(index + 6));
 
 type StudentFormModalProps = {
   open: boolean;
   form: Omit<Student, 'id'>;
   onClose: () => void;
-  onChange: (field: keyof Omit<Student, 'id'>, value: string | number) => void;
+  onChange: (field: keyof Omit<Student, 'id'>, value: string | number | string[]) => void;
   onSubmit: (event: FormEvent) => void;
 };
 
@@ -18,19 +18,32 @@ export const StudentFormModal = ({ open, form, onClose, onChange, onSubmit }: St
     <DialogTitle>Add a new student</DialogTitle>
     <DialogContent>
       <Box component="form" onSubmit={onSubmit} className="student-form modal-form">
-        <TextField label="First Name" value={form.firstName} onChange={(event) => onChange('firstName', event.target.value)} fullWidth />
-        <TextField label="Last Name" value={form.lastName} onChange={(event) => onChange('lastName', event.target.value)} fullWidth />
-        <TextField label="Date of Birth" type="date" value={form.dob} onChange={(event) => onChange('dob', event.target.value)} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
-        <FormControl fullWidth>
-          <InputLabel id="subject-label">Subject</InputLabel>
-          <Select labelId="subject-label" label="Subject" value={form.subject} onChange={(event) => onChange('subject', event.target.value)}>
+        <TextField label="First Name" size="small" value={form.firstName} onChange={(event) => onChange('firstName', event.target.value)} fullWidth />
+        <TextField label="Last Name" size="small" value={form.lastName} onChange={(event) => onChange('lastName', event.target.value)} fullWidth />
+        <TextField label="Date of Birth" size="small" type="date" value={form.dob} onChange={(event) => onChange('dob', event.target.value)} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
+        <FormControl size="small" fullWidth className="subjects-control">
+          <InputLabel id="subjects-label">Subjects</InputLabel>
+          <Select
+            labelId="subjects-label"
+            label="Subjects"
+            multiple
+            value={form.subjects}
+            onChange={(event) => {
+              const value = event.target.value;
+              onChange('subjects', typeof value === 'string' ? value.split(',') : value);
+            }}
+            renderValue={(selected) => (selected as string[]).join(', ')}
+          >
             {subjectOptions.map((subject) => (
-              <MenuItem key={subject} value={subject}>{subject}</MenuItem>
+              <MenuItem key={subject} value={subject}>
+                <Checkbox checked={form.subjects.includes(subject)} />
+                <ListItemText primary={subject} />
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
-        <TextField label="School" value={form.school} onChange={(event) => onChange('school', event.target.value)} fullWidth />
-        <FormControl fullWidth>
+        <TextField label="School" size="small" value={form.school} onChange={(event) => onChange('school', event.target.value)} fullWidth />
+        <FormControl size="small" fullWidth>
           <InputLabel id="year-label">Year</InputLabel>
           <Select labelId="year-label" label="Year" value={form.year} onChange={(event) => onChange('year', event.target.value)}>
             {yearOptions.map((year) => (
@@ -38,16 +51,16 @@ export const StudentFormModal = ({ open, form, onClose, onChange, onSubmit }: St
             ))}
           </Select>
         </FormControl>
-        <TextField label="Progress %" type="number" value={form.progress} onChange={(event) => onChange('progress', Number(event.target.value))} fullWidth />
-        <FormControl fullWidth>
+        <TextField label="Progress %" size="small" type="number" value={form.progress} onChange={(event) => onChange('progress', Number(event.target.value))} fullWidth />
+        <FormControl size="small" fullWidth>
           <InputLabel id="mode-label">Mode</InputLabel>
           <Select labelId="mode-label" label="Mode" value={form.mode} onChange={(event) => onChange('mode', event.target.value)}>
             <MenuItem value="Online">Online</MenuItem>
             <MenuItem value="Face to Face">Face to Face</MenuItem>
           </Select>
         </FormControl>
-        <TextField label="Parent Name" value={form.parentName} onChange={(event) => onChange('parentName', event.target.value)} fullWidth />
-        <TextField label="Contact Number" value={form.contactNumber} onChange={(event) => onChange('contactNumber', event.target.value)} fullWidth />
+        <TextField label="Parent Name" size="small" value={form.parentName} onChange={(event) => onChange('parentName', event.target.value)} fullWidth />
+        <TextField label="Contact Number" size="small" value={form.contactNumber} onChange={(event) => onChange('contactNumber', event.target.value)} fullWidth />
         <TextField label="Address" multiline minRows={2} value={form.address} onChange={(event) => onChange('address', event.target.value)} fullWidth />
         <TextField label="Notes" multiline minRows={3} value={form.notes} onChange={(event) => onChange('notes', event.target.value)} fullWidth />
         <DialogActions>

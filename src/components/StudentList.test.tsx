@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Student } from '../data/students';
 import { StudentList } from './StudentList';
@@ -15,7 +14,7 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
   firstName: overrides.firstName ?? 'Asha',
   lastName: overrides.lastName ?? 'Perera',
   dob: overrides.dob ?? '2011-05-14',
-  subject: overrides.subject ?? 'Mathematics',
+  subjects: overrides.subjects ?? ['Mathematics'],
   school: overrides.school ?? 'Kingston Grammar School',
   year: overrides.year ?? '10',
   progress: overrides.progress ?? 88,
@@ -26,47 +25,23 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
   address: overrides.address ?? '12 Oak Road, Kingston upon Thames, KT2 6LP',
 });
 
-const StatefulStudentList = () => {
-  const [expandedStudentId, setExpandedStudentId] = useState<number | null>(null);
-  const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
-  const [draftStudent, setDraftStudent] = useState<Partial<Student> | null>(null);
-
-  return (
-    <StudentList
-      students={[buildStudent()]}
-      expandedStudentId={expandedStudentId}
-      editingStudentId={editingStudentId}
-      draftStudent={draftStudent}
-      hasUnsavedChanges={false}
-      onOpenDetails={(studentId) => setExpandedStudentId((current) => (current === studentId ? null : studentId))}
-      onBeginEdit={(student) => {
-        setEditingStudentId(student.id);
-        setDraftStudent({ ...student });
-      }}
-      onDraftChange={vi.fn()}
-      onSaveDetails={vi.fn()}
-      onCancelEdit={() => {
-        setEditingStudentId(null);
-        setDraftStudent(null);
-      }}
-      onProgressChange={vi.fn()}
-    />
-  );
-};
-
 describe('StudentList', () => {
-  it('expands a student row and shows the edit controls', async () => {
+  it('renders student names as links and opens student page from click', async () => {
     const user = userEvent.setup();
+    const onOpenStudentPage = vi.fn();
 
-    render(<StatefulStudentList />);
+    render(
+      <StudentList
+        students={[buildStudent()]}
+        onOpenStudentPage={onOpenStudentPage}
+      />
+    );
 
-    await user.click(screen.getByRole('button', { name: /asha perera/i }));
+    const studentLink = screen.getByRole('link', { name: /asha perera/i });
+    expect(studentLink).toBeInTheDocument();
 
-    expect(screen.getByText(/progress/i)).toBeInTheDocument();
-    expect(screen.getByText(/mode: face to face/i)).toBeInTheDocument();
+    await user.click(studentLink);
 
-    await user.click(screen.getByRole('button', { name: /^edit$/i }));
-
-    expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
+    expect(onOpenStudentPage).toHaveBeenCalledWith(1);
   });
 });

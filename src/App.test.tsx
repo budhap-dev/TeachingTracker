@@ -13,7 +13,7 @@ const { initialStudents } = vi.hoisted(() => ({
       firstName: 'Asha',
       lastName: 'Perera',
       dob: '2011-05-14',
-      subject: 'Mathematics',
+      subjects: ['Mathematics'],
       school: 'Kingston Grammar School',
       year: '10',
       progress: 88,
@@ -69,6 +69,16 @@ describe('Teaching Tracker app', () => {
     expect(within(navigation).getByRole('button', { name: /study snapshot/i })).toBeInTheDocument();
   });
 
+  it('opens the student detail page from a dashboard upcoming-session link', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('link', { name: /asha perera/i }));
+
+    expect(screen.getByRole('heading', { name: /asha perera/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /back to students/i })).toBeInTheDocument();
+  });
+
   it('shows the students view and allows adding a student', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -84,8 +94,10 @@ describe('Teaching Tracker app', () => {
     await user.type(screen.getByLabelText(/first name/i), 'Ruwan');
     await user.type(screen.getByLabelText(/last name/i), 'Bandara');
     await user.type(screen.getByLabelText(/school/i), 'Royal College');
-    await user.click(screen.getByLabelText(/subject/i));
+    await user.click(screen.getByRole('combobox', { name: /subjects/i }));
     await user.click(screen.getByRole('option', { name: 'Physics' }));
+    await user.click(screen.getByRole('option', { name: 'Mathematics' }));
+    await user.keyboard('{Escape}');
     await user.click(screen.getByLabelText(/year/i));
     await user.click(screen.getByRole('option', { name: '12' }));
     const progressField = screen.getAllByLabelText(/progress/i).find((element) => element instanceof HTMLInputElement);
@@ -103,6 +115,19 @@ describe('Teaching Tracker app', () => {
     await user.click(screen.getByRole('button', { name: /save student/i }));
 
     expect(await screen.findByText(/ruwan bandara/i)).toBeInTheDocument();
+  });
+
+  it('navigates to a dedicated student page from the student link', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const navigation = screen.getByRole('navigation');
+    await user.click(within(navigation).getByRole('button', { name: /^students$/i }));
+
+    await user.click(screen.getByRole('link', { name: /asha perera/i }));
+
+    expect(screen.getByRole('heading', { name: /asha perera/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /back to students/i })).toBeInTheDocument();
   });
 
   it('switches to payments view and displays payment tracker', async () => {

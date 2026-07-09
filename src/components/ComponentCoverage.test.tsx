@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Student } from '../data/students';
 import { DashboardView } from './DashboardView';
@@ -18,7 +17,7 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
   firstName: overrides.firstName ?? 'Asha',
   lastName: overrides.lastName ?? 'Perera',
   dob: overrides.dob ?? '2011-05-14',
-  subject: overrides.subject ?? 'Mathematics',
+  subjects: overrides.subjects ?? ['Mathematics'],
   school: overrides.school ?? 'Kingston Grammar School',
   year: overrides.year ?? '10',
   progress: overrides.progress ?? 88,
@@ -29,34 +28,6 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
   address: overrides.address ?? '12 Oak Road, Kingston upon Thames, KT2 6LP',
 });
 
-const StatefulStudentList = () => {
-  const [expandedStudentId, setExpandedStudentId] = useState<number | null>(null);
-  const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
-  const [draftStudent, setDraftStudent] = useState<Partial<Student> | null>(null);
-
-  return (
-    <StudentList
-      students={[buildStudent()]}
-      expandedStudentId={expandedStudentId}
-      editingStudentId={editingStudentId}
-      draftStudent={draftStudent}
-      hasUnsavedChanges={false}
-      onOpenDetails={(studentId) => setExpandedStudentId((current) => (current === studentId ? null : studentId))}
-      onBeginEdit={(student) => {
-        setEditingStudentId(student.id);
-        setDraftStudent({ ...student });
-      }}
-      onDraftChange={vi.fn()}
-      onSaveDetails={vi.fn()}
-      onCancelEdit={() => {
-        setEditingStudentId(null);
-        setDraftStudent(null);
-      }}
-      onProgressChange={vi.fn()}
-    />
-  );
-};
-
 describe('component-level coverage', () => {
   it('renders dashboard summary data and triggers the student-management action', async () => {
     const user = userEvent.setup();
@@ -65,7 +36,19 @@ describe('component-level coverage', () => {
     render(
       <DashboardView
         stats={{ onlineStudents: 2, avgProgress: 82, totalStudents: 5 }}
+        upcomingSessions={[
+          {
+            id: 'session-1',
+            studentId: 1,
+            date: '2026-07-11T09:00:00.000Z',
+            time: '16:00',
+            studentName: 'Asha Perera',
+            subject: 'Mathematics',
+            mode: 'Face to Face',
+          },
+        ]}
         onManageStudents={onManageStudents}
+        onOpenStudentPage={vi.fn()}
       />
     );
 
@@ -78,19 +61,20 @@ describe('component-level coverage', () => {
     expect(onManageStudents).toHaveBeenCalledTimes(1);
   });
 
-  it('expands a student row and starts editing details', async () => {
+  it('renders student link rows and emits navigation callback', async () => {
     const user = userEvent.setup();
+    const onOpenStudentPage = vi.fn();
 
-    render(<StatefulStudentList />);
+    render(
+      <StudentList
+        students={[buildStudent()]}
+        onOpenStudentPage={onOpenStudentPage}
+      />
+    );
 
-    await user.click(screen.getByRole('button', { name: /asha perera/i }));
+    await user.click(screen.getByRole('link', { name: /asha perera/i }));
 
-    expect(screen.getByText(/progress/i)).toBeInTheDocument();
-    expect(screen.getByText(/mode: face to face/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /^edit$/i }));
-
-    expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
+    expect(onOpenStudentPage).toHaveBeenCalledWith(1);
   });
 
   it('renders the student form modal fields', () => {
@@ -102,7 +86,7 @@ describe('component-level coverage', () => {
           firstName: '',
           lastName: '',
           dob: '',
-          subject: '',
+          subjects: [],
           school: '',
           year: '',
           progress: 0,
@@ -120,7 +104,7 @@ describe('component-level coverage', () => {
 
     expect(screen.getByRole('heading', { name: /add a new student/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/subject/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/subjects/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save student/i })).toBeInTheDocument();
   });
 
@@ -131,7 +115,7 @@ describe('component-level coverage', () => {
         id: index + 1,
         firstName: `Student${index + 1}`,
         lastName: 'Example',
-        subject: index % 2 === 0 ? 'Biology' : 'Chemistry',
+        subjects: [index % 2 === 0 ? 'Biology' : 'Chemistry'],
       })
     );
 

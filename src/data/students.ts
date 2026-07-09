@@ -4,7 +4,7 @@ export type Student = {
   firstName: string;
   lastName: string;
   dob: string;
-  subject: string;
+  subjects: string[];
   school: string;
   year: string;
   progress: number;
@@ -22,7 +22,7 @@ export const initialStudents: Student[] = [
     firstName: 'Asha',
     lastName: 'Perera',
     dob: '2011-05-14',
-    subject: 'Mathematics',
+    subjects: ['Mathematics', 'Physics'],
     school: 'Kingston Grammar School',
     year: '10',
     progress: 88,
@@ -38,7 +38,7 @@ export const initialStudents: Student[] = [
     firstName: 'Nimal',
     lastName: 'Fernando',
     dob: '2012-08-22',
-    subject: 'Physics',
+    subjects: ['Physics'],
     school: 'St. Pauls School',
     year: '9',
     progress: 74,
@@ -54,7 +54,7 @@ export const initialStudents: Student[] = [
     firstName: 'Kavindi',
     lastName: 'Silva',
     dob: '2013-01-11',
-    subject: 'English',
+    subjects: ['English'],
     school: 'Epsom College',
     year: '8',
     progress: 82,
@@ -70,7 +70,7 @@ export const initialStudents: Student[] = [
     firstName: 'Dilan',
     lastName: 'Jayawardena',
     dob: '2010-11-03',
-    subject: 'Chemistry',
+    subjects: ['Chemistry'],
     school: 'Harrow School',
     year: '11',
     progress: 70,
@@ -86,7 +86,7 @@ export const initialStudents: Student[] = [
     firstName: 'Rashmi',
     lastName: 'Weerasinghe',
     dob: '2011-09-16',
-    subject: 'Biology',
+    subjects: ['Biology', 'Chemistry'],
     school: 'Wycombe Abbey',
     year: '10',
     progress: 86,
@@ -102,7 +102,7 @@ export const initialStudents: Student[] = [
     firstName: 'Chaminda',
     lastName: 'Ratnayake',
     dob: '2012-03-09',
-    subject: 'Mathematics',
+    subjects: ['Mathematics'],
     school: 'The Perse School',
     year: '9',
     progress: 78,
@@ -118,7 +118,7 @@ export const initialStudents: Student[] = [
     firstName: 'Tharushi',
     lastName: 'Kumari',
     dob: '2013-07-28',
-    subject: 'History',
+    subjects: ['History', 'English'],
     school: 'RGS Guildford',
     year: '8',
     progress: 84,
@@ -134,7 +134,7 @@ export const initialStudents: Student[] = [
     firstName: 'Sanjaya',
     lastName: 'Bandara',
     dob: '2010-12-01',
-    subject: 'Physics',
+    subjects: ['Physics', 'Mathematics'],
     school: 'Benenden School',
     year: '11',
     progress: 72,
@@ -150,7 +150,7 @@ export const initialStudents: Student[] = [
     firstName: 'Mihiri',
     lastName: 'Gunasekara',
     dob: '2011-01-20',
-    subject: 'English',
+    subjects: ['English'],
     school: 'Cheltenham Ladies College',
     year: '10',
     progress: 89,
@@ -166,7 +166,7 @@ export const initialStudents: Student[] = [
     firstName: 'Kasun',
     lastName: 'Mendis',
     dob: '2012-06-17',
-    subject: 'Chemistry',
+    subjects: ['Chemistry', 'Biology'],
     school: 'Wellington College',
     year: '9',
     progress: 76,

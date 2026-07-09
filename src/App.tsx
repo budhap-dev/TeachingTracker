@@ -8,6 +8,7 @@ import type { Student } from './data/students';
 import './styles.scss';
 import { DashboardView } from './components/DashboardView';
 import { PaymentsView } from './components/PaymentsView';
+import { StudentDetailsView } from './components/StudentDetailsView';
 import { StudentsView } from './components/StudentsView';
 
 type ThemeName = 'ocean' | 'sunset' | 'forest' | 'midnight' | 'lavender' | 'coral' | 'sage' | 'amber' | 'berry' | 'slate' | 'spring' | 'summer' | 'autumn' | 'winter';
@@ -42,7 +43,7 @@ const StudentApp = () => {
   const dispatch = useAppDispatch();
   const students = useAppSelector((state) => state.students.students);
   const loading = useAppSelector((state) => state.students.loading);
-  const [activeView, setActiveView] = useState<'dashboard' | 'students' | 'studyModes'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'students' | 'studyModes' | 'studentDetail'>('dashboard');
   const [theme, setTheme] = useState<ThemeName>(() => {
     if (typeof window === 'undefined') return 'ocean';
     const storedTheme = window.localStorage.getItem('teachtrack-theme') as ThemeName | null;
@@ -51,7 +52,7 @@ const StudentApp = () => {
   const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [expandedStudentId, setExpandedStudentId] = useState<number | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
   const [draftStudent, setDraftStudent] = useState<Partial<Student> | null>(null);
   const [form, setForm] = useState<Omit<Student, 'id'>>({
@@ -59,7 +60,7 @@ const StudentApp = () => {
     firstName: '',
     lastName: '',
     dob: '',
-    subject: '',
+    subjects: [],
     school: '',
     year: '',
     progress: 0,
@@ -74,6 +75,25 @@ const StudentApp = () => {
     const onlineStudents = students.filter((s) => s.mode === 'Online').length;
     const avgProgress = Math.round(students.reduce((sum, s) => sum + s.progress, 0) / students.length);
     return { onlineStudents, avgProgress, totalStudents: students.length };
+  }, [students]);
+
+  const upcomingSessions = useMemo(() => {
+    const slots = ['16:00', '17:30', '09:30', '11:00', '14:00'];
+
+    return students.slice(0, 5).map((student, index) => {
+      const sessionDate = new Date();
+      sessionDate.setDate(sessionDate.getDate() + index);
+
+      return {
+        id: `session-${student.id}`,
+        studentId: student.id,
+        date: sessionDate.toISOString(),
+        time: slots[index % slots.length],
+        studentName: `${student.firstName} ${student.lastName}`,
+        subject: student.subjects[0] ?? 'General lesson',
+        mode: student.mode,
+      };
+    });
   }, [students]);
 
   const activeTheme = themePresets[theme];
@@ -105,6 +125,9 @@ const StudentApp = () => {
   const handleViewChange = (view: 'dashboard' | 'students' | 'studyModes') => {
     setActiveView(view);
     setIsMobileNavOpen(false);
+    if (view !== 'studentDetail') {
+      setSelectedStudentId(null);
+    }
 
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, left: 0 });
@@ -113,7 +136,7 @@ const StudentApp = () => {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.firstName || !form.lastName || !form.subject || !form.school || !form.year) return;
+    if (!form.firstName || !form.lastName || form.subjects.length === 0 || !form.school || !form.year) return;
 
     const newStudentId = `STU-${Date.now().toString().slice(-6)}`;
 
@@ -130,7 +153,7 @@ const StudentApp = () => {
       firstName: '',
       lastName: '',
       dob: '',
-      subject: '',
+      subjects: [],
       school: '',
       year: '',
       progress: 0,
@@ -144,8 +167,9 @@ const StudentApp = () => {
     setActiveView('students');
   };
 
-  const handleOpenDetails = (studentId: number) => {
-    setExpandedStudentId((current) => (current === studentId ? null : studentId));
+  const handleOpenStudentPage = (studentId: number) => {
+    setSelectedStudentId(studentId);
+    setActiveView('studentDetail');
     setEditingStudentId(null);
     setDraftStudent(null);
   };
@@ -172,6 +196,7 @@ const StudentApp = () => {
   };
 
   const hasUnsavedChanges = Boolean(draftStudent && editingStudentId);
+  const selectedStudent = students.find((student) => student.id === selectedStudentId) ?? null;
 
   return (
     <ThemeProvider theme={muiTheme}>
@@ -250,7 +275,12 @@ const StudentApp = () => {
         </header>
 
         {activeView === 'dashboard' && (
-          <DashboardView stats={stats} onManageStudents={() => handleViewChange('students')} />
+          <DashboardView
+            stats={stats}
+            upcomingSessions={upcomingSessions}
+            onManageStudents={() => handleViewChange('students')}
+            onOpenStudentPage={handleOpenStudentPage}
+          />
         )}
 
         {activeView === 'students' && (
@@ -258,20 +288,29 @@ const StudentApp = () => {
             students={students}
             loading={loading}
             isModalOpen={isModalOpen}
-            expandedStudentId={expandedStudentId}
-            editingStudentId={editingStudentId}
-            draftStudent={draftStudent}
-            hasUnsavedChanges={hasUnsavedChanges}
             form={form}
             onOpenModal={() => setIsModalOpen(true)}
             onCloseModal={() => setIsModalOpen(false)}
             onFormChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))}
             onSubmit={handleSubmit}
-            onOpenDetails={handleOpenDetails}
+            onOpenStudentPage={handleOpenStudentPage}
+          />
+        )}
+
+        {activeView === 'studentDetail' && selectedStudent && (
+          <StudentDetailsView
+            student={selectedStudent}
+            editingStudentId={editingStudentId}
+            draftStudent={draftStudent}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onBack={() => handleViewChange('students')}
             onBeginEdit={handleBeginEdit}
             onDraftChange={(field, value) => handleDraftChange(field, value)}
             onSaveDetails={handleSaveStudentDetails}
-            onCancelEdit={() => { setEditingStudentId(null); setDraftStudent(null); }}
+            onCancelEdit={() => {
+              setEditingStudentId(null);
+              setDraftStudent(null);
+            }}
             onProgressChange={(studentId, value) => dispatch(updateStudent({ id: studentId, progress: value }))}
           />
         )}
