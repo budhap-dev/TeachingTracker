@@ -125,9 +125,7 @@ const StudentApp = () => {
   const handleViewChange = (view: 'dashboard' | 'students' | 'studyModes') => {
     setActiveView(view);
     setIsMobileNavOpen(false);
-    if (view !== 'studentDetail') {
-      setSelectedStudentId(null);
-    }
+    setSelectedStudentId(null);
 
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, left: 0 });
