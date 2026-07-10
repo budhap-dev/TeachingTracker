@@ -19,6 +19,7 @@ type StudentState = {
   loading: boolean;
   scheduledSessions: ScheduledSession[];
   paymentRecords: PaymentRecord[];
+  hasLocalStudentChanges: boolean;
 };
 
 const baseDate = new Date();
@@ -55,7 +56,7 @@ const buildInitialPaymentRecords = (students: Student[]): PaymentRecord[] => stu
   };
 }));
 
-const initialState: StudentState = {
+const createInitialState = (): StudentState => ({
   students: initialStudents,
   loading: false,
   scheduledSessions: [
@@ -101,7 +102,10 @@ const initialState: StudentState = {
     },
   ],
   paymentRecords: buildInitialPaymentRecords(initialStudents),
-};
+  hasLocalStudentChanges: false,
+});
+
+const initialState = createInitialState();
 
 export const loadStudents = createAsyncThunk('students/loadStudents', async () => {
   try {
@@ -131,7 +135,9 @@ const studentSlice = createSlice({
   name: 'students',
   initialState,
   reducers: {
+    resetStudentState: () => createInitialState(),
     addStudent: (state, action: PayloadAction<Omit<Student, 'id'>>) => {
+      state.hasLocalStudentChanges = true;
       const generatedStudentId = `STU-${Date.now().toString().slice(-6)}`;
       state.students.push({
         id: Date.now(),
@@ -140,12 +146,14 @@ const studentSlice = createSlice({
       });
     },
     updateProgress: (state, action: PayloadAction<{ id: number; progress: number }>) => {
+      state.hasLocalStudentChanges = true;
       const student = state.students.find((item) => item.id === action.payload.id);
       if (student) {
         student.progress = action.payload.progress;
       }
     },
     updateStudentDetails: (state, action: PayloadAction<{ id: number; field: StudentDetailField; value: string }>) => {
+      state.hasLocalStudentChanges = true;
       const student = state.students.find((item) => item.id === action.payload.id);
       if (student) {
         student[action.payload.field] = action.payload.value as never;
@@ -171,16 +179,34 @@ const studentSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(loadStudents.fulfilled, (state, action) => {
-      state.students = action.payload;
+      if (!state.hasLocalStudentChanges) {
+        state.students = action.payload;
+      } else {
+        const mergedStudents = [...state.students];
+
+        action.payload.forEach((student) => {
+          const existingIndex = mergedStudents.findIndex((item) => item.id === student.id);
+
+          if (existingIndex >= 0) {
+            mergedStudents[existingIndex] = student;
+          } else {
+            mergedStudents.push(student);
+          }
+        });
+
+        state.students = mergedStudents;
+      }
       state.loading = false;
     });
     builder.addCase(loadStudents.rejected, (state) => {
       state.loading = false;
     });
     builder.addCase(saveStudent.fulfilled, (state, action) => {
+      state.hasLocalStudentChanges = true;
       state.students.push(action.payload);
     });
     builder.addCase(updateStudent.fulfilled, (state, action) => {
+      state.hasLocalStudentChanges = true;
       const student = state.students.find((item) => item.id === action.payload.id);
       if (student) {
         student.progress = action.payload.progress;
@@ -189,7 +215,7 @@ const studentSlice = createSlice({
   },
 });
 
-export const { addStudent, updateProgress, updateStudentDetails, scheduleClass, updatePaymentRecord } = studentSlice.actions;
+export const { addStudent, resetStudentState, updateProgress, updateStudentDetails, scheduleClass, updatePaymentRecord } = studentSlice.actions;
 
 export const store = configureStore({
   reducer: {

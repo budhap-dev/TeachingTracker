@@ -7,6 +7,7 @@ import {
   loadStudents,
   saveStudent,
   store,
+  resetStudentState,
   updatePaymentRecord,
   updateProgress,
   updateStudent,
@@ -42,6 +43,7 @@ const buildStudentPayload = (overrides: Partial<Omit<Student, 'id'>> = {}): Omit
 describe('store reducers and thunks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    store.dispatch(resetStudentState());
   });
 
   it('covers reducer actions and extra reducers', async () => {
@@ -98,6 +100,13 @@ describe('store reducers and thunks', () => {
     mockedCreateStudent.mockRejectedValueOnce(new Error('create failed'));
     await store.dispatch(saveStudent(buildStudentPayload({ firstName: 'Fallback' })));
     expect(store.getState().students.students.some((student) => student.firstName === 'Fallback')).toBe(true);
+
+    store.dispatch(addStudent(buildStudentPayload({ studentId: 'STU-LOCAL', firstName: 'Local' })));
+
+    const mergedStudent: Student = { id: 2000, ...buildStudentPayload({ studentId: 'STU-200000', firstName: 'Merged', lastName: 'Student' }) };
+    mockedFetchStudents.mockResolvedValueOnce([mergedStudent]);
+    await store.dispatch(loadStudents());
+    expect(store.getState().students.students.some((student) => student.id === 2000)).toBe(true);
 
     mockedUpdateStudentProgress.mockResolvedValueOnce({ id: 1200, progress: 99 } as Student);
     await store.dispatch(updateStudent({ id: 1200, progress: 99 }));
