@@ -72,7 +72,7 @@ describe('store reducers and thunks', () => {
     store.dispatch(loadStudents.pending('req-1', undefined));
     expect(store.getState().students.loading).toBe(true);
 
-    store.dispatch(loadStudents.rejected(new Error('fail') as any, 'req-1', undefined));
+    store.dispatch(loadStudents.rejected(new Error('fail') as Error | null, 'req-1', undefined));
     expect(store.getState().students.loading).toBe(false);
   });
 
