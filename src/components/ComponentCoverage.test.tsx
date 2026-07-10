@@ -126,6 +126,8 @@ describe('component-level coverage', () => {
 
     render(<PaymentsView students={students} />);
 
+    await user.selectOptions(screen.getByRole('combobox', { name: /rows per page/i }), '5');
+
     expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
     expect(screen.getByText('Student1 Example')).toBeInTheDocument();
     expect(screen.queryByText('Student6 Example')).not.toBeInTheDocument();
@@ -139,6 +141,10 @@ describe('component-level coverage', () => {
 
     expect(screen.getByText(/page 2 of 2/i)).toBeInTheDocument();
     expect(screen.getByText('Student6 Example')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /previous/i }));
+
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
   });
 
   it('renders and updates the payment tracker for a selected month', async () => {

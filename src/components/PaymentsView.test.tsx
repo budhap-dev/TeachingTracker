@@ -35,6 +35,8 @@ describe('PaymentsView', () => {
 
     render(<PaymentsView students={students} />);
 
+    await user.selectOptions(screen.getByRole('combobox', { name: /rows per page/i }), '5');
+
     expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
     expect(screen.getByText('Student1 Example')).toBeInTheDocument();
     expect(screen.queryByText('Student6 Example')).not.toBeInTheDocument();
@@ -48,6 +50,10 @@ describe('PaymentsView', () => {
 
     expect(screen.getByText(/page 2 of 2/i)).toBeInTheDocument();
     expect(screen.getByText('Student6 Example')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /previous/i }));
+
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
   });
 
   it('lets users change rows per page from a dropdown', async () => {
@@ -63,13 +69,22 @@ describe('PaymentsView', () => {
 
     render(<PaymentsView students={students} />);
 
+    expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument();
+    expect(screen.getByText('Student6 Example')).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /rows per page/i }), '5');
+
     expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
     expect(screen.queryByText('Student6 Example')).not.toBeInTheDocument();
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /rows per page/i }), '10');
+    await user.click(screen.getByRole('button', { name: /next/i }));
 
-    expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 2 of 2/i)).toBeInTheDocument();
     expect(screen.getByText('Student6 Example')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /previous/i }));
+
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
   });
 
   it('toggles sort direction on same header and respects pagination bounds', async () => {
@@ -94,11 +109,11 @@ describe('PaymentsView', () => {
     await user.click(screen.getByRole('button', { name: /mode/i }));
 
     await user.click(screen.getByRole('button', { name: /next/i }));
-    expect(screen.getByText(/page 2 of 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument();
 
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
 
     await user.click(screen.getByRole('button', { name: /previous/i }));
-    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument();
   });
 });
