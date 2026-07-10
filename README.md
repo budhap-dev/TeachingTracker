@@ -27,10 +27,10 @@ Teaching Tracker is a responsive React + TypeScript application for managing stu
 ## Project Structure
 
 - src/ - frontend React application
-  - components/ - UI components (if added later)
-  - data/ - student seed data
-  - store/ - Redux store and thunks
-  - api/ - API integration layer
+    - components/ - UI components (if added later)
+    - data/ - student seed data
+    - store/ - Redux store and thunks
+    - api/ - API integration layer
 - azure-functions/ - Azure Functions backend scaffold
 
 ## Getting Started

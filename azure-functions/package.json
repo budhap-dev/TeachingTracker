@@ -1,13 +1,13 @@
 {
-  "name": "teaching-tracker-functions",
-  "version": "1.0.0",
-  "description": "Azure Functions backend for Teaching Tracker",
-  "scripts": {
-    "start": "func start",
-    "build": "echo 'No build step'"
-  },
-  "dependencies": {
-    "@azure/cosmos": "^4.7.0",
-    "@azure/functions": "^4.0.0"
-  }
+    "name": "teaching-tracker-functions",
+    "version": "1.0.0",
+    "description": "Azure Functions backend for Teaching Tracker",
+    "scripts": {
+        "start": "func start",
+        "build": "echo 'No build step'"
+    },
+    "dependencies": {
+        "@azure/cosmos": "^4.7.0",
+        "@azure/functions": "^4.0.0"
+    }
 }
