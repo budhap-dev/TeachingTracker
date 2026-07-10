@@ -14,7 +14,7 @@ export const PaymentsView = ({ students }: PaymentsViewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('student');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const sortedStudents = useMemo(() => {
     const copy = [...students];

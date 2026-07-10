@@ -1,8 +1,9 @@
 import { Button, Slider, TextField, Typography } from '@mui/material';
-import type { Student } from '../data/students';
+import type { ScheduledSession, Student } from '../data/students';
 
 type StudentDetailsViewProps = {
   student: Student;
+  scheduledSessions: ScheduledSession[];
   editingStudentId: number | null;
   draftStudent: Partial<Student> | null;
   hasUnsavedChanges: boolean;
@@ -16,6 +17,7 @@ type StudentDetailsViewProps = {
 
 export const StudentDetailsView = ({
   student,
+  scheduledSessions,
   editingStudentId,
   draftStudent,
   hasUnsavedChanges,
@@ -27,6 +29,7 @@ export const StudentDetailsView = ({
   onProgressChange,
 }: StudentDetailsViewProps) => {
   const isEditing = editingStudentId === student.id;
+  const studentSessions = scheduledSessions.filter((session) => session.studentId === student.id);
 
   return (
     <section className="content-stack student-page">
@@ -74,6 +77,20 @@ export const StudentDetailsView = ({
               <TextField label="Contact Number" size="small" value={draftStudent?.contactNumber ?? student.contactNumber} onChange={(event) => onDraftChange('contactNumber', event.target.value)} fullWidth disabled={!isEditing} />
               <TextField label="Address" size="small" multiline minRows={2} value={draftStudent?.address ?? student.address} onChange={(event) => onDraftChange('address', event.target.value)} fullWidth disabled={!isEditing} />
               <TextField label="Notes" size="small" multiline minRows={2} value={draftStudent?.notes ?? student.notes} onChange={(event) => onDraftChange('notes', event.target.value)} fullWidth disabled={!isEditing} />
+            </div>
+            <div className="student-session-summary">
+              <h4>Upcoming sessions</h4>
+              {studentSessions.length === 0 ? (
+                <p>No classes scheduled yet.</p>
+              ) : (
+                <ul>
+                  {studentSessions.map((session) => (
+                    <li key={session.id}>
+                      {new Date(session.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} • {session.time} • {session.subject}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>

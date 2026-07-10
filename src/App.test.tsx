@@ -67,6 +67,19 @@ describe('Teaching Tracker app', () => {
     expect(within(navigation).getByRole('button', { name: /^dashboard$/i })).toBeInTheDocument();
     expect(within(navigation).getByRole('button', { name: /^students$/i })).toBeInTheDocument();
     expect(within(navigation).getByRole('button', { name: /study snapshot/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: /payment tracker/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: /class scheduling/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /student and class overview pie chart/i })).toBeInTheDocument();
+  });
+
+  it('shows a quotation below the welcome message on load', () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    render(<App />);
+
+    expect(screen.getByText(/a teacher affects eternity/i)).toBeInTheDocument();
+
+    randomSpy.mockRestore();
   });
 
   it('supports dashboard manage action and mobile nav toggle', async () => {
@@ -85,6 +98,12 @@ describe('Teaching Tracker app', () => {
     render(<App />);
 
     const navigation = screen.getByRole('navigation');
+    await user.click(within(navigation).getByRole('button', { name: /payment tracker/i }));
+    expect(screen.getByRole('heading', { name: /monthly payment tracking/i })).toBeInTheDocument();
+
+    await user.click(within(navigation).getByRole('button', { name: /class scheduling/i }));
+    expect(screen.getByRole('heading', { name: /class scheduling/i })).toBeInTheDocument();
+
     await user.click(within(navigation).getByRole('button', { name: /study snapshot/i }));
     expect(screen.getByRole('heading', { name: /study snapshot/i })).toBeInTheDocument();
 
@@ -105,10 +124,30 @@ describe('Teaching Tracker app', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('link', { name: /asha perera/i }));
+    await user.click(screen.getAllByRole('link', { name: /asha perera/i })[0]);
 
     expect(screen.getByRole('heading', { name: /asha perera/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /back to students/i })).toBeInTheDocument();
+  });
+
+  it('saves a scheduled class and shows it in the dashboard', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const navigation = screen.getByRole('navigation');
+    await user.click(within(navigation).getByRole('button', { name: /class scheduling/i }));
+
+    await user.clear(screen.getByLabelText(/date/i));
+    await user.type(screen.getByLabelText(/date/i), '2026-07-12');
+    await user.clear(screen.getByLabelText(/time/i));
+    await user.type(screen.getByLabelText(/time/i), '15:30');
+    await user.clear(screen.getByLabelText(/notes/i));
+    await user.type(screen.getByLabelText(/notes/i), 'Practice paper review');
+
+    await user.click(screen.getByRole('button', { name: /save class/i }));
+
+    await user.click(within(navigation).getByRole('button', { name: /^dashboard$/i }));
+    expect(screen.getByText(/practice paper review/i)).toBeInTheDocument();
   });
 
   it('shows the students view and allows adding a student', async () => {
@@ -156,7 +195,7 @@ describe('Teaching Tracker app', () => {
     const navigation = screen.getByRole('navigation');
     await user.click(within(navigation).getByRole('button', { name: /^students$/i }));
 
-    await user.click(screen.getByRole('link', { name: /asha perera/i }));
+    await user.click(screen.getAllByRole('link', { name: /asha perera/i })[0]);
 
     expect(screen.getByRole('heading', { name: /asha perera/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /back to students/i })).toBeInTheDocument();
@@ -166,7 +205,7 @@ describe('Teaching Tracker app', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('link', { name: /asha perera/i }));
+    await user.click(screen.getAllByRole('link', { name: /asha perera/i })[0]);
 
     await user.click(screen.getByRole('button', { name: /^edit$/i }));
     const parentField = screen.getByLabelText(/parent name/i);
@@ -224,5 +263,21 @@ describe('Teaching Tracker app', () => {
     expect(screen.getByRole('heading', { name: /study snapshot/i })).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByText(/mathematics/i)).toBeInTheDocument();
+  });
+
+  it('opens the payment tracker menu and allows month editing', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const navigation = screen.getByRole('navigation');
+    await user.click(within(navigation).getByRole('button', { name: /payment tracker/i }));
+
+    expect(screen.getByRole('heading', { name: /monthly payment tracking/i })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText(/asha perera status/i), 'Paid');
+    await user.clear(screen.getByLabelText(/asha perera amount received/i));
+    await user.type(screen.getByLabelText(/asha perera amount received/i), '120');
+
+    expect(screen.getByText(/total expected/i)).toBeInTheDocument();
   });
 });

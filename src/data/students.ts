@@ -15,6 +15,30 @@ export type Student = {
   address: string;
 };
 
+export type ScheduledSession = {
+  id: number;
+  studentId: number;
+  studentName: string;
+  year: string;
+  subject: string;
+  date: string;
+  time: string;
+  notes: string;
+};
+
+export type PaymentStatus = 'Paid' | 'Partial' | 'Pending';
+
+export type PaymentRecord = {
+  id: number;
+  studentId: number;
+  studentName: string;
+  month: string;
+  monthlyFee: number;
+  amountPaid: number;
+  status: PaymentStatus;
+  notes: string;
+};
+
 export const initialStudents: Student[] = [
   {
     id: 1,

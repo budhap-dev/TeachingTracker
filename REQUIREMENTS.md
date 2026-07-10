@@ -28,3 +28,29 @@ I will implement items from top to bottom.
 - [x] Remove the expanded accordion section, instead link that to navigate to the student page
 - [x] Once the ink is clicked, user will get navigated to that student page.
 
+### Icon in the web app tap
+- [x] Need a nice icon in the tab when opened - currently there is nothing
+
+
+### Class scheduling 
+- [x] Need to have a separate tab for scheduling a class
+- [x] The Student name and year group should appear in an autocomplete dropdown
+- [x] Once the student name is selected, there should be a nice calendar view to book the next session date an time
+- [x] The calendar should be able to show the date and time already booked in and on hovering, the student's name should be displayed
+- [x] These data should get reflected in all the relevant areas of the app
+- [x] There should be a button to save the details
+- [x] Unit tests should cover the code.
+
+### Quotation
+- [x] Everytime the page is refreshed or the app is relaunched, a nice Teacher - student quotation should get displayed Just below the the welcome message.
+
+# Dashboard chart
+- [x] I need a chart chart in the showing the student and class rleated information
+
+# Payment Tracker
+- [x] I need a payment tracker menu
+- [x] An editable tabular structure monthly basis for each student
+- [x] An Overall summary of the month - payemnets received, not yet paid with proper color coded rows
+- [x] Total amount received and yet to be paid
+- [x] After this is done, apply the unit tetsts and make suer coverage is 100%
+- [ ] fix if there are any terminal errors

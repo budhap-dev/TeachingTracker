@@ -12,15 +12,22 @@ describe('DashboardView', () => {
     render(
       <DashboardView
         stats={{ onlineStudents: 2, avgProgress: 82, totalStudents: 5 }}
+        overviewChart={[
+          { label: 'Students', value: 5 },
+          { label: 'Face to Face', value: 3 },
+          { label: 'Online', value: 2 },
+          { label: 'Upcoming sessions', value: 4 },
+        ]}
         upcomingSessions={[
           {
-            id: 'session-1',
+            id: 1,
             studentId: 1,
             date: '2026-07-11T09:00:00.000Z',
             time: '16:00',
             studentName: 'Asha Perera',
             subject: 'Mathematics',
-            mode: 'Face to Face',
+            year: '10',
+            notes: 'Problem solving practice',
           },
         ]}
         onManageStudents={onManageStudents}
@@ -30,8 +37,7 @@ describe('DashboardView', () => {
 
     expect(screen.getByText('Today at a glance')).toBeInTheDocument();
     expect(screen.getByText('Total students')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
-    expect(screen.getByText('82%')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /student and class overview pie chart/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /upcoming sessions/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Asha Perera' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /connect google calendar/i })).toBeInTheDocument();

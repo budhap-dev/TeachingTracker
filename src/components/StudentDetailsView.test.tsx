@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import type { Student } from '../data/students';
+import type { ScheduledSession, Student } from '../data/students';
 import { StudentDetailsView } from './StudentDetailsView';
 
 const buildStudent = (overrides: Partial<Student> = {}): Student => ({
@@ -21,6 +21,19 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
   address: overrides.address ?? '12 Oak Road, Kingston upon Thames, KT2 6LP',
 });
 
+const scheduledSessions: ScheduledSession[] = [
+  {
+    id: 1,
+    studentId: 10,
+    studentName: 'Asha Perera',
+    year: '10',
+    subject: 'Mathematics',
+    date: '2026-07-11',
+    time: '16:00',
+    notes: 'Problem solving practice',
+  },
+];
+
 describe('StudentDetailsView', () => {
   it('renders details and triggers back/edit/progress callbacks', async () => {
     const user = userEvent.setup();
@@ -31,6 +44,7 @@ describe('StudentDetailsView', () => {
     render(
       <StudentDetailsView
         student={buildStudent()}
+        scheduledSessions={scheduledSessions}
         editingStudentId={null}
         draftStudent={null}
         hasUnsavedChanges={false}
@@ -65,6 +79,7 @@ describe('StudentDetailsView', () => {
     render(
       <StudentDetailsView
         student={buildStudent({ dob: '', parentName: '', contactNumber: '', address: '', notes: '', year: '' })}
+        scheduledSessions={[]}
         editingStudentId={10}
         draftStudent={{ parentName: 'Updated Parent', contactNumber: '0700000000', address: 'Updated Address', notes: 'Updated Note' }}
         hasUnsavedChanges

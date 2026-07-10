@@ -34,6 +34,15 @@
   .grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .dashboard-chart-card,
+  .payment-summary-grid {
+    grid-column: span 2;
+  }
+
+  .scheduling-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -67,6 +76,26 @@
 
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-chart,
+  .payment-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-chart-card,
+  .calendar-card {
+    grid-column: span 1;
+  }
+
+  .payment-tracker-hero,
+  .scheduling-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .payment-summary-grid {
+    gap: 10px;
   }
 
   .student-form {
@@ -132,5 +161,32 @@
   .calendar-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .scheduling-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .scheduling-hero-stats {
+    width: 100%;
+    flex-direction: column;
+
+    div {
+      min-width: 0;
+    }
+  }
+
+  .calendar-weekdays,
+  .calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calendar-day {
+    min-height: 110px;
+  }
+
+  .scheduling-layout {
+    gap: 12px;
   }
 }

@@ -2,11 +2,13 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Provider } from 'react-redux';
-import { loadStudents, saveStudent, store, updateStudent, updateStudentDetails } from './store/store';
+import { loadStudents, saveStudent, scheduleClass, store, updatePaymentRecord, updateStudent, updateStudentDetails } from './store/store';
 import { useAppDispatch, useAppSelector } from './hooks';
-import type { Student } from './data/students';
+import type { ScheduledSession, Student } from './data/students';
 import './styles.scss';
 import { DashboardView } from './components/DashboardView';
+import { ClassSchedulingView } from './components/ClassSchedulingView';
+import { PaymentTrackerView } from './components/PaymentTrackerView';
 import { PaymentsView } from './components/PaymentsView';
 import { StudentDetailsView } from './components/StudentDetailsView';
 import { StudentsView } from './components/StudentsView';
@@ -39,11 +41,56 @@ const themePresets: Record<ThemeName, ThemePreset> = {
   winter: { label: 'Winter', accent: '#2563eb', accentAlt: '#38bdf8', sidebar: 'linear-gradient(180deg, #0f172a, #1d4ed8)', primary: '#2563eb', secondary: '#38bdf8' },
 };
 
+const   teacherQuotes = [
+  'A teacher affects eternity; he can never tell where his influence stops. - Henry Adams',
+  'The mediocre teacher tells. The good teacher explains. The superior teacher demonstrates. The great teacher inspires. - William Arthur Ward',
+  'One child, one teacher, one book, one pen can change the world. - Malala Yousafzai',
+  'A good teacher can inspire hope, ignite the imagination, and instill a love of learning. - Brad Henry',
+  'The dream begins with a teacher who believes in you. - Dan Rather',
+  'You cannot teach a man anything; you can only help him find it within himself. - Dale Carnegie',
+  'A teacher who is attempting to teach without inspiring the pupil with a desire to learn is hammering on cold iron. - Horace Mann',
+  'It is the supreme art of the teacher to awaken joy in creative expression and knowledge. - Albert Einstein',
+  'The beautiful thing about learning is that nobody can take it away from you. - B.B. King',
+  'I like a teacher who gives you something to take home to think about besides homework. - Lily Tomlin',
+  'One looks back with appreciation to the brilliant teachers, but with gratitude to those who touched our human feelings. - Carl Jung',
+  'The whole purpose of education is to turn mirrors into windows. - Sydney J. Harris',
+  'Tell me and I forget. Teach me and I remember. Involve me and I learn. - Xunzi',
+  'The mind is not a vessel to be filled but a fire to be kindled. - Plutarch',
+  'Education is not the filling of a pail, but the lighting of a fire. - William Butler Yeats',
+  'The art of teaching is the art of assisting discovery. - Mark Van Doren',
+  'Teachers can change lives with just the right mix of chalk and challenges. - Joyce Meyer',
+  'It is important that students question what is known, not worship it. - Jacob Bronowski',
+  'Good teaching is more a giving of right questions than a giving of right answers. - Josef Albers',
+  'What we want is to see the child in pursuit of knowledge, and not knowledge in pursuit of the child. - George Bernard Shaw',
+  'Education is what survives when what has been learned has been forgotten. - B.F. Skinner',
+  'He who opens a school door, closes a prison. - Victor Hugo',
+  'The task of the modern educator is not to cut down jungles, but to irrigate deserts. - C.S. Lewis',
+  'I touch the future. I teach. - Christa McAuliffe',
+  'One good teacher in a lifetime may sometimes change a delinquent into a solid citizen. - Philip Wylie',
+  'If you have to put someone on a pedestal, put teachers. They are society’s heroes. - Guy Kawasaki',
+  'Teaching is the one profession that creates all other professions. - Unknown',
+  'The influence of a good teacher can never be erased. - Unknown',
+  'Students don’t care how much you know until they know how much you care. - Theodore Roosevelt',
+  'A great teacher takes a hand, opens a mind, and touches a heart. - Unknown',
+  'The best teachers are those who show you where to look, but do not tell you what to see. - Alexandra K. Trenfor',
+  'To teach is to learn twice. - Joseph Joubert',
+  'A teacher is one who makes himself progressively unnecessary. - Thomas Carruthers',
+  'Those who know, do. Those that understand, teach. - Aristotle',
+  'Education is the key to success in life, and teachers make a lasting impact in the lives of their students. - Solomon Ortiz',
+  'The art of teaching is the art of awakening the natural curiosity of young minds. - Anatole France',
+  'A great teacher is a great artist because education is the art of shaping human potential. - John Steinbeck',
+  'Better than a thousand days of diligent study is one day with a great teacher. - Japanese Proverb',
+  'The true teacher defends his pupils against his own personal influence. - Amos Bronson Alcott',
+  'What the teacher is, is more important than what he teaches. - Karl Menninger'
+];
+
 const StudentApp = () => {
   const dispatch = useAppDispatch();
   const students = useAppSelector((state) => state.students.students);
+  const scheduledSessions = useAppSelector((state) => state.students.scheduledSessions);
+  const paymentRecords = useAppSelector((state) => state.students.paymentRecords);
   const loading = useAppSelector((state) => state.students.loading);
-  const [activeView, setActiveView] = useState<'dashboard' | 'students' | 'studyModes' | 'studentDetail'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'students' | 'studyModes' | 'paymentTracker' | 'studentDetail' | 'scheduling'>('dashboard');
   const [theme, setTheme] = useState<ThemeName>(() => {
     const storedTheme = window.localStorage.getItem('teachtrack-theme') as ThemeName | null;
     return storedTheme && themePresets[storedTheme] ? storedTheme : 'ocean';
@@ -54,6 +101,7 @@ const StudentApp = () => {
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
   const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
   const [draftStudent, setDraftStudent] = useState<Partial<Student> | null>(null);
+  const dailyQuote = useMemo(() => teacherQuotes[Math.floor(Math.random() * teacherQuotes.length)], []);
   const [form, setForm] = useState<Omit<Student, 'id'>>({
     studentId: '',
     firstName: '',
@@ -72,28 +120,22 @@ const StudentApp = () => {
 
   const stats = useMemo(() => {
     const onlineStudents = students.filter((s) => s.mode === 'Online').length;
+    const faceToFaceStudents = students.filter((s) => s.mode === 'Face to Face').length;
     const avgProgress = Math.round(students.reduce((sum, s) => sum + s.progress, 0) / students.length);
-    return { onlineStudents, avgProgress, totalStudents: students.length };
+    return { onlineStudents, faceToFaceStudents, avgProgress, totalStudents: students.length };
   }, [students]);
 
-  const upcomingSessions = useMemo(() => {
-    const slots = ['16:00', '17:30', '09:30', '11:00', '14:00'];
+  const upcomingSessions = useMemo(
+    () => [...scheduledSessions].sort((left, right) => `${left.date} ${left.time}`.localeCompare(`${right.date} ${right.time}`)),
+    [scheduledSessions]
+  );
 
-    return students.slice(0, 5).map((student, index) => {
-      const sessionDate = new Date();
-      sessionDate.setDate(sessionDate.getDate() + index);
-
-      return {
-        id: `session-${student.id}`,
-        studentId: student.id,
-        date: sessionDate.toISOString(),
-        time: slots[index % slots.length],
-        studentName: `${student.firstName} ${student.lastName}`,
-        subject: student.subjects.join(', '),
-        mode: student.mode,
-      };
-    });
-  }, [students]);
+  const overviewChart = useMemo(() => ([
+    { label: 'Students', value: students.length },
+    { label: 'Face to Face', value: stats.faceToFaceStudents },
+    { label: 'Online', value: stats.onlineStudents },
+    { label: 'Upcoming sessions', value: upcomingSessions.length },
+  ]), [students.length, stats.faceToFaceStudents, stats.onlineStudents, upcomingSessions.length]);
 
   const activeTheme = themePresets[theme];
 
@@ -121,7 +163,7 @@ const StudentApp = () => {
     window.localStorage.setItem('teachtrack-theme', theme);
   }, [theme]);
 
-  const handleViewChange = (view: 'dashboard' | 'students' | 'studyModes') => {
+  const handleViewChange = (view: 'dashboard' | 'students' | 'studyModes' | 'paymentTracker' | 'scheduling') => {
     setActiveView(view);
     setIsMobileNavOpen(false);
     setSelectedStudentId(null);
@@ -188,6 +230,11 @@ const StudentApp = () => {
     setDraftStudent(null);
   };
 
+  const handleScheduleClass = (session: Omit<ScheduledSession, 'id'>) => {
+    dispatch(scheduleClass(session));
+    setActiveView('dashboard');
+  };
+
   const hasUnsavedChanges = Boolean(draftStudent && editingStudentId);
   const selectedStudent = students.find((student) => student.id === selectedStudentId) ?? null;
 
@@ -223,6 +270,12 @@ const StudentApp = () => {
           <button className={activeView === 'studyModes' ? 'active' : ''} onClick={() => handleViewChange('studyModes')}>
             Study Snapshot
           </button>
+          <button className={activeView === 'paymentTracker' ? 'active' : ''} onClick={() => handleViewChange('paymentTracker')}>
+            Payment Tracker
+          </button>
+          <button className={activeView === 'scheduling' ? 'active' : ''} onClick={() => handleViewChange('scheduling')}>
+            Class scheduling
+          </button>
         </nav>
       </aside>
 
@@ -231,6 +284,9 @@ const StudentApp = () => {
           <div>
             <p className="eyebrow">Teacher portal</p>
             <h2>Welcome back, Ms. Abhinanda!</h2>
+            <div className="welcome-quote-container ">
+            <p className="welcome-quote">{dailyQuote}</p>
+            </div>
           </div>
           <div className="topbar-actions">
             <div className="theme-picker" aria-label="Theme selector">
@@ -271,6 +327,7 @@ const StudentApp = () => {
           <DashboardView
             stats={stats}
             upcomingSessions={upcomingSessions}
+            overviewChart={overviewChart}
             onManageStudents={() => handleViewChange('students')}
             onOpenStudentPage={handleOpenStudentPage}
           />
@@ -293,6 +350,7 @@ const StudentApp = () => {
         {activeView === 'studentDetail' && selectedStudent && (
           <StudentDetailsView
             student={selectedStudent}
+            scheduledSessions={scheduledSessions}
             editingStudentId={editingStudentId}
             draftStudent={draftStudent}
             hasUnsavedChanges={hasUnsavedChanges}
@@ -310,6 +368,23 @@ const StudentApp = () => {
 
         {activeView === 'studyModes' && (
           <PaymentsView students={students} />
+        )}
+
+        {activeView === 'paymentTracker' && (
+          <PaymentTrackerView
+            students={students}
+            paymentRecords={paymentRecords}
+            onUpdatePaymentRecord={(record) => dispatch(updatePaymentRecord(record))}
+          />
+        )}
+
+        {activeView === 'scheduling' && (
+          <ClassSchedulingView
+            students={students}
+            sessions={scheduledSessions}
+            onOpenStudentPage={handleOpenStudentPage}
+            onScheduleClass={handleScheduleClass}
+          />
         )}
       </main>
       </div>

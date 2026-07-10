@@ -7,6 +7,7 @@ import {
   loadStudents,
   saveStudent,
   store,
+  updatePaymentRecord,
   updateProgress,
   updateStudent,
   updateStudentDetails,
@@ -68,6 +69,9 @@ describe('store reducers and thunks', () => {
 
     store.dispatch(updateStudentDetails({ id: -999, field: 'notes', value: 'Nope' }));
     expect(store.getState().students.students[0].notes).toBe('Updated Notes');
+
+    store.dispatch(updatePaymentRecord({ studentId: -999, month: '2099-01', status: 'Paid', amountPaid: 120, notes: 'Missing' }));
+    expect(store.getState().students.paymentRecords.some((record) => record.studentId === -999)).toBe(false);
 
     store.dispatch(loadStudents.pending('req-1', undefined));
     expect(store.getState().students.loading).toBe(true);
