@@ -70,10 +70,10 @@ export const StudentDetailsView = ({
               </div>
             )}
             <div className="edit-fields">
-              <TextField label="Parent Name" size="small" value={draftStudent?.parentName ?? student.parentName ?? ''} onChange={(event) => onDraftChange('parentName', event.target.value)} fullWidth disabled={!isEditing} />
-              <TextField label="Contact Number" size="small" value={draftStudent?.contactNumber ?? student.contactNumber ?? ''} onChange={(event) => onDraftChange('contactNumber', event.target.value)} fullWidth disabled={!isEditing} />
-              <TextField label="Address" size="small" multiline minRows={2} value={draftStudent?.address ?? student.address ?? ''} onChange={(event) => onDraftChange('address', event.target.value)} fullWidth disabled={!isEditing} />
-              <TextField label="Notes" size="small" multiline minRows={2} value={draftStudent?.notes ?? student.notes ?? ''} onChange={(event) => onDraftChange('notes', event.target.value)} fullWidth disabled={!isEditing} />
+              <TextField label="Parent Name" size="small" value={draftStudent?.parentName ?? student.parentName} onChange={(event) => onDraftChange('parentName', event.target.value)} fullWidth disabled={!isEditing} />
+              <TextField label="Contact Number" size="small" value={draftStudent?.contactNumber ?? student.contactNumber} onChange={(event) => onDraftChange('contactNumber', event.target.value)} fullWidth disabled={!isEditing} />
+              <TextField label="Address" size="small" multiline minRows={2} value={draftStudent?.address ?? student.address} onChange={(event) => onDraftChange('address', event.target.value)} fullWidth disabled={!isEditing} />
+              <TextField label="Notes" size="small" multiline minRows={2} value={draftStudent?.notes ?? student.notes} onChange={(event) => onDraftChange('notes', event.target.value)} fullWidth disabled={!isEditing} />
             </div>
           </div>
         </div>

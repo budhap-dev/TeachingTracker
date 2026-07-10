@@ -1,6 +1,6 @@
 /// <reference types="vitest/globals" />
 
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import App from './App';
@@ -69,6 +69,38 @@ describe('Teaching Tracker app', () => {
     expect(within(navigation).getByRole('button', { name: /study snapshot/i })).toBeInTheDocument();
   });
 
+  it('supports dashboard manage action and mobile nav toggle', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /open navigation/i }));
+    expect(screen.getByRole('button', { name: /close navigation/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /manage students/i }));
+    expect(screen.getByRole('heading', { name: /view students/i })).toBeInTheDocument();
+  });
+
+  it('switches views from sidebar including returning to dashboard', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const navigation = screen.getByRole('navigation');
+    await user.click(within(navigation).getByRole('button', { name: /study snapshot/i }));
+    expect(screen.getByRole('heading', { name: /study snapshot/i })).toBeInTheDocument();
+
+    await user.click(within(navigation).getByRole('button', { name: /^students$/i }));
+    expect(screen.getByRole('heading', { name: /view students/i })).toBeInTheDocument();
+
+    await user.click(within(navigation).getByRole('button', { name: /^dashboard$/i }));
+    expect(screen.getByRole('heading', { name: /today at a glance/i })).toBeInTheDocument();
+  });
+
+  it('initializes theme from localStorage when a valid theme is present', () => {
+    window.localStorage.setItem('teachtrack-theme', 'midnight');
+    render(<App />);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('midnight');
+  });
+
   it('opens the student detail page from a dashboard upcoming-session link', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -128,6 +160,58 @@ describe('Teaching Tracker app', () => {
 
     expect(screen.getByRole('heading', { name: /asha perera/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /back to students/i })).toBeInTheDocument();
+  });
+
+  it('supports student detail edit save and cancel flows', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('link', { name: /asha perera/i }));
+
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    const parentField = screen.getByLabelText(/parent name/i);
+    await user.clear(parentField);
+    await user.type(parentField, 'Updated Parent');
+
+    await user.click(screen.getByRole('button', { name: /^save$/i }));
+    expect(screen.getByText(/updated parent/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^edit$/i }));
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('slider', { name: /progress/i }), { target: { value: '91' } });
+
+    await user.click(screen.getByRole('button', { name: /back to students/i }));
+    expect(screen.getByRole('heading', { name: /view students/i })).toBeInTheDocument();
+  });
+
+  it('opens and closes the add-student modal without saving', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const navigation = screen.getByRole('navigation');
+    await user.click(within(navigation).getByRole('button', { name: /^students$/i }));
+    await user.click(screen.getByRole('button', { name: /add new student/i }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('keeps modal open when required add-student fields are missing', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const navigation = screen.getByRole('navigation');
+    await user.click(within(navigation).getByRole('button', { name: /^students$/i }));
+    await user.click(screen.getByRole('button', { name: /add new student/i }));
+
+    await user.click(screen.getByRole('button', { name: /save student/i }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('switches to payments view and displays payment tracker', async () => {

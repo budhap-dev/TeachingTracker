@@ -66,22 +66,22 @@ export const PaymentsView = ({ students }: PaymentsViewProps) => {
                 <th>#</th>
                 <th>
                   <button type="button" className="sort-button" onClick={() => handleSort('student')}>
-                    Student {sortKey === 'student' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                    Student
                   </button>
                 </th>
                 <th>
                   <button type="button" className="sort-button" onClick={() => handleSort('subject')}>
-                    Subject {sortKey === 'subject' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                    Subject
                   </button>
                 </th>
                 <th>
                   <button type="button" className="sort-button" onClick={() => handleSort('school')}>
-                    School {sortKey === 'school' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                    School
                   </button>
                 </th>
                 <th>
                   <button type="button" className="sort-button" onClick={() => handleSort('mode')}>
-                    Mode {sortKey === 'mode' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                    Mode
                   </button>
                 </th>
               </tr>

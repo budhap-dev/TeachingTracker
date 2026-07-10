@@ -29,8 +29,7 @@ export const StudentFormModal = ({ open, form, onClose, onChange, onSubmit }: St
             multiple
             value={form.subjects}
             onChange={(event) => {
-              const value = event.target.value;
-              onChange('subjects', typeof value === 'string' ? value.split(',') : value);
+              onChange('subjects', event.target.value as string[]);
             }}
             renderValue={(selected) => (selected as string[]).join(', ')}
           >

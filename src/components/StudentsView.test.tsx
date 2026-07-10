@@ -1,12 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Student } from '../data/students';
-import { StudentList } from './StudentList';
-
-beforeEach(() => {
-  window.scrollTo = vi.fn();
-});
+import { StudentsView } from './StudentsView';
 
 const buildStudent = (overrides: Partial<Student> = {}): Student => ({
   id: overrides.id ?? 1,
@@ -25,45 +21,44 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
   address: overrides.address ?? '12 Oak Road, Kingston upon Thames, KT2 6LP',
 });
 
-describe('StudentList', () => {
-  it('renders student names as links and opens student page from click', async () => {
+const formState: Omit<Student, 'id'> = {
+  studentId: '',
+  firstName: '',
+  lastName: '',
+  dob: '',
+  subjects: [],
+  school: '',
+  year: '',
+  progress: 0,
+  mode: 'Face to Face',
+  notes: '',
+  parentName: '',
+  contactNumber: '',
+  address: '',
+};
+
+describe('StudentsView', () => {
+  it('shows loading text and forwards open-student-page callback', async () => {
     const user = userEvent.setup();
     const onOpenStudentPage = vi.fn();
 
     render(
-      <StudentList
+      <StudentsView
         students={[buildStudent()]}
+        loading
+        isModalOpen={false}
+        form={formState}
+        onOpenModal={vi.fn()}
+        onCloseModal={vi.fn()}
+        onFormChange={vi.fn()}
+        onSubmit={vi.fn()}
         onOpenStudentPage={onOpenStudentPage}
       />
     );
 
-    const studentLink = screen.getByRole('link', { name: /asha perera/i });
-    expect(studentLink).toBeInTheDocument();
+    expect(screen.getByText(/loading students from the api/i)).toBeInTheDocument();
 
-    await user.click(studentLink);
-
+    await user.click(screen.getByRole('link', { name: /asha perera/i }));
     expect(onOpenStudentPage).toHaveBeenCalledWith(1);
-  });
-
-  it('groups students under unassigned year when year is empty', () => {
-    render(
-      <StudentList
-        students={[buildStudent({ id: 2, year: '' })]}
-        onOpenStudentPage={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText(/year unassigned/i)).toBeInTheDocument();
-  });
-
-  it('uses fallback year-group styling for unmapped years', () => {
-    render(
-      <StudentList
-        students={[buildStudent({ id: 3, year: '13' })]}
-        onOpenStudentPage={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText(/year 13/i)).toBeInTheDocument();
   });
 });

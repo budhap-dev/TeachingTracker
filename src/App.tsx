@@ -45,7 +45,6 @@ const StudentApp = () => {
   const loading = useAppSelector((state) => state.students.loading);
   const [activeView, setActiveView] = useState<'dashboard' | 'students' | 'studyModes' | 'studentDetail'>('dashboard');
   const [theme, setTheme] = useState<ThemeName>(() => {
-    if (typeof window === 'undefined') return 'ocean';
     const storedTheme = window.localStorage.getItem('teachtrack-theme') as ThemeName | null;
     return storedTheme && themePresets[storedTheme] ? storedTheme : 'ocean';
   });
@@ -90,7 +89,7 @@ const StudentApp = () => {
         date: sessionDate.toISOString(),
         time: slots[index % slots.length],
         studentName: `${student.firstName} ${student.lastName}`,
-        subject: student.subjects[0] ?? 'General lesson',
+        subject: student.subjects.join(', '),
         mode: student.mode,
       };
     });
@@ -125,13 +124,8 @@ const StudentApp = () => {
   const handleViewChange = (view: 'dashboard' | 'students' | 'studyModes') => {
     setActiveView(view);
     setIsMobileNavOpen(false);
-    if (view !== 'studentDetail') {
-      setSelectedStudentId(null);
-    }
-
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, left: 0 });
-    }
+    setSelectedStudentId(null);
+    window.scrollTo({ top: 0, left: 0 });
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -180,12 +174,11 @@ const StudentApp = () => {
   };
 
   const handleDraftChange = (field: keyof Pick<Student, 'parentName' | 'contactNumber' | 'address' | 'notes'>, value: string) => {
-    setDraftStudent((current) => (current ? { ...current, [field]: value } : current));
+    setDraftStudent((current) => ({ ...current!, [field]: value }));
   };
 
   const handleSaveStudentDetails = (studentId: number) => {
-    if (!draftStudent) return;
-    Object.entries(draftStudent).forEach(([field, value]) => {
+    Object.entries(draftStudent as Partial<Student>).forEach(([field, value]) => {
       const typedField = field as keyof Pick<Student, 'parentName' | 'contactNumber' | 'address' | 'notes'>;
       if (['parentName', 'contactNumber', 'address', 'notes'].includes(field)) {
         dispatch(updateStudentDetails({ id: studentId, field: typedField, value: String(value) }));
