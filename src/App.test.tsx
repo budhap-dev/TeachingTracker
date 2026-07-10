@@ -162,9 +162,9 @@ describe('Teaching Tracker app', () => {
     await user.click(screen.getByRole('button', { name: /add new student/i }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/first name/i), 'Ruwan');
-    await user.type(screen.getByLabelText(/last name/i), 'Bandara');
-    await user.type(screen.getByLabelText(/school/i), 'Royal College');
+    fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Ruwan' } });
+    fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: 'Bandara' } });
+    fireEvent.change(screen.getByLabelText(/school/i), { target: { value: 'Royal College' } });
     await user.click(screen.getByRole('combobox', { name: /subjects/i }));
     await user.click(screen.getByRole('option', { name: 'Physics' }));
     await user.click(screen.getByRole('option', { name: 'Mathematics' }));
@@ -173,15 +173,14 @@ describe('Teaching Tracker app', () => {
     await user.click(screen.getByRole('option', { name: '12' }));
     const progressField = screen.getAllByLabelText(/progress/i).find((element) => element instanceof HTMLInputElement);
     if (progressField) {
-      await user.clear(progressField);
-      await user.type(progressField, '85');
+      fireEvent.change(progressField, { target: { value: '85' } });
     }
     await user.click(screen.getByLabelText(/mode/i));
     await user.click(screen.getByRole('option', { name: 'Online' }));
-    await user.type(screen.getByLabelText(/parent name/i), 'Nimal Bandara');
-    await user.type(screen.getByLabelText(/contact number/i), '0771234567');
-    await user.type(screen.getByLabelText(/address/i), '10, Main Street, Colombo');
-    await user.type(screen.getByLabelText(/notes/i), 'Very focused');
+    fireEvent.change(screen.getByLabelText(/parent name/i), { target: { value: 'Nimal Bandara' } });
+    fireEvent.change(screen.getByLabelText(/contact number/i), { target: { value: '0771234567' } });
+    fireEvent.change(screen.getByLabelText(/address/i), { target: { value: '10, Main Street, Colombo' } });
+    fireEvent.change(screen.getByLabelText(/notes/i), { target: { value: 'Very focused' } });
 
     await user.click(screen.getByRole('button', { name: /save student/i }));
 
