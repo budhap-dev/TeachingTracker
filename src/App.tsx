@@ -352,7 +352,7 @@ const StudentApp = () => {
                     <header className="topbar">
                         <div>
                             <p className="eyebrow">Teacher portal</p>
-                            <h2>Welcome back, Ms. Teacher!</h2>
+                            <h2>Welcome back, Teacher!</h2>
                             <div className="welcome-quote-container ">
                                 <p className="welcome-quote">{dailyQuote}</p>
                             </div>
