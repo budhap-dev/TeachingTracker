@@ -20,6 +20,7 @@ import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { PaymentsView } from './components/PaymentsView'
 import { StudentDetailsView } from './components/StudentDetailsView'
 import { StudentsView } from './components/StudentsView'
+import { appVersion } from './version'
 import {
     teacherQuotes,
     ThemeName,
@@ -346,6 +347,9 @@ const StudentApp = () => {
                             Class scheduling
                         </button>
                     </nav>
+                    <footer className="sidebar-footer">
+                        <span>Version {appVersion}</span>
+                    </footer>
                 </aside>
 
                 <main className="main-content">

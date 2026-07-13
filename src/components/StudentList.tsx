@@ -6,12 +6,15 @@ type StudentListProps = {
 }
 
 const yearGroupColors: Record<string, { header: string; accent: string }> = {
-    '8': { header: '#2563eb', accent: '#dbeafe' },
-    '9': { header: '#7c3aed', accent: '#ede9fe' },
-    '10': { header: '#0f766e', accent: '#ccfbf1' },
-    '11': { header: '#b45309', accent: '#ffedd5' },
-    '12': { header: '#dc2626', accent: '#fee2e2' },
-    Unassigned: { header: '#475569', accent: '#e2e8f0' },
+    '8': { header: 'var(--year-8-header)', accent: 'var(--year-8-accent)' },
+    '9': { header: 'var(--year-9-header)', accent: 'var(--year-9-accent)' },
+    '10': { header: 'var(--year-10-header)', accent: 'var(--year-10-accent)' },
+    '11': { header: 'var(--year-11-header)', accent: 'var(--year-11-accent)' },
+    '12': { header: 'var(--year-12-header)', accent: 'var(--year-12-accent)' },
+    Unassigned: {
+        header: 'var(--year-unassigned-header)',
+        accent: 'var(--year-unassigned-accent)',
+    },
 }
 
 export const StudentList = ({
@@ -40,6 +43,7 @@ export const StudentList = ({
                             className="year-group"
                             style={{
                                 backgroundColor: groupStyle.accent,
+                                border: `1px solid color-mix(in srgb, ${groupStyle.header} 20%, var(--border))`,
                                 borderRadius: 16,
                                 padding: 12,
                             }}

@@ -47,14 +47,9 @@ export const StudentFormModal = ({
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogTitle>Add a new student</DialogTitle>
         <DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button type="submit" variant="contained">
-                    Save student
-                </Button>
-            </DialogActions>
             <Box
                 component="form"
+                id="student-form"
                 onSubmit={onSubmit}
                 className="student-form modal-form"
             >
@@ -199,5 +194,11 @@ export const StudentFormModal = ({
                 />
             </Box>
         </DialogContent>
+        <DialogActions>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button type="submit" form="student-form" variant="contained">
+                Save student
+            </Button>
+        </DialogActions>
     </Dialog>
 )

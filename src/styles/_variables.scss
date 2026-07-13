@@ -34,6 +34,30 @@
         var(--sidebar-start),
         var(--sidebar-end)
     );
+    --year-8-header: color-mix(in srgb, var(--accent) 88%, var(--text) 12%);
+    --year-8-accent: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    --year-9-header: color-mix(in srgb, var(--accent-alt) 86%, var(--text) 14%);
+    --year-9-accent: color-mix(in srgb, var(--accent-alt) 14%, var(--surface));
+    --year-10-header: color-mix(in srgb, var(--accent) 70%, var(--accent-alt));
+    --year-10-accent: color-mix(in srgb, var(--accent) 12%, var(--surface-alt));
+    --year-11-header: color-mix(in srgb, var(--accent-alt) 70%, var(--accent));
+    --year-11-accent: color-mix(
+        in srgb,
+        var(--accent-alt) 12%,
+        var(--surface-alt)
+    );
+    --year-12-header: color-mix(in srgb, var(--accent) 72%, var(--muted));
+    --year-12-accent: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    --year-unassigned-header: color-mix(
+        in srgb,
+        var(--muted) 78%,
+        var(--text) 22%
+    );
+    --year-unassigned-accent: color-mix(
+        in srgb,
+        var(--surface-alt) 82%,
+        var(--muted) 18%
+    );
 }
 
 [data-theme='sunset'] {

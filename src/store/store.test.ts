@@ -150,4 +150,49 @@ describe('store reducers and thunks', () => {
                 .students.students.find((student) => student.id === -12345)
         ).toBeUndefined()
     })
+
+    it('merges local edits when fresh students load', () => {
+        store.dispatch(
+            addStudent(
+                buildStudentPayload({
+                    studentId: 'STU-LOCAL',
+                    firstName: 'Local',
+                    lastName: 'Student',
+                })
+            )
+        )
+
+        const existingStudent = {
+            ...initialStudents[0],
+            firstName: 'Updated Asha',
+        }
+        const remoteStudent = {
+            ...buildStudentPayload({
+                studentId: 'STU-REMOTE',
+                firstName: 'Remote',
+                lastName: 'Student',
+            }),
+            id: 9999,
+        }
+
+        store.dispatch(
+            loadStudents.fulfilled(
+                [existingStudent, remoteStudent],
+                'req-merge',
+                undefined
+            )
+        )
+
+        expect(
+            store
+                .getState()
+                .students.students.find((student) => student.id === 1)
+                ?.firstName
+        ).toBe('Updated Asha')
+        expect(
+            store
+                .getState()
+                .students.students.find((student) => student.id === 9999)
+        ).toBeDefined()
+    })
 })
