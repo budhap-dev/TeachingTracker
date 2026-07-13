@@ -1,11 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { Student } from '../data/students'
 import { initialStudents } from '../data/students'
-import {
-    createStudent,
-    fetchStudents,
-    updateStudentProgress,
-} from '../api/studentApi'
 import {
     addStudent,
     loadStudents,
@@ -17,16 +12,6 @@ import {
     updateStudent,
     updateStudentDetails,
 } from './store'
-
-vi.mock('../api/studentApi', () => ({
-    fetchStudents: vi.fn(),
-    createStudent: vi.fn(),
-    updateStudentProgress: vi.fn(),
-}))
-
-const mockedFetchStudents = vi.mocked(fetchStudents)
-const mockedCreateStudent = vi.mocked(createStudent)
-const mockedUpdateStudentProgress = vi.mocked(updateStudentProgress)
 
 const buildStudentPayload = (
     overrides: Partial<Omit<Student, 'id'>> = {}
@@ -48,11 +33,10 @@ const buildStudentPayload = (
 
 describe('store reducers and thunks', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
         store.dispatch(resetStudentState())
     })
 
-    it('covers reducer actions and extra reducers', async () => {
+    it('covers reducer actions and extra reducers', () => {
         const beforeCount = store.getState().students.students.length
 
         store.dispatch(addStudent(buildStudentPayload({ studentId: '' })))
@@ -130,33 +114,10 @@ describe('store reducers and thunks', () => {
         expect(store.getState().students.loading).toBe(false)
     })
 
-    it('covers async thunk success and fallback paths', async () => {
-        const apiStudent: Student = {
-            id: 999,
-            ...buildStudentPayload({
-                studentId: 'STU-999999',
-                firstName: 'Api',
-                lastName: 'Student',
-            }),
-        }
-
-        mockedFetchStudents.mockResolvedValueOnce([apiStudent])
+    it('covers the local thunk flows', async () => {
         await store.dispatch(loadStudents())
-        expect(store.getState().students.students[0].id).toBe(999)
+        expect(store.getState().students.students).toEqual(initialStudents)
 
-        mockedFetchStudents.mockRejectedValueOnce(new Error('network'))
-        await store.dispatch(loadStudents())
-        expect(store.getState().students.students.length).toBe(
-            initialStudents.length
-        )
-
-        mockedCreateStudent.mockResolvedValueOnce({
-            id: 1200,
-            ...buildStudentPayload({
-                studentId: 'STU-120000',
-                firstName: 'Saved',
-            }),
-        })
         await store.dispatch(
             saveStudent(
                 buildStudentPayload({
@@ -165,64 +126,23 @@ describe('store reducers and thunks', () => {
                 })
             )
         )
-        expect(
-            store
-                .getState()
-                .students.students.some((student) => student.id === 1200)
-        ).toBe(true)
+        const savedStudent = store
+            .getState()
+            .students.students.find((student) => student.firstName === 'Saved')
 
-        mockedCreateStudent.mockRejectedValueOnce(new Error('create failed'))
+        expect(savedStudent).toBeDefined()
+
         await store.dispatch(
-            saveStudent(buildStudentPayload({ firstName: 'Fallback' }))
+            updateStudent({ id: savedStudent!.id, progress: 99 })
         )
         expect(
             store
                 .getState()
-                .students.students.some(
-                    (student) => student.firstName === 'Fallback'
-                )
-        ).toBe(true)
-
-        store.dispatch(
-            addStudent(
-                buildStudentPayload({
-                    studentId: 'STU-LOCAL',
-                    firstName: 'Local',
-                })
-            )
-        )
-
-        const mergedStudent: Student = {
-            id: 2000,
-            ...buildStudentPayload({
-                studentId: 'STU-200000',
-                firstName: 'Merged',
-                lastName: 'Student',
-            }),
-        }
-        mockedFetchStudents.mockResolvedValueOnce([mergedStudent])
-        await store.dispatch(loadStudents())
-        expect(
-            store
-                .getState()
-                .students.students.some((student) => student.id === 2000)
-        ).toBe(true)
-
-        mockedUpdateStudentProgress.mockResolvedValueOnce({
-            id: 1200,
-            progress: 99,
-        } as Student)
-        await store.dispatch(updateStudent({ id: 1200, progress: 99 }))
-        expect(
-            store
-                .getState()
-                .students.students.find((student) => student.id === 1200)
-                ?.progress
+                .students.students.find(
+                    (student) => student.id === savedStudent!.id
+                )?.progress
         ).toBe(99)
 
-        mockedUpdateStudentProgress.mockRejectedValueOnce(
-            new Error('update failed')
-        )
         await store.dispatch(updateStudent({ id: -12345, progress: 55 }))
         expect(
             store

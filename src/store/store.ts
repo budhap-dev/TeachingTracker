@@ -11,11 +11,6 @@ import {
     ScheduledSession,
     Student,
 } from '../data/students'
-import {
-    createStudent,
-    fetchStudents,
-    updateStudentProgress,
-} from '../api/studentApi'
 
 type StudentDetailField = keyof Pick<
     Student,
@@ -140,35 +135,25 @@ const initialState = createInitialState()
 
 export const loadStudents = createAsyncThunk(
     'students/loadStudents',
-    async () => {
-        try {
-            return await fetchStudents()
-        } catch {
-            return initialStudents
-        }
-    }
+    async () => initialStudents
 )
 
 export const saveStudent = createAsyncThunk(
     'students/saveStudent',
-    async (student: Omit<Student, 'id'>) => {
-        try {
-            return await createStudent(student)
-        } catch {
-            return { id: Date.now(), ...student } as Student
-        }
-    }
+    async (student: Omit<Student, 'id'>) =>
+        ({
+            id: Date.now(),
+            ...student,
+        }) as Student
 )
 
 export const updateStudent = createAsyncThunk(
     'students/updateStudent',
-    async ({ id, progress }: { id: number; progress: number }) => {
-        try {
-            return await updateStudentProgress(id, progress)
-        } catch {
-            return { id, progress } as Student
-        }
-    }
+    async ({ id, progress }: { id: number; progress: number }) =>
+        ({
+            id,
+            progress,
+        }) as Student
 )
 
 const studentSlice = createSlice({

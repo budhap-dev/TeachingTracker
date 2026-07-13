@@ -56,9 +56,7 @@ describe('StudentsView', () => {
             />
         )
 
-        expect(
-            screen.getByText(/loading students from the api/i)
-        ).toBeInTheDocument()
+        expect(screen.getByText(/loading students/i)).toBeInTheDocument()
 
         await user.click(screen.getByRole('link', { name: /asha perera/i }))
         expect(onOpenStudentPage).toHaveBeenCalledWith(1)

@@ -11,39 +11,6 @@ import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import App from './App'
 
-const { initialStudents } = vi.hoisted(() => ({
-    initialStudents: [
-        {
-            id: 1,
-            studentId: 'STU-123456',
-            firstName: 'Asha',
-            lastName: 'Perera',
-            dob: '2011-05-14',
-            subjects: ['Mathematics'],
-            school: 'Kingston Grammar School',
-            year: '10',
-            progress: 88,
-            mode: 'Face to Face',
-            notes: 'Excellent problem solving skills.',
-            parentName: 'Nadia Patel',
-            contactNumber: '+44 7700 900123',
-            address: '12 Oak Road, Kingston upon Thames, KT2 6LP',
-        },
-    ],
-}))
-
-vi.mock('./api/studentApi', () => ({
-    fetchStudents: vi.fn().mockResolvedValue(initialStudents),
-    createStudent: vi.fn(async (student: { name: string }) => ({
-        id: Date.now(),
-        ...student,
-    })),
-    updateStudentProgress: vi.fn(async (id: number, progress: number) => ({
-        id,
-        progress,
-    })),
-}))
-
 describe('Teaching Tracker app', () => {
     it('collapses the theme picker by default and expands on demand', async () => {
         const user = userEvent.setup()

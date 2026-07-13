@@ -19,14 +19,6 @@ npm install
 npm run dev
 ```
 
-### Backend
-
-```bash
-cd azure-functions
-npm install
-func start
-```
-
 ## Coding guidelines
 
 - Keep code simple and readable.

@@ -43,7 +43,7 @@ export const StudentsView = ({
                     Add new student
                 </Button>
             </div>
-            {loading && <p>Loading students from the API…</p>}
+            {loading && <p>Loading students…</p>}
             <StudentList
                 students={students}
                 onOpenStudentPage={onOpenStudentPage}
