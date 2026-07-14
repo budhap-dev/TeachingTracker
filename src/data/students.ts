@@ -39,6 +39,36 @@ export type PaymentRecord = {
     notes: string
 }
 
+/** Fields on a student that can be edited inline from the detail page. */
+export const editableStudentFields = [
+    'parentName',
+    'contactNumber',
+    'address',
+    'notes',
+] as const
+
+export type StudentDetailField = (typeof editableStudentFields)[number]
+
+/** Payload accepted by the updatePaymentRecord reducer. */
+export type PaymentRecordInput = {
+    studentId: number
+    month: string
+    status: PaymentStatus
+    amountPaid: number
+    notes: string
+}
+
+let studentIdCounter = 0
+
+/** Generates a unique human-facing student code, e.g. STU-4F9K2Q. */
+export const generateStudentCode = (): string => {
+    studentIdCounter += 1
+    const suffix = `${Date.now().toString(36)}${studentIdCounter.toString(36)}`
+        .toUpperCase()
+        .slice(-6)
+    return `STU-${suffix}`
+}
+
 export const initialStudents: Student[] = [
     {
         id: 1,

@@ -4,12 +4,10 @@ import { initialStudents } from '../data/students'
 import {
     addStudent,
     loadStudents,
-    saveStudent,
     store,
     resetStudentState,
     updatePaymentRecord,
     updateProgress,
-    updateStudent,
     updateStudentDetails,
 } from './store'
 
@@ -114,12 +112,12 @@ describe('store reducers and thunks', () => {
         expect(store.getState().students.loading).toBe(false)
     })
 
-    it('covers the local thunk flows', async () => {
+    it('covers the load thunk and add/update reducer flows', async () => {
         await store.dispatch(loadStudents())
         expect(store.getState().students.students).toEqual(initialStudents)
 
-        await store.dispatch(
-            saveStudent(
+        store.dispatch(
+            addStudent(
                 buildStudentPayload({
                     studentId: 'STU-120000',
                     firstName: 'Saved',
@@ -132,9 +130,7 @@ describe('store reducers and thunks', () => {
 
         expect(savedStudent).toBeDefined()
 
-        await store.dispatch(
-            updateStudent({ id: savedStudent!.id, progress: 99 })
-        )
+        store.dispatch(updateProgress({ id: savedStudent!.id, progress: 99 }))
         expect(
             store
                 .getState()
@@ -143,7 +139,7 @@ describe('store reducers and thunks', () => {
                 )?.progress
         ).toBe(99)
 
-        await store.dispatch(updateStudent({ id: -12345, progress: 55 }))
+        store.dispatch(updateProgress({ id: -12345, progress: 55 }))
         expect(
             store
                 .getState()

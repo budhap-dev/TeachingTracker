@@ -1,17 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Button, TextField } from '@mui/material'
-import type { PaymentRecord, PaymentStatus, Student } from '../data/students'
+import type {
+    PaymentRecord,
+    PaymentRecordInput,
+    PaymentStatus,
+    Student,
+} from '../data/students'
 
 type PaymentTrackerViewProps = {
     students: Student[]
     paymentRecords: PaymentRecord[]
-    onUpdatePaymentRecord: (record: {
-        studentId: number
-        month: string
-        status: PaymentStatus
-        amountPaid: number
-        notes: string
-    }) => void
+    onUpdatePaymentRecord: (record: PaymentRecordInput) => void
 }
 
 const monthLabels = [

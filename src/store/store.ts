@@ -5,27 +5,17 @@ import {
     PayloadAction,
 } from '@reduxjs/toolkit'
 import {
+    generateStudentCode,
     initialStudents,
     PaymentRecord,
+    PaymentRecordInput,
     PaymentStatus,
     ScheduledSession,
     Student,
+    StudentDetailField,
 } from '../data/students'
 
-type StudentDetailField = keyof Pick<
-    Student,
-    'parentName' | 'contactNumber' | 'address' | 'notes'
->
-
 type ScheduledSessionInput = Omit<ScheduledSession, 'id'>
-
-type PaymentRecordInput = {
-    studentId: number
-    month: string
-    status: PaymentStatus
-    amountPaid: number
-    notes: string
-}
 
 type StudentState = {
     students: Student[]
@@ -138,24 +128,6 @@ export const loadStudents = createAsyncThunk(
     async () => initialStudents
 )
 
-export const saveStudent = createAsyncThunk(
-    'students/saveStudent',
-    async (student: Omit<Student, 'id'>) =>
-        ({
-            id: Date.now(),
-            ...student,
-        }) as Student
-)
-
-export const updateStudent = createAsyncThunk(
-    'students/updateStudent',
-    async ({ id, progress }: { id: number; progress: number }) =>
-        ({
-            id,
-            progress,
-        }) as Student
-)
-
 const studentSlice = createSlice({
     name: 'students',
     initialState,
@@ -163,11 +135,10 @@ const studentSlice = createSlice({
         resetStudentState: () => createInitialState(),
         addStudent: (state, action: PayloadAction<Omit<Student, 'id'>>) => {
             state.hasLocalStudentChanges = true
-            const generatedStudentId = `STU-${Date.now().toString().slice(-6)}`
             state.students.push({
                 id: Date.now(),
                 ...action.payload,
-                studentId: action.payload.studentId || generatedStudentId,
+                studentId: action.payload.studentId || generateStudentCode(),
             })
         },
         updateProgress: (
@@ -251,19 +222,6 @@ const studentSlice = createSlice({
         })
         builder.addCase(loadStudents.rejected, (state) => {
             state.loading = false
-        })
-        builder.addCase(saveStudent.fulfilled, (state, action) => {
-            state.hasLocalStudentChanges = true
-            state.students.push(action.payload)
-        })
-        builder.addCase(updateStudent.fulfilled, (state, action) => {
-            state.hasLocalStudentChanges = true
-            const student = state.students.find(
-                (item) => item.id === action.payload.id
-            )
-            if (student) {
-                student.progress = action.payload.progress
-            }
         })
     },
 })

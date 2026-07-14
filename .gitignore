@@ -32,6 +32,10 @@ Thumbs.db
 tsc-output/
 *.tsbuildinfo
 
+# Compiled config artifacts (source of truth is vite.config.ts)
+vite.config.js
+vite.config.d.ts
+
 # Temporary files
 *.tmp
 *.temp

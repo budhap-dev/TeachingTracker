@@ -1,5 +1,9 @@
 import { Button, Slider, TextField, Typography } from '@mui/material'
-import type { ScheduledSession, Student } from '../data/students'
+import type {
+    ScheduledSession,
+    Student,
+    StudentDetailField,
+} from '../data/students'
 
 type StudentDetailsViewProps = {
     student: Student
@@ -9,13 +13,7 @@ type StudentDetailsViewProps = {
     hasUnsavedChanges: boolean
     onBack: () => void
     onBeginEdit: (student: Student) => void
-    onDraftChange: (
-        field: keyof Pick<
-            Student,
-            'parentName' | 'contactNumber' | 'address' | 'notes'
-        >,
-        value: string
-    ) => void
+    onDraftChange: (field: StudentDetailField, value: string) => void
     onSaveDetails: (studentId: number) => void
     onCancelEdit: () => void
     onProgressChange: (studentId: number, value: number) => void
