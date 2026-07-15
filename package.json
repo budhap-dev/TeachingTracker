@@ -29,6 +29,7 @@
         "react-dom": "^18.3.1",
         "react-redux": "^9.3.0",
         "react-router-dom": "^6.30.4",
+        "redux-saga": "^1.5.0",
         "sass": "^1.101.0"
     },
     "devDependencies": {

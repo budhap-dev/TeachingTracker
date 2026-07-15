@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Button, TextField } from '@mui/material'
 import type {
+    MonthlyPaymentGroup,
     PaymentRecord,
     PaymentRecordInput,
     PaymentStatus,
@@ -9,7 +10,8 @@ import type {
 
 type PaymentTrackerViewProps = {
     students: Student[]
-    paymentRecords: PaymentRecord[]
+    /** Month-grouped payments from the API, each with server-computed totals. */
+    paymentsByMonth: MonthlyPaymentGroup[]
     onUpdatePaymentRecord: (record: PaymentRecordInput) => void
 }
 
@@ -47,7 +49,7 @@ const getStatusClass = (status: PaymentStatus) => status.toLowerCase()
 
 export const PaymentTrackerView = ({
     students,
-    paymentRecords,
+    paymentsByMonth,
     onUpdatePaymentRecord,
 }: PaymentTrackerViewProps) => {
     const monthOptions = useMemo(getMonthOptions, [])
@@ -55,10 +57,12 @@ export const PaymentTrackerView = ({
     const defaultMonth = currentMonth
     const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
 
-    const monthRecords = useMemo(
-        () => paymentRecords.filter((record) => record.month === selectedMonth),
-        [paymentRecords, selectedMonth]
+    const monthGroup = useMemo(
+        () => paymentsByMonth.find((group) => group.month === selectedMonth),
+        [paymentsByMonth, selectedMonth]
     )
+
+    const monthRecords = useMemo(() => monthGroup?.records ?? [], [monthGroup])
 
     const recordsByStudentId = useMemo(
         () =>
@@ -72,30 +76,26 @@ export const PaymentTrackerView = ({
         [monthRecords]
     )
 
+    // Money totals come straight from the API's monthly group; only the
+    // per-status counts are derived here.
     const summary = useMemo(() => {
-        return monthRecords.reduce(
+        const counts = monthRecords.reduce(
             (acc, record) => {
-                acc.totalDue += record.monthlyFee
-                acc.totalReceived += record.amountPaid
-                acc.outstanding += Math.max(
-                    0,
-                    record.monthlyFee - record.amountPaid
-                )
                 if (record.status === 'Paid') acc.paidCount += 1
                 if (record.status === 'Partial') acc.partialCount += 1
                 if (record.status === 'Pending') acc.pendingCount += 1
                 return acc
             },
-            {
-                totalDue: 0,
-                totalReceived: 0,
-                outstanding: 0,
-                paidCount: 0,
-                partialCount: 0,
-                pendingCount: 0,
-            }
+            { paidCount: 0, partialCount: 0, pendingCount: 0 }
         )
-    }, [monthRecords])
+
+        return {
+            totalDue: monthGroup?.totalExpected ?? 0,
+            totalReceived: monthGroup?.totalReceived ?? 0,
+            outstanding: monthGroup?.totalOutstanding ?? 0,
+            ...counts,
+        }
+    }, [monthGroup, monthRecords])
 
     const handleUpdate = (
         studentId: number,

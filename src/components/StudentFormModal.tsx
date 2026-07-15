@@ -142,6 +142,16 @@ export const StudentFormModal = ({
                     }
                     fullWidth
                 />
+                <TextField
+                    label="Monthly fees (£)"
+                    size="small"
+                    type="number"
+                    value={form.fees}
+                    onChange={(event) =>
+                        onChange('fees', Number(event.target.value))
+                    }
+                    fullWidth
+                />
                 <FormControl size="small" fullWidth>
                     <InputLabel id="mode-label">Mode</InputLabel>
                     <Select

@@ -3,7 +3,12 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { Provider } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
-import { store, loadStudents } from './store/store'
+import {
+    store,
+    fetchStudentsRequested,
+    fetchPaymentsRequested,
+    fetchSessionsRequested,
+} from './store/store'
 import { useAppDispatch } from './hooks'
 import { useTheme } from './hooks/useTheme'
 import { Sidebar } from './components/Sidebar'
@@ -16,7 +21,9 @@ const AppShell = () => {
     const { theme, setTheme, activeTheme, muiTheme } = useTheme()
 
     useEffect(() => {
-        dispatch(loadStudents())
+        dispatch(fetchStudentsRequested())
+        dispatch(fetchPaymentsRequested())
+        dispatch(fetchSessionsRequested())
     }, [dispatch])
 
     return (

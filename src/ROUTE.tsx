@@ -10,7 +10,7 @@ import {
 import { useAppDispatch, useAppSelector } from './hooks'
 import {
     addStudent,
-    scheduleClass,
+    createSessionRequested,
     updatePaymentRecord,
     updateProgress,
     updateStudentDetails,
@@ -59,9 +59,12 @@ const DashboardRoute = () => {
         const faceToFaceStudents = students.filter(
             (student) => student.mode === 'Face to Face'
         ).length
-        const avgProgress = Math.round(
-            students.reduce((sum, s) => sum + s.progress, 0) / students.length
-        )
+        const avgProgress = students.length
+            ? Math.round(
+                  students.reduce((sum, s) => sum + s.progress, 0) /
+                      students.length
+              )
+            : 0
         return {
             onlineStudents,
             faceToFaceStudents,
@@ -151,6 +154,7 @@ const StudentDetailRoute = () => {
     const dispatch = useAppDispatch()
     const { studentId } = useParams()
     const students = useAppSelector((state) => state.students.students)
+    const loading = useAppSelector((state) => state.students.loading)
     const scheduledSessions = useAppSelector(
         (state) => state.students.scheduledSessions
     )
@@ -165,6 +169,11 @@ const StudentDetailRoute = () => {
         students.find((item) => item.id === Number(studentId)) ?? null
 
     if (!student) {
+        // While students are still loading, don't bounce a deep-link to the
+        // list — wait for the fetch so the target page can render.
+        if (loading) {
+            return <p className="loading-state">Loading student…</p>
+        }
         return <Navigate to={paths.students} replace />
     }
 
@@ -219,13 +228,13 @@ const StudySnapshotRoute = () => {
 const PaymentTrackerRoute = () => {
     const dispatch = useAppDispatch()
     const students = useAppSelector((state) => state.students.students)
-    const paymentRecords = useAppSelector(
-        (state) => state.students.paymentRecords
+    const paymentsByMonth = useAppSelector(
+        (state) => state.students.paymentsByMonth
     )
     return (
         <PaymentTrackerView
             students={students}
-            paymentRecords={paymentRecords}
+            paymentsByMonth={paymentsByMonth}
             onUpdatePaymentRecord={(record) =>
                 dispatch(updatePaymentRecord(record))
             }
@@ -247,7 +256,7 @@ const SchedulingRoute = () => {
             sessions={scheduledSessions}
             onOpenStudentPage={openStudentPage}
             onScheduleClass={(session) => {
-                dispatch(scheduleClass(session))
+                dispatch(createSessionRequested(session))
                 navigate(paths.dashboard)
             }}
         />
