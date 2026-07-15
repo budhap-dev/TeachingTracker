@@ -1,27 +1,22 @@
-import {
-    configureStore,
-    createAsyncThunk,
-    createSlice,
-    PayloadAction,
-} from '@reduxjs/toolkit'
+import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit'
+import createSagaMiddleware from 'redux-saga'
 import {
     generateStudentCode,
-    initialStudents,
     PaymentRecord,
     PaymentRecordInput,
-    PaymentStatus,
     ScheduledSession,
     Student,
     StudentDetailField,
 } from '../data/students'
-import { isApiConfigured } from '../api/client'
-import { fetchStudents } from '../api/students'
+import { rootSaga } from './sagas'
 
 type ScheduledSessionInput = Omit<ScheduledSession, 'id'>
 
 type StudentState = {
     students: Student[]
     loading: boolean
+    paymentsLoading: boolean
+    error: string | null
     scheduledSessions: ScheduledSession[]
     paymentRecords: PaymentRecord[]
     hasLocalStudentChanges: boolean
@@ -34,49 +29,14 @@ const seedSessionDates = [1, 2, 3, 4].map((offset) => {
     return nextDate.toISOString().slice(0, 10)
 })
 
-const paymentYear = new Date().getFullYear()
-const paymentMonths = Array.from(
-    { length: 12 },
-    (_, monthIndex) =>
-        `${paymentYear}-${String(monthIndex + 1).padStart(2, '0')}`
-)
-
-const paymentStatusNotes: Record<PaymentStatus, string> = {
-    Paid: 'Received in full',
-    Partial: 'Partial payment received',
-    Pending: 'Awaiting payment',
-}
-
-const buildInitialPaymentRecords = (students: Student[]): PaymentRecord[] =>
-    students.flatMap((student) =>
-        paymentMonths.map((month, monthIndex) => {
-            const monthlyFee = 120 + (student.id % 4) * 10
-            const pattern = (student.id + monthIndex) % 3
-            const status: PaymentStatus =
-                pattern === 0 ? 'Paid' : pattern === 1 ? 'Partial' : 'Pending'
-            const amountPaid =
-                status === 'Paid'
-                    ? monthlyFee
-                    : status === 'Partial'
-                      ? Math.round(monthlyFee * 0.5)
-                      : 0
-
-            return {
-                id: student.id * 100 + monthIndex,
-                studentId: student.id,
-                studentName: `${student.firstName} ${student.lastName}`,
-                month,
-                monthlyFee,
-                amountPaid,
-                status,
-                notes: paymentStatusNotes[status],
-            }
-        })
-    )
-
+// Students and payments now load from the API via sagas, so they start empty
+// (loading) until fetched. Scheduled sessions have no API yet, so they keep a
+// small frontend seed the user can add to via the scheduling screen.
 const createInitialState = (): StudentState => ({
-    students: initialStudents,
-    loading: false,
+    students: [],
+    loading: true,
+    paymentsLoading: true,
+    error: null,
     scheduledSessions: [
         {
             id: 101,
@@ -119,25 +79,60 @@ const createInitialState = (): StudentState => ({
             notes: 'Revision session',
         },
     ],
-    paymentRecords: buildInitialPaymentRecords(initialStudents),
+    paymentRecords: [],
     hasLocalStudentChanges: false,
 })
 
 const initialState = createInitialState()
-
-// Fetches students from the API when a backend is configured
-// (VITE_API_BASE_URL set for this environment); otherwise resolves to local
-// seed data so tests and offline dev work with no backend.
-export const loadStudents = createAsyncThunk(
-    'students/loadStudents',
-    async () => (isApiConfigured() ? fetchStudents() : initialStudents)
-)
 
 const studentSlice = createSlice({
     name: 'students',
     initialState,
     reducers: {
         resetStudentState: () => createInitialState(),
+        // --- API-driven loading (triggered by sagas) ---
+        fetchStudentsRequested: (state) => {
+            state.loading = true
+            state.error = null
+        },
+        fetchStudentsSucceeded: (state, action: PayloadAction<Student[]>) => {
+            if (!state.hasLocalStudentChanges) {
+                state.students = action.payload
+            } else {
+                const mergedStudents = [...state.students]
+                action.payload.forEach((student) => {
+                    const existingIndex = mergedStudents.findIndex(
+                        (item) => item.id === student.id
+                    )
+                    if (existingIndex >= 0) {
+                        mergedStudents[existingIndex] = student
+                    } else {
+                        mergedStudents.push(student)
+                    }
+                })
+                state.students = mergedStudents
+            }
+            state.loading = false
+        },
+        fetchStudentsFailed: (state, action: PayloadAction<string>) => {
+            state.loading = false
+            state.error = action.payload
+        },
+        fetchPaymentsRequested: (state) => {
+            state.paymentsLoading = true
+        },
+        fetchPaymentsSucceeded: (
+            state,
+            action: PayloadAction<PaymentRecord[]>
+        ) => {
+            state.paymentRecords = action.payload
+            state.paymentsLoading = false
+        },
+        fetchPaymentsFailed: (state, action: PayloadAction<string>) => {
+            state.paymentsLoading = false
+            state.error = action.payload
+        },
+        // --- Local mutations ---
         addStudent: (state, action: PayloadAction<Omit<Student, 'id'>>) => {
             state.hasLocalStudentChanges = true
             state.students.push({
@@ -199,52 +194,37 @@ const studentSlice = createSlice({
             }
         },
     },
-    extraReducers: (builder) => {
-        builder.addCase(loadStudents.pending, (state) => {
-            state.loading = true
-        })
-        builder.addCase(loadStudents.fulfilled, (state, action) => {
-            if (!state.hasLocalStudentChanges) {
-                state.students = action.payload
-            } else {
-                const mergedStudents = [...state.students]
-
-                action.payload.forEach((student) => {
-                    const existingIndex = mergedStudents.findIndex(
-                        (item) => item.id === student.id
-                    )
-
-                    if (existingIndex >= 0) {
-                        mergedStudents[existingIndex] = student
-                    } else {
-                        mergedStudents.push(student)
-                    }
-                })
-
-                state.students = mergedStudents
-            }
-            state.loading = false
-        })
-        builder.addCase(loadStudents.rejected, (state) => {
-            state.loading = false
-        })
-    },
 })
 
 export const {
-    addStudent,
     resetStudentState,
+    fetchStudentsRequested,
+    fetchStudentsSucceeded,
+    fetchStudentsFailed,
+    fetchPaymentsRequested,
+    fetchPaymentsSucceeded,
+    fetchPaymentsFailed,
+    addStudent,
     updateProgress,
     updateStudentDetails,
     scheduleClass,
     updatePaymentRecord,
 } = studentSlice.actions
 
+/** Exported for tests: lets reducers be exercised without the saga middleware. */
+export const studentReducer = studentSlice.reducer
+
+const sagaMiddleware = createSagaMiddleware()
+
 export const store = configureStore({
     reducer: {
         students: studentSlice.reducer,
     },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware().concat(sagaMiddleware),
 })
+
+sagaMiddleware.run(rootSaga)
 
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch

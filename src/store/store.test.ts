@@ -1,20 +1,24 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Student } from '../data/students'
-import { initialStudents } from '../data/students'
+import { describe, expect, it } from 'vitest'
+import type { PaymentRecord, Student } from '../data/students'
 import {
     addStudent,
-    loadStudents,
-    store,
+    fetchPaymentsFailed,
+    fetchPaymentsRequested,
+    fetchPaymentsSucceeded,
+    fetchStudentsFailed,
+    fetchStudentsRequested,
+    fetchStudentsSucceeded,
     resetStudentState,
+    scheduleClass,
+    studentReducer,
     updatePaymentRecord,
     updateProgress,
     updateStudentDetails,
 } from './store'
 
-const buildStudentPayload = (
-    overrides: Partial<Omit<Student, 'id'>> = {}
-): Omit<Student, 'id'> => ({
-    studentId: overrides.studentId ?? '',
+const buildStudent = (overrides: Partial<Student> = {}): Student => ({
+    id: overrides.id ?? 1,
+    studentId: overrides.studentId ?? 'STU-TEST01',
     firstName: overrides.firstName ?? 'Test',
     lastName: overrides.lastName ?? 'Student',
     dob: overrides.dob ?? '2010-01-01',
@@ -29,196 +33,233 @@ const buildStudentPayload = (
     address: overrides.address ?? 'Test Address',
 })
 
-describe('store reducers and thunks', () => {
-    beforeEach(() => {
-        store.dispatch(resetStudentState())
+const buildPayment = (overrides: Partial<PaymentRecord> = {}): PaymentRecord => ({
+    id: overrides.id ?? 1,
+    studentId: overrides.studentId ?? 1,
+    studentName: overrides.studentName ?? 'Test Student',
+    month: overrides.month ?? '2026-01',
+    monthlyFee: overrides.monthlyFee ?? 120,
+    amountPaid: overrides.amountPaid ?? 0,
+    status: overrides.status ?? 'Pending',
+    notes: overrides.notes ?? '',
+})
+
+/** Fresh initial state straight from the reducer. */
+const initial = () => studentReducer(undefined, { type: '@@INIT' })
+
+describe('student reducer', () => {
+    it('starts empty and loading, with seeded scheduled sessions', () => {
+        const state = initial()
+
+        expect(state.students).toEqual([])
+        expect(state.paymentRecords).toEqual([])
+        expect(state.loading).toBe(true)
+        expect(state.paymentsLoading).toBe(true)
+        expect(state.error).toBeNull()
+        expect(state.scheduledSessions.length).toBeGreaterThan(0)
     })
 
-    afterEach(() => {
-        vi.unstubAllEnvs()
-        vi.unstubAllGlobals()
-        vi.restoreAllMocks()
+    it('resets back to the initial state', () => {
+        const loaded = studentReducer(
+            initial(),
+            fetchStudentsSucceeded([buildStudent()])
+        )
+        expect(loaded.students).toHaveLength(1)
+
+        const reset = studentReducer(loaded, resetStudentState())
+        expect(reset.students).toEqual([])
+        expect(reset.loading).toBe(true)
     })
 
-    it('loads students from the API when a backend is configured', async () => {
-        const apiStudents = [
-            { ...initialStudents[0], firstName: 'FromApi', id: 4242 },
-        ]
-        vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.com/api')
-        vi.stubGlobal(
-            'fetch',
-            vi.fn().mockResolvedValue({
-                ok: true,
-                status: 200,
-                json: async () => apiStudents,
-            })
-        )
+    describe('students fetch lifecycle', () => {
+        it('marks loading on request and clears any previous error', () => {
+            const failed = studentReducer(initial(), fetchStudentsFailed('boom'))
+            expect(failed.error).toBe('boom')
+            expect(failed.loading).toBe(false)
 
-        await store.dispatch(loadStudents())
+            const requested = studentReducer(failed, fetchStudentsRequested())
+            expect(requested.loading).toBe(true)
+            expect(requested.error).toBeNull()
+        })
 
-        expect(
-            store
-                .getState()
-                .students.students.find((student) => student.id === 4242)
-                ?.firstName
-        ).toBe('FromApi')
-    })
-
-    it('covers reducer actions and extra reducers', () => {
-        const beforeCount = store.getState().students.students.length
-
-        store.dispatch(addStudent(buildStudentPayload({ studentId: '' })))
-        const generatedStudent = store.getState().students.students.at(-1)
-        expect(generatedStudent?.studentId).toMatch(/^STU-/)
-
-        store.dispatch(
-            addStudent(buildStudentPayload({ studentId: 'STU-EXPLICIT' }))
-        )
-        expect(store.getState().students.students.at(-1)?.studentId).toBe(
-            'STU-EXPLICIT'
-        )
-        expect(store.getState().students.students.length).toBe(beforeCount + 2)
-
-        const existingId = store.getState().students.students[0].id
-        const oldProgress = store.getState().students.students[0].progress
-
-        store.dispatch(
-            updateProgress({ id: existingId, progress: oldProgress + 5 })
-        )
-        expect(store.getState().students.students[0].progress).toBe(
-            oldProgress + 5
-        )
-
-        store.dispatch(updateProgress({ id: -999, progress: 42 }))
-        expect(store.getState().students.students[0].progress).toBe(
-            oldProgress + 5
-        )
-
-        store.dispatch(
-            updateStudentDetails({
-                id: existingId,
-                field: 'notes',
-                value: 'Updated Notes',
-            })
-        )
-        expect(store.getState().students.students[0].notes).toBe(
-            'Updated Notes'
-        )
-
-        store.dispatch(
-            updateStudentDetails({ id: -999, field: 'notes', value: 'Nope' })
-        )
-        expect(store.getState().students.students[0].notes).toBe(
-            'Updated Notes'
-        )
-
-        store.dispatch(
-            updatePaymentRecord({
-                studentId: -999,
-                month: '2099-01',
-                status: 'Paid',
-                amountPaid: 120,
-                notes: 'Missing',
-            })
-        )
-        expect(
-            store
-                .getState()
-                .students.paymentRecords.some(
-                    (record) => record.studentId === -999
-                )
-        ).toBe(false)
-
-        store.dispatch(loadStudents.pending('req-1', undefined))
-        expect(store.getState().students.loading).toBe(true)
-
-        store.dispatch(
-            loadStudents.rejected(
-                new Error('fail') as Error | null,
-                'req-1',
-                undefined
+        it('replaces students on success when there are no local changes', () => {
+            const state = studentReducer(
+                initial(),
+                fetchStudentsSucceeded([buildStudent({ id: 1 })])
             )
-        )
-        expect(store.getState().students.loading).toBe(false)
+
+            expect(state.students).toHaveLength(1)
+            expect(state.loading).toBe(false)
+        })
+
+        it('merges fetched students with local changes, updating and appending', () => {
+            // A local add flips hasLocalStudentChanges, switching to merge mode.
+            const withLocal = studentReducer(
+                initial(),
+                addStudent(buildStudent({ id: 99, firstName: 'Local' }))
+            )
+            const localId = withLocal.students[0].id
+
+            const merged = studentReducer(
+                withLocal,
+                fetchStudentsSucceeded([
+                    // Same id as the local student -> updated in place.
+                    buildStudent({ id: localId, firstName: 'UpdatedLocal' }),
+                    // New id -> appended.
+                    buildStudent({ id: 4242, firstName: 'Remote' }),
+                ])
+            )
+
+            expect(
+                merged.students.find((s) => s.id === localId)?.firstName
+            ).toBe('UpdatedLocal')
+            expect(merged.students.find((s) => s.id === 4242)?.firstName).toBe(
+                'Remote'
+            )
+        })
+
+        it('records an error on failure', () => {
+            const state = studentReducer(
+                initial(),
+                fetchStudentsFailed('network down')
+            )
+            expect(state.loading).toBe(false)
+            expect(state.error).toBe('network down')
+        })
     })
 
-    it('covers the load thunk and add/update reducer flows', async () => {
-        await store.dispatch(loadStudents())
-        expect(store.getState().students.students).toEqual(initialStudents)
+    describe('payments fetch lifecycle', () => {
+        it('marks payments loading on request', () => {
+            const state = studentReducer(initial(), fetchPaymentsRequested())
+            expect(state.paymentsLoading).toBe(true)
+        })
 
-        store.dispatch(
-            addStudent(
-                buildStudentPayload({
-                    studentId: 'STU-120000',
-                    firstName: 'Saved',
+        it('stores payments on success', () => {
+            const state = studentReducer(
+                initial(),
+                fetchPaymentsSucceeded([buildPayment()])
+            )
+            expect(state.paymentRecords).toHaveLength(1)
+            expect(state.paymentsLoading).toBe(false)
+        })
+
+        it('records an error on failure', () => {
+            const state = studentReducer(
+                initial(),
+                fetchPaymentsFailed('payments down')
+            )
+            expect(state.paymentsLoading).toBe(false)
+            expect(state.error).toBe('payments down')
+        })
+    })
+
+    describe('local mutations', () => {
+        it('adds a student, generating a code when none is supplied', () => {
+            const generated = studentReducer(
+                initial(),
+                addStudent(buildStudent({ studentId: '' }))
+            )
+            expect(generated.students.at(-1)?.studentId).toMatch(/^STU-/)
+            expect(generated.hasLocalStudentChanges).toBe(true)
+
+            const explicit = studentReducer(
+                generated,
+                addStudent(buildStudent({ studentId: 'STU-EXPLICIT' }))
+            )
+            expect(explicit.students.at(-1)?.studentId).toBe('STU-EXPLICIT')
+        })
+
+        it('updates progress for a known student and ignores unknown ids', () => {
+            const loaded = studentReducer(
+                initial(),
+                fetchStudentsSucceeded([buildStudent({ id: 1, progress: 50 })])
+            )
+
+            const updated = studentReducer(
+                loaded,
+                updateProgress({ id: 1, progress: 77 })
+            )
+            expect(updated.students[0].progress).toBe(77)
+
+            const ignored = studentReducer(
+                updated,
+                updateProgress({ id: -1, progress: 5 })
+            )
+            expect(ignored.students[0].progress).toBe(77)
+        })
+
+        it('updates student details for a known student and ignores unknown ids', () => {
+            const loaded = studentReducer(
+                initial(),
+                fetchStudentsSucceeded([buildStudent({ id: 1 })])
+            )
+
+            const updated = studentReducer(
+                loaded,
+                updateStudentDetails({ id: 1, field: 'notes', value: 'Fresh' })
+            )
+            expect(updated.students[0].notes).toBe('Fresh')
+
+            const ignored = studentReducer(
+                updated,
+                updateStudentDetails({ id: -1, field: 'notes', value: 'Nope' })
+            )
+            expect(ignored.students[0].notes).toBe('Fresh')
+        })
+
+        it('schedules a class', () => {
+            const before = initial().scheduledSessions.length
+            const state = studentReducer(
+                initial(),
+                scheduleClass({
+                    studentId: 1,
+                    studentName: 'Test Student',
+                    year: '10',
+                    subject: 'Mathematics',
+                    date: '2026-08-01',
+                    time: '10:00',
+                    notes: 'Revision',
                 })
             )
-        )
-        const savedStudent = store
-            .getState()
-            .students.students.find((student) => student.firstName === 'Saved')
+            expect(state.scheduledSessions).toHaveLength(before + 1)
+            expect(state.scheduledSessions.at(-1)?.notes).toBe('Revision')
+        })
 
-        expect(savedStudent).toBeDefined()
+        it('updates a matching payment record and ignores unmatched ones', () => {
+            const loaded = studentReducer(
+                initial(),
+                fetchPaymentsSucceeded([
+                    buildPayment({ studentId: 1, month: '2026-01' }),
+                ])
+            )
 
-        store.dispatch(updateProgress({ id: savedStudent!.id, progress: 99 }))
-        expect(
-            store
-                .getState()
-                .students.students.find(
-                    (student) => student.id === savedStudent!.id
-                )?.progress
-        ).toBe(99)
-
-        store.dispatch(updateProgress({ id: -12345, progress: 55 }))
-        expect(
-            store
-                .getState()
-                .students.students.find((student) => student.id === -12345)
-        ).toBeUndefined()
-    })
-
-    it('merges local edits when fresh students load', () => {
-        store.dispatch(
-            addStudent(
-                buildStudentPayload({
-                    studentId: 'STU-LOCAL',
-                    firstName: 'Local',
-                    lastName: 'Student',
+            const updated = studentReducer(
+                loaded,
+                updatePaymentRecord({
+                    studentId: 1,
+                    month: '2026-01',
+                    status: 'Paid',
+                    amountPaid: 120,
+                    notes: 'Settled',
                 })
             )
-        )
+            expect(updated.paymentRecords[0].status).toBe('Paid')
+            expect(updated.paymentRecords[0].amountPaid).toBe(120)
+            expect(updated.paymentRecords[0].notes).toBe('Settled')
 
-        const existingStudent = {
-            ...initialStudents[0],
-            firstName: 'Updated Asha',
-        }
-        const remoteStudent = {
-            ...buildStudentPayload({
-                studentId: 'STU-REMOTE',
-                firstName: 'Remote',
-                lastName: 'Student',
-            }),
-            id: 9999,
-        }
-
-        store.dispatch(
-            loadStudents.fulfilled(
-                [existingStudent, remoteStudent],
-                'req-merge',
-                undefined
+            const ignored = studentReducer(
+                updated,
+                updatePaymentRecord({
+                    studentId: -999,
+                    month: '2099-01',
+                    status: 'Pending',
+                    amountPaid: 0,
+                    notes: 'Missing',
+                })
             )
-        )
-
-        expect(
-            store
-                .getState()
-                .students.students.find((student) => student.id === 1)
-                ?.firstName
-        ).toBe('Updated Asha')
-        expect(
-            store
-                .getState()
-                .students.students.find((student) => student.id === 9999)
-        ).toBeDefined()
+            expect(
+                ignored.paymentRecords.some((r) => r.studentId === -999)
+            ).toBe(false)
+        })
     })
 })
