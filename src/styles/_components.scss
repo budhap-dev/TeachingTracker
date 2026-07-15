@@ -858,3 +858,106 @@
 .student-page-details {
     margin-top: 8px;
 }
+
+.contact-list {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-alt);
+}
+
+.contact-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    min-width: 62px;
+}
+
+.contact-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    word-break: break-word;
+}
+
+.contact-value:hover,
+.contact-value:focus-visible {
+    text-decoration: underline;
+}
+
+.contact-note {
+    margin: 16px 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.offerings-heading {
+    margin: 18px 0 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.offerings-subjects {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.offerings-subject {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--accent);
+}
+
+.offerings-approach {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.offerings-point {
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-alt);
+}
+
+.offerings-point-title {
+    margin: 0 0 6px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.offerings-point-detail {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--muted);
+}

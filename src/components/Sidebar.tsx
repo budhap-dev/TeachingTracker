@@ -36,6 +36,16 @@ const navItems: NavItem[] = [
         path: paths.scheduling,
         isActive: (pathname) => pathname.startsWith(paths.scheduling),
     },
+    {
+        label: 'Offerings',
+        path: paths.offerings,
+        isActive: (pathname) => pathname.startsWith(paths.offerings),
+    },
+    {
+        label: 'Contact us',
+        path: paths.contact,
+        isActive: (pathname) => pathname.startsWith(paths.contact),
+    },
 ]
 
 type SidebarProps = {
