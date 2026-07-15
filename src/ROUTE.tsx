@@ -9,17 +9,11 @@ import {
 } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from './hooks'
 import {
-    addStudent,
     createSessionRequested,
+    saveStudentRequested,
     updatePaymentRecord,
-    updateProgress,
-    updateStudentDetails,
 } from './store/store'
-import {
-    editableStudentFields,
-    type Student,
-    type StudentDetailField,
-} from './data/students'
+import type { EditableStudentField, Student } from './data/students'
 import { useStudentForm } from './hooks/useStudentForm'
 import { paths } from './paths'
 import { DashboardView } from './components/DashboardView'
@@ -132,7 +126,13 @@ const StudentsRoute = () => {
             return
         }
 
-        dispatch(addStudent({ ...form, progress: Number(form.progress) }))
+        dispatch(
+            saveStudentRequested({
+                ...form,
+                progress: Number(form.progress),
+                fees: Number(form.fees),
+            })
+        )
         resetForm()
         setIsModalOpen(false)
     }
@@ -161,12 +161,13 @@ const StudentDetailRoute = () => {
     const scheduledSessions = useAppSelector(
         (state) => state.students.scheduledSessions
     )
+    const savingStudent = useAppSelector(
+        (state) => state.students.savingStudent
+    )
     const [editingStudentId, setEditingStudentId] = useState<number | null>(
         null
     )
-    const [draftStudent, setDraftStudent] = useState<Partial<Student> | null>(
-        null
-    )
+    const [draftStudent, setDraftStudent] = useState<Student | null>(null)
 
     const student =
         students.find((item) => item.id === Number(studentId)) ?? null
@@ -180,18 +181,10 @@ const StudentDetailRoute = () => {
         return <Navigate to={paths.students} replace />
     }
 
-    const handleSaveDetails = (id: number) => {
-        // draftStudent is a full copy of the student, so every editable field
-        // is present when Save is enabled (see hasUnsavedChanges).
-        editableStudentFields.forEach((field: StudentDetailField) => {
-            dispatch(
-                updateStudentDetails({
-                    id,
-                    field,
-                    value: String(draftStudent![field]),
-                })
-            )
-        })
+    const handleSaveDetails = () => {
+        // The draft is a full copy, so the whole student goes to the API in one
+        // request and the server's response becomes the stored truth.
+        dispatch(saveStudentRequested(draftStudent!))
         setEditingStudentId(null)
         setDraftStudent(null)
     }
@@ -203,12 +196,13 @@ const StudentDetailRoute = () => {
             editingStudentId={editingStudentId}
             draftStudent={draftStudent}
             hasUnsavedChanges={Boolean(draftStudent && editingStudentId)}
+            saving={savingStudent}
             onBack={() => navigate(paths.students)}
             onBeginEdit={(target) => {
                 setEditingStudentId(target.id)
                 setDraftStudent({ ...target })
             }}
-            onDraftChange={(field, value) =>
+            onDraftChange={(field: EditableStudentField, value) =>
                 setDraftStudent((current) => ({ ...current!, [field]: value }))
             }
             onSaveDetails={handleSaveDetails}
@@ -216,9 +210,6 @@ const StudentDetailRoute = () => {
                 setEditingStudentId(null)
                 setDraftStudent(null)
             }}
-            onProgressChange={(id, value) =>
-                dispatch(updateProgress({ id, progress: value }))
-            }
         />
     )
 }

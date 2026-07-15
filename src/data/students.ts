@@ -50,15 +50,27 @@ export type MonthlyPaymentGroup = {
     records: PaymentRecord[]
 }
 
-/** Fields on a student that can be edited inline from the detail page. */
-export const editableStudentFields = [
+/**
+ * Every student field the teacher can edit.
+ *
+ * `id` and `studentId` are omitted deliberately: `id` is the database key and
+ * `studentId` is a generated human-facing code — both are identifiers, not
+ * details, so they stay read-only.
+ */
+export type EditableStudentField = keyof Omit<Student, 'id' | 'studentId'>
+
+/** The free-text fields, which all edit the same way. */
+export const editableTextFields = [
+    'firstName',
+    'lastName',
+    'school',
     'parentName',
     'contactNumber',
     'address',
     'notes',
 ] as const
 
-export type StudentDetailField = (typeof editableStudentFields)[number]
+export type StudentTextField = (typeof editableTextFields)[number]
 
 /** Payload accepted by the updatePaymentRecord reducer. */
 export type PaymentRecordInput = {

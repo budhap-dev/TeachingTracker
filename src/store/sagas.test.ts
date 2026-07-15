@@ -5,7 +5,7 @@ import type {
     ScheduledSession,
     Student,
 } from '../data/students'
-import { fetchStudents } from '../api/students'
+import { fetchStudents, upsertStudent } from '../api/students'
 import { fetchPaymentsByMonth } from '../api/payments'
 import { createSession, fetchSessions } from '../api/sessions'
 import {
@@ -14,6 +14,7 @@ import {
     loadSessionsSaga,
     loadStudentsSaga,
     rootSaga,
+    saveStudentSaga,
 } from './sagas'
 import {
     createSessionFailed,
@@ -28,6 +29,9 @@ import {
     fetchStudentsFailed,
     fetchStudentsRequested,
     fetchStudentsSucceeded,
+    saveStudentFailed,
+    saveStudentRequested,
+    saveStudentSucceeded,
 } from './store'
 
 const students = [{ id: 1, firstName: 'Asha' }] as unknown as Student[]
@@ -137,6 +141,48 @@ describe('createSessionSaga', () => {
     })
 })
 
+describe('saveStudentSaga', () => {
+    const draft = {
+        id: 1,
+        firstName: 'Asha',
+        lastName: 'Perera',
+    } as unknown as Student
+
+    it('puts the server copy into the store on success', () => {
+        const gen = saveStudentSaga(saveStudentRequested(draft))
+
+        expect(gen.next().value).toEqual(call(upsertStudent, draft))
+
+        // The API's response wins, not the draft we sent.
+        const stored = { ...draft, studentId: 'STU-0001' } as Student
+        expect(gen.next(stored).value).toEqual(put(saveStudentSucceeded(stored)))
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('reports a failure without discarding anything silently', () => {
+        const gen = saveStudentSaga(saveStudentRequested(draft))
+        gen.next()
+
+        expect(gen.throw(new Error('500')).value).toEqual(
+            put(saveStudentFailed('Could not save student: 500'))
+        )
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('falls back to a readable message for a non-Error throw', () => {
+        const gen = saveStudentSaga(saveStudentRequested(draft))
+        gen.next()
+
+        expect(gen.throw('kaboom').value).toEqual(
+            put(
+                saveStudentFailed(
+                    'Could not save student. Your changes have not been stored.'
+                )
+            )
+        )
+    })
+})
+
 describe('rootSaga', () => {
     it('watches every request action', () => {
         const gen = rootSaga()
@@ -147,6 +193,7 @@ describe('rootSaga', () => {
                 takeLatest(fetchPaymentsRequested.type, loadPaymentsSaga),
                 takeLatest(fetchSessionsRequested.type, loadSessionsSaga),
                 takeEvery(createSessionRequested.type, createSessionSaga),
+                takeEvery(saveStudentRequested.type, saveStudentSaga),
             ])
         )
         expect(gen.next().done).toBe(true)
