@@ -2,20 +2,22 @@
  * Thin fetch wrapper for the Teaching Tracker API.
  *
  * The only environment-specific knob is `VITE_API_BASE_URL`, baked in at build
- * time (one build per environment). When it is empty the app runs entirely on
- * local seed data — this keeps tests and offline dev working with no backend.
+ * time (one build per environment). It must include the `/api` suffix, because
+ * callers pass bare paths (`/students`); an empty value would request
+ * `/students`, which the dev server answers with `index.html`.
+ *
+ * Locally, `.env.development` sets it to `/api` so calls stay same-origin and
+ * hit the dev-server proxy in `vite.config.ts`, which forwards to the dev API.
  *
  * Components never reference a hostname; they call typed helpers in
- * `students.ts` / `payments.ts`, which route through `apiRequest` here. To move
- * to a same-origin setup (e.g. a Static Web Apps linked backend) later, set
- * `VITE_API_BASE_URL` to an empty string so requests become relative `/api/...`.
+ * `students.ts` / `payments.ts`, which route through `apiRequest` here.
  */
 
 /** Configured API base URL, e.g. `https://func-teachtracker-dev-xxxx.azurewebsites.net/api`. */
 export const getApiBaseUrl = (): string =>
     import.meta.env.VITE_API_BASE_URL ?? ''
 
-/** Whether a backend is configured. When false, callers fall back to seed data. */
+/** Whether an absolute API base URL is configured (false => relative requests). */
 export const isApiConfigured = (): boolean => getApiBaseUrl() !== ''
 
 /** Error thrown when the API responds with a non-2xx status. */

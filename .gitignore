@@ -10,6 +10,8 @@ coverage/
 .env
 .env.*
 !.env.example
+# Committed on purpose: non-secret local dev defaults, shared by everyone.
+!.env.development
 local.settings.json
 
 # Logs

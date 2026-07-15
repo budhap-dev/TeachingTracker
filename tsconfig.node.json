@@ -1,6 +1,10 @@
 {
     "compilerOptions": {
         "composite": true,
+        // Emit away from the repo root: a vite.config.js next to vite.config.ts
+        // shadows it (Vite resolves .js first), so builds would silently pin the
+        // dev server to a stale config.
+        "outDir": "./tsc-output",
         "skipLibCheck": true,
         "module": "ESNext",
         "moduleResolution": "Bundler",
