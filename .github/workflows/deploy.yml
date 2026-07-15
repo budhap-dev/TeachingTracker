@@ -9,9 +9,9 @@ permissions:
   contents: read
 
 # The frontend bakes VITE_API_BASE_URL in at build time, so (unlike the API)
-# each environment is built separately with its own API URL. Environments are
-# promoted in order: dev -> test -> prod, with prod gated by GitHub Environment
-# protection rules (required reviewers).
+# each environment is built separately with its own API URL. On push, dev and
+# test are promoted automatically (dev -> test); production is deployed
+# separately and manually via deploy-prod.yml.
 jobs:
   dev:
     uses: ./.github/workflows/deploy-env.yml
@@ -24,11 +24,4 @@ jobs:
     uses: ./.github/workflows/deploy-env.yml
     with:
       environment: test
-    secrets: inherit
-
-  prod:
-    needs: test
-    uses: ./.github/workflows/deploy-env.yml
-    with:
-      environment: prod
     secrets: inherit
