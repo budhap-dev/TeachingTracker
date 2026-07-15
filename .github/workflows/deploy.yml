@@ -1,0 +1,34 @@
+name: Build & Deploy frontend to Azure Static Web Apps
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# The frontend bakes VITE_API_BASE_URL in at build time, so (unlike the API)
+# each environment is built separately with its own API URL. Environments are
+# promoted in order: dev -> test -> prod, with prod gated by GitHub Environment
+# protection rules (required reviewers).
+jobs:
+  dev:
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: dev
+    secrets: inherit
+
+  test:
+    needs: dev
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: test
+    secrets: inherit
+
+  prod:
+    needs: test
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: prod
+    secrets: inherit

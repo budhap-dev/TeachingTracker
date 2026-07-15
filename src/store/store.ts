@@ -14,6 +14,8 @@ import {
     Student,
     StudentDetailField,
 } from '../data/students'
+import { isApiConfigured } from '../api/client'
+import { fetchStudents } from '../api/students'
 
 type ScheduledSessionInput = Omit<ScheduledSession, 'id'>
 
@@ -123,9 +125,12 @@ const createInitialState = (): StudentState => ({
 
 const initialState = createInitialState()
 
+// Fetches students from the API when a backend is configured
+// (VITE_API_BASE_URL set for this environment); otherwise resolves to local
+// seed data so tests and offline dev work with no backend.
 export const loadStudents = createAsyncThunk(
     'students/loadStudents',
-    async () => initialStudents
+    async () => (isApiConfigured() ? fetchStudents() : initialStudents)
 )
 
 const studentSlice = createSlice({

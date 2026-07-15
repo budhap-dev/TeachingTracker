@@ -1,0 +1,17 @@
+# Copy to terraform.tfvars and adjust as needed, or rely on the defaults in variables.tf.
+project = "teachtracker"
+
+# One Static Web App is created per environment.
+# Keys MUST match the GitHub Environment names in .github/workflows/deploy.yml.
+# Static Web Apps regions are limited: eastus2, westus2, centralus, westeurope, eastasia.
+environments = {
+  dev = {
+    location = "eastus2"
+  }
+  test = {
+    location = "eastus2"
+  }
+  prod = {
+    location = "eastus2"
+  }
+}
