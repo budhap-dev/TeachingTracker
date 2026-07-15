@@ -11,8 +11,10 @@ import { useAppDispatch, useAppSelector } from './hooks'
 import {
     createSessionRequested,
     saveStudentRequested,
+    setSessionStatusRequested,
     updatePaymentRecord,
 } from './store/store'
+import { activeSessions } from './data/students'
 import type { EditableStudentField, Student } from './data/students'
 import { useStudentForm } from './hooks/useStudentForm'
 import { paths } from './paths'
@@ -72,7 +74,8 @@ const DashboardRoute = () => {
 
     const upcomingSessions = useMemo(
         () =>
-            [...scheduledSessions].sort((left, right) =>
+            // A cancelled class is not upcoming, and must not inflate the count.
+            activeSessions(scheduledSessions).sort((left, right) =>
                 `${left.date} ${left.time}`.localeCompare(
                     `${right.date} ${right.time}`
                 )
@@ -253,6 +256,9 @@ const SchedulingRoute = () => {
                 dispatch(createSessionRequested(session))
                 navigate(paths.dashboard)
             }}
+            onSetSessionStatus={(id, status) =>
+                dispatch(setSessionStatusRequested({ id, status }))
+            }
         />
     )
 }

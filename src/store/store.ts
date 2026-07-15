@@ -4,12 +4,13 @@ import {
     MonthlyPaymentGroup,
     PaymentRecordInput,
     ScheduledSession,
+    SessionStatus,
     Student,
 } from '../data/students'
 import type { StudentInput } from '../api/students'
 import { rootSaga } from './sagas'
 
-export type ScheduledSessionInput = Omit<ScheduledSession, 'id'>
+export type ScheduledSessionInput = Omit<ScheduledSession, 'id' | 'status'>
 
 type StudentState = {
     students: Student[]
@@ -132,6 +133,30 @@ const studentSlice = createSlice({
         createSessionFailed: (state, action: PayloadAction<string>) => {
             state.error = action.payload
         },
+        // --- Cancelling / un-cancelling a class ---
+        setSessionStatusRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (input: { id: number; status: SessionStatus }) => ({
+                payload: input,
+            }),
+        },
+        setSessionStatusSucceeded: (
+            state,
+            action: PayloadAction<ScheduledSession>
+        ) => {
+            const index = state.scheduledSessions.findIndex(
+                (item) => item.id === action.payload.id
+            )
+            if (index >= 0) {
+                // Replaced, never removed: a cancelled class stays visible.
+                state.scheduledSessions[index] = action.payload
+            }
+        },
+        setSessionStatusFailed: (state, action: PayloadAction<string>) => {
+            state.error = action.payload
+        },
         // --- Saving a student (create or update) via the API ---
         saveStudentRequested: {
             reducer: (state: StudentState) => {
@@ -200,6 +225,9 @@ export const {
     createSessionRequested,
     createSessionSucceeded,
     createSessionFailed,
+    setSessionStatusRequested,
+    setSessionStatusSucceeded,
+    setSessionStatusFailed,
     saveStudentRequested,
     saveStudentSucceeded,
     saveStudentFailed,

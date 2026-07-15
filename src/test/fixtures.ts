@@ -121,6 +121,8 @@ export const buildFixtureSessions = (
             studentName: `${student.firstName} ${student.lastName}`,
             year: student.year,
             subject: student.subjects[0],
+            // The last fixture class is cancelled, so tests always have one.
+            status: i === 3 ? 'Cancelled' : 'Scheduled',
             date: date.toISOString().slice(0, 10),
             time: times[i],
             notes: notes[i],

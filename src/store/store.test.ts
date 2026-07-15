@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { PaymentRecord, ScheduledSession, Student } from '../data/students'
 import {
+    setSessionStatusRequested,
+    setSessionStatusSucceeded,
+    setSessionStatusFailed,
     saveStudentRequested,
     saveStudentSucceeded,
     saveStudentFailed,
@@ -316,6 +319,58 @@ describe('student reducer', () => {
 
             // The teacher acknowledges it; the message goes away.
             expect(studentReducer(failed, dismissError()).error).toBeNull()
+        })
+    })
+
+    describe('cancelling a class', () => {
+        it('replaces the class in place, never removing it', () => {
+            const loaded = studentReducer(
+                initial(),
+                fetchSessionsSucceeded([
+                    { id: 101, status: 'Scheduled' } as never,
+                    { id: 102, status: 'Scheduled' } as never,
+                ])
+            )
+
+            const cancelled = studentReducer(
+                loaded,
+                setSessionStatusSucceeded({
+                    id: 101,
+                    status: 'Cancelled',
+                } as never)
+            )
+
+            // Still two classes: a cancelled one stays visible.
+            expect(cancelled.scheduledSessions).toHaveLength(2)
+            expect(cancelled.scheduledSessions[0].status).toBe('Cancelled')
+            expect(cancelled.scheduledSessions[1].status).toBe('Scheduled')
+        })
+
+        it('ignores a class the store does not know', () => {
+            const loaded = studentReducer(
+                initial(),
+                fetchSessionsSucceeded([{ id: 101, status: 'Scheduled' } as never])
+            )
+            const untouched = studentReducer(
+                loaded,
+                setSessionStatusSucceeded({ id: 999, status: 'Cancelled' } as never)
+            )
+            expect(untouched.scheduledSessions).toHaveLength(1)
+            expect(untouched.scheduledSessions[0].status).toBe('Scheduled')
+        })
+
+        it('clears the error on request and surfaces it on failure', () => {
+            const requested = studentReducer(
+                studentReducer(initial(), setSessionStatusFailed('old')),
+                setSessionStatusRequested({ id: 101, status: 'Cancelled' })
+            )
+            expect(requested.error).toBeNull()
+
+            const failed = studentReducer(
+                requested,
+                setSessionStatusFailed('Could not update the class: 503')
+            )
+            expect(failed.error).toBe('Could not update the class: 503')
         })
     })
 
