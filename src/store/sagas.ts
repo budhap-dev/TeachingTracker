@@ -4,7 +4,7 @@ import type {
     ScheduledSession,
     Student,
 } from '../data/students'
-import { fetchStudents } from '../api/students'
+import { fetchStudents, upsertStudent } from '../api/students'
 import { fetchPaymentsByMonth } from '../api/payments'
 import { createSession, fetchSessions } from '../api/sessions'
 import {
@@ -20,10 +20,18 @@ import {
     fetchStudentsFailed,
     fetchStudentsRequested,
     fetchStudentsSucceeded,
+    saveStudentFailed,
+    saveStudentRequested,
+    saveStudentSucceeded,
 } from './store'
 
 const toMessage = (error: unknown): string =>
     error instanceof Error ? error.message : 'Failed to load data'
+
+const toSaveMessage = (error: unknown): string =>
+    error instanceof Error
+        ? `Could not save student: ${error.message}`
+        : 'Could not save student. Your changes have not been stored.'
 
 /** Fetches students from the API and puts the result into the store. */
 export function* loadStudentsSaga() {
@@ -70,6 +78,21 @@ export function* createSessionSaga(
     }
 }
 
+/**
+ * Persists a student — created when the payload has no id, updated when it has.
+ * The API's response, not the submitted draft, is what reaches the store.
+ */
+export function* saveStudentSaga(
+    action: ReturnType<typeof saveStudentRequested>
+) {
+    try {
+        const student: Student = yield call(upsertStudent, action.payload)
+        yield put(saveStudentSucceeded(student))
+    } catch (error) {
+        yield put(saveStudentFailed(toSaveMessage(error)))
+    }
+}
+
 /** Root saga: watches the request actions dispatched by the app. */
 export function* rootSaga() {
     yield all([
@@ -77,5 +100,6 @@ export function* rootSaga() {
         takeLatest(fetchPaymentsRequested.type, loadPaymentsSaga),
         takeLatest(fetchSessionsRequested.type, loadSessionsSaga),
         takeEvery(createSessionRequested.type, createSessionSaga),
+        takeEvery(saveStudentRequested.type, saveStudentSaga),
     ])
 }

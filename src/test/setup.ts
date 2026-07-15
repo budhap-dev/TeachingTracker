@@ -41,6 +41,11 @@ beforeEach(() => {
                     init.method === 'POST'
                         ? { id: 999, ...JSON.parse(String(init.body)) }
                         : buildFixtureSessions()
+            } else if (init.method === 'POST' || init.method === 'PUT') {
+                // Upserting a student echoes the saved record back. Spreading
+                // the payload last keeps its id on an update, and falls back to
+                // a generated one when creating.
+                body = { id: 999, ...JSON.parse(String(init.body)) }
             }
             return {
                 ok: true,

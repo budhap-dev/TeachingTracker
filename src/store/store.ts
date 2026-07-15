@@ -1,13 +1,12 @@
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import createSagaMiddleware from 'redux-saga'
 import {
-    generateStudentCode,
     MonthlyPaymentGroup,
     PaymentRecordInput,
     ScheduledSession,
     Student,
-    StudentDetailField,
 } from '../data/students'
+import type { StudentInput } from '../api/students'
 import { rootSaga } from './sagas'
 
 export type ScheduledSessionInput = Omit<ScheduledSession, 'id'>
@@ -17,6 +16,7 @@ type StudentState = {
     loading: boolean
     paymentsLoading: boolean
     sessionsLoading: boolean
+    savingStudent: boolean
     error: string | null
     scheduledSessions: ScheduledSession[]
     paymentsByMonth: MonthlyPaymentGroup[]
@@ -43,6 +43,7 @@ const createInitialState = (): StudentState => ({
     loading: true,
     paymentsLoading: true,
     sessionsLoading: true,
+    savingStudent: false,
     error: null,
     scheduledSessions: [],
     paymentsByMonth: [],
@@ -131,42 +132,38 @@ const studentSlice = createSlice({
         createSessionFailed: (state, action: PayloadAction<string>) => {
             state.error = action.payload
         },
-        // --- Local mutations ---
-        addStudent: (state, action: PayloadAction<Omit<Student, 'id'>>) => {
-            state.hasLocalStudentChanges = true
-            state.students.push({
-                id: Date.now(),
-                ...action.payload,
-                studentId: action.payload.studentId || generateStudentCode(),
-            })
+        // --- Saving a student (create or update) via the API ---
+        saveStudentRequested: {
+            reducer: (state: StudentState) => {
+                state.savingStudent = true
+                state.error = null
+            },
+            prepare: (input: StudentInput) => ({ payload: input }),
         },
-        updateProgress: (
-            state,
-            action: PayloadAction<{ id: number; progress: number }>
-        ) => {
+        /**
+         * Takes the server's copy as the truth, so the UI shows what was really
+         * stored (including any id or code the API generated) rather than what
+         * we hoped it would store.
+         */
+        saveStudentSucceeded: (state, action: PayloadAction<Student>) => {
+            state.savingStudent = false
             state.hasLocalStudentChanges = true
-            const student = state.students.find(
+            const index = state.students.findIndex(
                 (item) => item.id === action.payload.id
             )
-            if (student) {
-                student.progress = action.payload.progress
+            if (index >= 0) {
+                state.students[index] = action.payload
+            } else {
+                state.students.push(action.payload)
             }
         },
-        updateStudentDetails: (
-            state,
-            action: PayloadAction<{
-                id: number
-                field: StudentDetailField
-                value: string
-            }>
-        ) => {
-            state.hasLocalStudentChanges = true
-            const student = state.students.find(
-                (item) => item.id === action.payload.id
-            )
-            if (student) {
-                student[action.payload.field] = action.payload.value as never
-            }
+        saveStudentFailed: (state, action: PayloadAction<string>) => {
+            state.savingStudent = false
+            state.error = action.payload
+        },
+        /** Clears a save error once the teacher has seen it. */
+        dismissError: (state) => {
+            state.error = null
         },
         updatePaymentRecord: (
             state,
@@ -203,9 +200,10 @@ export const {
     createSessionRequested,
     createSessionSucceeded,
     createSessionFailed,
-    addStudent,
-    updateProgress,
-    updateStudentDetails,
+    saveStudentRequested,
+    saveStudentSucceeded,
+    saveStudentFailed,
+    dismissError,
     updatePaymentRecord,
 } = studentSlice.actions
 

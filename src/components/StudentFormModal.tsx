@@ -15,16 +15,7 @@ import {
 } from '@mui/material'
 import type { FormEvent } from 'react'
 import type { Student } from '../data/students'
-
-const subjectOptions = [
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'English',
-    'History',
-]
-const yearOptions = Array.from({ length: 8 }, (_, index) => String(index + 6))
+import { subjectOptions, yearOptions } from '../utils/constants'
 
 type StudentFormModalProps = {
     open: boolean

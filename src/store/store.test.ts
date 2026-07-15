@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { PaymentRecord, ScheduledSession, Student } from '../data/students'
 import {
-    addStudent,
+    saveStudentRequested,
+    saveStudentSucceeded,
+    saveStudentFailed,
+    dismissError,
     createSessionFailed,
     createSessionRequested,
     createSessionSucceeded,
@@ -17,8 +20,6 @@ import {
     resetStudentState,
     studentReducer,
     updatePaymentRecord,
-    updateProgress,
-    updateStudentDetails,
 } from './store'
 
 const buildStudent = (overrides: Partial<Student> = {}): Student => ({
@@ -123,10 +124,10 @@ describe('student reducer', () => {
         })
 
         it('merges fetched students with local changes, updating and appending', () => {
-            // A local add flips hasLocalStudentChanges, switching to merge mode.
+            // A saved student flips hasLocalStudentChanges, switching to merge mode.
             const withLocal = studentReducer(
                 initial(),
-                addStudent(buildStudent({ id: 99, firstName: 'Local' }))
+                saveStudentSucceeded(buildStudent({ id: 99, firstName: 'Local' }))
             )
             const localId = withLocal.students[0].id
 
@@ -248,60 +249,77 @@ describe('student reducer', () => {
         })
     })
 
-    describe('local mutations', () => {
-        it('adds a student, generating a code when none is supplied', () => {
-            const generated = studentReducer(
+    describe('saving a student', () => {
+        it('marks a save in flight and clears any previous error', () => {
+            const errored = studentReducer(
                 initial(),
-                addStudent(buildStudent({ studentId: '' }))
+                saveStudentFailed('boom')
             )
-            expect(generated.students.at(-1)?.studentId).toMatch(/^STU-/)
-            expect(generated.hasLocalStudentChanges).toBe(true)
+            expect(errored.error).toBe('boom')
 
-            const explicit = studentReducer(
-                generated,
-                addStudent(buildStudent({ studentId: 'STU-EXPLICIT' }))
+            const saving = studentReducer(
+                errored,
+                saveStudentRequested(buildStudent({ id: 1 }))
             )
-            expect(explicit.students.at(-1)?.studentId).toBe('STU-EXPLICIT')
+            expect(saving.savingStudent).toBe(true)
+            expect(saving.error).toBeNull()
         })
 
-        it('updates progress for a known student and ignores unknown ids', () => {
+        it('updates an existing student in place from the server response', () => {
             const loaded = studentReducer(
                 initial(),
-                fetchStudentsSucceeded([buildStudent({ id: 1, progress: 50 })])
+                fetchStudentsSucceeded([
+                    buildStudent({ id: 1, firstName: 'Asha', notes: 'Old' }),
+                ])
             )
 
-            const updated = studentReducer(
+            const saved = studentReducer(
                 loaded,
-                updateProgress({ id: 1, progress: 77 })
+                saveStudentSucceeded(
+                    buildStudent({ id: 1, firstName: 'Asha', notes: 'New' })
+                )
             )
-            expect(updated.students[0].progress).toBe(77)
 
-            const ignored = studentReducer(
-                updated,
-                updateProgress({ id: -1, progress: 5 })
-            )
-            expect(ignored.students[0].progress).toBe(77)
+            expect(saved.students).toHaveLength(1)
+            expect(saved.students[0].notes).toBe('New')
+            expect(saved.savingStudent).toBe(false)
+            expect(saved.hasLocalStudentChanges).toBe(true)
         })
 
-        it('updates student details for a known student and ignores unknown ids', () => {
+        it('appends a student the store has not seen before', () => {
             const loaded = studentReducer(
                 initial(),
                 fetchStudentsSucceeded([buildStudent({ id: 1 })])
             )
 
-            const updated = studentReducer(
+            const saved = studentReducer(
                 loaded,
-                updateStudentDetails({ id: 1, field: 'notes', value: 'Fresh' })
+                saveStudentSucceeded(buildStudent({ id: 77, firstName: 'New' }))
             )
-            expect(updated.students[0].notes).toBe('Fresh')
 
-            const ignored = studentReducer(
-                updated,
-                updateStudentDetails({ id: -1, field: 'notes', value: 'Nope' })
-            )
-            expect(ignored.students[0].notes).toBe('Fresh')
+            expect(saved.students).toHaveLength(2)
+            expect(saved.students.at(-1)?.firstName).toBe('New')
         })
 
+        it('surfaces a failure and stops the in-flight state', () => {
+            const saving = studentReducer(
+                initial(),
+                saveStudentRequested(buildStudent({ id: 1 }))
+            )
+
+            const failed = studentReducer(
+                saving,
+                saveStudentFailed('Could not save student: 500')
+            )
+            expect(failed.savingStudent).toBe(false)
+            expect(failed.error).toBe('Could not save student: 500')
+
+            // The teacher acknowledges it; the message goes away.
+            expect(studentReducer(failed, dismissError()).error).toBeNull()
+        })
+    })
+
+    describe('local mutations', () => {
         it('updates a payment record and recomputes that month’s totals', () => {
             const loaded = studentReducer(
                 initial(),

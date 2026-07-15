@@ -180,3 +180,18 @@ export const teacherQuotes = [
     'The true teacher defends his pupils against his own personal influence. - Amos Bronson Alcott',
     'What the teacher is, is more important than what he teaches. - Karl Menninger',
 ]
+
+/** Subjects a student can be taught. Shared by the add form and the detail page. */
+export const subjectOptions = [
+    'Mathematics',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'English',
+    'History',
+]
+
+/** School years 6–13. */
+export const yearOptions = Array.from({ length: 8 }, (_, index) =>
+    String(index + 6)
+)
