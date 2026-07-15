@@ -1,0 +1,18 @@
+name: Deploy frontend to Production (manual)
+
+# Production is gated behind a manual trigger (run from the Actions tab or via
+# `gh workflow run deploy-prod.yml`). This is the free-plan alternative to a
+# GitHub Environment required-reviewer rule. It builds with prod's
+# VITE_API_BASE_URL and deploys to the prod Static Web App.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prod:
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: prod
+    secrets: inherit
