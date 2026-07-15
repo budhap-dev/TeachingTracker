@@ -6,7 +6,7 @@ import type {
     Student,
 } from '../data/students'
 import { fetchStudents, upsertStudent } from '../api/students'
-import { fetchPaymentsByMonth } from '../api/payments'
+import { fetchPaymentsByMonth, savePayments } from '../api/payments'
 import {
     createSession,
     fetchSessions,
@@ -15,6 +15,7 @@ import {
 import {
     createSessionSaga,
     loadPaymentsSaga,
+    savePaymentSaga,
     loadSessionsSaga,
     loadStudentsSaga,
     rootSaga,
@@ -34,6 +35,9 @@ import {
     fetchStudentsFailed,
     fetchStudentsRequested,
     fetchStudentsSucceeded,
+    savePaymentFailed,
+    savePaymentRequested,
+    savePaymentSucceeded,
     saveStudentFailed,
     saveStudentRequested,
     saveStudentSucceeded,
@@ -238,6 +242,36 @@ describe('setSessionStatusSaga', () => {
     })
 })
 
+describe('savePaymentSaga', () => {
+    const input = { studentId: 1, month: '2026-01' }
+
+    it('puts the API record — including what it says is due — into the store', () => {
+        const gen = savePaymentSaga(savePaymentRequested(input))
+
+        expect(gen.next().value).toEqual(call(savePayments, input))
+
+        const saved = [{ id: 100, studentId: 1, amountDue: 460 }] as never
+        expect(gen.next(saved).value).toEqual(put(savePaymentSucceeded(saved)))
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('reports a failure rather than pretending the payment landed', () => {
+        const gen = savePaymentSaga(savePaymentRequested(input))
+        gen.next()
+        expect(gen.throw(new Error('500')).value).toEqual(
+            put(savePaymentFailed('Could not record the payment: 500'))
+        )
+    })
+
+    it('falls back to a readable message for a non-Error throw', () => {
+        const gen = savePaymentSaga(savePaymentRequested(input))
+        gen.next()
+        expect(gen.throw('kaboom').value).toEqual(
+            put(savePaymentFailed('Could not record the payment.'))
+        )
+    })
+})
+
 describe('rootSaga', () => {
     it('watches every request action', () => {
         const gen = rootSaga()
@@ -250,6 +284,7 @@ describe('rootSaga', () => {
                 takeEvery(createSessionRequested.type, createSessionSaga),
                 takeEvery(saveStudentRequested.type, saveStudentSaga),
                 takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
+                takeEvery(savePaymentRequested.type, savePaymentSaga),
             ])
         )
         expect(gen.next().done).toBe(true)

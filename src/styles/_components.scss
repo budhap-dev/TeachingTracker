@@ -708,10 +708,70 @@
     margin-bottom: 8px;
 }
 
-.scheduling-layout {
+/* The day modal: booked classes first, then the add-a-class form. */
+.day-modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    h4 {
+        margin: 0;
+    }
+}
+
+.day-modal-sessions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+/* Numbered chips, mirroring the ones on the calendar day. */
+.day-modal-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.day-modal-picker-chip {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.day-modal-picker-chip.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.day-modal-picker-chip.cancelled {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.day-modal-detail {
     display: grid;
-    grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 16px;
+    margin: 0;
+    width: 100%;
+
+    dt {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    dd {
+        margin: 0;
+    }
 }
 
 .scheduling-hero {
@@ -744,10 +804,6 @@
         color: var(--muted);
         font-size: 0.85rem;
     }
-}
-
-.scheduling-form-card {
-    align-self: start;
 }
 
 .scheduling-form {
@@ -802,6 +858,58 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.calendar-day:hover,
+.calendar-day:focus-within {
+    border-color: var(--accent);
+}
+
+/* Fills the cell above the chips, so tapping the day opens it. */
+.calendar-day-open {
+    flex: 1;
+    border: 0;
+    padding: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.calendar-day-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* One numbered chip per class, in time order. */
+.calendar-day-chip {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.calendar-day-chip:hover,
+.calendar-day-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.calendar-day-chip.cancelled {
+    background: var(--surface-alt);
+    border-color: var(--border);
+    color: var(--muted);
+    text-decoration: line-through;
 }
 
 .calendar-day.muted {
@@ -962,11 +1070,6 @@
     color: var(--muted);
 }
 
-.calendar-session-chip.cancelled {
-    opacity: 0.55;
-    text-decoration: line-through;
-}
-
 .session-status-list {
     list-style: none;
     margin: 0;
@@ -984,7 +1087,6 @@
 }
 
 .session-status-list li.cancelled .session-when {
-    text-decoration: line-through;
     color: var(--muted);
 }
 
@@ -1002,4 +1104,140 @@
     background: var(--surface-alt);
     border: 1px solid var(--border);
     color: var(--muted);
+}
+
+/* Days shaded by how many classes they hold, so the month reads at a glance. */
+.calendar-day.booked {
+    position: relative;
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.calendar-day.booked-light {
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.calendar-day.booked-medium {
+    background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+
+.calendar-day.booked-heavy {
+    background: color-mix(in srgb, var(--accent) 32%, var(--surface));
+}
+
+.calendar-day.booked:hover,
+.calendar-day.booked:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
+.calendar-tooltip strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+}
+
+.calendar-tooltip ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.calendar-tooltip li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+/* Matches the number on the day's chip, so hover and click line up. */
+.tooltip-number {
+    min-width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: color-mix(in srgb, #fff 25%, transparent);
+    font-size: 0.62rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+
+.tooltip-time {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.tooltip-cancelled {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    opacity: 0.75;
+}
+
+.payment-student-link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-weight: 700;
+    color: var(--accent);
+    cursor: pointer;
+    text-align: left;
+}
+
+.payment-student-link:hover,
+.payment-student-link:focus-visible {
+    text-decoration: underline;
+}
+
+.payment-basis strong {
+    font-size: 1rem;
+}
+
+.payment-basis small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.7rem;
+}
+
+.payment-status-pill {
+    display: inline-block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+}
+
+.payment-summary-card small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+/* The legend carries counts and shares: the light end of the ramp is below 3:1
+   against the surface, so identity must never rest on colour alone. */
+.dashboard-chart-legend-copy span {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.dashboard-chart-pie-segment {
+    transition: opacity 0.15s ease;
+}
+
+.dashboard-chart-pie-segment:hover {
+    opacity: 0.82;
 }

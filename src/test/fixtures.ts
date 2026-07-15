@@ -148,24 +148,29 @@ export const buildFixturePayments = (
 
     return students.flatMap((student) =>
         months.map((month, monthIndex) => {
-            const monthlyFee = student.fees
+            // Mirrors the API: a bill is classes taught x the per-session fee.
+            const sessionsHeld = (student.id + monthIndex) % 5
+            const amountDue = sessionsHeld * student.fees
             const pattern = (student.id + monthIndex) % 3
-            const status: PaymentStatus =
-                pattern === 0 ? 'Paid' : pattern === 1 ? 'Partial' : 'Pending'
             const amountPaid =
-                status === 'Paid'
-                    ? monthlyFee
-                    : status === 'Partial'
-                      ? Math.round(monthlyFee * 0.5)
-                      : 0
+                pattern === 0 ? amountDue : pattern === 1 ? Math.round(amountDue * 0.5) : 0
+            const status: PaymentStatus =
+                amountDue > 0 && amountPaid >= amountDue
+                    ? 'Paid'
+                    : amountPaid > 0
+                      ? 'Partial'
+                      : 'Pending'
 
             return {
                 id: student.id * 100 + monthIndex,
                 studentId: student.id,
                 studentName: `${student.firstName} ${student.lastName}`,
                 month,
-                monthlyFee,
+                feePerSession: student.fees,
+                sessionsHeld,
+                amountDue,
                 amountPaid,
+                outstanding: Math.max(amountDue - amountPaid, 0),
                 status,
                 notes: paymentStatusNotes[status],
             }
@@ -191,19 +196,16 @@ export const buildFixturePaymentsByMonth = (
     return [...byMonth.entries()]
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([month, records]) => {
-            const totalExpected = records.reduce(
-                (sum, record) => sum + record.monthlyFee,
-                0
-            )
-            const totalReceived = records.reduce(
-                (sum, record) => sum + record.amountPaid,
-                0
-            )
+            const sum = (pick: (record: PaymentRecord) => number) =>
+                records.reduce((total, record) => total + pick(record), 0)
+            const totalDue = sum((record) => record.amountDue)
+            const totalReceived = sum((record) => record.amountPaid)
             return {
                 month,
-                totalExpected,
+                totalDue,
                 totalReceived,
-                totalOutstanding: totalExpected - totalReceived,
+                totalOutstanding: Math.max(totalDue - totalReceived, 0),
+                sessionsHeld: sum((record) => record.sessionsHeld),
                 records,
             }
         })

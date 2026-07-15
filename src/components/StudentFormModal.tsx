@@ -134,7 +134,7 @@ export const StudentFormModal = ({
                     fullWidth
                 />
                 <TextField
-                    label="Monthly fees (£)"
+                    label="Fee per session (£)"
                     size="small"
                     type="number"
                     value={form.fees}

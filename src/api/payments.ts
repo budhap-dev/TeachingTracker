@@ -12,16 +12,15 @@ export interface PaymentQuery {
     status?: PaymentStatus
 }
 
-/** Payload for saving a payment. `id` or (studentId, month) identifies the record. */
+/**
+ * Payload for recording a payment, identified by (studentId, month).
+ * Omit `amountPaid` to settle the month in full.
+ */
 export interface PaymentInput {
-    id?: number
     studentId: number
     month: string
-    monthlyFee?: number
     amountPaid?: number
-    status?: PaymentStatus
     notes?: string
-    studentName?: string
 }
 
 const buildQuery = (query: PaymentQuery): string => {
@@ -51,7 +50,7 @@ export const fetchPaymentsByMonth = (
 ): Promise<MonthlyPaymentGroup[]> =>
     apiRequest<MonthlyPaymentGroup[]>(`/payments/by-month${buildQuery(query)}`)
 
-/** POST /payments — create/update one payment or an array of them (upsert). */
+/** POST /payments — records a payment; omit amountPaid to settle in full. */
 export const savePayments = (
     payments: PaymentInput | PaymentInput[]
 ): Promise<PaymentRecord[]> =>

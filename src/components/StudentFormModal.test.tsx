@@ -79,7 +79,7 @@ describe('StudentFormModal', () => {
 
         expect(onChange).toHaveBeenCalledWith('subjects', ['Mathematics'])
 
-        fireEvent.change(screen.getByLabelText(/monthly fees/i), {
+        fireEvent.change(screen.getByLabelText(/fee per session/i), {
             target: { value: '145' },
         })
         expect(onChange).toHaveBeenCalledWith('fees', 145)

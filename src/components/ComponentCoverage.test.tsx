@@ -1,4 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import {
+    fireEvent,
+    render,
+    screen,
+    waitForElementToBeRemoved,
+    within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
@@ -18,7 +24,52 @@ beforeEach(() => {
     window.scrollTo = vi.fn()
 })
 
+const today = new Date()
+
+/** The planner's day key: local calendar, matching the grid (never toISOString). */
+const dateKey = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+/** The button that opens a day. The cell itself is a gridcell, not a button. */
+const openDayCell = (day: Date) =>
+    screen.getByRole('button', { name: `Open ${day.toDateString()}` })
+
+/** The numbered chip for the nth class on a day (1-based), as shown on the grid. */
+const classChip = (day: Date, number: number) =>
+    screen.getByRole('button', {
+        name: new RegExp(`^Class ${number} on ${day.toDateString()}`),
+    })
+
 /** Groups flat payment records the way GET /payments/by-month does. */
+/** Mirrors the API: a bill is classes taught x the per-session fee. */
+const buildPayment = (
+    overrides: Partial<PaymentRecord> & { month: string }
+): PaymentRecord => {
+    const feePerSession = overrides.feePerSession ?? 120
+    const sessionsHeld = overrides.sessionsHeld ?? 4
+    const amountDue = overrides.amountDue ?? feePerSession * sessionsHeld
+    const amountPaid = overrides.amountPaid ?? 0
+    return {
+        id: overrides.id ?? 1,
+        studentId: overrides.studentId ?? 1,
+        studentName: overrides.studentName ?? 'Asha Perera',
+        month: overrides.month,
+        feePerSession,
+        sessionsHeld,
+        amountDue,
+        amountPaid,
+        outstanding: Math.max(amountDue - amountPaid, 0),
+        status:
+            overrides.status ??
+            (amountDue > 0 && amountPaid >= amountDue
+                ? 'Paid'
+                : amountPaid > 0
+                  ? 'Partial'
+                  : 'Pending'),
+        notes: overrides.notes ?? '',
+    }
+}
+
 const toGroups = (records: PaymentRecord[]): MonthlyPaymentGroup[] => {
     const byMonth = new Map<string, PaymentRecord[]>()
     records.forEach((record) => {
@@ -30,13 +81,14 @@ const toGroups = (records: PaymentRecord[]): MonthlyPaymentGroup[] => {
         }
     })
     return [...byMonth.entries()].map(([month, list]) => {
-        const totalExpected = list.reduce((sum, r) => sum + r.monthlyFee, 0)
+        const totalDue = list.reduce((sum, r) => sum + r.amountDue, 0)
         const totalReceived = list.reduce((sum, r) => sum + r.amountPaid, 0)
         return {
             month,
-            totalExpected,
+            totalDue,
             totalReceived,
-            totalOutstanding: totalExpected - totalReceived,
+            totalOutstanding: Math.max(totalDue - totalReceived, 0),
+            sessionsHeld: list.reduce((sum, r) => sum + r.sessionsHeld, 0),
             records: list,
         }
     })
@@ -199,24 +251,17 @@ describe('component-level coverage', () => {
     it('renders and updates the payment tracker for a selected month', async () => {
         const user = userEvent.setup()
         const onUpdatePaymentRecord = vi.fn()
+        const onOpenStudentPage = vi.fn()
         const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
 
         render(
             <PaymentTrackerView
                 students={[buildStudent()]}
                 paymentsByMonth={toGroups([
-                    {
-                        id: 1,
-                        studentId: 1,
-                        studentName: 'Asha Perera',
-                        month: currentMonth,
-                        monthlyFee: 120,
-                        amountPaid: 0,
-                        status: 'Pending',
-                        notes: 'Awaiting payment',
-                    },
+                    buildPayment({ id: 1, studentId: 1, studentName: 'Asha Perera', month: currentMonth, feePerSession: 120, sessionsHeld: 1, amountPaid: 0, notes: 'Awaiting payment' }),
                 ])}
                 onUpdatePaymentRecord={onUpdatePaymentRecord}
+                onOpenStudentPage={onOpenStudentPage}
             />
         )
 
@@ -225,13 +270,20 @@ describe('component-level coverage', () => {
         ).toBeInTheDocument()
         expect(screen.getByText(/payments received/i)).toBeInTheDocument()
 
-        await user.selectOptions(
-            screen.getByLabelText(/asha perera status/i),
-            'Paid'
+        // Status is derived by the API, so the row offers "Mark paid" instead
+        // of a dropdown that could contradict what is owed.
+        await user.click(
+            screen.getByRole('button', { name: /mark asha perera as paid/i })
         )
-        expect(onUpdatePaymentRecord).toHaveBeenCalledWith(
-            expect.objectContaining({ status: 'Paid' })
-        )
+        // The student's name opens their page, so details can be fixed from here.
+        await user.click(screen.getByRole('button', { name: 'Asha Perera' }))
+        expect(onOpenStudentPage).toHaveBeenCalledWith(1)
+
+        const markPaidCall = onUpdatePaymentRecord.mock.calls.at(-1)![0]
+        expect(markPaidCall).toMatchObject({ studentId: 1, month: currentMonth })
+        // No amount is sent: the API settles exactly what the classes came to,
+        // rather than a figure typed here in the hope it matches.
+        expect(markPaidCall.amountPaid).toBeUndefined()
 
         fireEvent.change(
             screen.getByLabelText(/asha perera amount received/i),
@@ -260,28 +312,11 @@ describe('component-level coverage', () => {
             <PaymentTrackerView
                 students={[buildStudent()]}
                 paymentsByMonth={toGroups([
-                    {
-                        id: 1,
-                        studentId: 1,
-                        studentName: 'Asha Perera',
-                        month: currentMonth,
-                        monthlyFee: 120,
-                        amountPaid: 0,
-                        status: 'Pending',
-                        notes: 'Awaiting payment',
-                    },
-                    {
-                        id: 2,
-                        studentId: 1,
-                        studentName: 'Asha Perera',
-                        month: nextMonth,
-                        monthlyFee: 120,
-                        amountPaid: 50,
-                        status: 'Partial',
-                        notes: 'Carry over balance',
-                    },
+                    buildPayment({ id: 1, studentId: 1, studentName: 'Asha Perera', month: currentMonth, feePerSession: 120, sessionsHeld: 1, amountPaid: 0, notes: 'Awaiting payment' }),
+                    buildPayment({ id: 2, studentId: 1, studentName: 'Asha Perera', month: nextMonth, feePerSession: 120, sessionsHeld: 1, amountPaid: 50, notes: 'Carry over balance' }),
                 ])}
                 onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
             />
         )
 
@@ -309,18 +344,10 @@ describe('component-level coverage', () => {
                     }),
                 ]}
                 paymentsByMonth={toGroups([
-                    {
-                        id: 1,
-                        studentId: 1,
-                        studentName: 'Asha Perera',
-                        month: currentMonth,
-                        monthlyFee: 120,
-                        amountPaid: 120,
-                        status: 'Paid',
-                        notes: 'Settled',
-                    },
+                    buildPayment({ id: 1, studentId: 1, studentName: 'Asha Perera', month: currentMonth, feePerSession: 120, sessionsHeld: 1, amountPaid: 120, notes: 'Settled' }),
                 ])}
                 onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
             />
         )
 
@@ -334,6 +361,7 @@ describe('component-level coverage', () => {
                 students={[buildStudent()]}
                 paymentsByMonth={[]}
                 onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
             />
         )
 
@@ -364,38 +392,12 @@ describe('component-level coverage', () => {
                     }),
                 ]}
                 paymentsByMonth={toGroups([
-                    {
-                        id: 1,
-                        studentId: 1,
-                        studentName: 'Asha Perera',
-                        month: currentMonth,
-                        monthlyFee: 120,
-                        amountPaid: 120,
-                        status: 'Paid',
-                        notes: 'Settled',
-                    },
-                    {
-                        id: 2,
-                        studentId: 2,
-                        studentName: 'Maya Fernando',
-                        month: currentMonth,
-                        monthlyFee: 130,
-                        amountPaid: 65,
-                        status: 'Partial',
-                        notes: 'Half received',
-                    },
-                    {
-                        id: 3,
-                        studentId: 3,
-                        studentName: 'Nimal Silva',
-                        month: currentMonth,
-                        monthlyFee: 140,
-                        amountPaid: 0,
-                        status: 'Pending',
-                        notes: 'Awaiting payment',
-                    },
+                    buildPayment({ id: 1, studentId: 1, studentName: 'Asha Perera', month: currentMonth, feePerSession: 120, sessionsHeld: 1, amountPaid: 120, notes: 'Settled' }),
+                    buildPayment({ id: 2, studentId: 2, studentName: 'Maya Fernando', month: currentMonth, feePerSession: 130, sessionsHeld: 1, amountPaid: 65, notes: 'Half received' }),
+                    buildPayment({ id: 3, studentId: 3, studentName: 'Nimal Silva', month: currentMonth, feePerSession: 140, sessionsHeld: 1, amountPaid: 0, notes: 'Awaiting payment' }),
                 ])}
                 onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
             />
         )
 
@@ -404,9 +406,116 @@ describe('component-level coverage', () => {
         expect(screen.getByText(/£185/i)).toBeInTheDocument()
     })
 
-    it('renders the class scheduling calendar and shows overflow sessions', async () => {
+
+    it('numbers a day\'s classes by time and opens the one whose number is clicked', async () => {
         const user = userEvent.setup()
-        const onOpenStudentPage = vi.fn()
+        const session = (
+            id: number,
+            date: string,
+            time: string,
+            studentName: string
+        ): ScheduledSession => ({
+            id,
+            studentId: 1,
+            studentName,
+            year: '10',
+            subject: 'Mathematics',
+            date,
+            time,
+            notes: `${studentName} notes`,
+            status: 'Scheduled',
+        })
+
+        const day = new Date(today.getFullYear(), today.getMonth(), 12, 12)
+        const dayKey = dateKey(day)
+        const otherKey = dateKey(
+            new Date(today.getFullYear(), today.getMonth(), 13, 12)
+        )
+
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[
+                    // Deliberately out of time order, and not id order.
+                    session(1, dayKey, '16:00', 'Third Student'),
+                    session(2, dayKey, '09:00', 'First Student'),
+                    session(3, otherKey, '10:00', 'Other Day Student'),
+                    session(4, dayKey, '11:00', 'Second Student'),
+                ]}
+                onScheduleClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        // Numbered 1..3 by time — the neighbouring day's class is not among them.
+        expect(classChip(day, 1)).toHaveAccessibleName(/09:00 First Student/)
+        expect(classChip(day, 2)).toHaveAccessibleName(/11:00 Second Student/)
+        expect(classChip(day, 3)).toHaveAccessibleName(/16:00 Third Student/)
+        expect(
+            screen.queryByRole('button', {
+                name: new RegExp(`^Class 4 on ${day.toDateString()}`),
+            })
+        ).not.toBeInTheDocument()
+
+        // Clicking number 3 opens that class, not the day's first.
+        await user.click(classChip(day, 3))
+        const dialog = screen.getByRole('dialog')
+        expect(within(dialog).getByText('16:00')).toBeInTheDocument()
+        expect(within(dialog).getByText('Third Student notes')).toBeInTheDocument()
+        expect(
+            within(dialog).queryByText('First Student notes')
+        ).not.toBeInTheDocument()
+
+        // The numbers repeat inside the modal, and switch which one is shown.
+        await user.click(
+            within(dialog).getByRole('tab', { name: '1' })
+        )
+        expect(within(dialog).getByText('09:00')).toBeInTheDocument()
+        expect(within(dialog).getByText('First Student notes')).toBeInTheDocument()
+    })
+
+    it('opens a day on its earliest class when the date itself is clicked', async () => {
+        const user = userEvent.setup()
+        const day = new Date(today.getFullYear(), today.getMonth(), 9, 12)
+        const base = {
+            studentId: 1,
+            studentName: 'Asha Perera',
+            year: '10',
+            subject: 'Mathematics',
+            date: dateKey(day),
+            status: 'Scheduled' as const,
+        }
+
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[
+                    { ...base, id: 1, time: '15:00', notes: '' },
+                    { ...base, id: 2, time: '08:00', notes: 'Morning' },
+                ]}
+                onScheduleClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        await user.click(openDayCell(day))
+
+        // Populated with the existing schedule, starting at the earliest class.
+        const dialog = screen.getByRole('dialog')
+        expect(within(dialog).getByText('Morning')).toBeInTheDocument()
+        expect(within(dialog).getByRole('tab', { name: '1' })).toHaveAttribute(
+            'aria-selected',
+            'true'
+        )
+
+        // A class booked without notes shows a dash, not an empty row.
+        await user.click(within(dialog).getByRole('tab', { name: '2' }))
+        expect(within(dialog).getByText('15:00')).toBeInTheDocument()
+        expect(within(dialog).getByText('—')).toBeInTheDocument()
+    })
+
+    it('shades a busy day and reveals its classes on hover', async () => {
+        const user = userEvent.setup()
         const onScheduleClass = vi.fn()
         const today = new Date()
         const scheduledDay = new Date(
@@ -416,6 +525,24 @@ describe('component-level coverage', () => {
             12
         )
         const day = scheduledDay.toISOString().slice(0, 10)
+        const session = (
+            id: number,
+            studentId: number,
+            studentName: string,
+            subject: string,
+            time: string,
+            status: ScheduledSession['status'] = 'Scheduled'
+        ): ScheduledSession => ({
+            id,
+            studentId,
+            studentName,
+            year: '10',
+            subject,
+            date: day,
+            time,
+            notes: '',
+            status,
+        })
 
         render(
             <ClassSchedulingView
@@ -429,69 +556,50 @@ describe('component-level coverage', () => {
                     }),
                 ]}
                 sessions={[
-                    {
-                        id: 1,
-                        studentId: 1,
-                        studentName: 'Asha Perera',
-                        year: '10',
-                        subject: 'Mathematics',
-                        date: day,
-                        time: '09:00',
-                        notes: 'Warm-up',
-                    },
-                    {
-                        id: 2,
-                        studentId: 1,
-                        studentName: 'Asha Perera',
-                        year: '10',
-                        subject: 'Mathematics',
-                        date: day,
-                        time: '10:00',
-                        notes: 'Practice',
-                    },
-                    {
-                        id: 3,
-                        studentId: 1,
-                        studentName: 'Asha Perera',
-                        year: '10',
-                        subject: 'Mathematics',
-                        date: day,
-                        time: '11:00',
-                        notes: 'Review',
-                    },
-                    {
-                        id: 4,
-                        studentId: 2,
-                        studentName: 'Maya Fernando',
-                        year: '9',
-                        subject: 'Physics',
-                        date: day,
-                        time: '12:00',
-                        notes: 'Lab prep',
-                    },
+                    // Four classes on one day, two students, one cancelled.
+                    session(1, 1, 'Asha Perera', 'Mathematics', '09:00'),
+                    session(2, 1, 'Asha Perera', 'Mathematics', '10:00'),
+                    session(3, 2, 'Maya Fernando', 'Physics', '11:00'),
+                    session(4, 2, 'Maya Fernando', 'Physics', '12:00', 'Cancelled'),
                 ]}
-                onOpenStudentPage={onOpenStudentPage}
                 onScheduleClass={onScheduleClass}
+                onSetSessionStatus={vi.fn()}
             />
         )
 
         expect(
             screen.getByRole('heading', { name: /class scheduling/i })
         ).toBeInTheDocument()
-        expect(screen.getByText('+1 more')).toBeInTheDocument()
+
+        // The cancelled one is not counted: three classes are actually on.
+        const busyDay = screen.getByRole('gridcell', {
+            name: new RegExp(`${scheduledDay.toDateString()}: 3 classes`),
+        })
+        expect(busyDay).toHaveClass('booked-medium')
+
+        // Details are revealed on hover, not printed into the grid.
+        expect(screen.queryByText('Maya Fernando · Physics')).not.toBeInTheDocument()
+        await user.hover(busyDay)
+
+        // All four classes are listed with their times, including both
+        // students and both of Asha's back-to-back slots.
+        expect(await screen.findByText('09:00')).toBeInTheDocument()
+        expect(screen.getByText('10:00')).toBeInTheDocument()
+        expect(screen.getByText('11:00')).toBeInTheDocument()
+        expect(screen.getByText('12:00')).toBeInTheDocument()
+        // Scope to the tooltip: the student picker also says "Asha Perera".
+        const tooltip = screen.getByRole('tooltip')
+        expect(within(tooltip).getAllByText(/Asha Perera/)).toHaveLength(2)
+        expect(within(tooltip).getAllByText(/Maya Fernando/)).toHaveLength(2)
+        // The cancelled one still appears, labelled rather than struck through.
+        expect(screen.getByText('Cancelled')).toBeInTheDocument()
 
         await user.click(screen.getByRole('button', { name: /next/i }))
         await user.click(screen.getByRole('button', { name: /previous/i }))
-
-        await user.click(
-            screen.getByRole('button', { name: /09:00asha perera/i })
-        )
-        expect(onOpenStudentPage).toHaveBeenCalledWith(1)
-
-        expect(onScheduleClass).not.toHaveBeenCalled()
     })
 
-    it('shows the empty scheduler state when there are no students', () => {
+    it('shows the empty scheduler state when there are no students', async () => {
+        const user = userEvent.setup()
         const onOpenStudentPage = vi.fn()
         const onScheduleClass = vi.fn()
 
@@ -503,6 +611,8 @@ describe('component-level coverage', () => {
                 onScheduleClass={onScheduleClass}
             />
         )
+
+        await user.click(openDayCell(today))
 
         expect(screen.getByText(/no student selected/i)).toBeInTheDocument()
 
@@ -537,6 +647,8 @@ describe('component-level coverage', () => {
             />
         )
 
+        await user.click(openDayCell(today))
+
         const studentSearch = screen.getByRole('combobox', {
             name: /student name and year/i,
         })
@@ -547,6 +659,15 @@ describe('component-level coverage', () => {
         )
 
         expect(screen.getByText(/maya fernando/i)).toBeInTheDocument()
+        // Her first subject comes along with her.
+        expect(screen.getByLabelText(/subject/i)).toHaveValue('Physics')
+
+        // Clearing the picker empties the subject too, rather than stranding
+        // the previous student's subject on a class with no student.
+        await user.click(screen.getByTitle('Clear'))
+        expect(screen.getByLabelText(/subject/i)).toHaveValue('')
+        expect(screen.getByText(/no student selected/i)).toBeInTheDocument()
+
         expect(onOpenStudentPage).not.toHaveBeenCalled()
         expect(onScheduleClass).not.toHaveBeenCalled()
     })
@@ -565,16 +686,127 @@ describe('component-level coverage', () => {
             />
         )
 
+        const day = new Date(today.getFullYear(), today.getMonth(), 18, 12)
+        await user.click(openDayCell(day))
+
+        // An empty day presets nothing, so the whole class is entered by hand.
+        await user.type(
+            screen.getByLabelText(/student name and year/i),
+            'Asha'
+        )
+        await user.click(await screen.findByRole('option', { name: /asha/i }))
         fireEvent.change(screen.getByLabelText(/subject/i), {
             target: { value: 'Physics' },
+        })
+        fireEvent.change(screen.getByLabelText(/time/i), {
+            target: { value: '16:00' },
         })
 
         await user.click(screen.getByRole('button', { name: /save class/i }))
 
+        // The date is the day that was clicked — there is no date field to type.
         expect(onScheduleClass).toHaveBeenCalledWith(
             expect.objectContaining({
                 notes: 'Scheduled from the class planner',
+                date: dateKey(day),
             })
         )
+
+        // Saving closes the day. Awaited: the dialog lingers in the DOM while
+        // its exit transition runs.
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+    })
+
+    it('mirrors the selected class into the form, and presets nothing on an empty day', async () => {
+        const user = userEvent.setup()
+        const booked = new Date(today.getFullYear(), today.getMonth(), 21, 12)
+        const empty = new Date(today.getFullYear(), today.getMonth(), 22, 12)
+        const base = {
+            year: '10',
+            date: dateKey(booked),
+            notes: '',
+            status: 'Scheduled' as const,
+        }
+
+        render(
+            <ClassSchedulingView
+                students={[
+                    buildStudent(),
+                    buildStudent({
+                        id: 2,
+                        firstName: 'Maya',
+                        lastName: 'Fernando',
+                        subjects: ['Physics', 'Chemistry'],
+                    }),
+                ]}
+                sessions={[
+                    {
+                        ...base,
+                        id: 1,
+                        studentId: 1,
+                        studentName: 'Asha Perera',
+                        subject: 'Mathematics',
+                        time: '09:00',
+                    },
+                    {
+                        ...base,
+                        id: 2,
+                        studentId: 2,
+                        studentName: 'Maya Fernando',
+                        subject: 'Physics',
+                        time: '13:00',
+                    },
+                ]}
+                onScheduleClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        // Opening the day fills the form from its first class.
+        await user.click(openDayCell(booked))
+        expect(screen.getByLabelText(/student name and year/i)).toHaveValue(
+            'Asha Perera • Year 10'
+        )
+        expect(screen.getByLabelText(/subject/i)).toHaveValue('Mathematics')
+        expect(screen.getByLabelText(/time/i)).toHaveValue('09:00')
+
+        // Picking another number re-fills it from that class.
+        await user.click(screen.getByRole('tab', { name: '2' }))
+        expect(screen.getByLabelText(/student name and year/i)).toHaveValue(
+            'Maya Fernando • Year 10'
+        )
+        expect(screen.getByLabelText(/subject/i)).toHaveValue('Physics')
+        expect(screen.getByLabelText(/time/i)).toHaveValue('13:00')
+
+        // A day with nothing booked presets nothing at all.
+        await user.keyboard('{Escape}')
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await user.click(openDayCell(empty))
+        expect(screen.getByLabelText(/student name and year/i)).toHaveValue('')
+        expect(screen.getByLabelText(/subject/i)).toHaveValue('')
+        expect(screen.getByLabelText(/time/i)).toHaveValue('')
+        expect(screen.getByText(/no student selected/i)).toBeInTheDocument()
+    })
+
+    it('dismisses the day without booking anything', async () => {
+        const user = userEvent.setup()
+        const onScheduleClass = vi.fn()
+
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[]}
+                onScheduleClass={onScheduleClass}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        await user.click(openDayCell(today))
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+        await user.keyboard('{Escape}')
+
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        expect(onScheduleClass).not.toHaveBeenCalled()
     })
 })

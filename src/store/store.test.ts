@@ -22,7 +22,9 @@ import {
     fetchStudentsSucceeded,
     resetStudentState,
     studentReducer,
-    updatePaymentRecord,
+    savePaymentRequested,
+    savePaymentSucceeded,
+    savePaymentFailed,
 } from './store'
 
 const buildStudent = (overrides: Partial<Student> = {}): Student => ({
@@ -42,26 +44,37 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     address: overrides.address ?? 'Test Address',
 })
 
-const buildPayment = (overrides: Partial<PaymentRecord> = {}): PaymentRecord => ({
-    id: overrides.id ?? 1,
-    studentId: overrides.studentId ?? 1,
-    studentName: overrides.studentName ?? 'Test Student',
-    month: overrides.month ?? '2026-01',
-    monthlyFee: overrides.monthlyFee ?? 120,
-    amountPaid: overrides.amountPaid ?? 0,
-    status: overrides.status ?? 'Pending',
-    notes: overrides.notes ?? '',
-})
+/** Mirrors the API: a bill is classes taught x the per-session fee. */
+const buildPayment = (overrides: Partial<PaymentRecord> = {}): PaymentRecord => {
+    const feePerSession = overrides.feePerSession ?? 120
+    const sessionsHeld = overrides.sessionsHeld ?? 1
+    const amountDue = overrides.amountDue ?? feePerSession * sessionsHeld
+    const amountPaid = overrides.amountPaid ?? 0
+    return {
+        id: overrides.id ?? 1,
+        studentId: overrides.studentId ?? 1,
+        studentName: overrides.studentName ?? 'Test Student',
+        month: overrides.month ?? '2026-01',
+        feePerSession,
+        sessionsHeld,
+        amountDue,
+        amountPaid,
+        outstanding: Math.max(amountDue - amountPaid, 0),
+        status: overrides.status ?? 'Pending',
+        notes: overrides.notes ?? '',
+    }
+}
 
 /** A month group mirroring the API's /payments/by-month shape. */
 const buildGroup = (records: PaymentRecord[], month = '2026-01') => {
-    const totalExpected = records.reduce((s, r) => s + r.monthlyFee, 0)
+    const totalDue = records.reduce((s, r) => s + r.amountDue, 0)
     const totalReceived = records.reduce((s, r) => s + r.amountPaid, 0)
     return {
         month,
-        totalExpected,
+        totalDue,
         totalReceived,
-        totalOutstanding: totalExpected - totalReceived,
+        totalOutstanding: Math.max(totalDue - totalReceived, 0),
+        sessionsHeld: records.reduce((s, r) => s + r.sessionsHeld, 0),
         records,
     }
 }
@@ -375,7 +388,7 @@ describe('student reducer', () => {
     })
 
     describe('local mutations', () => {
-        it('updates a payment record and recomputes that month’s totals', () => {
+        it('takes the API record and recomputes that month’s totals', () => {
             const loaded = studentReducer(
                 initial(),
                 fetchPaymentsSucceeded([
@@ -383,14 +396,14 @@ describe('student reducer', () => {
                         buildPayment({
                             studentId: 1,
                             month: '2026-01',
-                            monthlyFee: 120,
+                            feePerSession: 120,
                             amountPaid: 0,
                         }),
                         buildPayment({
                             id: 2,
                             studentId: 2,
                             month: '2026-01',
-                            monthlyFee: 100,
+                            feePerSession: 100,
                             amountPaid: 50,
                         }),
                     ]),
@@ -400,24 +413,27 @@ describe('student reducer', () => {
 
             const updated = studentReducer(
                 loaded,
-                updatePaymentRecord({
-                    studentId: 1,
-                    month: '2026-01',
-                    status: 'Paid',
-                    amountPaid: 120,
-                    notes: 'Settled',
-                })
+                savePaymentSucceeded([
+                    buildPayment({
+                        studentId: 1,
+                        month: '2026-01',
+                        feePerSession: 120,
+                        amountPaid: 120,
+                        status: 'Paid',
+                        notes: 'Settled',
+                    }),
+                ])
             )
             const group = updated.paymentsByMonth[0]
             expect(group.records[0].status).toBe('Paid')
             expect(group.records[0].notes).toBe('Settled')
             // Totals recomputed from the edited records.
-            expect(group.totalExpected).toBe(220)
+            expect(group.totalDue).toBe(220)
             expect(group.totalReceived).toBe(170)
             expect(group.totalOutstanding).toBe(50)
         })
 
-        it('ignores payment updates for an unknown month or student', () => {
+        it('ignores an API record for a month or student it does not hold', () => {
             const loaded = studentReducer(
                 initial(),
                 fetchPaymentsSucceeded([
@@ -428,31 +444,37 @@ describe('student reducer', () => {
             // Unknown month -> no group found.
             const unknownMonth = studentReducer(
                 loaded,
-                updatePaymentRecord({
-                    studentId: 1,
-                    month: '2099-01',
-                    status: 'Paid',
-                    amountPaid: 999,
-                    notes: 'Nope',
-                })
+                savePaymentSucceeded([
+                    buildPayment({ studentId: 1, month: '2099-01', amountPaid: 999 }),
+                ])
             )
             expect(unknownMonth.paymentsByMonth[0].records[0].amountPaid).toBe(0)
 
             // Known month, unknown student -> no record found.
             const unknownStudent = studentReducer(
                 loaded,
-                updatePaymentRecord({
-                    studentId: -999,
-                    month: '2026-01',
-                    status: 'Paid',
-                    amountPaid: 999,
-                    notes: 'Nope',
-                })
+                savePaymentSucceeded([
+                    buildPayment({ studentId: -999, month: '2026-01', amountPaid: 999 }),
+                ])
             )
             expect(unknownStudent.paymentsByMonth[0].records).toHaveLength(1)
             expect(
                 unknownStudent.paymentsByMonth[0].records[0].amountPaid
             ).toBe(0)
+        })
+
+        it('surfaces a failed payment save and clears it on the next try', () => {
+            const failed = studentReducer(
+                initial(),
+                savePaymentFailed('Could not record the payment: 500')
+            )
+            expect(failed.error).toBe('Could not record the payment: 500')
+
+            const cleared = studentReducer(
+                failed,
+                savePaymentRequested({ studentId: 1, month: '2026-01' })
+            )
+            expect(cleared.error).toBeNull()
         })
     })
 })
