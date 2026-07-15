@@ -10,9 +10,10 @@ import type {
 
 type PaymentTrackerViewProps = {
     students: Student[]
-    /** Month-grouped payments from the API, each with server-computed totals. */
+    /** Month-grouped bills from the API, each with server-computed totals. */
     paymentsByMonth: MonthlyPaymentGroup[]
     onUpdatePaymentRecord: (record: PaymentRecordInput) => void
+    onOpenStudentPage: (studentId: number) => void
 }
 
 const monthLabels = [
@@ -47,37 +48,37 @@ const formatCurrency = (value: number) =>
 
 const getStatusClass = (status: PaymentStatus) => status.toLowerCase()
 
+const getCurrentMonth = () => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
 export const PaymentTrackerView = ({
     students,
     paymentsByMonth,
     onUpdatePaymentRecord,
+    onOpenStudentPage,
 }: PaymentTrackerViewProps) => {
     const monthOptions = useMemo(getMonthOptions, [])
-    const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
-    const defaultMonth = currentMonth
-    const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
+    const currentMonth = useMemo(getCurrentMonth, [])
+    const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
-    const monthGroup = useMemo(
-        () => paymentsByMonth.find((group) => group.month === selectedMonth),
-        [paymentsByMonth, selectedMonth]
+    const monthGroup = paymentsByMonth.find(
+        (group) => group.month === selectedMonth
     )
-
     const monthRecords = useMemo(() => monthGroup?.records ?? [], [monthGroup])
 
     const recordsByStudentId = useMemo(
         () =>
-            monthRecords.reduce<Record<number, PaymentRecord>>(
-                (acc, record) => {
-                    acc[record.studentId] = record
-                    return acc
-                },
-                {}
-            ),
+            monthRecords.reduce<Record<number, PaymentRecord>>((acc, record) => {
+                acc[record.studentId] = record
+                return acc
+            }, {}),
         [monthRecords]
     )
 
-    // Money totals come straight from the API's monthly group; only the
-    // per-status counts are derived here.
+    // Totals come from the API — it alone decides what is due, from the classes
+    // that took place. Only the per-status tally is counted here.
     const summary = useMemo(() => {
         const counts = monthRecords.reduce(
             (acc, record) => {
@@ -90,34 +91,39 @@ export const PaymentTrackerView = ({
         )
 
         return {
-            totalDue: monthGroup?.totalExpected ?? 0,
+            totalDue: monthGroup?.totalDue ?? 0,
             totalReceived: monthGroup?.totalReceived ?? 0,
             outstanding: monthGroup?.totalOutstanding ?? 0,
+            sessionsHeld: monthGroup?.sessionsHeld ?? 0,
             ...counts,
         }
     }, [monthGroup, monthRecords])
 
-    const handleUpdate = (
-        studentId: number,
-        field: 'status' | 'amountPaid' | 'notes',
-        value: string
-    ) => {
-        const currentRecord = recordsByStudentId[studentId]!
-
-        const nextStatus: PaymentStatus =
-            field === 'status' ? (value as PaymentStatus) : currentRecord.status
-        const nextAmount =
-            field === 'amountPaid'
-                ? Number.parseInt(value, 10)
-                : currentRecord.amountPaid
-        const nextNotes = field === 'notes' ? value : currentRecord.notes
-
+    const handleAmountChange = (record: PaymentRecord, value: string) => {
+        const parsed = Number.parseInt(value, 10)
         onUpdatePaymentRecord({
-            studentId,
+            studentId: record.studentId,
             month: selectedMonth,
-            status: nextStatus,
-            amountPaid: Number.isNaN(nextAmount) ? 0 : nextAmount,
-            notes: nextNotes,
+            amountPaid: Number.isNaN(parsed) ? 0 : parsed,
+            notes: record.notes,
+        })
+    }
+
+    const handleNotesChange = (record: PaymentRecord, value: string) => {
+        onUpdatePaymentRecord({
+            studentId: record.studentId,
+            month: selectedMonth,
+            amountPaid: record.amountPaid,
+            notes: value,
+        })
+    }
+
+    /** Settles the month: the API pays exactly what the classes came to. */
+    const handleMarkPaid = (record: PaymentRecord) => {
+        onUpdatePaymentRecord({
+            studentId: record.studentId,
+            month: selectedMonth,
+            notes: record.notes,
         })
     }
 
@@ -132,8 +138,9 @@ export const PaymentTrackerView = ({
                     <p className="eyebrow">Payment tracker</p>
                     <h3>Monthly payment tracking</h3>
                     <p>
-                        Track received, partial, and pending payments for each
-                        student in one editable monthly table.
+                        Each student owes for the classes that actually took
+                        place. A month builds up as lessons are taught — mark it
+                        paid once it&apos;s settled.
                     </p>
                 </div>
                 <div className="payment-month-filter">
@@ -164,8 +171,9 @@ export const PaymentTrackerView = ({
                     <strong>{formatCurrency(summary.outstanding)}</strong>
                 </div>
                 <div className="card payment-summary-card total">
-                    <span>Total expected</span>
+                    <span>Due for classes taught</span>
                     <strong>{formatCurrency(summary.totalDue)}</strong>
+                    <small>{summary.sessionsHeld} classes taught</small>
                 </div>
                 <div className="card payment-summary-card status">
                     <span>Paid / partial / pending</span>
@@ -181,8 +189,9 @@ export const PaymentTrackerView = ({
                     <div>
                         <h3>{selectedMonthLabel}</h3>
                         <p>
-                            Update each row to reflect the current payment
-                            status for that month.
+                            Only classes that already happened are billed —
+                            cancelled and future ones are not. Open a student to
+                            change their details.
                         </p>
                     </div>
                 </div>
@@ -191,11 +200,12 @@ export const PaymentTrackerView = ({
                         <thead>
                             <tr>
                                 <th>Student</th>
-                                <th>Fee</th>
+                                <th>Classes taught</th>
+                                <th>Due</th>
                                 <th>Amount received</th>
-                                <th>Status</th>
                                 <th>Notes</th>
-                                <th>Balance</th>
+                                <th>Outstanding</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -203,25 +213,36 @@ export const PaymentTrackerView = ({
                                 const record = recordsByStudentId[student.id]
                                 if (!record) return null
 
-                                const balance = Math.max(
-                                    0,
-                                    record.monthlyFee - record.amountPaid
-                                )
-
                                 return (
                                     <tr
                                         key={record.id}
                                         className={`payment-row ${getStatusClass(record.status)}`}
                                     >
                                         <td>
-                                            <strong>
+                                            <button
+                                                type="button"
+                                                className="payment-student-link"
+                                                onClick={() =>
+                                                    onOpenStudentPage(student.id)
+                                                }
+                                            >
                                                 {student.firstName}{' '}
                                                 {student.lastName}
-                                            </strong>
+                                            </button>
                                             <small>{student.school}</small>
                                         </td>
+                                        <td className="payment-basis">
+                                            <strong>{record.sessionsHeld}</strong>
+                                            <small>
+                                                ×{' '}
+                                                {formatCurrency(
+                                                    record.feePerSession
+                                                )}{' '}
+                                                a session
+                                            </small>
+                                        </td>
                                         <td>
-                                            {formatCurrency(record.monthlyFee)}
+                                            {formatCurrency(record.amountDue)}
                                         </td>
                                         <td>
                                             <TextField
@@ -231,42 +252,17 @@ export const PaymentTrackerView = ({
                                                     htmlInput: {
                                                         'aria-label': `${student.firstName} ${student.lastName} amount received`,
                                                         min: 0,
-                                                        max: record.monthlyFee,
                                                         step: 1,
                                                     },
                                                 }}
                                                 value={record.amountPaid}
                                                 onChange={(event) =>
-                                                    handleUpdate(
-                                                        student.id,
-                                                        'amountPaid',
+                                                    handleAmountChange(
+                                                        record,
                                                         event.target.value
                                                     )
                                                 }
                                             />
-                                        </td>
-                                        <td>
-                                            <select
-                                                aria-label={`${student.firstName} ${student.lastName} status`}
-                                                value={record.status}
-                                                onChange={(event) =>
-                                                    handleUpdate(
-                                                        student.id,
-                                                        'status',
-                                                        event.target.value
-                                                    )
-                                                }
-                                            >
-                                                <option value="Paid">
-                                                    Paid
-                                                </option>
-                                                <option value="Partial">
-                                                    Partial
-                                                </option>
-                                                <option value="Pending">
-                                                    Pending
-                                                </option>
-                                            </select>
                                         </td>
                                         <td>
                                             <TextField
@@ -278,9 +274,8 @@ export const PaymentTrackerView = ({
                                                 }}
                                                 value={record.notes}
                                                 onChange={(event) =>
-                                                    handleUpdate(
-                                                        student.id,
-                                                        'notes',
+                                                    handleNotesChange(
+                                                        record,
                                                         event.target.value
                                                     )
                                                 }
@@ -288,7 +283,28 @@ export const PaymentTrackerView = ({
                                                 fullWidth
                                             />
                                         </td>
-                                        <td>{formatCurrency(balance)}</td>
+                                        <td>
+                                            {formatCurrency(record.outstanding)}
+                                        </td>
+                                        <td>
+                                            <span
+                                                className={`payment-status-pill ${getStatusClass(record.status)}`}
+                                            >
+                                                {record.status}
+                                            </span>
+                                            {record.outstanding > 0 && (
+                                                <Button
+                                                    size="small"
+                                                    variant="text"
+                                                    onClick={() =>
+                                                        handleMarkPaid(record)
+                                                    }
+                                                    aria-label={`Mark ${student.firstName} ${student.lastName} as paid`}
+                                                >
+                                                    Mark paid
+                                                </Button>
+                                            )}
+                                        </td>
                                     </tr>
                                 )
                             })}

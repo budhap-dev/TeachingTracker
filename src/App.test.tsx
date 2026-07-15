@@ -5,11 +5,26 @@ import {
     render,
     screen,
     waitFor,
+    waitForElementToBeRemoved,
     within,
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import App from './App'
+
+/**
+ * The calendar cell for a fixture class, whose date is built `offsetDays` from
+ * today. Derives the key the way the fixtures do, then reads it back in the
+ * local calendar the grid renders in, so the cell always matches the session.
+ */
+const openFixtureDayCell = (offsetDays: number) => {
+    const day = new Date()
+    day.setDate(day.getDate() + offsetDays)
+    const [year, month, date] = day.toISOString().slice(0, 10).split('-').map(Number)
+    return screen.getByRole('button', {
+        name: `Open ${new Date(year, month - 1, date).toDateString()}`,
+    })
+}
 
 describe('Teaching Tracker app', () => {
     it('collapses the theme picker by default and expands on demand', async () => {
@@ -75,9 +90,7 @@ describe('Teaching Tracker app', () => {
             })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('img', {
-                name: /student and class overview pie chart/i,
-            })
+            screen.getByRole('img', { name: /students by year group/i })
         ).toBeInTheDocument()
     })
 
@@ -190,12 +203,8 @@ describe('Teaching Tracker app', () => {
             })
         )
 
-        // Pick the student whose fixture class is still scheduled.
-        await user.type(
-            screen.getByLabelText(/student name and year/i),
-            'Asha'
-        )
-        await user.click(await screen.findByRole('option', { name: /asha/i }))
+        // Open the day holding Asha's fixture class, which is still scheduled.
+        await user.click(openFixtureDayCell(1))
 
         const cancel = await screen.findByRole('button', { name: /^cancel$/i })
         await user.click(cancel)
@@ -223,8 +232,16 @@ describe('Teaching Tracker app', () => {
             })
         )
 
-        await user.clear(screen.getByLabelText(/date/i))
-        await user.type(screen.getByLabelText(/date/i), '2026-07-12')
+        // Inside the dashboard's 14-day window, and derived from today so the
+        // test doesn't rot: a hardcoded date silently falls out of the window.
+        // The clicked day *is* the booking's date now — no date field to type.
+        const soon = new Date()
+        soon.setDate(soon.getDate() + 3)
+
+        await user.click(
+            screen.getByRole('button', { name: `Open ${soon.toDateString()}` })
+        )
+
         await user.clear(screen.getByLabelText(/time/i))
         await user.type(screen.getByLabelText(/time/i), '15:30')
         await user.clear(screen.getByLabelText(/notes/i))
@@ -234,6 +251,10 @@ describe('Teaching Tracker app', () => {
         )
 
         await user.click(screen.getByRole('button', { name: /save class/i }))
+
+        // Wait out the modal's exit transition: while it is open it marks the
+        // rest of the app aria-hidden, so the nav is unreachable.
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
 
         await user.click(
             within(navigation).getByRole('button', { name: /^dashboard$/i })
@@ -420,16 +441,23 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('heading', { name: /monthly payment tracking/i })
         ).toBeInTheDocument()
 
-        await user.selectOptions(
-            screen.getByLabelText(/asha perera status/i),
-            'Paid'
-        )
+        // A bill is what the classes came to, so the table shows the basis.
+        expect(screen.getByText(/due for classes taught/i)).toBeInTheDocument()
+        // The column header states the basis of the bill.
+        expect(
+            screen.getByRole('columnheader', { name: /classes taught/i })
+        ).toBeInTheDocument()
+
         await user.clear(screen.getByLabelText(/asha perera amount received/i))
         await user.type(
             screen.getByLabelText(/asha perera amount received/i),
             '120'
         )
 
-        expect(screen.getByText(/total expected/i)).toBeInTheDocument()
+        // Status is derived from what is owed against what was paid — there is
+        // no dropdown that could contradict it.
+        expect(
+            screen.queryByLabelText(/asha perera status/i)
+        ).not.toBeInTheDocument()
     })
 })

@@ -40,9 +40,6 @@
         grid-column: span 2;
     }
 
-    .scheduling-layout {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 640px) {
@@ -184,9 +181,5 @@
 
     .calendar-day {
         min-height: 110px;
-    }
-
-    .scheduling-layout {
-        gap: 12px;
     }
 }

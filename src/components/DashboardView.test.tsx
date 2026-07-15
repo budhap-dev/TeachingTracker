@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { DashboardView } from './DashboardView'
@@ -13,10 +13,8 @@ describe('DashboardView', () => {
             <DashboardView
                 stats={{ onlineStudents: 2, avgProgress: 82, totalStudents: 5 }}
                 overviewChart={[
-                    { label: 'Students', value: 5 },
-                    { label: 'Face to Face', value: 3 },
-                    { label: 'Online', value: 2 },
-                    { label: 'Upcoming sessions', value: 4 },
+                    { label: 'Year 9', value: 2 },
+                    { label: 'Year 10', value: 3 },
                 ]}
                 upcomingSessions={[
                     {
@@ -38,9 +36,7 @@ describe('DashboardView', () => {
         expect(screen.getByText('Today at a glance')).toBeInTheDocument()
         expect(screen.getByText('Total students')).toBeInTheDocument()
         expect(
-            screen.getByRole('img', {
-                name: /student and class overview pie chart/i,
-            })
+            screen.getByRole('img', { name: /students by year group/i })
         ).toBeInTheDocument()
         expect(
             screen.getByRole('heading', { name: /upcoming sessions/i })
@@ -61,5 +57,64 @@ describe('DashboardView', () => {
         )
 
         expect(onManageStudents).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows the year mix as parts of the student total', () => {
+        render(
+            <DashboardView
+                stats={{ onlineStudents: 2, avgProgress: 82, totalStudents: 5 }}
+                overviewChart={[
+                    { label: 'Year 9', value: 2 },
+                    { label: 'Year 10', value: 3 },
+                ]}
+                upcomingSessions={[]}
+                onManageStudents={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+            />
+        )
+
+        // The centre is the total the slices add up to — 2 + 3 — not a tally of
+        // unrelated things. Scoped to the chart: the stat tiles also say 5.
+        const chart = screen.getByRole('img', {
+            name: /students by year group/i,
+        })
+        expect(within(chart).getByText('5')).toBeInTheDocument()
+        expect(within(chart).getByText('Students')).toBeInTheDocument()
+        // The legend carries counts and shares, so identity never rests on
+        // colour alone.
+        expect(screen.getByText('Year 9')).toBeInTheDocument()
+        expect(screen.getByText(/2 students · 40%/)).toBeInTheDocument()
+        expect(screen.getByText(/3 students · 60%/)).toBeInTheDocument()
+    })
+
+    it('reads naturally with a single student, and draws nothing with none', () => {
+        const { rerender } = render(
+            <DashboardView
+                stats={{ onlineStudents: 1, avgProgress: 50, totalStudents: 1 }}
+                overviewChart={[{ label: 'Year 11', value: 1 }]}
+                upcomingSessions={[]}
+                onManageStudents={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+            />
+        )
+        const oneChart = screen.getByRole('img', {
+            name: /students by year group/i,
+        })
+        expect(within(oneChart).getByText('Student')).toBeInTheDocument()
+        expect(screen.getByText(/1 student · 100%/)).toBeInTheDocument()
+
+        rerender(
+            <DashboardView
+                stats={{ onlineStudents: 0, avgProgress: 0, totalStudents: 0 }}
+                overviewChart={[]}
+                upcomingSessions={[]}
+                onManageStudents={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+            />
+        )
+        const emptyChart = screen.getByRole('img', {
+            name: /students by year group/i,
+        })
+        expect(within(emptyChart).getByText('0')).toBeInTheDocument()
     })
 })

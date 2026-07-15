@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { ScheduledSession, Student } from '../data/students'
-import { parseSubjects, StudentDetailsView } from './StudentDetailsView'
+import { StudentDetailsView } from './StudentDetailsView'
 
 const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     id: overrides.id ?? 10,
@@ -75,7 +75,7 @@ describe('StudentDetailsView', () => {
 
         // Read-only until Edit: the identifiers are never offered at all.
         expect(screen.getByLabelText(/first name/i)).toBeDisabled()
-        expect(screen.getByLabelText(/monthly fees/i)).toBeDisabled()
+        expect(screen.getByLabelText(/fee per session/i)).toBeDisabled()
         expect(screen.getByRole('slider', { name: /progress/i })).toBeDisabled()
         expect(screen.queryByLabelText(/student id/i)).not.toBeInTheDocument()
 
@@ -111,8 +111,8 @@ describe('StudentDetailsView', () => {
 
         // The draft, not the stored student, is what's on screen.
         expect(screen.getByLabelText(/first name/i)).toHaveValue('Drafted')
-        expect(screen.getByLabelText(/monthly fees/i)).toHaveValue(150)
-        expect(screen.getByText('Fees: £150/month')).toBeInTheDocument()
+        expect(screen.getByLabelText(/fee per session/i)).toHaveValue(150)
+        expect(screen.getByText('Fees: £150/session')).toBeInTheDocument()
         expect(screen.getByText('60%')).toBeInTheDocument()
 
         await user.type(screen.getByLabelText(/last name/i), 'x')
@@ -121,8 +121,8 @@ describe('StudentDetailsView', () => {
             expect.any(String)
         )
 
-        await user.clear(screen.getByLabelText(/monthly fees/i))
-        await user.type(screen.getByLabelText(/monthly fees/i), '9')
+        await user.clear(screen.getByLabelText(/fee per session/i))
+        await user.type(screen.getByLabelText(/fee per session/i), '9')
         expect(onDraftChange).toHaveBeenCalledWith('fees', expect.any(Number))
 
         fireEvent.change(screen.getByRole('slider', { name: /progress/i }), {
@@ -234,18 +234,5 @@ describe('StudentDetailsView', () => {
         })
 
         expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
-    })
-})
-
-describe('parseSubjects', () => {
-    it('passes an array through untouched', () => {
-        expect(parseSubjects(['Maths', 'Physics'])).toEqual([
-            'Maths',
-            'Physics',
-        ])
-    })
-
-    it('splits the comma-joined string an autofill can produce', () => {
-        expect(parseSubjects('Maths,Physics')).toEqual(['Maths', 'Physics'])
     })
 })

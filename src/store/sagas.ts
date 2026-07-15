@@ -1,11 +1,12 @@
 import { all, call, put, takeEvery, takeLatest } from 'redux-saga/effects'
 import type {
     MonthlyPaymentGroup,
+    PaymentRecord,
     ScheduledSession,
     Student,
 } from '../data/students'
 import { fetchStudents, upsertStudent } from '../api/students'
-import { fetchPaymentsByMonth } from '../api/payments'
+import { fetchPaymentsByMonth, savePayments } from '../api/payments'
 import {
     createSession,
     fetchSessions,
@@ -24,6 +25,9 @@ import {
     fetchStudentsFailed,
     fetchStudentsRequested,
     fetchStudentsSucceeded,
+    savePaymentFailed,
+    savePaymentRequested,
+    savePaymentSucceeded,
     saveStudentFailed,
     saveStudentRequested,
     saveStudentSucceeded,
@@ -122,6 +126,27 @@ export function* setSessionStatusSaga(
     }
 }
 
+/**
+ * Records a payment via the API. The response carries the API's own view of what
+ * is due, so the table can never show a total the server disagrees with.
+ */
+export function* savePaymentSaga(
+    action: ReturnType<typeof savePaymentRequested>
+) {
+    try {
+        const saved: PaymentRecord[] = yield call(savePayments, action.payload)
+        yield put(savePaymentSucceeded(saved))
+    } catch (error) {
+        yield put(
+            savePaymentFailed(
+                error instanceof Error
+                    ? `Could not record the payment: ${error.message}`
+                    : 'Could not record the payment.'
+            )
+        )
+    }
+}
+
 /** Root saga: watches the request actions dispatched by the app. */
 export function* rootSaga() {
     yield all([
@@ -131,5 +156,6 @@ export function* rootSaga() {
         takeEvery(createSessionRequested.type, createSessionSaga),
         takeEvery(saveStudentRequested.type, saveStudentSaga),
         takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
+        takeEvery(savePaymentRequested.type, savePaymentSaga),
     ])
 }

@@ -2,6 +2,7 @@ import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import createSagaMiddleware from 'redux-saga'
 import {
     MonthlyPaymentGroup,
+    PaymentRecord,
     PaymentRecordInput,
     ScheduledSession,
     SessionStatus,
@@ -24,17 +25,24 @@ type StudentState = {
     hasLocalStudentChanges: boolean
 }
 
-/** Recomputes a month's totals after one of its records changes. */
+/**
+ * Recomputes a month's totals after the API returns an updated record.
+ * What is *due* never changes here — only the API derives that, from the
+ * classes taught — so only the received/outstanding side is recalculated.
+ */
 const recalculateTotals = (group: MonthlyPaymentGroup) => {
-    group.totalExpected = group.records.reduce(
-        (sum, record) => sum + record.monthlyFee,
+    group.totalDue = group.records.reduce(
+        (sum, record) => sum + record.amountDue,
         0
     )
     group.totalReceived = group.records.reduce(
         (sum, record) => sum + record.amountPaid,
         0
     )
-    group.totalOutstanding = group.totalExpected - group.totalReceived
+    group.totalOutstanding = Math.max(
+        group.totalDue - group.totalReceived,
+        0
+    )
 }
 
 // Students, payments and scheduled sessions all come from the API, so they
@@ -190,23 +198,34 @@ const studentSlice = createSlice({
         dismissError: (state) => {
             state.error = null
         },
-        updatePaymentRecord: (
+        // --- Recording a payment via the API ---
+        savePaymentRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (input: PaymentRecordInput) => ({ payload: input }),
+        },
+        /** Takes the API's recomputed record — including what it says is due. */
+        savePaymentSucceeded: (
             state,
-            action: PayloadAction<PaymentRecordInput>
+            action: PayloadAction<PaymentRecord[]>
         ) => {
-            const group = state.paymentsByMonth.find(
-                (item) => item.month === action.payload.month
-            )
-            const record = group?.records.find(
-                (item) => item.studentId === action.payload.studentId
-            )
-            if (!group || !record) {
-                return
-            }
-            record.status = action.payload.status
-            record.amountPaid = action.payload.amountPaid
-            record.notes = action.payload.notes
-            recalculateTotals(group)
+            action.payload.forEach((saved) => {
+                const group = state.paymentsByMonth.find(
+                    (item) => item.month === saved.month
+                )
+                const index = group?.records.findIndex(
+                    (item) => item.studentId === saved.studentId
+                )
+                if (!group || index === undefined || index < 0) {
+                    return
+                }
+                group.records[index] = saved
+                recalculateTotals(group)
+            })
+        },
+        savePaymentFailed: (state, action: PayloadAction<string>) => {
+            state.error = action.payload
         },
     },
 })
@@ -232,7 +251,9 @@ export const {
     saveStudentSucceeded,
     saveStudentFailed,
     dismissError,
-    updatePaymentRecord,
+    savePaymentRequested,
+    savePaymentSucceeded,
+    savePaymentFailed,
 } = studentSlice.actions
 
 /** Exported for tests: lets reducers be exercised without the saga middleware. */

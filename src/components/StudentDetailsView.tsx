@@ -13,6 +13,7 @@ import type {
     Student,
 } from '../data/students'
 import { subjectOptions, yearOptions } from '../utils/constants'
+import { parseSubjects } from '../utils/forms'
 
 type StudentDetailsViewProps = {
     student: Student
@@ -33,12 +34,6 @@ type StudentDetailsViewProps = {
 
 const modeOptions: Student['mode'][] = ['Face to Face', 'Online']
 
-/**
- * MUI's multi-select hands back an array normally, but a comma-joined string
- * when the browser autofills it. Normalise both into a list of subjects.
- */
-export const parseSubjects = (value: string | string[]): string[] =>
-    typeof value === 'string' ? value.split(',') : value
 
 export const StudentDetailsView = ({
     student,
@@ -104,7 +99,7 @@ export const StudentDetailsView = ({
                                 Subjects: {shown.subjects.length}
                             </span>
                             <span className="fees-pill">
-                                Fees: £{shown.fees}/month
+                                Fees: £{shown.fees}/session
                             </span>
                         </div>
                         <p className="subjects-line">
@@ -287,7 +282,7 @@ export const StudentDetailsView = ({
                                 ))}
                             </TextField>
                             <TextField
-                                label="Monthly fees (£)"
+                                label="Fee per session (£)"
                                 size="small"
                                 type="number"
                                 value={shown.fees}

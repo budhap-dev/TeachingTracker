@@ -10,11 +10,12 @@ import {
 import { useAppDispatch, useAppSelector } from './hooks'
 import {
     createSessionRequested,
+    savePaymentRequested,
     saveStudentRequested,
     setSessionStatusRequested,
-    updatePaymentRecord,
 } from './store/store'
 import { activeSessions } from './data/students'
+import { groupStudentsByYear } from './utils/studentMix'
 import type { EditableStudentField, Student } from './data/students'
 import { useStudentForm } from './hooks/useStudentForm'
 import { paths } from './paths'
@@ -27,6 +28,9 @@ import { ClassSchedulingView } from './components/ClassSchedulingView'
 import { ContactView } from './components/ContactView'
 import { OfferingsView } from './components/OfferingsView'
 import { siteContent } from './data/siteContent'
+
+/** How far ahead the dashboard's "upcoming sessions" looks. */
+const upcomingWindowDays = 14
 
 /** Scrolls to the top of the page whenever the route changes. */
 const ScrollToTop = () => {
@@ -72,30 +76,31 @@ const DashboardRoute = () => {
         }
     }, [students])
 
-    const upcomingSessions = useMemo(
-        () =>
-            // A cancelled class is not upcoming, and must not inflate the count.
-            activeSessions(scheduledSessions).sort((left, right) =>
+    const upcomingSessions = useMemo(() => {
+        // "Upcoming" means the next fortnight — not every class of the year,
+        // and never one that has already happened. A cancelled class is not
+        // upcoming either, and must not inflate the count.
+        const today = new Date()
+        const from = today.toISOString().slice(0, 10)
+        const until = new Date(today)
+        until.setDate(until.getDate() + upcomingWindowDays)
+        const to = until.toISOString().slice(0, 10)
+
+        return activeSessions(scheduledSessions)
+            .filter((session) => session.date >= from && session.date <= to)
+            .sort((left, right) =>
                 `${left.date} ${left.time}`.localeCompare(
                     `${right.date} ${right.time}`
                 )
-            ),
-        [scheduledSessions]
-    )
+            )
+    }, [scheduledSessions])
 
+    // Students by year: the old chart added students to sessions and counted
+    // each student twice (once as a student, once by mode), so its "total" meant
+    // nothing. Mode already has its own stat tiles.
     const overviewChart = useMemo(
-        () => [
-            { label: 'Students', value: students.length },
-            { label: 'Face to Face', value: stats.faceToFaceStudents },
-            { label: 'Online', value: stats.onlineStudents },
-            { label: 'Upcoming sessions', value: upcomingSessions.length },
-        ],
-        [
-            students.length,
-            stats.faceToFaceStudents,
-            stats.onlineStudents,
-            upcomingSessions.length,
-        ]
+        () => groupStudentsByYear(students),
+        [students]
     )
 
     return (
@@ -224,6 +229,7 @@ const StudySnapshotRoute = () => {
 
 const PaymentTrackerRoute = () => {
     const dispatch = useAppDispatch()
+    const openStudentPage = useOpenStudentPage()
     const students = useAppSelector((state) => state.students.students)
     const paymentsByMonth = useAppSelector(
         (state) => state.students.paymentsByMonth
@@ -233,15 +239,14 @@ const PaymentTrackerRoute = () => {
             students={students}
             paymentsByMonth={paymentsByMonth}
             onUpdatePaymentRecord={(record) =>
-                dispatch(updatePaymentRecord(record))
+                dispatch(savePaymentRequested(record))
             }
+            onOpenStudentPage={openStudentPage}
         />
     )
 }
 
 const SchedulingRoute = () => {
-    const navigate = useNavigate()
-    const openStudentPage = useOpenStudentPage()
     const dispatch = useAppDispatch()
     const students = useAppSelector((state) => state.students.students)
     const scheduledSessions = useAppSelector(
@@ -251,11 +256,11 @@ const SchedulingRoute = () => {
         <ClassSchedulingView
             students={students}
             sessions={scheduledSessions}
-            onOpenStudentPage={openStudentPage}
-            onScheduleClass={(session) => {
+            // Stay on the planner: the teacher books from a day modal and
+            // usually has more to do on the calendar.
+            onScheduleClass={(session) =>
                 dispatch(createSessionRequested(session))
-                navigate(paths.dashboard)
-            }}
+            }
             onSetSessionStatus={(id, status) =>
                 dispatch(setSessionStatusRequested({ id, status }))
             }

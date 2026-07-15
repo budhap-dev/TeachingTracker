@@ -1,12 +1,20 @@
 import { FormEvent, useMemo, useState } from 'react'
-import { Autocomplete, Button, TextField } from '@mui/material'
+import {
+    Autocomplete,
+    Button,
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    TextField,
+    Tooltip,
+} from '@mui/material'
 import { activeSessions } from '../data/students'
+import { bookedLevelClass, formatDayLabel } from '../utils/calendar'
 import type { ScheduledSession, SessionStatus, Student } from '../data/students'
 
 type ClassSchedulingViewProps = {
     students: Student[]
     sessions: ScheduledSession[]
-    onOpenStudentPage: (studentId: number) => void
     onScheduleClass: (session: Omit<ScheduledSession, 'id' | 'status'>) => void
     onSetSessionStatus: (id: number, status: SessionStatus) => void
 }
@@ -22,7 +30,21 @@ type StudentOption = {
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-const formatDateInputValue = (date: Date) => date.toISOString().slice(0, 10)
+/** A student's first subject — the form's default, blank if they have none. */
+const defaultSubject = (option?: StudentOption) => option?.subjects[0] ?? ''
+
+
+/**
+ * Formats a Date as YYYY-MM-DD in the *local* calendar.
+ *
+ * Deliberately not `toISOString()`: the grid builds each day at local midnight,
+ * which in any timezone ahead of UTC (e.g. BST) converts back to the previous
+ * day — putting every class on the wrong date, and the "today" ring one day out.
+ */
+const formatDateInputValue = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+        date.getDate()
+    ).padStart(2, '0')}`
 
 const getMonthGrid = (referenceDate: Date) => {
     const monthStart = new Date(
@@ -43,7 +65,6 @@ const getMonthGrid = (referenceDate: Date) => {
 export const ClassSchedulingView = ({
     students,
     sessions,
-    onOpenStudentPage,
     onScheduleClass,
     onSetSessionStatus,
 }: ClassSchedulingViewProps) => {
@@ -60,30 +81,72 @@ export const ClassSchedulingView = ({
         [students]
     )
 
+    // The form starts empty and is filled from whichever class the modal is
+    // showing. A day with nothing on it presets nothing.
     const [selectedStudent, setSelectedStudent] =
-        useState<StudentOption | null>(studentOptions[0] ?? null)
-    const [studentSearch, setStudentSearch] = useState(
-        studentOptions[0]?.label ?? ''
-    )
-    const [subject, setSubject] = useState(studentOptions[0]?.subjects[0] ?? '')
-    const [date, setDate] = useState(
-        formatDateInputValue(new Date(Date.now() + 24 * 60 * 60 * 1000))
-    )
-    const [time, setTime] = useState('16:00')
+        useState<StudentOption | null>(null)
+    const [studentSearch, setStudentSearch] = useState('')
+    const [subject, setSubject] = useState('')
+    const [time, setTime] = useState('')
     const [notes, setNotes] = useState('')
     const [monthReference, setMonthReference] = useState(() => new Date())
-
-    const sessionsByDate = useMemo(
-        () =>
-            sessions.reduce<Record<string, ScheduledSession[]>>(
-                (acc, session) => {
-                    acc[session.date] = [...(acc[session.date] || []), session]
-                    return acc
-                },
-                {}
-            ),
-        [sessions]
+    // The day whose modal is open. The calendar owns the date now, so there is
+    // no date field to keep in sync — null means no modal.
+    const [openDate, setOpenDate] = useState<string | null>(null)
+    // Which of that day's classes the modal is showing. Held as an id, not an
+    // index, so it survives the list re-sorting when a class is added.
+    const [selectedSessionId, setSelectedSessionId] = useState<number | null>(
+        null
     )
+
+    // Sorted once, here, so a day's classes are numbered identically wherever
+    // they appear: the chips on the grid, the tooltip, and the day modal.
+    const sessionsByDate = useMemo(() => {
+        const byDate = sessions.reduce<Record<string, ScheduledSession[]>>(
+            (acc, session) => {
+                acc[session.date] = [...(acc[session.date] || []), session]
+                return acc
+            },
+            {}
+        )
+        Object.values(byDate).forEach((day) =>
+            day.sort((left, right) => left.time.localeCompare(right.time))
+        )
+        return byDate
+    }, [sessions])
+
+    /**
+     * Mirrors a class into the form. Passing nothing clears it, which is what
+     * an empty day gets — no student, subject or time preset.
+     */
+    const applySessionToForm = (session?: ScheduledSession) => {
+        const option =
+            studentOptions.find(
+                (candidate) => candidate.id === session?.studentId
+            ) ?? null
+        setSelectedStudent(option)
+        setStudentSearch(option?.label ?? '')
+        setSubject(session?.subject ?? '')
+        setTime(session?.time ?? '')
+    }
+
+    /** Opens a day, showing `sessionId` — or its earliest class by default. */
+    const openDay = (dateKey: string, sessionId?: number) => {
+        const daySessions = sessionsByDate[dateKey] ?? []
+        const session =
+            daySessions.find((candidate) => candidate.id === sessionId) ??
+            daySessions[0]
+        setOpenDate(dateKey)
+        setSelectedSessionId(session?.id ?? null)
+        applySessionToForm(session)
+        setNotes('')
+    }
+
+    /** Switches the modal to another of the day's classes. */
+    const selectSession = (session: ScheduledSession) => {
+        setSelectedSessionId(session.id)
+        applySessionToForm(session)
+    }
 
     const monthGrid = useMemo(
         () => getMonthGrid(monthReference),
@@ -95,18 +158,28 @@ export const ClassSchedulingView = ({
     })
     const todayKey = formatDateInputValue(new Date())
 
+    // What is still to come — a count of the whole year's history would say 236
+    // and mean nothing.
+    const upcomingCount = useMemo(
+        () =>
+            activeSessions(sessions).filter(
+                (session) => session.date >= todayKey
+            ).length,
+        [sessions, todayKey]
+    )
+
     const handleStudentChange = (
         _event: unknown,
         value: StudentOption | null
     ) => {
         setSelectedStudent(value)
         setStudentSearch(value?.label ?? '')
-        setSubject(value?.subjects[0] ?? '')
+        setSubject(defaultSubject(value ?? undefined))
     }
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
-        if (!selectedStudent || !subject || !date || !time) {
+        if (!selectedStudent || !subject || !openDate || !time) {
             return
         }
 
@@ -115,21 +188,25 @@ export const ClassSchedulingView = ({
             studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
             year: selectedStudent.year,
             subject,
-            date,
+            date: openDate,
             time,
             notes: notes.trim() || 'Scheduled from the class planner',
         })
 
-        setDate(
-            formatDateInputValue(new Date(Date.now() + 48 * 60 * 60 * 1000))
-        )
-        setTime('16:00')
         setNotes('')
+        setOpenDate(null)
     }
 
-    const selectedStudentSessions = selectedStudent
-        ? sessions.filter((session) => session.studentId === selectedStudent.id)
-        : []
+    // Everything booked on the open day, earliest first — including cancelled
+    // ones, which stay visible so they can be restored.
+    const openDateSessions = openDate ? (sessionsByDate[openDate] ?? []) : []
+    // Clicking the day itself lands on its first class; clicking a numbered
+    // chip lands on that one. Falls back if the shown class has just been added
+    // elsewhere or the day is empty.
+    const shownSession =
+        openDateSessions.find(
+            (session) => session.id === selectedSessionId
+        ) ?? openDateSessions[0]
     const shouldOpenAutocomplete =
         studentSearch.length > 0 && studentSearch !== selectedStudent?.label
 
@@ -139,14 +216,14 @@ export const ClassSchedulingView = ({
                 <div>
                     <h3>Class scheduling</h3>
                     <p>
-                        Choose a student, book the next lesson, and keep the
-                        timetable visible in the dashboard.
+                        Pick a day to book a lesson or change what is already
+                        on, and keep the timetable visible in the dashboard.
                     </p>
                 </div>
                 <div className="scheduling-hero-stats">
                     <div>
-                        <strong>{activeSessions(sessions).length}</strong>
-                        <span>Booked classes</span>
+                        <strong>{upcomingCount}</strong>
+                        <span>Classes to come</span>
                     </div>
                     <div>
                         <strong>{students.length}</strong>
@@ -155,8 +232,95 @@ export const ClassSchedulingView = ({
                 </div>
             </div>
 
-            <div className="scheduling-layout">
-                <div className="card scheduling-form-card">
+            <Dialog
+                open={openDate !== null}
+                onClose={() => setOpenDate(null)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    {openDate ? formatDayLabel(openDate) : ''}
+                </DialogTitle>
+                <DialogContent className="day-modal-content">
+                    <div className="day-modal-sessions">
+                        <h4>Classes on this day</h4>
+                        {!shownSession ? (
+                            <p className="session-summary-meta">
+                                Nothing booked yet.
+                            </p>
+                        ) : (
+                            <>
+                                {/* One numbered chip per class, in time order,
+                                    matching the numbers on the calendar. */}
+                                <div
+                                    className="day-modal-picker"
+                                    role="tablist"
+                                    aria-label="Classes on this day"
+                                >
+                                    {openDateSessions.map((session, index) => (
+                                        <button
+                                            key={session.id}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={
+                                                session.id === shownSession.id
+                                            }
+                                            className={`day-modal-picker-chip ${session.id === shownSession.id ? 'selected' : ''} ${session.status === 'Cancelled' ? 'cancelled' : ''}`}
+                                            onClick={() =>
+                                                selectSession(session)
+                                            }
+                                        >
+                                            {index + 1}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <dl className="day-modal-detail">
+                                    <dt>Time</dt>
+                                    <dd>{shownSession.time}</dd>
+                                    <dt>Student</dt>
+                                    <dd>
+                                        {shownSession.studentName} • Year{' '}
+                                        {shownSession.year}
+                                    </dd>
+                                    <dt>Subject</dt>
+                                    <dd>{shownSession.subject}</dd>
+                                    <dt>Notes</dt>
+                                    <dd>{shownSession.notes || '—'}</dd>
+                                    <dt>Status</dt>
+                                    <dd>
+                                        {shownSession.status === 'Cancelled' ? (
+                                            <span className="session-cancelled-tag">
+                                                Cancelled
+                                            </span>
+                                        ) : (
+                                            'Scheduled'
+                                        )}
+                                    </dd>
+                                </dl>
+
+                                <Button
+                                    size="small"
+                                    variant="text"
+                                    className="session-status-button"
+                                    onClick={() =>
+                                        onSetSessionStatus(
+                                            shownSession.id,
+                                            shownSession.status === 'Cancelled'
+                                                ? 'Scheduled'
+                                                : 'Cancelled'
+                                        )
+                                    }
+                                >
+                                    {shownSession.status === 'Cancelled'
+                                        ? 'Restore'
+                                        : 'Cancel'}
+                                </Button>
+                            </>
+                        )}
+                    </div>
+
+                    <h4>Add a class</h4>
                     <form className="scheduling-form" onSubmit={handleSubmit}>
                         <Autocomplete
                             options={studentOptions}
@@ -204,16 +368,13 @@ export const ClassSchedulingView = ({
                             placeholder="Select or type a subject"
                         />
                         <TextField
-                            label="Date"
-                            type="date"
-                            value={date}
-                            onChange={(event) => setDate(event.target.value)}
-                        />
-                        <TextField
                             label="Time"
                             type="time"
                             value={time}
                             onChange={(event) => setTime(event.target.value)}
+                            // A time input always draws its own control, so an
+                            // unshrunk label sits on top of it when empty.
+                            slotProps={{ inputLabel: { shrink: true } }}
                         />
                         <TextField
                             label="Notes"
@@ -229,77 +390,28 @@ export const ClassSchedulingView = ({
                     </form>
 
                     <div className="student-session-summary compact">
-                        <h4>Selected student</h4>
                         {selectedStudent ? (
-                            <>
-                                <p>
-                                    {selectedStudent.firstName}{' '}
-                                    {selectedStudent.lastName} • Year{' '}
-                                    {selectedStudent.year}
-                                </p>
-                                <p className="session-summary-meta">
-                                    {selectedStudent.subjects.join(', ')}
-                                </p>
-                                <ul className="session-status-list">
-                                    {selectedStudentSessions
-                                        .slice(0, 3)
-                                        .map((session) => {
-                                            const isCancelled =
-                                                session.status === 'Cancelled'
-                                            return (
-                                                <li
-                                                    key={session.id}
-                                                    className={
-                                                        isCancelled
-                                                            ? 'cancelled'
-                                                            : ''
-                                                    }
-                                                >
-                                                    <span className="session-when">
-                                                        {session.date} •{' '}
-                                                        {session.time} •{' '}
-                                                        {session.subject}
-                                                    </span>
-                                                    {isCancelled && (
-                                                        <span className="session-cancelled-tag">
-                                                            Cancelled
-                                                        </span>
-                                                    )}
-                                                    <Button
-                                                        size="small"
-                                                        variant="text"
-                                                        className="session-status-button"
-                                                        onClick={() =>
-                                                            onSetSessionStatus(
-                                                                session.id,
-                                                                isCancelled
-                                                                    ? 'Scheduled'
-                                                                    : 'Cancelled'
-                                                            )
-                                                        }
-                                                    >
-                                                        {isCancelled
-                                                            ? 'Restore'
-                                                            : 'Cancel'}
-                                                    </Button>
-                                                </li>
-                                            )
-                                        })}
-                                </ul>
-                            </>
+                            <p className="session-summary-meta">
+                                {selectedStudent.firstName}{' '}
+                                {selectedStudent.lastName} • Year{' '}
+                                {selectedStudent.year} •{' '}
+                                {selectedStudent.subjects.join(', ')}
+                            </p>
                         ) : (
                             <p>No student selected.</p>
                         )}
                     </div>
-                </div>
+                </DialogContent>
+            </Dialog>
 
-                <div className="card scheduling-calendar-card">
+            <div className="card scheduling-calendar-card">
                     <div className="calendar-header scheduling-calendar-header">
                         <div>
                             <h3>{monthLabel}</h3>
                             <p>
-                                Booked dates are shown below. Hover a class chip
-                                to see the student name.
+                                Booked days are shaded by how many classes they
+                                hold. Pick a day to add a class, or cancel and
+                                restore the ones already on it.
                             </p>
                         </div>
                         <div className="calendar-actions">
@@ -352,63 +464,123 @@ export const ClassSchedulingView = ({
                         {monthGrid.map((day) => {
                             const dayKey = formatDateInputValue(day)
                             const sessionsForDay = sessionsByDate[dayKey] || []
+                            const booked = activeSessions(sessionsForDay)
                             const isCurrentMonth =
                                 day.getMonth() === monthReference.getMonth()
                             const isToday = dayKey === todayKey
 
-                            return (
+                            // The cell is a plain gridcell, not a button: the
+                            // numbered chips inside are buttons, and buttons
+                            // cannot nest. The day-opening button fills the
+                            // space above them instead.
+                            const cell = (
                                 <div
-                                    key={`${dayKey}-${day.getMonth()}`}
-                                    className={`calendar-day ${isCurrentMonth ? '' : 'muted'} ${isToday ? 'today' : ''}`}
+                                    className={`calendar-day ${isCurrentMonth ? '' : 'muted'} ${isToday ? 'today' : ''} ${bookedLevelClass(booked.length)}`}
                                     role="gridcell"
-                                    aria-label={day.toDateString()}
+                                    aria-label={
+                                        booked.length > 0
+                                            ? `${day.toDateString()}: ${booked.length} ${booked.length === 1 ? 'class' : 'classes'}`
+                                            : day.toDateString()
+                                    }
                                 >
-                                    <div className="calendar-day-number">
-                                        {day.getDate()}
-                                    </div>
-                                    <div className="calendar-session-list">
-                                        {sessionsForDay
-                                            .slice(0, 3)
-                                            .map((session) => (
-                                                <button
-                                                    key={session.id}
-                                                    type="button"
-                                                    className={`calendar-session-chip ${
-                                                        session.status ===
-                                                        'Cancelled'
-                                                            ? 'cancelled'
-                                                            : ''
-                                                    }`}
-                                                    title={`${session.studentName} • ${session.subject}${
-                                                        session.status ===
-                                                        'Cancelled'
-                                                            ? ' • Cancelled'
-                                                            : ''
-                                                    }`}
-                                                    onClick={() =>
-                                                        onOpenStudentPage(
-                                                            session.studentId
-                                                        )
-                                                    }
-                                                >
-                                                    <span>{session.time}</span>
-                                                    <small>
-                                                        {session.studentName}
-                                                    </small>
-                                                </button>
-                                            ))}
-                                        {sessionsForDay.length > 3 && (
-                                            <span className="calendar-session-more">
-                                                +{sessionsForDay.length - 3}{' '}
-                                                more
-                                            </span>
-                                        )}
-                                    </div>
+                                    <button
+                                        type="button"
+                                        className="calendar-day-open"
+                                        onClick={() => openDay(dayKey)}
+                                        aria-label={`Open ${day.toDateString()}`}
+                                    >
+                                        <span className="calendar-day-number">
+                                            {day.getDate()}
+                                        </span>
+                                    </button>
+                                    {sessionsForDay.length > 0 && (
+                                        <div className="calendar-day-chips">
+                                            {sessionsForDay.map(
+                                                (session, index) => (
+                                                    <button
+                                                        key={session.id}
+                                                        type="button"
+                                                        className={`calendar-day-chip ${session.status === 'Cancelled' ? 'cancelled' : ''}`}
+                                                        onClick={() =>
+                                                            openDay(
+                                                                dayKey,
+                                                                session.id
+                                                            )
+                                                        }
+                                                        aria-label={`Class ${index + 1} on ${day.toDateString()}: ${session.time} ${session.studentName}, ${session.subject}${session.status === 'Cancelled' ? ' (cancelled)' : ''}`}
+                                                    >
+                                                        {index + 1}
+                                                    </button>
+                                                )
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
+                            )
+
+                            // Nothing on: no tooltip to open.
+                            if (sessionsForDay.length === 0) {
+                                return (
+                                    <div key={`${dayKey}-${day.getMonth()}`}>
+                                        {cell}
+                                    </div>
+                                )
+                            }
+
+                            return (
+                                <Tooltip
+                                    key={`${dayKey}-${day.getMonth()}`}
+                                    arrow
+                                    placement="top"
+                                    title={
+                                        <div className="calendar-tooltip">
+                                            <strong>
+                                                {day.toLocaleDateString(
+                                                    'en-GB',
+                                                    {
+                                                        weekday: 'short',
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                    }
+                                                )}
+                                            </strong>
+                                            {/* Numbered to match the chips: the
+                                                hover and the click have to
+                                                agree on which class is which. */}
+                                            <ul>
+                                                {sessionsForDay.map(
+                                                    (session, index) => (
+                                                        <li key={session.id}>
+                                                            <span className="tooltip-number">
+                                                                {index + 1}
+                                                            </span>
+                                                            <span className="tooltip-time">
+                                                                {session.time}
+                                                            </span>
+                                                            <span>
+                                                                {
+                                                                    session.studentName
+                                                                }{' '}
+                                                                · {session.subject}
+                                                            </span>
+                                                            {session.status ===
+                                                                'Cancelled' && (
+                                                                <span className="tooltip-cancelled">
+                                                                    Cancelled
+                                                                </span>
+                                                            )}
+                                                        </li>
+                                                    )
+                                                )}
+                                            </ul>
+                                        </div>
+                                    }
+                                >
+                                    {cell}
+                                </Tooltip>
                             )
                         })}
                     </div>
-                </div>
             </div>
         </section>
     )

@@ -66,17 +66,28 @@ npm install
 
 ### Run locally
 
-The app needs the API. With `func-teaching-tracker` running on `:7071`:
+```bash
+npm start
+```
+
+Then open http://localhost:3000. No backend setup needed: you get the real **dev**
+dataset (5 students).
+
+Two pieces make that work, both committed:
+
+- `.env.development` sets `VITE_API_BASE_URL=/api`, so calls stay same-origin.
+- `vite.config.ts` proxies `/api` to the dev Function App.
+
+The proxy exists because the dev API's CORS allowlist contains only its paired
+Static Web App origin — a browser on `localhost` cannot call it directly. Vite
+forwards the request server-side, where CORS does not apply.
+
+To run against a local `func-teaching-tracker` on `:7071` instead, set an
+absolute base URL, which bypasses the proxy:
 
 ```bash
 VITE_API_BASE_URL=http://localhost:7071/api npm start
 ```
-
-Then open http://localhost:3000.
-
-> Without `VITE_API_BASE_URL` the app still renders, but every screen shows zeros
-> and empty lists — there is no bundled seed data. You cannot point a local
-> frontend at a deployed API (CORS allows only the paired Static Web App origin).
 
 ### Other scripts
 
