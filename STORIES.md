@@ -74,7 +74,7 @@ XS is an afternoon, XL is a project.
 | 1 | [REQ-007 — Contact us page](#req-007--public-contact-us-page) | XS | frontend | — |
 | 2 | [REQ-006 — Offerings page](#req-006--public-offerings-page) | S | frontend | — |
 | 3 | [REQ-002 — Student fields editable + saved](#req-002--every-student-field-except-the-id-is-editable-and-persists-via-the-api) | M | both | — |
-| 4 | [REQ-001 — Fees per session](#req-001--student-fees-are-charged-per-session-not-per-month) | L | both | — |
+| 4 | [REQ-001 — Fees per session, billed on classes taught](#req-001--fees-are-per-session-and-a-month-bills-for-classes-actually-taught) | L | both | — |
 | 5 | [REQ-003 — Public / teacher split](#req-003--public-portal-with-no-login-the-teachers-area-is-private) | L | both | REQ-004 to enforce |
 | 6 | [REQ-004 — Google sign-in](#req-004--teacher-signs-in-with-a-google-account) | L | both + infra | a cost decision |
 | 7 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
@@ -180,45 +180,66 @@ Chemistry starts taking Physics and Maths).
   and `studentId` are read-only — everything else is editable.
 - Payment edits are a separate gap and are **not** in scope here.
 
-## REQ-001 — Student fees are charged per session, not per month
+## REQ-001 — Fees are per session, and a month bills for classes actually taught
 
 **Status:** 🔲 Not started · **Impact:** both · **Effort:** L
 
 **Story**
-As a teacher, I want each student's fee to represent the cost of a **single
-session** rather than a flat monthly charge, so that what I bill reflects the
-lessons actually taught.
+As a teacher, I want each student's fee to price a **single session**, and what
+they owe for a month to build up from the classes that have **actually taken
+place**, so that a bill is always a list of lessons I really taught — and I can
+mark a student as paid once the month is done.
 
 **Acceptance criteria**
 
-- [ ] `Student.fees` means the price of one session (backend model + seed).
+- [ ] `Student.fees` means the price of **one session** (backend model + seed).
 - [ ] Every place the fee is shown reads as per-session, not `/month` — student
       detail page, student form, payment tracker "Fee" column.
-- [ ] **A month's expected amount = `student.fees` × that student's sessions in
-      that month.** Decided: true per-session billing.
-- [ ] A month with no sessions for a student expects £0 for them.
-- [ ] Payment tracker per-month totals (expected / received / outstanding) follow
-      the new calculation.
-- [ ] The payment record carries the session count it was derived from, so the
-      figure is explainable rather than a bare number.
+- [ ] **Amount due to date = `student.fees` × the student's classes that have
+      already taken place in that month** (a session whose date is today or
+      earlier). Classes still to come are not billed.
+- [ ] The current month therefore **accrues**: it grows as classes are taught.
+- [ ] A past month bills for all of its classes; a future month bills £0.
+- [ ] The payment record carries the **session count it was derived from**, so the
+      figure is explainable rather than a bare number ("4 classes × £120").
+- [ ] Payment tracker per-month totals (due / received / outstanding) follow the
+      new calculation.
+- [ ] **The teacher can mark a student as paid for a month, and it sticks** —
+      persisted via the API, surviving a reload (see ⚠️ below).
+- [ ] Marking paid settles the amount due to date for that month.
 - [ ] **Sessions are seeded recurring** (weekly per student, across the seed year)
-      so every month has realistic sessions to bill against.
-- [ ] Environments keep distinct fee values (dev £100 / test £110 / prod £120 base)
-      and distinct volumes.
+      so past months have real classes to bill against.
+- [ ] Environments keep distinct per-session fees (dev £100 / test £110 /
+      prod £120 base) and distinct volumes.
 
 **Notes**
 
-- Decided: `expected = fees × sessions that month`. This deliberately couples
-  payments to scheduled sessions — scheduling a class now changes what's owed.
-- ⚠️ **This forces a seed-data change.** Today each env has only a few one-off
-  sessions near today's date (dev 4 / test 6 / prod 8), so `fees × sessions` would
-  show **£0 for ~11 of 12 months**. Sessions must become recurring — assumption:
-  **one session per student per week** through the seed year (2026), giving
-  ~4–5 sessions/student/month. Adjustable per env if you want different cadences.
-- ⚠️ Knock-on: "Booked classes" on the Class Scheduling screen and the calendar
-  will show far more entries than today's 4/6/8. Expected, but a visible change.
-- `PaymentRecord.monthlyFee` becomes a derived figure; consider renaming it to
-  something honest (e.g. `amountDue`) since it's no longer a flat monthly fee.
+- Decided: bill for **delivered** lessons, not scheduled ones. A bill is a list of
+  classes that actually happened, which is defensible to a parent and handles a
+  quiet month with no manual adjustment.
+- ⚠️ **This makes the API time-dependent.** "Already taken place" is relative to
+  today, so `/payments` responses change as days pass. Tests must control the
+  clock rather than read it, and the figure can't be cached indefinitely.
+- ⚠️ **No attendance or cancellation model exists.** A class is assumed to have
+  happened purely because its date has passed — so a cancelled or missed lesson
+  would still be billed. That's a real billing error waiting to happen. Either
+  accept it for now, or add a "class happened / cancelled" mark (its own story).
+- ⚠️ **Marking paid needs the payment write that doesn't exist yet.** Payment
+  edits are currently local-only: nothing is sent, and they revert on reload. The
+  API already has `POST /payments`; no saga calls it. That gap has to close for
+  this story to mean anything.
+- ⚠️ **Forces a seed-data change.** Each env has only a few one-off sessions near
+  today (dev 4 / test 6 / prod 8), so almost every month would bill **£0**.
+  Sessions must become recurring — assumption: **one per student per week**
+  through the seed year (2026), ~4–5 classes/student/month.
+- ⚠️ Knock-on: "Booked classes" and the scheduling calendar will show far more
+  entries than today's 4/6/8. Expected, but a visible change.
+- `PaymentRecord.monthlyFee` stops being a flat monthly fee and becomes derived —
+  rename to `amountDue` so it doesn't lie.
+- ❓ Open: should the tracker also show a **projected** month total (all classes
+  scheduled, not just taught)? "Due to date" answers *what do they owe now*;
+  projection answers *what will this month be worth*. Assumed **due-to-date only**
+  for a first cut.
 
 ## REQ-003 — Public portal with no login; the teacher's area is private
 
