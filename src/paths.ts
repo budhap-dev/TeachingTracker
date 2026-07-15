@@ -6,4 +6,5 @@ export const paths = {
     studySnapshot: '/study-snapshot',
     payments: '/payments',
     scheduling: '/scheduling',
+    contact: '/contact',
 } as const

@@ -1,7 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 import { resetStudentState, store } from './store/store'
+import { siteContent } from './data/siteContent'
 
 describe('routing fallbacks', () => {
     it('redirects unknown routes to the dashboard', () => {
@@ -28,6 +30,38 @@ describe('routing fallbacks', () => {
 
         expect(
             screen.getByRole('heading', { name: /asha perera/i })
+        ).toBeInTheDocument()
+    })
+})
+
+describe('public pages', () => {
+    it('opens the contact page from its URL with the configured details', () => {
+        window.history.pushState({}, '', '/contact')
+        render(<App />)
+
+        expect(
+            screen.getByRole('heading', { name: /contact us/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('link', { name: siteContent.contact.email })
+        ).toHaveAttribute('href', `mailto:${siteContent.contact.email}`)
+        expect(
+            screen.getByRole('link', { name: siteContent.contact.phone })
+        ).toBeInTheDocument()
+    })
+
+    it('reaches the contact page from the sidebar', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', { name: /contact us/i })
+        )
+
+        expect(
+            screen.getByRole('heading', { name: /contact us/i })
         ).toBeInTheDocument()
     })
 })

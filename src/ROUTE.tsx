@@ -28,6 +28,8 @@ import { StudentDetailsView } from './components/StudentDetailsView'
 import { StudySnapshotView } from './components/StudySnapshotView'
 import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { ClassSchedulingView } from './components/ClassSchedulingView'
+import { ContactView } from './components/ContactView'
+import { siteContent } from './data/siteContent'
 
 /** Scrolls to the top of the page whenever the route changes. */
 const ScrollToTop = () => {
@@ -264,6 +266,14 @@ const SchedulingRoute = () => {
 }
 
 /** All application routes. Rendered inside the router by {@link App}. */
+/** Public page — reads site copy, never student data. */
+const ContactRoute = () => (
+    <ContactView
+        email={siteContent.contact.email}
+        phone={siteContent.contact.phone}
+    />
+)
+
 export const AppRoutes = () => (
     <>
         <ScrollToTop />
@@ -280,6 +290,7 @@ export const AppRoutes = () => (
             />
             <Route path={paths.payments} element={<PaymentTrackerRoute />} />
             <Route path={paths.scheduling} element={<SchedulingRoute />} />
+            <Route path={paths.contact} element={<ContactRoute />} />
             <Route
                 path="*"
                 element={<Navigate to={paths.dashboard} replace />}
