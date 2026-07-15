@@ -961,3 +961,45 @@
     line-height: 1.55;
     color: var(--muted);
 }
+
+.calendar-session-chip.cancelled {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+.session-status-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.session-status-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+}
+
+.session-status-list li.cancelled .session-when {
+    text-decoration: line-through;
+    color: var(--muted);
+}
+
+.session-when {
+    flex: 1;
+}
+
+.session-cancelled-tag {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--muted);
+}

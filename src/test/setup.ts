@@ -36,11 +36,20 @@ beforeEach(() => {
             if (url.includes('/payments')) {
                 body = buildFixturePaymentsByMonth()
             } else if (url.includes('/sessions')) {
-                // POST echoes back the created session, as the API does.
-                body =
-                    init.method === 'POST'
-                        ? { id: 999, ...JSON.parse(String(init.body)) }
-                        : buildFixtureSessions()
+                if (init.method === 'POST') {
+                    // Creating echoes the new class back, as the API does.
+                    body = { id: 999, ...JSON.parse(String(init.body)) }
+                } else if (init.method === 'PUT') {
+                    // Cancelling echoes the updated class, keyed by the id in
+                    // the URL — /sessions/101 -> { id: 101, status }.
+                    const id = Number(url.split('/sessions/')[1])
+                    const existing = buildFixtureSessions().find(
+                        (session) => session.id === id
+                    )
+                    body = { ...existing, ...JSON.parse(String(init.body)) }
+                } else {
+                    body = buildFixtureSessions()
+                }
             } else if (init.method === 'POST' || init.method === 'PUT') {
                 // Upserting a student echoes the saved record back. Spreading
                 // the payload last keeps its id on an update, and falls back to

@@ -1,12 +1,14 @@
 import { FormEvent, useMemo, useState } from 'react'
 import { Autocomplete, Button, TextField } from '@mui/material'
-import type { ScheduledSession, Student } from '../data/students'
+import { activeSessions } from '../data/students'
+import type { ScheduledSession, SessionStatus, Student } from '../data/students'
 
 type ClassSchedulingViewProps = {
     students: Student[]
     sessions: ScheduledSession[]
     onOpenStudentPage: (studentId: number) => void
-    onScheduleClass: (session: Omit<ScheduledSession, 'id'>) => void
+    onScheduleClass: (session: Omit<ScheduledSession, 'id' | 'status'>) => void
+    onSetSessionStatus: (id: number, status: SessionStatus) => void
 }
 
 type StudentOption = {
@@ -43,6 +45,7 @@ export const ClassSchedulingView = ({
     sessions,
     onOpenStudentPage,
     onScheduleClass,
+    onSetSessionStatus,
 }: ClassSchedulingViewProps) => {
     const studentOptions = useMemo<StudentOption[]>(
         () =>
@@ -142,7 +145,7 @@ export const ClassSchedulingView = ({
                 </div>
                 <div className="scheduling-hero-stats">
                     <div>
-                        <strong>{sessions.length}</strong>
+                        <strong>{activeSessions(sessions).length}</strong>
                         <span>Booked classes</span>
                     </div>
                     <div>
@@ -237,15 +240,51 @@ export const ClassSchedulingView = ({
                                 <p className="session-summary-meta">
                                     {selectedStudent.subjects.join(', ')}
                                 </p>
-                                <ul>
+                                <ul className="session-status-list">
                                     {selectedStudentSessions
                                         .slice(0, 3)
-                                        .map((session) => (
-                                            <li key={session.id}>
-                                                {session.date} • {session.time}{' '}
-                                                • {session.subject}
-                                            </li>
-                                        ))}
+                                        .map((session) => {
+                                            const isCancelled =
+                                                session.status === 'Cancelled'
+                                            return (
+                                                <li
+                                                    key={session.id}
+                                                    className={
+                                                        isCancelled
+                                                            ? 'cancelled'
+                                                            : ''
+                                                    }
+                                                >
+                                                    <span className="session-when">
+                                                        {session.date} •{' '}
+                                                        {session.time} •{' '}
+                                                        {session.subject}
+                                                    </span>
+                                                    {isCancelled && (
+                                                        <span className="session-cancelled-tag">
+                                                            Cancelled
+                                                        </span>
+                                                    )}
+                                                    <Button
+                                                        size="small"
+                                                        variant="text"
+                                                        className="session-status-button"
+                                                        onClick={() =>
+                                                            onSetSessionStatus(
+                                                                session.id,
+                                                                isCancelled
+                                                                    ? 'Scheduled'
+                                                                    : 'Cancelled'
+                                                            )
+                                                        }
+                                                    >
+                                                        {isCancelled
+                                                            ? 'Restore'
+                                                            : 'Cancel'}
+                                                    </Button>
+                                                </li>
+                                            )
+                                        })}
                                 </ul>
                             </>
                         ) : (
@@ -334,8 +373,18 @@ export const ClassSchedulingView = ({
                                                 <button
                                                     key={session.id}
                                                     type="button"
-                                                    className="calendar-session-chip"
-                                                    title={`${session.studentName} • ${session.subject}`}
+                                                    className={`calendar-session-chip ${
+                                                        session.status ===
+                                                        'Cancelled'
+                                                            ? 'cancelled'
+                                                            : ''
+                                                    }`}
+                                                    title={`${session.studentName} • ${session.subject}${
+                                                        session.status ===
+                                                        'Cancelled'
+                                                            ? ' • Cancelled'
+                                                            : ''
+                                                    }`}
                                                     onClick={() =>
                                                         onOpenStudentPage(
                                                             session.studentId

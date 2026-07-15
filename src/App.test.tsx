@@ -179,6 +179,39 @@ describe('Teaching Tracker app', () => {
         ).toBeInTheDocument()
     })
 
+    it('cancels a class and restores it, keeping it visible either way', async () => {
+        const user = userEvent.setup()
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', {
+                name: /class scheduling/i,
+            })
+        )
+
+        // Pick the student whose fixture class is still scheduled.
+        await user.type(
+            screen.getByLabelText(/student name and year/i),
+            'Asha'
+        )
+        await user.click(await screen.findByRole('option', { name: /asha/i }))
+
+        const cancel = await screen.findByRole('button', { name: /^cancel$/i })
+        await user.click(cancel)
+
+        // Cancelled, but still listed — not deleted.
+        expect(
+            await screen.findByRole('button', { name: /^restore$/i })
+        ).toBeInTheDocument()
+        expect(screen.getByText(/cancelled/i)).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /^restore$/i }))
+        expect(
+            await screen.findByRole('button', { name: /^cancel$/i })
+        ).toBeInTheDocument()
+    })
+
     it('saves a scheduled class and shows it in the dashboard', async () => {
         const user = userEvent.setup()
         render(<App />)

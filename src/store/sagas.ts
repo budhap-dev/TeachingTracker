@@ -6,7 +6,11 @@ import type {
 } from '../data/students'
 import { fetchStudents, upsertStudent } from '../api/students'
 import { fetchPaymentsByMonth } from '../api/payments'
-import { createSession, fetchSessions } from '../api/sessions'
+import {
+    createSession,
+    fetchSessions,
+    updateSessionStatus,
+} from '../api/sessions'
 import {
     createSessionFailed,
     createSessionRequested,
@@ -23,6 +27,9 @@ import {
     saveStudentFailed,
     saveStudentRequested,
     saveStudentSucceeded,
+    setSessionStatusFailed,
+    setSessionStatusRequested,
+    setSessionStatusSucceeded,
 } from './store'
 
 const toMessage = (error: unknown): string =>
@@ -93,6 +100,28 @@ export function* saveStudentSaga(
     }
 }
 
+/** Cancels or un-cancels a class via the API. */
+export function* setSessionStatusSaga(
+    action: ReturnType<typeof setSessionStatusRequested>
+) {
+    try {
+        const session: ScheduledSession = yield call(
+            updateSessionStatus,
+            action.payload.id,
+            action.payload.status
+        )
+        yield put(setSessionStatusSucceeded(session))
+    } catch (error) {
+        yield put(
+            setSessionStatusFailed(
+                error instanceof Error
+                    ? `Could not update the class: ${error.message}`
+                    : 'Could not update the class.'
+            )
+        )
+    }
+}
+
 /** Root saga: watches the request actions dispatched by the app. */
 export function* rootSaga() {
     yield all([
@@ -101,5 +130,6 @@ export function* rootSaga() {
         takeLatest(fetchSessionsRequested.type, loadSessionsSaga),
         takeEvery(createSessionRequested.type, createSessionSaga),
         takeEvery(saveStudentRequested.type, saveStudentSaga),
+        takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
     ])
 }

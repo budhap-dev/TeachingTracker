@@ -7,7 +7,11 @@ import type {
 } from '../data/students'
 import { fetchStudents, upsertStudent } from '../api/students'
 import { fetchPaymentsByMonth } from '../api/payments'
-import { createSession, fetchSessions } from '../api/sessions'
+import {
+    createSession,
+    fetchSessions,
+    updateSessionStatus,
+} from '../api/sessions'
 import {
     createSessionSaga,
     loadPaymentsSaga,
@@ -15,6 +19,7 @@ import {
     loadStudentsSaga,
     rootSaga,
     saveStudentSaga,
+    setSessionStatusSaga,
 } from './sagas'
 import {
     createSessionFailed,
@@ -32,6 +37,9 @@ import {
     saveStudentFailed,
     saveStudentRequested,
     saveStudentSucceeded,
+    setSessionStatusFailed,
+    setSessionStatusRequested,
+    setSessionStatusSucceeded,
 } from './store'
 
 const students = [{ id: 1, firstName: 'Asha' }] as unknown as Student[]
@@ -183,6 +191,53 @@ describe('saveStudentSaga', () => {
     })
 })
 
+describe('setSessionStatusSaga', () => {
+    it('cancels a class and stores the server copy', () => {
+        const gen = setSessionStatusSaga(
+            setSessionStatusRequested({ id: 101, status: 'Cancelled' })
+        )
+
+        expect(gen.next().value).toEqual(
+            call(updateSessionStatus, 101, 'Cancelled')
+        )
+
+        const cancelled = { ...session, status: 'Cancelled' } as ScheduledSession
+        expect(gen.next(cancelled).value).toEqual(
+            put(setSessionStatusSucceeded(cancelled))
+        )
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('un-cancels a class the same way', () => {
+        const gen = setSessionStatusSaga(
+            setSessionStatusRequested({ id: 101, status: 'Scheduled' })
+        )
+        expect(gen.next().value).toEqual(
+            call(updateSessionStatus, 101, 'Scheduled')
+        )
+    })
+
+    it('reports a failure', () => {
+        const gen = setSessionStatusSaga(
+            setSessionStatusRequested({ id: 101, status: 'Cancelled' })
+        )
+        gen.next()
+        expect(gen.throw(new Error('503')).value).toEqual(
+            put(setSessionStatusFailed('Could not update the class: 503'))
+        )
+    })
+
+    it('falls back to a readable message for a non-Error throw', () => {
+        const gen = setSessionStatusSaga(
+            setSessionStatusRequested({ id: 101, status: 'Cancelled' })
+        )
+        gen.next()
+        expect(gen.throw('kaboom').value).toEqual(
+            put(setSessionStatusFailed('Could not update the class.'))
+        )
+    })
+})
+
 describe('rootSaga', () => {
     it('watches every request action', () => {
         const gen = rootSaga()
@@ -194,6 +249,7 @@ describe('rootSaga', () => {
                 takeLatest(fetchSessionsRequested.type, loadSessionsSaga),
                 takeEvery(createSessionRequested.type, createSessionSaga),
                 takeEvery(saveStudentRequested.type, saveStudentSaga),
+                takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
             ])
         )
         expect(gen.next().done).toBe(true)
