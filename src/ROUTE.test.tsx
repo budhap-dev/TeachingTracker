@@ -50,6 +50,38 @@ describe('public pages', () => {
         ).toBeInTheDocument()
     })
 
+    it('opens the offerings page from its URL with the configured copy', () => {
+        window.history.pushState({}, '', '/offerings')
+        render(<App />)
+
+        expect(
+            screen.getByRole('heading', { name: /offerings/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText(siteContent.offerings.subjects[0])
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('heading', {
+                name: siteContent.offerings.approach[0].title,
+            })
+        ).toBeInTheDocument()
+    })
+
+    it('reaches the offerings page from the sidebar', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', { name: /offerings/i })
+        )
+
+        expect(
+            screen.getByRole('heading', { name: /offerings/i })
+        ).toBeInTheDocument()
+    })
+
     it('reaches the contact page from the sidebar', async () => {
         const user = userEvent.setup()
         window.history.pushState({}, '', '/')

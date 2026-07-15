@@ -29,6 +29,7 @@ import { StudySnapshotView } from './components/StudySnapshotView'
 import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { ClassSchedulingView } from './components/ClassSchedulingView'
 import { ContactView } from './components/ContactView'
+import { OfferingsView } from './components/OfferingsView'
 import { siteContent } from './data/siteContent'
 
 /** Scrolls to the top of the page whenever the route changes. */
@@ -267,6 +268,15 @@ const SchedulingRoute = () => {
 
 /** All application routes. Rendered inside the router by {@link App}. */
 /** Public page — reads site copy, never student data. */
+const OfferingsRoute = () => (
+    <OfferingsView
+        intro={siteContent.offerings.intro}
+        subjects={siteContent.offerings.subjects}
+        approach={siteContent.offerings.approach}
+    />
+)
+
+/** Public page — reads site copy, never student data. */
 const ContactRoute = () => (
     <ContactView
         email={siteContent.contact.email}
@@ -290,6 +300,7 @@ export const AppRoutes = () => (
             />
             <Route path={paths.payments} element={<PaymentTrackerRoute />} />
             <Route path={paths.scheduling} element={<SchedulingRoute />} />
+            <Route path={paths.offerings} element={<OfferingsRoute />} />
             <Route path={paths.contact} element={<ContactRoute />} />
             <Route
                 path="*"

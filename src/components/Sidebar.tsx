@@ -37,6 +37,11 @@ const navItems: NavItem[] = [
         isActive: (pathname) => pathname.startsWith(paths.scheduling),
     },
     {
+        label: 'Offerings',
+        path: paths.offerings,
+        isActive: (pathname) => pathname.startsWith(paths.offerings),
+    },
+    {
         label: 'Contact us',
         path: paths.contact,
         isActive: (pathname) => pathname.startsWith(paths.contact),
