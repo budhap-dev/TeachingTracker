@@ -18,6 +18,7 @@ describe('StudentFormModal', () => {
                     year: '',
                     progress: 0,
                     mode: 'Face to Face',
+                    fees: 0,
                     notes: '',
                     parentName: '',
                     contactNumber: '',
@@ -56,6 +57,7 @@ describe('StudentFormModal', () => {
                     year: '',
                     progress: 0,
                     mode: 'Face to Face',
+                    fees: 0,
                     notes: '',
                     parentName: '',
                     contactNumber: '',
@@ -76,5 +78,10 @@ describe('StudentFormModal', () => {
         await user.click(screen.getByRole('option', { name: 'Mathematics' }))
 
         expect(onChange).toHaveBeenCalledWith('subjects', ['Mathematics'])
+
+        fireEvent.change(screen.getByLabelText(/monthly fees/i), {
+            target: { value: '145' },
+        })
+        expect(onChange).toHaveBeenCalledWith('fees', 145)
     })
 })

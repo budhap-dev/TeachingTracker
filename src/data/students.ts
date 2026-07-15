@@ -9,6 +9,8 @@ export type Student = {
     year: string
     progress: number
     mode: 'Online' | 'Face to Face'
+    /** Agreed monthly tuition fee for this student, in GBP. */
+    fees: number
     notes: string
     parentName: string
     contactNumber: string
@@ -37,6 +39,15 @@ export type PaymentRecord = {
     amountPaid: number
     status: PaymentStatus
     notes: string
+}
+
+/** Payment records for one month with server-computed totals (/payments/by-month). */
+export type MonthlyPaymentGroup = {
+    month: string
+    totalExpected: number
+    totalReceived: number
+    totalOutstanding: number
+    records: PaymentRecord[]
 }
 
 /** Fields on a student that can be edited inline from the detail page. */

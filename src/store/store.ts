@@ -2,7 +2,7 @@ import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import createSagaMiddleware from 'redux-saga'
 import {
     generateStudentCode,
-    PaymentRecord,
+    MonthlyPaymentGroup,
     PaymentRecordInput,
     ScheduledSession,
     Student,
@@ -10,76 +10,42 @@ import {
 } from '../data/students'
 import { rootSaga } from './sagas'
 
-type ScheduledSessionInput = Omit<ScheduledSession, 'id'>
+export type ScheduledSessionInput = Omit<ScheduledSession, 'id'>
 
 type StudentState = {
     students: Student[]
     loading: boolean
     paymentsLoading: boolean
+    sessionsLoading: boolean
     error: string | null
     scheduledSessions: ScheduledSession[]
-    paymentRecords: PaymentRecord[]
+    paymentsByMonth: MonthlyPaymentGroup[]
     hasLocalStudentChanges: boolean
 }
 
-const baseDate = new Date()
-const seedSessionDates = [1, 2, 3, 4].map((offset) => {
-    const nextDate = new Date(baseDate)
-    nextDate.setDate(nextDate.getDate() + offset)
-    return nextDate.toISOString().slice(0, 10)
-})
+/** Recomputes a month's totals after one of its records changes. */
+const recalculateTotals = (group: MonthlyPaymentGroup) => {
+    group.totalExpected = group.records.reduce(
+        (sum, record) => sum + record.monthlyFee,
+        0
+    )
+    group.totalReceived = group.records.reduce(
+        (sum, record) => sum + record.amountPaid,
+        0
+    )
+    group.totalOutstanding = group.totalExpected - group.totalReceived
+}
 
-// Students and payments now load from the API via sagas, so they start empty
-// (loading) until fetched. Scheduled sessions have no API yet, so they keep a
-// small frontend seed the user can add to via the scheduling screen.
+// Students, payments and scheduled sessions all come from the API, so they
+// start empty (loading) until their sagas fetch them.
 const createInitialState = (): StudentState => ({
     students: [],
     loading: true,
     paymentsLoading: true,
+    sessionsLoading: true,
     error: null,
-    scheduledSessions: [
-        {
-            id: 101,
-            studentId: 1,
-            studentName: 'Asha Perera',
-            year: '10',
-            subject: 'Mathematics',
-            date: seedSessionDates[0],
-            time: '16:00',
-            notes: 'Problem solving practice',
-        },
-        {
-            id: 102,
-            studentId: 2,
-            studentName: 'Nimal Fernando',
-            year: '9',
-            subject: 'Physics',
-            date: seedSessionDates[1],
-            time: '17:30',
-            notes: 'Lab preparation',
-        },
-        {
-            id: 103,
-            studentId: 3,
-            studentName: 'Kavindi Silva',
-            year: '8',
-            subject: 'English',
-            date: seedSessionDates[2],
-            time: '09:30',
-            notes: 'Reading and writing review',
-        },
-        {
-            id: 104,
-            studentId: 4,
-            studentName: 'Dilan Jayawardena',
-            year: '11',
-            subject: 'Chemistry',
-            date: seedSessionDates[3],
-            time: '11:00',
-            notes: 'Revision session',
-        },
-    ],
-    paymentRecords: [],
+    scheduledSessions: [],
+    paymentsByMonth: [],
     hasLocalStudentChanges: false,
 })
 
@@ -90,7 +56,7 @@ const studentSlice = createSlice({
     initialState,
     reducers: {
         resetStudentState: () => createInitialState(),
-        // --- API-driven loading (triggered by sagas) ---
+        // --- Students ---
         fetchStudentsRequested: (state) => {
             state.loading = true
             state.error = null
@@ -118,18 +84,51 @@ const studentSlice = createSlice({
             state.loading = false
             state.error = action.payload
         },
+        // --- Payments (grouped by month, totals computed by the API) ---
         fetchPaymentsRequested: (state) => {
             state.paymentsLoading = true
         },
         fetchPaymentsSucceeded: (
             state,
-            action: PayloadAction<PaymentRecord[]>
+            action: PayloadAction<MonthlyPaymentGroup[]>
         ) => {
-            state.paymentRecords = action.payload
+            state.paymentsByMonth = action.payload
             state.paymentsLoading = false
         },
         fetchPaymentsFailed: (state, action: PayloadAction<string>) => {
             state.paymentsLoading = false
+            state.error = action.payload
+        },
+        // --- Scheduled sessions ---
+        fetchSessionsRequested: (state) => {
+            state.sessionsLoading = true
+        },
+        fetchSessionsSucceeded: (
+            state,
+            action: PayloadAction<ScheduledSession[]>
+        ) => {
+            state.scheduledSessions = action.payload
+            state.sessionsLoading = false
+        },
+        fetchSessionsFailed: (state, action: PayloadAction<string>) => {
+            state.sessionsLoading = false
+            state.error = action.payload
+        },
+        // `prepare` gives the action a typed payload for the saga to read,
+        // without the reducer needing an unused action parameter.
+        createSessionRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (input: ScheduledSessionInput) => ({ payload: input }),
+        },
+        createSessionSucceeded: (
+            state,
+            action: PayloadAction<ScheduledSession>
+        ) => {
+            state.scheduledSessions.push(action.payload)
+        },
+        createSessionFailed: (state, action: PayloadAction<string>) => {
             state.error = action.payload
         },
         // --- Local mutations ---
@@ -169,29 +168,23 @@ const studentSlice = createSlice({
                 student[action.payload.field] = action.payload.value as never
             }
         },
-        scheduleClass: (
-            state,
-            action: PayloadAction<ScheduledSessionInput>
-        ) => {
-            state.scheduledSessions.push({
-                id: Date.now(),
-                ...action.payload,
-            })
-        },
         updatePaymentRecord: (
             state,
             action: PayloadAction<PaymentRecordInput>
         ) => {
-            const record = state.paymentRecords.find(
-                (item) =>
-                    item.studentId === action.payload.studentId &&
-                    item.month === action.payload.month
+            const group = state.paymentsByMonth.find(
+                (item) => item.month === action.payload.month
             )
-            if (record) {
-                record.status = action.payload.status
-                record.amountPaid = action.payload.amountPaid
-                record.notes = action.payload.notes
+            const record = group?.records.find(
+                (item) => item.studentId === action.payload.studentId
+            )
+            if (!group || !record) {
+                return
             }
+            record.status = action.payload.status
+            record.amountPaid = action.payload.amountPaid
+            record.notes = action.payload.notes
+            recalculateTotals(group)
         },
     },
 })
@@ -204,10 +197,15 @@ export const {
     fetchPaymentsRequested,
     fetchPaymentsSucceeded,
     fetchPaymentsFailed,
+    fetchSessionsRequested,
+    fetchSessionsSucceeded,
+    fetchSessionsFailed,
+    createSessionRequested,
+    createSessionSucceeded,
+    createSessionFailed,
     addStudent,
     updateProgress,
     updateStudentDetails,
-    scheduleClass,
     updatePaymentRecord,
 } = studentSlice.actions
 

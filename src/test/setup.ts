@@ -3,11 +3,16 @@ import { afterEach, beforeEach, expect, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import {
     fetchPaymentsSucceeded,
+    fetchSessionsSucceeded,
     fetchStudentsSucceeded,
     resetStudentState,
     store,
 } from '../store/store'
-import { buildFixturePayments, fixtureStudents } from './fixtures'
+import {
+    buildFixturePaymentsByMonth,
+    buildFixtureSessions,
+    fixtureStudents,
+} from './fixtures'
 
 beforeEach(() => {
     // Reset the URL before each test so BrowserRouter-based renders always start
@@ -19,16 +24,24 @@ beforeEach(() => {
     // saga-fetch actions on mount; the fetch mock below serves that re-fetch.
     store.dispatch(resetStudentState())
     store.dispatch(fetchStudentsSucceeded(fixtureStudents))
-    store.dispatch(fetchPaymentsSucceeded(buildFixturePayments()))
+    store.dispatch(fetchPaymentsSucceeded(buildFixturePaymentsByMonth()))
+    store.dispatch(fetchSessionsSucceeded(buildFixtureSessions()))
 
-    // Default API mock. Individual tests may override with their own fetch stub.
+    // Default API mock, routed by path/method. Individual tests may override it.
     vi.stubGlobal(
         'fetch',
-        vi.fn(async (input: RequestInfo | URL) => {
+        vi.fn(async (input: RequestInfo | URL, init: RequestInit) => {
             const url = String(input)
-            const body = url.includes('/payments')
-                ? buildFixturePayments()
-                : fixtureStudents
+            let body: unknown = fixtureStudents
+            if (url.includes('/payments')) {
+                body = buildFixturePaymentsByMonth()
+            } else if (url.includes('/sessions')) {
+                // POST echoes back the created session, as the API does.
+                body =
+                    init.method === 'POST'
+                        ? { id: 999, ...JSON.parse(String(init.body)) }
+                        : buildFixtureSessions()
+            }
             return {
                 ok: true,
                 status: 200,

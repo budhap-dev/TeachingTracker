@@ -1,7 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ScheduledSession, Student } from '../data/students'
+import type {
+    MonthlyPaymentGroup,
+    PaymentRecord,
+    ScheduledSession,
+    Student,
+} from '../data/students'
 import { ClassSchedulingView } from './ClassSchedulingView'
 import { DashboardView } from './DashboardView'
 import { PaymentTrackerView } from './PaymentTrackerView'
@@ -12,6 +17,30 @@ import { StudentList } from './StudentList'
 beforeEach(() => {
     window.scrollTo = vi.fn()
 })
+
+/** Groups flat payment records the way GET /payments/by-month does. */
+const toGroups = (records: PaymentRecord[]): MonthlyPaymentGroup[] => {
+    const byMonth = new Map<string, PaymentRecord[]>()
+    records.forEach((record) => {
+        const existing = byMonth.get(record.month)
+        if (existing) {
+            existing.push(record)
+        } else {
+            byMonth.set(record.month, [record])
+        }
+    })
+    return [...byMonth.entries()].map(([month, list]) => {
+        const totalExpected = list.reduce((sum, r) => sum + r.monthlyFee, 0)
+        const totalReceived = list.reduce((sum, r) => sum + r.amountPaid, 0)
+        return {
+            month,
+            totalExpected,
+            totalReceived,
+            totalOutstanding: totalExpected - totalReceived,
+            records: list,
+        }
+    })
+}
 
 const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     id: overrides.id ?? 1,
@@ -24,6 +53,7 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     year: overrides.year ?? '10',
     progress: overrides.progress ?? 88,
     mode: overrides.mode ?? 'Face to Face',
+    fees: overrides.fees ?? 120,
     notes: overrides.notes ?? 'Excellent problem solving skills.',
     parentName: overrides.parentName ?? 'Nadia Patel',
     contactNumber: overrides.contactNumber ?? '+44 7700 900123',
@@ -174,7 +204,7 @@ describe('component-level coverage', () => {
         render(
             <PaymentTrackerView
                 students={[buildStudent()]}
-                paymentRecords={[
+                paymentsByMonth={toGroups([
                     {
                         id: 1,
                         studentId: 1,
@@ -185,7 +215,7 @@ describe('component-level coverage', () => {
                         status: 'Pending',
                         notes: 'Awaiting payment',
                     },
-                ]}
+                ])}
                 onUpdatePaymentRecord={onUpdatePaymentRecord}
             />
         )
@@ -229,7 +259,7 @@ describe('component-level coverage', () => {
         render(
             <PaymentTrackerView
                 students={[buildStudent()]}
-                paymentRecords={[
+                paymentsByMonth={toGroups([
                     {
                         id: 1,
                         studentId: 1,
@@ -250,7 +280,7 @@ describe('component-level coverage', () => {
                         status: 'Partial',
                         notes: 'Carry over balance',
                     },
-                ]}
+                ])}
                 onUpdatePaymentRecord={vi.fn()}
             />
         )
@@ -278,7 +308,7 @@ describe('component-level coverage', () => {
                         lastName: 'Fernando',
                     }),
                 ]}
-                paymentRecords={[
+                paymentsByMonth={toGroups([
                     {
                         id: 1,
                         studentId: 1,
@@ -289,13 +319,30 @@ describe('component-level coverage', () => {
                         status: 'Paid',
                         notes: 'Settled',
                     },
-                ]}
+                ])}
                 onUpdatePaymentRecord={vi.fn()}
             />
         )
 
         expect(screen.getByText(/asha perera/i)).toBeInTheDocument()
         expect(screen.queryByText(/maya fernando/i)).not.toBeInTheDocument()
+    })
+
+    it('shows zeroed totals when the selected month has no payment group', () => {
+        render(
+            <PaymentTrackerView
+                students={[buildStudent()]}
+                paymentsByMonth={[]}
+                onUpdatePaymentRecord={vi.fn()}
+            />
+        )
+
+        expect(
+            screen.getByRole('heading', { name: /monthly payment tracking/i })
+        ).toBeInTheDocument()
+        // No group for this month -> totals fall back to zero.
+        expect(screen.getAllByText('£0').length).toBeGreaterThan(0)
+        expect(screen.queryByText(/asha perera/i)).not.toBeInTheDocument()
     })
 
     it('summarizes payment statuses for the selected month', () => {
@@ -316,7 +363,7 @@ describe('component-level coverage', () => {
                         lastName: 'Silva',
                     }),
                 ]}
-                paymentRecords={[
+                paymentsByMonth={toGroups([
                     {
                         id: 1,
                         studentId: 1,
@@ -347,7 +394,7 @@ describe('component-level coverage', () => {
                         status: 'Pending',
                         notes: 'Awaiting payment',
                     },
-                ]}
+                ])}
                 onUpdatePaymentRecord={vi.fn()}
             />
         )

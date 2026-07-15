@@ -1,14 +1,20 @@
-import type { PaymentRecord, PaymentStatus, Student } from '../data/students'
+import type {
+    MonthlyPaymentGroup,
+    PaymentRecord,
+    PaymentStatus,
+    ScheduledSession,
+    Student,
+} from '../data/students'
 
 /**
- * Test-only student data. The app no longer ships static data — it loads
- * students/payments from the API — so this fixture exists purely to back the
- * mocked API in tests (see setup.ts). It is never imported by app code.
+ * Test-only data. The app ships no static data — it loads students, payments
+ * and sessions from the API — so these fixtures exist purely to back the mocked
+ * API in tests (see setup.ts). They are never imported by app code.
  */
 export const fixtureStudents: Student[] = [
     {
         id: 1,
-        studentId: 'STU-AX7M2P',
+        studentId: 'STU-0001',
         firstName: 'Asha',
         lastName: 'Perera',
         dob: '2011-05-14',
@@ -17,6 +23,7 @@ export const fixtureStudents: Student[] = [
         year: '10',
         progress: 88,
         mode: 'Face to Face',
+        fees: 120,
         notes: 'Excellent problem solving skills.',
         parentName: 'Nadia Patel',
         contactNumber: '+44 7700 900123',
@@ -24,7 +31,7 @@ export const fixtureStudents: Student[] = [
     },
     {
         id: 2,
-        studentId: 'STU-CL4Q8R',
+        studentId: 'STU-0002',
         firstName: 'Nimal',
         lastName: 'Fernando',
         dob: '2012-08-22',
@@ -33,6 +40,7 @@ export const fixtureStudents: Student[] = [
         year: '9',
         progress: 74,
         mode: 'Online',
+        fees: 135,
         notes: 'Needs extra practice with experiments.',
         parentName: 'Martin Foster',
         contactNumber: '+44 7710 123456',
@@ -40,7 +48,7 @@ export const fixtureStudents: Student[] = [
     },
     {
         id: 3,
-        studentId: 'STU-KV9P1T',
+        studentId: 'STU-0003',
         firstName: 'Kavindi',
         lastName: 'Silva',
         dob: '2013-01-11',
@@ -49,6 +57,7 @@ export const fixtureStudents: Student[] = [
         year: '8',
         progress: 82,
         mode: 'Face to Face',
+        fees: 150,
         notes: 'Strong writing and reading confidence.',
         parentName: 'Helen Clarke',
         contactNumber: '+44 7720 456789',
@@ -56,7 +65,7 @@ export const fixtureStudents: Student[] = [
     },
     {
         id: 4,
-        studentId: 'STU-DJ2L6N',
+        studentId: 'STU-0004',
         firstName: 'Dilan',
         lastName: 'Jayawardena',
         dob: '2010-11-03',
@@ -65,6 +74,7 @@ export const fixtureStudents: Student[] = [
         year: '11',
         progress: 70,
         mode: 'Online',
+        fees: 165,
         notes: 'Needs more consistent revision habits.',
         parentName: 'David Hughes',
         contactNumber: '+44 7730 987654',
@@ -72,7 +82,7 @@ export const fixtureStudents: Student[] = [
     },
     {
         id: 5,
-        studentId: 'STU-RP8N4W',
+        studentId: 'STU-0005',
         firstName: 'Rashmi',
         lastName: 'Weerasinghe',
         dob: '2011-09-16',
@@ -81,12 +91,42 @@ export const fixtureStudents: Student[] = [
         year: '10',
         progress: 86,
         mode: 'Face to Face',
+        fees: 120,
         notes: 'Very attentive during lab sessions.',
         parentName: 'Laura Bennett',
         contactNumber: '+44 7740 111222',
         address: '14 Lake View, Buckingham, MK18 1PT',
     },
 ]
+
+/** Scheduled classes, dated relative to today so they read as upcoming. */
+export const buildFixtureSessions = (
+    students: Student[] = fixtureStudents
+): ScheduledSession[] => {
+    const today = new Date()
+    const notes = [
+        'Problem solving practice',
+        'Lab preparation',
+        'Reading and writing review',
+        'Revision session',
+    ]
+    const times = ['16:00', '17:30', '09:30', '11:00']
+
+    return students.slice(0, 4).map((student, i) => {
+        const date = new Date(today)
+        date.setDate(date.getDate() + i + 1)
+        return {
+            id: 101 + i,
+            studentId: student.id,
+            studentName: `${student.firstName} ${student.lastName}`,
+            year: student.year,
+            subject: student.subjects[0],
+            date: date.toISOString().slice(0, 10),
+            time: times[i],
+            notes: notes[i],
+        }
+    })
+}
 
 const paymentStatusNotes: Record<PaymentStatus, string> = {
     Paid: 'Received in full',
@@ -106,7 +146,7 @@ export const buildFixturePayments = (
 
     return students.flatMap((student) =>
         months.map((month, monthIndex) => {
-            const monthlyFee = 120 + (student.id % 4) * 10
+            const monthlyFee = student.fees
             const pattern = (student.id + monthIndex) % 3
             const status: PaymentStatus =
                 pattern === 0 ? 'Paid' : pattern === 1 ? 'Partial' : 'Pending'
@@ -129,4 +169,40 @@ export const buildFixturePayments = (
             }
         })
     )
+}
+
+/** Groups the fixture payments by month, mirroring GET /payments/by-month. */
+export const buildFixturePaymentsByMonth = (
+    students: Student[] = fixtureStudents
+): MonthlyPaymentGroup[] => {
+    const byMonth = new Map<string, PaymentRecord[]>()
+
+    buildFixturePayments(students).forEach((record) => {
+        const existing = byMonth.get(record.month)
+        if (existing) {
+            existing.push(record)
+        } else {
+            byMonth.set(record.month, [record])
+        }
+    })
+
+    return [...byMonth.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([month, records]) => {
+            const totalExpected = records.reduce(
+                (sum, record) => sum + record.monthlyFee,
+                0
+            )
+            const totalReceived = records.reduce(
+                (sum, record) => sum + record.amountPaid,
+                0
+            )
+            return {
+                month,
+                totalExpected,
+                totalReceived,
+                totalOutstanding: totalExpected - totalReceived,
+                records,
+            }
+        })
 }

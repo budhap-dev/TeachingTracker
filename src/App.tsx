@@ -7,6 +7,7 @@ import {
     store,
     fetchStudentsRequested,
     fetchPaymentsRequested,
+    fetchSessionsRequested,
 } from './store/store'
 import { useAppDispatch } from './hooks'
 import { useTheme } from './hooks/useTheme'
@@ -22,6 +23,7 @@ const AppShell = () => {
     useEffect(() => {
         dispatch(fetchStudentsRequested())
         dispatch(fetchPaymentsRequested())
+        dispatch(fetchSessionsRequested())
     }, [dispatch])
 
     return (

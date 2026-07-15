@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import type { PaymentRecord, Student } from '../data/students'
+import type { PaymentRecord, ScheduledSession, Student } from '../data/students'
 import {
     addStudent,
+    createSessionFailed,
+    createSessionRequested,
+    createSessionSucceeded,
     fetchPaymentsFailed,
     fetchPaymentsRequested,
     fetchPaymentsSucceeded,
+    fetchSessionsFailed,
+    fetchSessionsRequested,
+    fetchSessionsSucceeded,
     fetchStudentsFailed,
     fetchStudentsRequested,
     fetchStudentsSucceeded,
     resetStudentState,
-    scheduleClass,
     studentReducer,
     updatePaymentRecord,
     updateProgress,
@@ -44,19 +49,44 @@ const buildPayment = (overrides: Partial<PaymentRecord> = {}): PaymentRecord => 
     notes: overrides.notes ?? '',
 })
 
+/** A month group mirroring the API's /payments/by-month shape. */
+const buildGroup = (records: PaymentRecord[], month = '2026-01') => {
+    const totalExpected = records.reduce((s, r) => s + r.monthlyFee, 0)
+    const totalReceived = records.reduce((s, r) => s + r.amountPaid, 0)
+    return {
+        month,
+        totalExpected,
+        totalReceived,
+        totalOutstanding: totalExpected - totalReceived,
+        records,
+    }
+}
+
+const buildSession = (overrides: Partial<ScheduledSession> = {}): ScheduledSession => ({
+    id: overrides.id ?? 101,
+    studentId: overrides.studentId ?? 1,
+    studentName: overrides.studentName ?? 'Test Student',
+    year: overrides.year ?? '10',
+    subject: overrides.subject ?? 'Mathematics',
+    date: overrides.date ?? '2026-08-01',
+    time: overrides.time ?? '10:00',
+    notes: overrides.notes ?? 'Revision',
+})
+
 /** Fresh initial state straight from the reducer. */
 const initial = () => studentReducer(undefined, { type: '@@INIT' })
 
 describe('student reducer', () => {
-    it('starts empty and loading, with seeded scheduled sessions', () => {
+    it('starts empty and loading — all data comes from the API', () => {
         const state = initial()
 
         expect(state.students).toEqual([])
-        expect(state.paymentRecords).toEqual([])
+        expect(state.paymentsByMonth).toEqual([])
+        expect(state.scheduledSessions).toEqual([])
         expect(state.loading).toBe(true)
         expect(state.paymentsLoading).toBe(true)
+        expect(state.sessionsLoading).toBe(true)
         expect(state.error).toBeNull()
-        expect(state.scheduledSessions.length).toBeGreaterThan(0)
     })
 
     it('resets back to the initial state', () => {
@@ -134,12 +164,13 @@ describe('student reducer', () => {
             expect(state.paymentsLoading).toBe(true)
         })
 
-        it('stores payments on success', () => {
+        it('stores month-grouped payments on success', () => {
             const state = studentReducer(
                 initial(),
-                fetchPaymentsSucceeded([buildPayment()])
+                fetchPaymentsSucceeded([buildGroup([buildPayment()])])
             )
-            expect(state.paymentRecords).toHaveLength(1)
+            expect(state.paymentsByMonth).toHaveLength(1)
+            expect(state.paymentsByMonth[0].month).toBe('2026-01')
             expect(state.paymentsLoading).toBe(false)
         })
 
@@ -150,6 +181,70 @@ describe('student reducer', () => {
             )
             expect(state.paymentsLoading).toBe(false)
             expect(state.error).toBe('payments down')
+        })
+    })
+
+    describe('sessions lifecycle', () => {
+        it('marks sessions loading on request', () => {
+            const state = studentReducer(initial(), fetchSessionsRequested())
+            expect(state.sessionsLoading).toBe(true)
+        })
+
+        it('stores sessions on success', () => {
+            const state = studentReducer(
+                initial(),
+                fetchSessionsSucceeded([buildSession()])
+            )
+            expect(state.scheduledSessions).toHaveLength(1)
+            expect(state.sessionsLoading).toBe(false)
+        })
+
+        it('records an error when loading sessions fails', () => {
+            const state = studentReducer(
+                initial(),
+                fetchSessionsFailed('sessions down')
+            )
+            expect(state.sessionsLoading).toBe(false)
+            expect(state.error).toBe('sessions down')
+        })
+
+        it('clears the error when a create is requested', () => {
+            const failed = studentReducer(
+                initial(),
+                createSessionFailed('previous failure')
+            )
+            expect(failed.error).toBe('previous failure')
+
+            const requested = studentReducer(
+                failed,
+                createSessionRequested({
+                    studentId: 1,
+                    studentName: 'Test Student',
+                    year: '10',
+                    subject: 'Mathematics',
+                    date: '2026-08-01',
+                    time: '10:00',
+                    notes: 'Revision',
+                })
+            )
+            expect(requested.error).toBeNull()
+        })
+
+        it('appends the created session on success', () => {
+            const state = studentReducer(
+                initial(),
+                createSessionSucceeded(buildSession({ notes: 'New class' }))
+            )
+            expect(state.scheduledSessions).toHaveLength(1)
+            expect(state.scheduledSessions[0].notes).toBe('New class')
+        })
+
+        it('records an error when creating a session fails', () => {
+            const state = studentReducer(
+                initial(),
+                createSessionFailed('create failed')
+            )
+            expect(state.error).toBe('create failed')
         })
     })
 
@@ -207,31 +302,28 @@ describe('student reducer', () => {
             expect(ignored.students[0].notes).toBe('Fresh')
         })
 
-        it('schedules a class', () => {
-            const before = initial().scheduledSessions.length
-            const state = studentReducer(
-                initial(),
-                scheduleClass({
-                    studentId: 1,
-                    studentName: 'Test Student',
-                    year: '10',
-                    subject: 'Mathematics',
-                    date: '2026-08-01',
-                    time: '10:00',
-                    notes: 'Revision',
-                })
-            )
-            expect(state.scheduledSessions).toHaveLength(before + 1)
-            expect(state.scheduledSessions.at(-1)?.notes).toBe('Revision')
-        })
-
-        it('updates a matching payment record and ignores unmatched ones', () => {
+        it('updates a payment record and recomputes that month’s totals', () => {
             const loaded = studentReducer(
                 initial(),
                 fetchPaymentsSucceeded([
-                    buildPayment({ studentId: 1, month: '2026-01' }),
+                    buildGroup([
+                        buildPayment({
+                            studentId: 1,
+                            month: '2026-01',
+                            monthlyFee: 120,
+                            amountPaid: 0,
+                        }),
+                        buildPayment({
+                            id: 2,
+                            studentId: 2,
+                            month: '2026-01',
+                            monthlyFee: 100,
+                            amountPaid: 50,
+                        }),
+                    ]),
                 ])
             )
+            expect(loaded.paymentsByMonth[0].totalReceived).toBe(50)
 
             const updated = studentReducer(
                 loaded,
@@ -243,23 +335,51 @@ describe('student reducer', () => {
                     notes: 'Settled',
                 })
             )
-            expect(updated.paymentRecords[0].status).toBe('Paid')
-            expect(updated.paymentRecords[0].amountPaid).toBe(120)
-            expect(updated.paymentRecords[0].notes).toBe('Settled')
+            const group = updated.paymentsByMonth[0]
+            expect(group.records[0].status).toBe('Paid')
+            expect(group.records[0].notes).toBe('Settled')
+            // Totals recomputed from the edited records.
+            expect(group.totalExpected).toBe(220)
+            expect(group.totalReceived).toBe(170)
+            expect(group.totalOutstanding).toBe(50)
+        })
 
-            const ignored = studentReducer(
-                updated,
+        it('ignores payment updates for an unknown month or student', () => {
+            const loaded = studentReducer(
+                initial(),
+                fetchPaymentsSucceeded([
+                    buildGroup([buildPayment({ studentId: 1 })]),
+                ])
+            )
+
+            // Unknown month -> no group found.
+            const unknownMonth = studentReducer(
+                loaded,
                 updatePaymentRecord({
-                    studentId: -999,
+                    studentId: 1,
                     month: '2099-01',
-                    status: 'Pending',
-                    amountPaid: 0,
-                    notes: 'Missing',
+                    status: 'Paid',
+                    amountPaid: 999,
+                    notes: 'Nope',
                 })
             )
+            expect(unknownMonth.paymentsByMonth[0].records[0].amountPaid).toBe(0)
+
+            // Known month, unknown student -> no record found.
+            const unknownStudent = studentReducer(
+                loaded,
+                updatePaymentRecord({
+                    studentId: -999,
+                    month: '2026-01',
+                    status: 'Paid',
+                    amountPaid: 999,
+                    notes: 'Nope',
+                })
+            )
+            expect(unknownStudent.paymentsByMonth[0].records).toHaveLength(1)
             expect(
-                ignored.paymentRecords.some((r) => r.studentId === -999)
-            ).toBe(false)
+                unknownStudent.paymentsByMonth[0].records[0].amountPaid
+            ).toBe(0)
         })
     })
 })

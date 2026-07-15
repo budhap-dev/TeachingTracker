@@ -1,4 +1,8 @@
-import type { PaymentRecord, PaymentStatus } from '../data/students'
+import type {
+    MonthlyPaymentGroup,
+    PaymentRecord,
+    PaymentStatus,
+} from '../data/students'
 import { apiRequest } from './client'
 
 /** Optional filters for listing payments. */
@@ -40,6 +44,12 @@ export const fetchPayments = (
     query: PaymentQuery = {}
 ): Promise<PaymentRecord[]> =>
     apiRequest<PaymentRecord[]>(`/payments${buildQuery(query)}`)
+
+/** GET /payments/by-month — payments grouped by month with server-side totals. */
+export const fetchPaymentsByMonth = (
+    query: PaymentQuery = {}
+): Promise<MonthlyPaymentGroup[]> =>
+    apiRequest<MonthlyPaymentGroup[]>(`/payments/by-month${buildQuery(query)}`)
 
 /** POST /payments — create/update one payment or an array of them (upsert). */
 export const savePayments = (

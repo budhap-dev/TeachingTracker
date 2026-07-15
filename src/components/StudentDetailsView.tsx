@@ -78,6 +78,9 @@ export const StudentDetailsView = ({
                             <span className="subject-count-pill">
                                 Subjects: {student.subjects.length}
                             </span>
+                            <span className="fees-pill">
+                                Fees: £{student.fees}/month
+                            </span>
                         </div>
                         <p className="subjects-line">
                             <strong>Subjects:</strong>{' '}

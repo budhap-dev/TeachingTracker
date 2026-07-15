@@ -13,6 +13,7 @@ export const emptyStudentForm: StudentFormValues = {
     year: '',
     progress: 0,
     mode: 'Face to Face',
+    fees: 0,
     notes: '',
     parentName: '',
     contactNumber: '',

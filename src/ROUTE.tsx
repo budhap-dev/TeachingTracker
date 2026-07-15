@@ -10,7 +10,7 @@ import {
 import { useAppDispatch, useAppSelector } from './hooks'
 import {
     addStudent,
-    scheduleClass,
+    createSessionRequested,
     updatePaymentRecord,
     updateProgress,
     updateStudentDetails,
@@ -228,13 +228,13 @@ const StudySnapshotRoute = () => {
 const PaymentTrackerRoute = () => {
     const dispatch = useAppDispatch()
     const students = useAppSelector((state) => state.students.students)
-    const paymentRecords = useAppSelector(
-        (state) => state.students.paymentRecords
+    const paymentsByMonth = useAppSelector(
+        (state) => state.students.paymentsByMonth
     )
     return (
         <PaymentTrackerView
             students={students}
-            paymentRecords={paymentRecords}
+            paymentsByMonth={paymentsByMonth}
             onUpdatePaymentRecord={(record) =>
                 dispatch(updatePaymentRecord(record))
             }
@@ -256,7 +256,7 @@ const SchedulingRoute = () => {
             sessions={scheduledSessions}
             onOpenStudentPage={openStudentPage}
             onScheduleClass={(session) => {
-                dispatch(scheduleClass(session))
+                dispatch(createSessionRequested(session))
                 navigate(paths.dashboard)
             }}
         />
