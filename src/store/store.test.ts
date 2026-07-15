@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Student } from '../data/students'
 import { initialStudents } from '../data/students'
 import {
@@ -32,6 +32,36 @@ const buildStudentPayload = (
 describe('store reducers and thunks', () => {
     beforeEach(() => {
         store.dispatch(resetStudentState())
+    })
+
+    afterEach(() => {
+        vi.unstubAllEnvs()
+        vi.unstubAllGlobals()
+        vi.restoreAllMocks()
+    })
+
+    it('loads students from the API when a backend is configured', async () => {
+        const apiStudents = [
+            { ...initialStudents[0], firstName: 'FromApi', id: 4242 },
+        ]
+        vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.com/api')
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => apiStudents,
+            })
+        )
+
+        await store.dispatch(loadStudents())
+
+        expect(
+            store
+                .getState()
+                .students.students.find((student) => student.id === 4242)
+                ?.firstName
+        ).toBe('FromApi')
     })
 
     it('covers reducer actions and extra reducers', () => {
