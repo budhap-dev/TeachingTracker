@@ -33,8 +33,9 @@ const AppShell = () => {
     return (
         <ThemeProvider theme={muiTheme}>
             <CssBaseline />
+            {/* Outside .app-shell: it must never join the layout grid. */}
+            <BusyBar />
             <div className="app-shell">
-                <BusyBar />
                 <Sidebar sidebarBackground={activeTheme.sidebar} />
                 <main className="main-content">
                     <Topbar

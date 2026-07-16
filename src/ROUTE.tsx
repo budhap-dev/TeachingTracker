@@ -29,6 +29,7 @@ import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { ClassSchedulingView } from './components/ClassSchedulingView'
 import { ContactView } from './components/ContactView'
 import { OfferingsView } from './components/OfferingsView'
+import { PageLoading } from './components/PageLoading'
 import { RequireTeacher } from './components/RequireTeacher'
 import { siteContent } from './data/siteContent'
 
@@ -56,6 +57,9 @@ const DashboardRoute = () => {
     const students = useAppSelector((state) => state.students.students)
     const scheduledSessions = useAppSelector(
         (state) => state.students.scheduledSessions
+    )
+    const dataLoading = useAppSelector(
+        (state) => state.students.loading || state.students.sessionsLoading
     )
 
     const stats = useMemo(() => {
@@ -120,6 +124,11 @@ const DashboardRoute = () => {
         [students]
     )
 
+    // After the hooks: a loading gate above them would break hook order.
+    if (dataLoading) {
+        return <PageLoading />
+    }
+
     return (
         <DashboardView
             stats={stats}
@@ -162,6 +171,10 @@ const StudentsRoute = () => {
         setIsModalOpen(false)
     }
 
+    if (loading) {
+        return <PageLoading />
+    }
+
     return (
         <StudentsView
             students={students}
@@ -201,7 +214,7 @@ const StudentDetailRoute = () => {
         // While students are still loading, don't bounce a deep-link to the
         // list — wait for the fetch so the target page can render.
         if (loading) {
-            return <p className="loading-state">Loading student…</p>
+            return <PageLoading />
         }
         return <Navigate to={paths.students} replace />
     }
@@ -240,8 +253,18 @@ const StudentDetailRoute = () => {
 }
 
 const StudySnapshotRoute = () => {
+    const openStudentPage = useOpenStudentPage()
     const students = useAppSelector((state) => state.students.students)
-    return <StudySnapshotView students={students} />
+    const loading = useAppSelector((state) => state.students.loading)
+    if (loading) {
+        return <PageLoading />
+    }
+    return (
+        <StudySnapshotView
+            students={students}
+            onOpenStudentPage={openStudentPage}
+        />
+    )
 }
 
 const PaymentTrackerRoute = () => {
@@ -251,6 +274,12 @@ const PaymentTrackerRoute = () => {
     const paymentsByMonth = useAppSelector(
         (state) => state.students.paymentsByMonth
     )
+    const dataLoading = useAppSelector(
+        (state) => state.students.paymentsLoading || state.students.loading
+    )
+    if (dataLoading) {
+        return <PageLoading />
+    }
     return (
         <PaymentTrackerView
             students={students}
@@ -269,6 +298,12 @@ const SchedulingRoute = () => {
     const scheduledSessions = useAppSelector(
         (state) => state.students.scheduledSessions
     )
+    const dataLoading = useAppSelector(
+        (state) => state.students.loading || state.students.sessionsLoading
+    )
+    if (dataLoading) {
+        return <PageLoading />
+    }
     return (
         <ClassSchedulingView
             students={students}

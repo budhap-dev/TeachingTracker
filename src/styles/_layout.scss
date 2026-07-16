@@ -144,6 +144,8 @@
 }
 
 .theme-picker {
+    /* Anchor for the swatch overlay. */
+    position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -158,21 +160,53 @@
     background: transparent;
     padding: 0;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    color: var(--text);
-}
-
-.theme-toggle-current {
-    font-weight: 700;
-    color: var(--accent);
-}
-
-.theme-swatches {
-    display: flex;
+    align-items: center;
     gap: 6px;
+    color: var(--muted);
+    cursor: pointer;
+
+    &:hover {
+        color: var(--accent);
+    }
+}
+
+/* The current theme, shown as its own two colours rather than its name. */
+.theme-toggle-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+}
+
+/* Slides out over the page instead of joining the topbar's flow — opening
+   the picker must never shove the rest of the layout around. Wraps within
+   the viewport: fifteen swatches in one row would run off a phone screen. */
+.theme-swatches {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    display: flex;
     flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px;
+    width: max-content;
+    max-width: min(340px, calc(100vw - 24px));
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+    z-index: 30;
+    animation: theme-swatches-slide 160ms ease-out;
+}
+
+@keyframes theme-swatches-slide {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .theme-swatch {

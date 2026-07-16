@@ -1222,16 +1222,36 @@
     }
 }
 
+/* Same pill idiom as its neighbours (.theme-picker, .pill): without it the
+   sign-out floats as a bare flat button at a different height. */
 .topbar-auth {
     display: flex;
     align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+
+    .MuiButton-root {
+        border-radius: 999px;
+        font-weight: 700;
+    }
 }
 
-/* Global API-activity bar: pinned over everything, gone when idle. */
-.busy-bar {
+/* Global API-activity bar: pinned over everything, gone when idle.
+   Doubled class: MUI injects `.MuiLinearProgress-root { position: relative }`
+   later in the cascade, and equal specificity would let it win. */
+.busy-bar.busy-bar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1400;
+}
+
+/* Skeleton layout while a screen's data loads. */
+.page-loading-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
 }

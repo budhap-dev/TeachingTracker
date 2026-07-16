@@ -3,6 +3,7 @@ import type { Student } from '../data/students'
 
 type StudySnapshotViewProps = {
     students: Student[]
+    onOpenStudentPage: (studentId: number) => void
 }
 
 type SortKey = 'student' | 'subject' | 'school' | 'mode'
@@ -10,7 +11,10 @@ type SortDirection = 'asc' | 'desc'
 
 const pageSizeOptions = [5, 10, 20]
 
-export const StudySnapshotView = ({ students }: StudySnapshotViewProps) => {
+export const StudySnapshotView = ({
+    students,
+    onOpenStudentPage,
+}: StudySnapshotViewProps) => {
     const [sortKey, setSortKey] = useState<SortKey>('student')
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
     const [page, setPage] = useState(1)
@@ -127,8 +131,22 @@ export const StudySnapshotView = ({ students }: StudySnapshotViewProps) => {
                                                 1}
                                         </td>
                                         <td>
-                                            {student.firstName}{' '}
-                                            {student.lastName}
+                                            {/* Same link idiom as the students
+                                                list: every student name in the
+                                                app opens their page. */}
+                                            <a
+                                                href={`#student-${student.id}`}
+                                                className="student-link"
+                                                onClick={(event) => {
+                                                    event.preventDefault()
+                                                    onOpenStudentPage(
+                                                        student.id
+                                                    )
+                                                }}
+                                            >
+                                                {student.firstName}{' '}
+                                                {student.lastName}
+                                            </a>
                                         </td>
                                         <td>{student.subjects.join(', ')}</td>
                                         <td>{student.school}</td>
