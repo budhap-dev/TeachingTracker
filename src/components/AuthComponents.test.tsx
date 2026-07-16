@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { RequireTeacher } from './RequireTeacher'
 import { SignInView } from './SignInView'
@@ -56,10 +57,40 @@ describe('RequireTeacher', () => {
         expect(screen.queryByText(/sign in to continue/i)).not.toBeInTheDocument()
     })
 
-    it('shows the sign-in screen instead of the page when signed out', () => {
+    // Signed-out behaviour is route-aware: deep links bounce to the
+    // dashboard (deliberately not preserved), where the sign-in ask lives.
+    const gatedRoutes = (
+        <Routes>
+            <Route
+                path="/"
+                element={<RequireTeacher>dash content</RequireTeacher>}
+            />
+            <Route
+                path="/students"
+                element={<RequireTeacher>students content</RequireTeacher>}
+            />
+        </Routes>
+    )
+
+    it('bounces a signed-out deep link to the dashboard sign-in', () => {
         mockAccount = null
-        render(<RequireTeacher>secret page</RequireTeacher>)
-        expect(screen.queryByText('secret page')).not.toBeInTheDocument()
+        render(
+            <MemoryRouter initialEntries={['/students']}>
+                {gatedRoutes}
+            </MemoryRouter>
+        )
+        expect(
+            screen.queryByText('students content')
+        ).not.toBeInTheDocument()
+        expect(screen.queryByText('dash content')).not.toBeInTheDocument()
+        expect(
+            screen.getByRole('heading', { name: /sign in to continue/i })
+        ).toBeInTheDocument()
+    })
+
+    it('asks for sign-in on the dashboard itself when signed out', () => {
+        mockAccount = null
+        render(<MemoryRouter initialEntries={['/']}>{gatedRoutes}</MemoryRouter>)
         expect(
             screen.getByRole('heading', { name: /sign in to continue/i })
         ).toBeInTheDocument()
