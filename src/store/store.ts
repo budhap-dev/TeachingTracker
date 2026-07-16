@@ -165,6 +165,29 @@ const studentSlice = createSlice({
         setSessionStatusFailed: (state, action: PayloadAction<string>) => {
             state.error = action.payload
         },
+        // --- Editing a class's details ---
+        editSessionRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (input: { id: number; changes: ScheduledSessionInput }) => ({
+                payload: input,
+            }),
+        },
+        editSessionSucceeded: (
+            state,
+            action: PayloadAction<ScheduledSession>
+        ) => {
+            const index = state.scheduledSessions.findIndex(
+                (item) => item.id === action.payload.id
+            )
+            if (index >= 0) {
+                state.scheduledSessions[index] = action.payload
+            }
+        },
+        editSessionFailed: (state, action: PayloadAction<string>) => {
+            state.error = action.payload
+        },
         // --- Saving a student (create or update) via the API ---
         saveStudentRequested: {
             reducer: (state: StudentState) => {
@@ -247,6 +270,9 @@ export const {
     setSessionStatusRequested,
     setSessionStatusSucceeded,
     setSessionStatusFailed,
+    editSessionRequested,
+    editSessionSucceeded,
+    editSessionFailed,
     saveStudentRequested,
     saveStudentSucceeded,
     saveStudentFailed,

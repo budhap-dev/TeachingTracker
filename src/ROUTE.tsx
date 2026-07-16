@@ -10,11 +10,13 @@ import {
 import { useAppDispatch, useAppSelector } from './hooks'
 import {
     createSessionRequested,
+    editSessionRequested,
     savePaymentRequested,
     saveStudentRequested,
     setSessionStatusRequested,
 } from './store/store'
 import { activeSessions } from './data/students'
+import { toDateKey } from './utils/calendar'
 import { groupStudentsByYear } from './utils/studentMix'
 import type { EditableStudentField, Student } from './data/students'
 import { useStudentForm } from './hooks/useStudentForm'
@@ -29,8 +31,8 @@ import { ContactView } from './components/ContactView'
 import { OfferingsView } from './components/OfferingsView'
 import { siteContent } from './data/siteContent'
 
-/** How far ahead the dashboard's "upcoming sessions" looks. */
-const upcomingWindowDays = 14
+/** How many of each student's next classes the dashboard lists. */
+const upcomingPerStudent = 3
 
 /** Scrolls to the top of the page whenever the route changes. */
 const ScrollToTop = () => {
@@ -77,22 +79,33 @@ const DashboardRoute = () => {
     }, [students])
 
     const upcomingSessions = useMemo(() => {
-        // "Upcoming" means the next fortnight — not every class of the year,
-        // and never one that has already happened. A cancelled class is not
-        // upcoming either, and must not inflate the count.
-        const today = new Date()
-        const from = today.toISOString().slice(0, 10)
-        const until = new Date(today)
-        until.setDate(until.getDate() + upcomingWindowDays)
-        const to = until.toISOString().slice(0, 10)
+        // "Upcoming" is each student's next few classes — never one that has
+        // already happened, and never a cancelled one, which is not upcoming
+        // and must not inflate the count.
+        //
+        // Capped per student rather than by a date window: with a weekly
+        // timetable the whole future runs past a hundred classes, while a
+        // window would show nothing at all for a student whose next class
+        // happens to fall outside it.
+        const from = toDateKey(new Date())
+        const taken = new Map<number, number>()
 
         return activeSessions(scheduledSessions)
-            .filter((session) => session.date >= from && session.date <= to)
+            .filter((session) => session.date >= from)
             .sort((left, right) =>
                 `${left.date} ${left.time}`.localeCompare(
                     `${right.date} ${right.time}`
                 )
             )
+            .filter((session) => {
+                // Sorted first, so the ones kept are genuinely the earliest.
+                const kept = taken.get(session.studentId) ?? 0
+                if (kept >= upcomingPerStudent) {
+                    return false
+                }
+                taken.set(session.studentId, kept + 1)
+                return true
+            })
     }, [scheduledSessions])
 
     // Students by year: the old chart added students to sessions and counted
@@ -260,6 +273,9 @@ const SchedulingRoute = () => {
             // usually has more to do on the calendar.
             onScheduleClass={(session) =>
                 dispatch(createSessionRequested(session))
+            }
+            onEditClass={(id, changes) =>
+                dispatch(editSessionRequested({ id, changes }))
             }
             onSetSessionStatus={(id, status) =>
                 dispatch(setSessionStatusRequested({ id, status }))

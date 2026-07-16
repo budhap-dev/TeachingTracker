@@ -11,6 +11,8 @@ import {
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import App from './App'
+import type { ScheduledSession } from './data/students'
+import { buildFixturePaymentsByMonth, fixtureStudents } from './test/fixtures'
 
 /**
  * The calendar cell for a fixture class, whose date is built `offsetDays` from
@@ -25,6 +27,41 @@ const openFixtureDayCell = (offsetDays: number) => {
         name: `Open ${new Date(year, month - 1, date).toDateString()}`,
     })
 }
+
+/** A student's weekly timetable, starting tomorrow. */
+const weeklyTimetable = (
+    studentId: number,
+    studentName: string,
+    count: number
+): ScheduledSession[] =>
+    Array.from({ length: count }, (_, week) => {
+        const day = new Date()
+        day.setDate(day.getDate() + 1 + week * 7)
+        return {
+            id: studentId * 100 + week,
+            studentId,
+            studentName,
+            year: '10',
+            subject: 'Mathematics',
+            date: `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`,
+            time: '16:00',
+            notes: `${studentName} week ${week + 1}`,
+            status: 'Scheduled',
+        }
+    })
+
+/** Serves a fixed set of sessions, overriding the default fixture mock. */
+const serveSessions = (sessions: ScheduledSession[]) =>
+    vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input)
+            let body: unknown = fixtureStudents
+            if (url.includes('/payments')) body = buildFixturePaymentsByMonth()
+            else if (url.includes('/sessions')) body = sessions
+            return { ok: true, status: 200, json: async () => body } as Response
+        })
+    )
 
 describe('Teaching Tracker app', () => {
     it('collapses the theme picker by default and expands on demand', async () => {
@@ -206,19 +243,84 @@ describe('Teaching Tracker app', () => {
         // Open the day holding Asha's fixture class, which is still scheduled.
         await user.click(openFixtureDayCell(1))
 
-        const cancel = await screen.findByRole('button', { name: /^cancel$/i })
-        await user.click(cancel)
-
-        // Cancelled, but still listed — not deleted.
+        // Cancelling asks first, and backing out changes nothing.
+        await user.click(
+            await screen.findByRole('button', { name: /cancel class/i })
+        )
         expect(
-            await screen.findByRole('button', { name: /^restore$/i })
+            screen.getByRole('heading', { name: /cancel this class\?/i })
         ).toBeInTheDocument()
-        expect(screen.getByText(/cancelled/i)).toBeInTheDocument()
+        await user.click(screen.getByRole('button', { name: /^no$/i }))
+        await waitForElementToBeRemoved(() =>
+            screen.queryByRole('heading', { name: /cancel this class\?/i })
+        )
 
-        await user.click(screen.getByRole('button', { name: /^restore$/i }))
+        // Confirming cancels it — still listed, now restorable.
+        await user.click(screen.getByRole('button', { name: /cancel class/i }))
+        await user.click(screen.getByRole('button', { name: /^yes$/i }))
+
+        const restore = await screen.findByRole('button', {
+            name: /^restore$/i,
+        })
+        await user.click(restore)
         expect(
-            await screen.findByRole('button', { name: /^cancel$/i })
+            await screen.findByRole('button', { name: /cancel class/i })
         ).toBeInTheDocument()
+    })
+
+    it('edits a booked class and keeps the change', async () => {
+        const user = userEvent.setup()
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', {
+                name: /class scheduling/i,
+            })
+        )
+
+        // Open Asha's fixture class and change its subject.
+        await user.click(openFixtureDayCell(1))
+        fireEvent.change(screen.getByLabelText(/subject/i), {
+            target: { value: 'Astrophysics' },
+        })
+        await user.click(screen.getByRole('button', { name: /save changes/i }))
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+
+        // Reopen the day: the edit came back from the API and stuck.
+        await user.click(openFixtureDayCell(1))
+        expect(await screen.findByLabelText(/subject/i)).toHaveValue(
+            'Astrophysics'
+        )
+    })
+
+    it('lists only each student\'s next three classes, not their whole timetable', async () => {
+        // Two students booked weekly for months — 11 future classes between
+        // them, of which the dashboard should show three each.
+        serveSessions([
+            ...weeklyTimetable(1, 'Asha Perera', 6),
+            ...weeklyTimetable(2, 'Maya Fernando', 5),
+        ])
+
+        render(<App />)
+
+        const list = await screen.findByRole('list', {
+            name: /upcoming sessions calendar/i,
+        })
+        await waitFor(() =>
+            expect(within(list).getAllByRole('listitem')).toHaveLength(6)
+        )
+
+        // The three kept are the *next* three, not any three.
+        const shown = within(list)
+            .getAllByRole('listitem')
+            .map((item) => item.textContent ?? '')
+            .join(' ')
+        expect(shown).toContain('Asha Perera week 1')
+        expect(shown).toContain('Asha Perera week 3')
+        expect(shown).not.toContain('Asha Perera week 4')
+        expect(shown).toContain('Maya Fernando week 3')
+        expect(shown).not.toContain('Maya Fernando week 4')
     })
 
     it('saves a scheduled class and shows it in the dashboard', async () => {
@@ -232,25 +334,28 @@ describe('Teaching Tracker app', () => {
             })
         )
 
-        // Inside the dashboard's 14-day window, and derived from today so the
-        // test doesn't rot: a hardcoded date silently falls out of the window.
-        // The clicked day *is* the booking's date now — no date field to type.
+        // An empty day (fixtures only book the next four), derived from today so
+        // the test doesn't rot. The clicked day *is* the booking's date — no
+        // date field to type — and an empty day opens the blank "add" form.
         const soon = new Date()
-        soon.setDate(soon.getDate() + 3)
+        soon.setDate(soon.getDate() + 5)
 
         await user.click(
             screen.getByRole('button', { name: `Open ${soon.toDateString()}` })
         )
 
-        await user.clear(screen.getByLabelText(/time/i))
+        await user.type(
+            screen.getByLabelText(/student name and year/i),
+            'Asha'
+        )
+        await user.click(await screen.findByRole('option', { name: /asha/i }))
         await user.type(screen.getByLabelText(/time/i), '15:30')
-        await user.clear(screen.getByLabelText(/notes/i))
         await user.type(
             screen.getByLabelText(/notes/i),
             'Practice paper review'
         )
 
-        await user.click(screen.getByRole('button', { name: /save class/i }))
+        await user.click(screen.getByRole('button', { name: /add class/i }))
 
         // Wait out the modal's exit transition: while it is open it marks the
         // rest of the app aria-hidden, so the nav is unreachable.

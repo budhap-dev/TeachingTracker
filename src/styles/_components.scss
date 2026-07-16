@@ -699,10 +699,6 @@
     }
 }
 
-.student-session-summary.compact {
-    margin-top: 14px;
-}
-
 .session-summary-meta {
     font-size: 0.9rem;
     margin-bottom: 8px;
@@ -757,21 +753,19 @@
     opacity: 0.6;
 }
 
-.day-modal-detail {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 4px 16px;
-    margin: 0;
-    width: 100%;
+/* The trailing "+" chip that switches the form to adding a new class. */
+.day-modal-picker-chip.add {
+    border-style: dashed;
+    font-weight: 400;
+    font-size: 1.1rem;
+}
 
-    dt {
-        color: var(--muted);
-        font-size: 0.85rem;
-    }
-
-    dd {
-        margin: 0;
-    }
+/* Save/Add sits next to the destructive Cancel-class action. */
+.day-modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
 }
 
 .scheduling-hero {
@@ -1070,41 +1064,6 @@
     color: var(--muted);
 }
 
-.session-status-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.session-status-list li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.82rem;
-}
-
-.session-status-list li.cancelled .session-when {
-    color: var(--muted);
-}
-
-.session-when {
-    flex: 1;
-}
-
-.session-cancelled-tag {
-    font-size: 0.66rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    border-radius: 999px;
-    background: var(--surface-alt);
-    border: 1px solid var(--border);
-    color: var(--muted);
-}
 
 /* Days shaded by how many classes they hold, so the month reads at a glance. */
 .calendar-day.booked {

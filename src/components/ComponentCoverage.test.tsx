@@ -443,6 +443,7 @@ describe('component-level coverage', () => {
                     session(4, dayKey, '11:00', 'Second Student'),
                 ]}
                 onScheduleClass={vi.fn()}
+                onEditClass={vi.fn()}
                 onSetSessionStatus={vi.fn()}
             />
         )
@@ -457,21 +458,20 @@ describe('component-level coverage', () => {
             })
         ).not.toBeInTheDocument()
 
-        // Clicking number 3 opens that class, not the day's first.
+        // Clicking number 3 opens that class into the form, not the day's first.
         await user.click(classChip(day, 3))
         const dialog = screen.getByRole('dialog')
-        expect(within(dialog).getByText('16:00')).toBeInTheDocument()
-        expect(within(dialog).getByText('Third Student notes')).toBeInTheDocument()
-        expect(
-            within(dialog).queryByText('First Student notes')
-        ).not.toBeInTheDocument()
+        expect(within(dialog).getByLabelText(/time/i)).toHaveValue('16:00')
+        expect(within(dialog).getByLabelText(/notes/i)).toHaveValue(
+            'Third Student notes'
+        )
 
         // The numbers repeat inside the modal, and switch which one is shown.
-        await user.click(
-            within(dialog).getByRole('tab', { name: '1' })
+        await user.click(within(dialog).getByRole('tab', { name: '1' }))
+        expect(within(dialog).getByLabelText(/time/i)).toHaveValue('09:00')
+        expect(within(dialog).getByLabelText(/notes/i)).toHaveValue(
+            'First Student notes'
         )
-        expect(within(dialog).getByText('09:00')).toBeInTheDocument()
-        expect(within(dialog).getByText('First Student notes')).toBeInTheDocument()
     })
 
     it('opens a day on its earliest class when the date itself is clicked', async () => {
@@ -494,6 +494,7 @@ describe('component-level coverage', () => {
                     { ...base, id: 2, time: '08:00', notes: 'Morning' },
                 ]}
                 onScheduleClass={vi.fn()}
+                onEditClass={vi.fn()}
                 onSetSessionStatus={vi.fn()}
             />
         )
@@ -502,16 +503,17 @@ describe('component-level coverage', () => {
 
         // Populated with the existing schedule, starting at the earliest class.
         const dialog = screen.getByRole('dialog')
-        expect(within(dialog).getByText('Morning')).toBeInTheDocument()
+        expect(within(dialog).getByLabelText(/time/i)).toHaveValue('08:00')
+        expect(within(dialog).getByLabelText(/notes/i)).toHaveValue('Morning')
         expect(within(dialog).getByRole('tab', { name: '1' })).toHaveAttribute(
             'aria-selected',
             'true'
         )
 
-        // A class booked without notes shows a dash, not an empty row.
+        // A class booked without notes fills the notes field blank.
         await user.click(within(dialog).getByRole('tab', { name: '2' }))
-        expect(within(dialog).getByText('15:00')).toBeInTheDocument()
-        expect(within(dialog).getByText('—')).toBeInTheDocument()
+        expect(within(dialog).getByLabelText(/time/i)).toHaveValue('15:00')
+        expect(within(dialog).getByLabelText(/notes/i)).toHaveValue('')
     })
 
     it('shades a busy day and reveals its classes on hover', async () => {
@@ -614,12 +616,15 @@ describe('component-level coverage', () => {
 
         await user.click(openDayCell(today))
 
-        expect(screen.getByText(/no student selected/i)).toBeInTheDocument()
+        // No students to pick, so the student field stays empty.
+        expect(
+            screen.getByLabelText(/student name and year/i)
+        ).toHaveValue('')
 
         fireEvent.change(screen.getByLabelText(/subject/i), {
             target: { value: 'Biology' },
         })
-        fireEvent.click(screen.getByRole('button', { name: /save class/i }))
+        fireEvent.click(screen.getByRole('button', { name: /add class/i }))
 
         expect(onOpenStudentPage).not.toHaveBeenCalled()
         expect(onScheduleClass).not.toHaveBeenCalled()
@@ -658,15 +663,17 @@ describe('component-level coverage', () => {
             screen.getByRole('option', { name: /maya fernandoyear 10/i })
         )
 
-        expect(screen.getByText(/maya fernando/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/student name and year/i)).toHaveValue(
+            'Maya Fernando • Year 10'
+        )
         // Her first subject comes along with her.
         expect(screen.getByLabelText(/subject/i)).toHaveValue('Physics')
 
         // Clearing the picker empties the subject too, rather than stranding
         // the previous student's subject on a class with no student.
         await user.click(screen.getByTitle('Clear'))
+        expect(screen.getByLabelText(/student name and year/i)).toHaveValue('')
         expect(screen.getByLabelText(/subject/i)).toHaveValue('')
-        expect(screen.getByText(/no student selected/i)).toBeInTheDocument()
 
         expect(onOpenStudentPage).not.toHaveBeenCalled()
         expect(onScheduleClass).not.toHaveBeenCalled()
@@ -702,7 +709,7 @@ describe('component-level coverage', () => {
             target: { value: '16:00' },
         })
 
-        await user.click(screen.getByRole('button', { name: /save class/i }))
+        await user.click(screen.getByRole('button', { name: /add class/i }))
 
         // The date is the day that was clicked — there is no date field to type.
         expect(onScheduleClass).toHaveBeenCalledWith(
@@ -785,7 +792,8 @@ describe('component-level coverage', () => {
         expect(screen.getByLabelText(/student name and year/i)).toHaveValue('')
         expect(screen.getByLabelText(/subject/i)).toHaveValue('')
         expect(screen.getByLabelText(/time/i)).toHaveValue('')
-        expect(screen.getByText(/no student selected/i)).toBeInTheDocument()
+        // In add mode there is no chip row (nothing booked to pick).
+        expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
     })
 
     it('dismisses the day without booking anything', async () => {
@@ -808,5 +816,148 @@ describe('component-level coverage', () => {
 
         await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
         expect(onScheduleClass).not.toHaveBeenCalled()
+    })
+
+    describe('editing and cancelling a booked class', () => {
+        const day = new Date(today.getFullYear(), today.getMonth(), 14, 12)
+        const bookedClass = (
+            overrides: Partial<ScheduledSession> = {}
+        ): ScheduledSession => ({
+            id: 1,
+            studentId: 1,
+            studentName: 'Asha Perera',
+            year: '10',
+            subject: 'Mathematics',
+            date: dateKey(day),
+            time: '09:00',
+            notes: 'Algebra',
+            status: 'Scheduled',
+            ...overrides,
+        })
+
+        const renderBooked = (
+            handlers: Partial<{
+                onEditClass: ReturnType<typeof vi.fn>
+                onScheduleClass: ReturnType<typeof vi.fn>
+                onSetSessionStatus: ReturnType<typeof vi.fn>
+            }>,
+            session: ScheduledSession = bookedClass()
+        ) =>
+            render(
+                <ClassSchedulingView
+                    students={[buildStudent()]}
+                    sessions={[session]}
+                    onScheduleClass={handlers.onScheduleClass ?? vi.fn()}
+                    onEditClass={handlers.onEditClass ?? vi.fn()}
+                    onSetSessionStatus={
+                        handlers.onSetSessionStatus ?? vi.fn()
+                    }
+                />
+            )
+
+        it('saves an edit to the open class via onEditClass', async () => {
+            const user = userEvent.setup()
+            const onEditClass = vi.fn()
+            const onScheduleClass = vi.fn()
+            renderBooked({ onEditClass, onScheduleClass })
+
+            await user.click(openDayCell(day))
+            expect(
+                screen.getByRole('heading', { name: /edit class/i })
+            ).toBeInTheDocument()
+
+            fireEvent.change(screen.getByLabelText(/subject/i), {
+                target: { value: 'Physics' },
+            })
+            await user.click(
+                screen.getByRole('button', { name: /save changes/i })
+            )
+
+            // Edits the existing class, never creates a second one.
+            expect(onScheduleClass).not.toHaveBeenCalled()
+            expect(onEditClass).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({
+                    subject: 'Physics',
+                    date: dateKey(day),
+                    time: '09:00',
+                })
+            )
+        })
+
+        it('switches from editing to adding with the + chip', async () => {
+            const user = userEvent.setup()
+            const onEditClass = vi.fn()
+            const onScheduleClass = vi.fn()
+            renderBooked({ onEditClass, onScheduleClass })
+
+            await user.click(openDayCell(day))
+            // Prefilled in edit mode.
+            expect(screen.getByLabelText(/subject/i)).toHaveValue('Mathematics')
+
+            await user.click(screen.getByRole('tab', { name: /add a class/i }))
+            // Now adding: blank form, and the heading and button say so.
+            expect(
+                screen.getByRole('heading', { name: /add a class/i })
+            ).toBeInTheDocument()
+            expect(screen.getByLabelText(/subject/i)).toHaveValue('')
+            expect(screen.getByLabelText(/time/i)).toHaveValue('')
+
+            await user.type(
+                screen.getByLabelText(/student name and year/i),
+                'Asha'
+            )
+            await user.click(
+                await screen.findByRole('option', { name: /asha/i })
+            )
+            fireEvent.change(screen.getByLabelText(/time/i), {
+                target: { value: '13:00' },
+            })
+            await user.click(screen.getByRole('button', { name: /add class/i }))
+
+            // Adds a new class, does not edit the one that was open.
+            expect(onEditClass).not.toHaveBeenCalled()
+            expect(onScheduleClass).toHaveBeenCalledWith(
+                expect.objectContaining({ time: '13:00', date: dateKey(day) })
+            )
+        })
+
+        it('backs out of a cancel with Escape, changing nothing', async () => {
+            const user = userEvent.setup()
+            const onSetSessionStatus = vi.fn()
+            renderBooked({ onSetSessionStatus })
+
+            await user.click(openDayCell(day))
+            await user.click(
+                screen.getByRole('button', { name: /cancel class/i })
+            )
+            expect(
+                screen.getByRole('heading', { name: /cancel this class\?/i })
+            ).toBeInTheDocument()
+
+            await user.keyboard('{Escape}')
+            await waitForElementToBeRemoved(() =>
+                screen.queryByRole('heading', { name: /cancel this class\?/i })
+            )
+            expect(onSetSessionStatus).not.toHaveBeenCalled()
+        })
+
+        it('restores a cancelled class without confirmation', async () => {
+            const user = userEvent.setup()
+            const onSetSessionStatus = vi.fn()
+            renderBooked(
+                { onSetSessionStatus },
+                bookedClass({ status: 'Cancelled' })
+            )
+
+            await user.click(openDayCell(day))
+            // A cancelled class offers Restore, not the red Cancel action.
+            expect(
+                screen.queryByRole('button', { name: /cancel class/i })
+            ).not.toBeInTheDocument()
+
+            await user.click(screen.getByRole('button', { name: /restore/i }))
+            expect(onSetSessionStatus).toHaveBeenCalledWith(1, 'Scheduled')
+        })
     })
 })

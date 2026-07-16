@@ -1,4 +1,16 @@
 /**
+ * Formats a Date as YYYY-MM-DD in the *local* calendar.
+ *
+ * Deliberately not `toISOString()`: that formats in UTC, so anywhere behind UTC
+ * it yields tomorrow, and anywhere ahead of it (e.g. BST after midnight) it
+ * yields yesterday — putting classes on the wrong day and misjudging "today".
+ */
+export const toDateKey = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+        date.getDate()
+    ).padStart(2, '0')}`
+
+/**
  * Renders a YYYY-MM-DD key as a long, human date.
  *
  * Splits the key by hand rather than `new Date(key)`: that parses as UTC, which
