@@ -10,10 +10,12 @@ import { fetchPaymentsByMonth, savePayments } from '../api/payments'
 import {
     createSession,
     fetchSessions,
+    updateSession,
     updateSessionStatus,
 } from '../api/sessions'
 import {
     createSessionSaga,
+    editSessionSaga,
     loadPaymentsSaga,
     savePaymentSaga,
     loadSessionsSaga,
@@ -26,6 +28,9 @@ import {
     createSessionFailed,
     createSessionRequested,
     createSessionSucceeded,
+    editSessionFailed,
+    editSessionRequested,
+    editSessionSucceeded,
     fetchPaymentsFailed,
     fetchPaymentsRequested,
     fetchPaymentsSucceeded,
@@ -242,6 +247,41 @@ describe('setSessionStatusSaga', () => {
     })
 })
 
+describe('editSessionSaga', () => {
+    const changes = { ...sessionInput, subject: 'Physics', time: '17:00' }
+
+    it('edits a class and stores the server copy', () => {
+        const gen = editSessionSaga(
+            editSessionRequested({ id: 101, changes })
+        )
+        expect(gen.next().value).toEqual(call(updateSession, 101, changes))
+
+        const edited = { ...session, ...changes } as ScheduledSession
+        expect(gen.next(edited).value).toEqual(put(editSessionSucceeded(edited)))
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('reports a failure', () => {
+        const gen = editSessionSaga(
+            editSessionRequested({ id: 101, changes })
+        )
+        gen.next()
+        expect(gen.throw(new Error('500')).value).toEqual(
+            put(editSessionFailed('Could not update the class: 500'))
+        )
+    })
+
+    it('falls back to a readable message for a non-Error throw', () => {
+        const gen = editSessionSaga(
+            editSessionRequested({ id: 101, changes })
+        )
+        gen.next()
+        expect(gen.throw('kaboom').value).toEqual(
+            put(editSessionFailed('Could not update the class.'))
+        )
+    })
+})
+
 describe('savePaymentSaga', () => {
     const input = { studentId: 1, month: '2026-01' }
 
@@ -284,6 +324,7 @@ describe('rootSaga', () => {
                 takeEvery(createSessionRequested.type, createSessionSaga),
                 takeEvery(saveStudentRequested.type, saveStudentSaga),
                 takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
+                takeEvery(editSessionRequested.type, editSessionSaga),
                 takeEvery(savePaymentRequested.type, savePaymentSaga),
             ])
         )

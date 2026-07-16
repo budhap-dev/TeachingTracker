@@ -4,6 +4,9 @@ import {
     setSessionStatusRequested,
     setSessionStatusSucceeded,
     setSessionStatusFailed,
+    editSessionRequested,
+    editSessionSucceeded,
+    editSessionFailed,
     saveStudentRequested,
     saveStudentSucceeded,
     saveStudentFailed,
@@ -384,6 +387,63 @@ describe('student reducer', () => {
                 setSessionStatusFailed('Could not update the class: 503')
             )
             expect(failed.error).toBe('Could not update the class: 503')
+        })
+    })
+
+    describe('editing a class', () => {
+        const loaded = () =>
+            studentReducer(
+                initial(),
+                fetchSessionsSucceeded([
+                    { id: 101, subject: 'Maths', time: '09:00' } as never,
+                    { id: 102, subject: 'Physics', time: '10:00' } as never,
+                ])
+            )
+
+        it('replaces the edited class with the server copy', () => {
+            const edited = studentReducer(
+                loaded(),
+                editSessionSucceeded({
+                    id: 101,
+                    subject: 'Astrophysics',
+                    time: '18:00',
+                } as never)
+            )
+            expect(edited.scheduledSessions).toHaveLength(2)
+            expect(edited.scheduledSessions[0]).toMatchObject({
+                subject: 'Astrophysics',
+                time: '18:00',
+            })
+            // The untouched class is left alone.
+            expect(edited.scheduledSessions[1].subject).toBe('Physics')
+        })
+
+        it('ignores a class the store does not know', () => {
+            const untouched = studentReducer(
+                loaded(),
+                editSessionSucceeded({ id: 999, subject: 'X' } as never)
+            )
+            expect(untouched.scheduledSessions.map((s) => s.subject)).toEqual([
+                'Maths',
+                'Physics',
+            ])
+        })
+
+        it('clears the error on request and surfaces it on failure', () => {
+            const requested = studentReducer(
+                studentReducer(initial(), editSessionFailed('old')),
+                editSessionRequested({
+                    id: 101,
+                    changes: { subject: 'Physics' } as never,
+                })
+            )
+            expect(requested.error).toBeNull()
+
+            const failed = studentReducer(
+                requested,
+                editSessionFailed('Could not update the class: 500')
+            )
+            expect(failed.error).toBe('Could not update the class: 500')
         })
     })
 

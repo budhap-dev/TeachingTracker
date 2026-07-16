@@ -10,6 +10,7 @@ import { fetchPaymentsByMonth, savePayments } from '../api/payments'
 import {
     createSession,
     fetchSessions,
+    updateSession,
     updateSessionStatus,
 } from '../api/sessions'
 import {
@@ -34,6 +35,9 @@ import {
     setSessionStatusFailed,
     setSessionStatusRequested,
     setSessionStatusSucceeded,
+    editSessionFailed,
+    editSessionRequested,
+    editSessionSucceeded,
 } from './store'
 
 const toMessage = (error: unknown): string =>
@@ -126,6 +130,28 @@ export function* setSessionStatusSaga(
     }
 }
 
+/** Edits a class's details via the API, taking the server's copy as truth. */
+export function* editSessionSaga(
+    action: ReturnType<typeof editSessionRequested>
+) {
+    try {
+        const session: ScheduledSession = yield call(
+            updateSession,
+            action.payload.id,
+            action.payload.changes
+        )
+        yield put(editSessionSucceeded(session))
+    } catch (error) {
+        yield put(
+            editSessionFailed(
+                error instanceof Error
+                    ? `Could not update the class: ${error.message}`
+                    : 'Could not update the class.'
+            )
+        )
+    }
+}
+
 /**
  * Records a payment via the API. The response carries the API's own view of what
  * is due, so the table can never show a total the server disagrees with.
@@ -156,6 +182,7 @@ export function* rootSaga() {
         takeEvery(createSessionRequested.type, createSessionSaga),
         takeEvery(saveStudentRequested.type, saveStudentSaga),
         takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
+        takeEvery(editSessionRequested.type, editSessionSaga),
         takeEvery(savePaymentRequested.type, savePaymentSaga),
     ])
 }

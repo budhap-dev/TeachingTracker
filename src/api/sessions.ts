@@ -23,3 +23,13 @@ export const updateSessionStatus = (
         method: 'PUT',
         body: { status },
     })
+
+/** PUT /sessions/{id} — edits a class's details (same endpoint, detail body). */
+export const updateSession = (
+    id: number,
+    input: SessionInput
+): Promise<ScheduledSession> =>
+    apiRequest<ScheduledSession>(`/sessions/${id}`, {
+        method: 'PUT',
+        body: input,
+    })
