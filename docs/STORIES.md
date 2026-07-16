@@ -30,7 +30,7 @@ or both — this file is the source of truth for both repos.
 ## Definition of done
 
 Applies to every story unless it says otherwise. These reflect how this project
-actually works — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+actually works — see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 - **Frontend tests: 100% coverage.** `vitest.config.ts` enforces 100% on
   branches/functions/lines/statements, and coverage runs even on `npm test`. New
@@ -42,7 +42,7 @@ actually works — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 - **Contract changes are backend-first.** If a story adds or changes an endpoint,
   the API must deploy before the frontend, or the frontend 404s in prod.
 - **Verify at the surface.** Drive the real screens against real API data — see
-  [`.claude/skills/verify/SKILL.md`](.claude/skills/verify/SKILL.md).
+  [`.claude/skills/verify/SKILL.md`](../.claude/skills/verify/SKILL.md).
 - **Lint + build clean** in each repo touched.
 
 ## Template
@@ -318,12 +318,12 @@ visible only to me, so that families' details stay private.
 - The gate must live in the API. A frontend-only check is cosmetic — the data is
   one `curl` away.
 - The sign-in mechanism is decided: Entra ID single-tenant — see REQ-004 and
-  [docs/PLAN-req-004-entra-signin.md](docs/PLAN-req-004-entra-signin.md).
+  [docs/PLAN-req-004-entra-signin.md](PLAN-req-004-entra-signin.md).
 
 ## REQ-004 — Teacher signs in with Microsoft Entra ID
 
 **Status:** 🔲 Not started (planned) · **Impact:** both + infra · **Effort:** L
-· **Plan:** [docs/PLAN-req-004-entra-signin.md](docs/PLAN-req-004-entra-signin.md)
+· **Plan:** [docs/PLAN-req-004-entra-signin.md](PLAN-req-004-entra-signin.md)
 
 **Story**
 As the teacher, I want to sign in with an account only I control, so that only I
