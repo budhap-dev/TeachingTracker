@@ -10,12 +10,12 @@ variable "project" {
 }
 
 # One Static Web App is provisioned per entry in this map. The keys must match
-# the GitHub Environment names used in the deploy workflow (dev/test/prod).
+# the GitHub Environment names used in the deploy workflow (dev/prod).
 #
 # NOTE: Azure Static Web Apps are only available in a subset of regions —
 # eastus2, westus2, centralus, westeurope, eastasia. Do not use "eastus".
 variable "environments" {
-  description = "Per-environment configuration (keyed by environment name: dev/test/prod)."
+  description = "Per-environment configuration (keyed by environment name: dev/prod)."
   type = map(object({
     location = string
     sku_tier = optional(string, "Free")
@@ -23,9 +23,6 @@ variable "environments" {
   }))
   default = {
     dev = {
-      location = "eastus2"
-    }
-    test = {
       location = "eastus2"
     }
     prod = {

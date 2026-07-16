@@ -8,9 +8,6 @@ environments = {
   dev = {
     location = "eastus2"
   }
-  test = {
-    location = "eastus2"
-  }
   prod = {
     location = "eastus2"
   }

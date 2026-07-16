@@ -4,7 +4,7 @@ variable "project" {
 }
 
 variable "env" {
-  description = "Environment name (e.g. dev, test, prod). Must match the GitHub Environment name."
+  description = "Environment name (e.g. dev, prod). Must match the GitHub Environment name."
   type        = string
 }
 

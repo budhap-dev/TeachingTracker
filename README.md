@@ -11,7 +11,6 @@ API and loaded through **redux-saga** — the frontend ships no data of its own.
 | Env      | Frontend                                                 | API base URL                                                | Data          |
 | -------- | -------------------------------------------------------- | ----------------------------------------------------------- | ------------- |
 | **dev**  | https://delightful-water-09b7c480f.7.azurestaticapps.net  | https://func-teachtracker-dev-pjlmrq.azurewebsites.net/api   | 5 students    |
-| **test** | https://delightful-sea-0e15b030f.7.azurestaticapps.net    | https://func-teachtracker-test-mtbace.azurewebsites.net/api  | 10 students   |
 | **prod** | https://nice-sea-095463c0f.7.azurestaticapps.net          | https://func-teachtracker-prod-gjvecw.azurewebsites.net/api  | 15 students   |
 
 Each environment has its own Static Web App wired to its own Function App, and
@@ -99,7 +98,7 @@ npm run lint       # eslint
 
 ## Deployment
 
-Push to `main` auto-deploys **dev → test**. Production is a separate manual
+Push to `main` auto-deploys **dev**. Production is a separate manual
 workflow (**Actions → "Deploy frontend to Production (manual)"**), and the API
 must be deployed **before** the frontend. See
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
