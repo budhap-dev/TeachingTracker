@@ -1,6 +1,6 @@
 # REQ-004 — Teacher sign-in with Microsoft Entra ID (plan)
 
-Working plan for [REQ-004](../STORIES.md#req-004--teacher-signs-in-with-microsoft-entra-id).
+Working plan for [REQ-004](STORIES.md#req-004--teacher-signs-in-with-microsoft-entra-id).
 Written 2026-07-16, against the two-environment world (dev / prod).
 
 ## Goal
