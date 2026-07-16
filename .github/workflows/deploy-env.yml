@@ -3,7 +3,7 @@ name: Deploy frontend to environment
 # Reusable workflow: builds the frontend for one environment and deploys it to
 # that environment's Static Web App.
 #
-# The GitHub Environment (dev/test/prod) supplies:
+# The GitHub Environment (dev/prod) supplies:
 #   - vars.VITE_API_BASE_URL              -> the matching Function App URL (+/api)
 #   - secrets.AZURE_STATIC_WEB_APPS_API_TOKEN -> that SWA's deployment token
 # and any protection rules (e.g. required reviewers on prod).
@@ -11,7 +11,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: Target environment (dev, test, or prod).
+        description: Target environment (dev or prod).
         required: true
         type: string
 

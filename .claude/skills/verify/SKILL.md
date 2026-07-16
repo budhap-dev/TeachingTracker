@@ -20,7 +20,7 @@ Instead serve the *real compiled handlers* over plain HTTP. Recipe that works:
    handler with a mock request (`{ params, query: URLSearchParams, text() }`)
    and context (`{ log }`). Handlers return `{ status, jsonBody }`.
    Set `Access-Control-Allow-Origin: *` and answer `OPTIONS` (POSTs preflight).
-   Listen on `:7071`. Set `ENVIRONMENT=dev|test|prod` to pick the dataset.
+   Listen on `:7071`. Set `ENVIRONMENT=dev|prod` to pick the dataset.
    A working copy lives in the scratchpad as `api-shim.mjs` — rewrite it if gone.
 3. Start the frontend against it:
    `VITE_API_BASE_URL=http://localhost:7071/api npm start`  (vite on :3000)
@@ -58,7 +58,7 @@ const browser = await chromium.launch({ channel: 'chrome' })  // uses installed 
 ## Flows worth driving
 
 - All six screens via the sidebar; assert env-appropriate counts
-  (dev = 5 students / 4 sessions; test = 10/6; prod = 15/8).
+  (dev = 5 students / 4 sessions; prod = 15/8).
 - Deep link `/students/3` cold → must show the student, not bounce to the list
   (there's a loading guard). `/students/9999` → redirects to the list.
 - Schedule a class → POSTs to `/api/sessions` and persists server-side.

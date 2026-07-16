@@ -1,4 +1,4 @@
-# Frontend deployment — dev / test / prod
+# Frontend deployment — dev / prod
 
 The Teaching Tracker frontend is hosted on **Azure Static Web Apps** (Free tier),
 one resource per environment, each talking only to its matching Function App from
@@ -8,7 +8,6 @@ repo.
 ```
 Frontend (Static Web App)                API (Function App)
   swa-teachtracker-dev    ─── /api ──▶   func-teachtracker-dev-pjlmrq
-  swa-teachtracker-test   ─── /api ──▶   func-teachtracker-test-mtbace
   swa-teachtracker-prod   ─── /api ──▶   func-teachtracker-prod-gjvecw
 ```
 
@@ -17,7 +16,6 @@ Frontend (Static Web App)                API (Function App)
 | Env      | Frontend (open this)                                            | API base URL                                                    |
 | -------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
 | **dev**  | https://delightful-water-09b7c480f.7.azurestaticapps.net         | https://func-teachtracker-dev-pjlmrq.azurewebsites.net/api       |
-| **test** | https://delightful-sea-0e15b030f.7.azurestaticapps.net           | https://func-teachtracker-test-mtbace.azurewebsites.net/api      |
 | **prod** | https://nice-sea-095463c0f.7.azurestaticapps.net                 | https://func-teachtracker-prod-gjvecw.azurewebsites.net/api      |
 
 Each environment serves a **different dataset**, so you can tell them apart at a
@@ -26,7 +24,6 @@ glance (counts are owned by the API repo's `src/data/seed.ts`):
 | Env  | Students | Booked classes | Total expected / month |
 | ---- | -------- | -------------- | ---------------------- |
 | dev  | 5        | 4              | £590                   |
-| test | 10       | 6              | £1,295                 |
 | prod | 15       | 8              | £2,115                 |
 
 ### Azure resources
@@ -34,7 +31,6 @@ glance (counts are owned by the API repo's `src/data/seed.ts`):
 | Env  | Static Web App          | Resource group             |
 | ---- | ----------------------- | -------------------------- |
 | dev  | `swa-teachtracker-dev`  | `rg-teachtracker-dev-web`  |
-| test | `swa-teachtracker-test` | `rg-teachtracker-test-web` |
 | prod | `swa-teachtracker-prod` | `rg-teachtracker-prod-web` |
 
 Subscription `e16bea76-64f0-45a5-ae4a-53701ff61801` · Tenant `d2fa8fd6-d1f2-4ac4-bcf5-e8dd34885bb3`
@@ -67,7 +63,6 @@ in the API repo's `infra/terraform/variables.tf`:
 | Env  | Function App allows |
 | ---- | ------------------- |
 | dev  | `https://delightful-water-09b7c480f.7.azurestaticapps.net` |
-| test | `https://delightful-sea-0e15b030f.7.azurestaticapps.net`   |
 | prod | `https://nice-sea-095463c0f.7.azurestaticapps.net`         |
 
 Cross-env calls are refused (dev's origin cannot call the prod API). To verify:
@@ -83,15 +78,15 @@ az functionapp cors show -n func-teachtracker-dev-pjlmrq -g rg-teachtracker-dev
 
 ## Deploy pipeline
 
-Push to `main` auto-promotes **dev → test**. Production is deliberately separate.
+Push to `main` auto-deploys **dev**. Production is deliberately separate.
 
 ```
-push to main ──▶ dev (auto) ──▶ test (auto, after dev)
+push to main ──▶ dev (auto)
 
 prod ──▶ manual only: "Deploy frontend to Production (manual)"
 ```
 
-- [`deploy.yml`](../.github/workflows/deploy.yml) — dev → test on push
+- [`deploy.yml`](../.github/workflows/deploy.yml) — dev on push
 - [`deploy-prod.yml`](../.github/workflows/deploy-prod.yml) — prod, `workflow_dispatch` only
 - [`deploy-env.yml`](../.github/workflows/deploy-env.yml) — reusable per-env build + deploy
 
@@ -122,7 +117,7 @@ Or in the GitHub UI: **Actions → "Deploy … to Production (manual)" → Run w
 
 ## GitHub configuration
 
-Three GitHub Environments (`dev`, `test`, `prod`), each with:
+Two GitHub Environments (`dev`, `prod`), each with:
 
 | Kind     | Name                              | Value                                                       |
 | -------- | --------------------------------- | ----------------------------------------------------------- |
