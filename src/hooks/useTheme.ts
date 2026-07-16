@@ -8,7 +8,7 @@ const readStoredTheme = (): ThemeName => {
     const storedTheme = window.localStorage.getItem(
         THEME_STORAGE_KEY
     ) as ThemeName | null
-    return storedTheme && themePresets[storedTheme] ? storedTheme : 'ocean'
+    return storedTheme && themePresets[storedTheme] ? storedTheme : 'mono'
 }
 
 /**

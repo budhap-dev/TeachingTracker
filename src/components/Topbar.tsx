@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined'
 import { TeacherName, TopbarAuth } from './TopbarAuth'
 import {
     teacherQuotes,
@@ -40,15 +41,23 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
                         onClick={() =>
                             setIsThemePickerOpen((current) => !current)
                         }
+                        title={`Theme: ${activeTheme.label}`}
                         aria-label={
                             isThemePickerOpen
                                 ? 'Hide theme options'
                                 : 'Show theme options'
                         }
                     >
-                        <span className="theme-toggle-current">
-                            {activeTheme.label}
-                        </span>
+                        {/* Quiet chrome: a palette glyph plus the current
+                            theme's own colours — the name lives in the
+                            tooltip, not shouted across the topbar. */}
+                        <PaletteOutlinedIcon fontSize="small" />
+                        <span
+                            className="theme-toggle-dot"
+                            style={{
+                                background: `linear-gradient(135deg, ${activeTheme.accent} 50%, ${activeTheme.accentAlt} 50%)`,
+                            }}
+                        />
                     </button>
                     {isThemePickerOpen && (
                         <div className="theme-swatches">
@@ -82,7 +91,10 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
                         </div>
                     )}
                 </div>
-                <div className="pill">Active term • 2026</div>
+                {/* The live year — a hardcoded one quietly rots every January. */}
+                <div className="pill">
+                    Active term • {new Date().getFullYear()}
+                </div>
                 <TopbarAuth />
             </div>
         </header>

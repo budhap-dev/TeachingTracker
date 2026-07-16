@@ -1,4 +1,5 @@
 export type ThemeName =
+    | 'mono'
     | 'ocean'
     | 'sunset'
     | 'forest'
@@ -24,6 +25,16 @@ export type ThemePreset = {
 }
 
 export const themePresets: Record<ThemeName, ThemePreset> = {
+    // First in the picker and the default: white, black and greys — the quiet
+    // professional face; every other theme is an opt-in splash of colour.
+    mono: {
+        label: 'Mono',
+        accent: '#111827',
+        accentAlt: '#6b7280',
+        sidebar: 'linear-gradient(180deg, #09090b, #3f3f46)',
+        primary: '#111827',
+        secondary: '#52525b',
+    },
     ocean: {
         label: 'Ocean',
         accent: '#2563eb',

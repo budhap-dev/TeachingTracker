@@ -209,3 +209,12 @@
         line-height: 14px;
     }
 }
+
+@media (max-width: 640px) {
+    /* The picker sits near the left of the wrapped actions row on phones, so
+       a right-anchored overlay hangs off the viewport's left edge. */
+    .theme-swatches {
+        right: auto;
+        left: 0;
+    }
+}

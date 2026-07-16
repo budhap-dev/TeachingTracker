@@ -101,7 +101,7 @@ describe('Teaching Tracker app', () => {
         expect(window.localStorage.getItem('teachtrack-theme')).toBe('winter')
     })
 
-    it('renders the dashboard heading and navigation', () => {
+    it('renders the dashboard heading and navigation', async () => {
         render(<App />)
 
         const navigation = screen.getByRole('navigation')
@@ -127,7 +127,7 @@ describe('Teaching Tracker app', () => {
             })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('img', { name: /students by year group/i })
+            await screen.findByRole('img', { name: /students by year group/i })
         ).toBeInTheDocument()
     })
 
@@ -218,7 +218,7 @@ describe('Teaching Tracker app', () => {
         render(<App />)
 
         await user.click(
-            screen.getAllByRole('link', { name: /asha perera/i })[0]
+            (await screen.findAllByRole('link', { name: /asha perera/i }))[0]
         )
 
         expect(
@@ -436,7 +436,7 @@ describe('Teaching Tracker app', () => {
         )
 
         await user.click(
-            screen.getAllByRole('link', { name: /asha perera/i })[0]
+            (await screen.findAllByRole('link', { name: /asha perera/i }))[0]
         )
 
         expect(
@@ -452,7 +452,7 @@ describe('Teaching Tracker app', () => {
         render(<App />)
 
         await user.click(
-            screen.getAllByRole('link', { name: /asha perera/i })[0]
+            (await screen.findAllByRole('link', { name: /asha perera/i }))[0]
         )
 
         await user.click(screen.getByRole('button', { name: /^edit$/i }))

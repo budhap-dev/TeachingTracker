@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Student } from '../data/students'
 import { StudySnapshotView } from './StudySnapshotView'
+
+const onOpenStudentPage = vi.fn()
 
 const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     id: overrides.id ?? 1,
@@ -33,7 +35,12 @@ describe('StudySnapshotView', () => {
             })
         )
 
-        render(<StudySnapshotView students={students} />)
+        render(
+            <StudySnapshotView
+                students={students}
+                onOpenStudentPage={onOpenStudentPage}
+            />
+        )
 
         await user.selectOptions(
             screen.getByRole('combobox', { name: /rows per page/i }),
@@ -70,7 +77,12 @@ describe('StudySnapshotView', () => {
             })
         )
 
-        render(<StudySnapshotView students={students} />)
+        render(
+            <StudySnapshotView
+                students={students}
+                onOpenStudentPage={onOpenStudentPage}
+            />
+        )
 
         expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument()
         expect(screen.getByText('Student6 Example')).toBeInTheDocument()
@@ -140,7 +152,12 @@ describe('StudySnapshotView', () => {
             }),
         ]
 
-        render(<StudySnapshotView students={students} />)
+        render(
+            <StudySnapshotView
+                students={students}
+                onOpenStudentPage={onOpenStudentPage}
+            />
+        )
 
         const previousButton = screen.getByRole('button', { name: /previous/i })
         expect(previousButton).toBeDisabled()
@@ -157,5 +174,25 @@ describe('StudySnapshotView', () => {
 
         await user.click(screen.getByRole('button', { name: /previous/i }))
         expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument()
+    })
+
+    it('opens a student page from their name in the table', async () => {
+        const user = userEvent.setup()
+        onOpenStudentPage.mockClear()
+        render(
+            <StudySnapshotView
+                students={[
+                    buildStudent({
+                        id: 7,
+                        firstName: 'Asha',
+                        lastName: 'Perera',
+                    }),
+                ]}
+                onOpenStudentPage={onOpenStudentPage}
+            />
+        )
+
+        await user.click(screen.getByRole('link', { name: /asha perera/i }))
+        expect(onOpenStudentPage).toHaveBeenCalledWith(7)
     })
 })

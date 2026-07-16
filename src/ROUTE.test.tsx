@@ -6,30 +6,30 @@ import { resetStudentState, store } from './store/store'
 import { siteContent } from './data/siteContent'
 
 describe('routing fallbacks', () => {
-    it('redirects unknown routes to the dashboard', () => {
+    it('redirects unknown routes to the dashboard', async () => {
         window.history.pushState({}, '', '/does-not-exist')
         render(<App />)
 
         expect(
-            screen.getByRole('heading', { name: /today at a glance/i })
+            await screen.findByRole('heading', { name: /today at a glance/i })
         ).toBeInTheDocument()
     })
 
-    it('redirects to the students list when the student id is unknown', () => {
+    it('redirects to the students list when the student id is unknown', async () => {
         window.history.pushState({}, '', '/students/9999999')
         render(<App />)
 
         expect(
-            screen.getByRole('heading', { name: /view students/i })
+            await screen.findByRole('heading', { name: /view students/i })
         ).toBeInTheDocument()
     })
 
-    it('opens a student detail page directly from its URL', () => {
+    it('opens a student detail page directly from its URL', async () => {
         window.history.pushState({}, '', '/students/1')
         render(<App />)
 
         expect(
-            screen.getByRole('heading', { name: /asha perera/i })
+            await screen.findByRole('heading', { name: /asha perera/i })
         ).toBeInTheDocument()
     })
 })
@@ -105,7 +105,8 @@ describe('loading states', () => {
         window.history.pushState({}, '', '/students/1')
         render(<App />)
 
-        expect(screen.getByText(/loading student/i)).toBeInTheDocument()
+        // The page-shaped skeleton holds the spot while the fetch runs.
+        expect(screen.getByLabelText('Loading')).toBeInTheDocument()
 
         // Once the mounted saga resolves, the student page renders.
         expect(
@@ -113,14 +114,34 @@ describe('loading states', () => {
         ).toBeInTheDocument()
     })
 
-    it('renders the dashboard with zeroed stats before students load', async () => {
+    it.each([
+        ['/study-snapshot', /study snapshot/i],
+        ['/payments', /monthly payment tracking/i],
+        ['/scheduling', /class scheduling/i],
+    ])(
+        'holds %s behind a skeleton until its data lands',
+        async (path, heading) => {
+            store.dispatch(resetStudentState())
+            window.history.pushState({}, '', path)
+            render(<App />)
+
+            expect(screen.getByLabelText('Loading')).toBeInTheDocument()
+            expect(
+                await screen.findByRole('heading', { name: heading })
+            ).toBeInTheDocument()
+        }
+    )
+
+    it('shows a loading skeleton until the dashboard data lands', async () => {
         store.dispatch(resetStudentState())
         window.history.pushState({}, '', '/')
         render(<App />)
 
+        // No zeroed tiles any more: a skeleton holds the layout instead.
+        expect(screen.getByLabelText('Loading')).toBeInTheDocument()
         expect(
-            screen.getByRole('heading', { name: /today at a glance/i })
-        ).toBeInTheDocument()
+            screen.queryByRole('heading', { name: /today at a glance/i })
+        ).not.toBeInTheDocument()
 
         // Students arrive from the mounted saga.
         expect(
