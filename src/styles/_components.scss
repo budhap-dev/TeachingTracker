@@ -1200,3 +1200,21 @@
 .dashboard-chart-pie-segment:hover {
     opacity: 0.82;
 }
+
+/* REQ-004: sign-in gate + topbar identity */
+.signin-card {
+    max-width: 460px;
+    margin: 48px auto;
+    display: grid;
+    gap: 12px;
+    justify-items: start;
+
+    h3 {
+        margin: 0;
+    }
+}
+
+.topbar-auth {
+    display: flex;
+    align-items: center;
+}

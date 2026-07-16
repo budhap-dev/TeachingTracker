@@ -29,6 +29,7 @@ import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { ClassSchedulingView } from './components/ClassSchedulingView'
 import { ContactView } from './components/ContactView'
 import { OfferingsView } from './components/OfferingsView'
+import { RequireTeacher } from './components/RequireTeacher'
 import { siteContent } from './data/siteContent'
 
 /** How many of each student's next classes the dashboard lists. */
@@ -302,22 +303,35 @@ const ContactRoute = () => (
     />
 )
 
+/** Teacher-only route element: gated by sign-in when auth is configured. */
+const teacher = (page: JSX.Element) => <RequireTeacher>{page}</RequireTeacher>
+
 export const AppRoutes = () => (
     <>
         <ScrollToTop />
         <Routes>
-            <Route path={paths.dashboard} element={<DashboardRoute />} />
-            <Route path={paths.students} element={<StudentsRoute />} />
+            <Route
+                path={paths.dashboard}
+                element={teacher(<DashboardRoute />)}
+            />
+            <Route path={paths.students} element={teacher(<StudentsRoute />)} />
             <Route
                 path="/students/:studentId"
-                element={<StudentDetailRoute />}
+                element={teacher(<StudentDetailRoute />)}
             />
             <Route
                 path={paths.studySnapshot}
-                element={<StudySnapshotRoute />}
+                element={teacher(<StudySnapshotRoute />)}
             />
-            <Route path={paths.payments} element={<PaymentTrackerRoute />} />
-            <Route path={paths.scheduling} element={<SchedulingRoute />} />
+            <Route
+                path={paths.payments}
+                element={teacher(<PaymentTrackerRoute />)}
+            />
+            <Route
+                path={paths.scheduling}
+                element={teacher(<SchedulingRoute />)}
+            />
+            {/* Public by requirement (REQ-006/007): reachable signed out. */}
             <Route path={paths.offerings} element={<OfferingsRoute />} />
             <Route path={paths.contact} element={<ContactRoute />} />
             <Route

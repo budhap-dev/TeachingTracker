@@ -170,13 +170,13 @@ Rollback at any step = flip the flag back / redeploy previous frontend.
 
 Backend-first, per the repo DoD. Roughly a week of evenings; each step ships.
 
-- [ ] **T1 · infra (backend repo)**: Terraform module for per-env app
+- [x] **T1 · infra (backend repo)**: Terraform module for per-env app
       registrations (API + SPA), Key Vault + `teacher-emails`, managed identity
       + RBAC, new app settings. `terraform apply` dev, then prod. (M)
-- [ ] **T2 · backend**: `shared/auth.ts` (JWKS validation + Key Vault allow-list
+- [x] **T2 · backend**: `shared/auth.ts` (JWKS validation + Key Vault allow-list
       + `AUTH_ENFORCED` flag), wire into all handlers, `unauthorized`/`forbidden`
       helpers. Deploy. (M)
-- [ ] **T3 · frontend**: MSAL setup, sign-in/out UI, bearer header in
+- [x] **T3 · frontend**: MSAL setup, sign-in/out UI, bearer header in
       `apiRequest`, 401/403 handling, env vars in GitHub Environments, tests to
       100 %. Deploy. (L)
 - [ ] **T4 · flip**: `AUTH_ENFORCED=true` dev → verify with `/verify` skill +

@@ -5,6 +5,9 @@ name: Deploy frontend to environment
 #
 # The GitHub Environment (dev/prod) supplies:
 #   - vars.VITE_API_BASE_URL              -> the matching Function App URL (+/api)
+#   - vars.VITE_ENTRA_TENANT_ID           -> Entra tenant (REQ-004 sign-in)
+#   - vars.VITE_ENTRA_SPA_CLIENT_ID       -> that env's SPA app registration
+#   - vars.VITE_ENTRA_API_SCOPE           -> the API scope MSAL requests
 #   - secrets.AZURE_STATIC_WEB_APPS_API_TOKEN -> that SWA's deployment token
 # and any protection rules (e.g. required reviewers on prod).
 on:
@@ -35,10 +38,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build (bakes in this environment's API URL)
+      - name: Build (bakes in this environment's API URL + Entra config)
         run: npm run build
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_ENTRA_TENANT_ID: ${{ vars.VITE_ENTRA_TENANT_ID }}
+          VITE_ENTRA_SPA_CLIENT_ID: ${{ vars.VITE_ENTRA_SPA_CLIENT_ID }}
+          VITE_ENTRA_API_SCOPE: ${{ vars.VITE_ENTRA_API_SCOPE }}
 
       - name: Deploy to Azure Static Web Apps (${{ inputs.environment }})
         uses: Azure/static-web-apps-deploy@v1
