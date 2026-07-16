@@ -75,5 +75,11 @@ I will implement items from top to bottom.
 
 # Calendar - Class scheuling
 
-- -[ ] Does not look good while opened from mobile browser - for the space - can we do something for that
+- [ ] Does not look good while opened from mobile browser - for the space - can we do something for that
 - [ ]
+
+# Students menu
+
+- [ ] Only 3 upcomiung sessions to be shown per student rest of those can be expanded to view.
+- [ ] Fees should be editable
+- [ ] Duration of a class should be another option - 30mins, 1Hr, 1.5hour, 2hour will be the options.
