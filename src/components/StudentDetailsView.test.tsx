@@ -22,18 +22,32 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     address: overrides.address ?? '12 Oak Road, Kingston upon Thames, KT2 6LP',
 })
 
-const scheduledSessions: ScheduledSession[] = [
-    {
-        id: 1,
-        studentId: 10,
-        studentName: 'Asha Perera',
-        year: '10',
-        subject: 'Mathematics',
-        date: '2026-07-11',
-        time: '16:00',
-        notes: 'Problem solving practice',
-    },
-]
+/** A future YYYY-MM-DD, `days` from now — "upcoming" must not rot with time. */
+const futureDate = (days: number): string => {
+    const date = new Date()
+    date.setDate(date.getDate() + days)
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+const buildSession = (
+    id: number,
+    days: number,
+    overrides: Partial<ScheduledSession> = {}
+): ScheduledSession => ({
+    id,
+    studentId: 10,
+    studentName: 'Asha Perera',
+    year: '10',
+    subject: 'Mathematics',
+    date: futureDate(days),
+    time: '16:00',
+    durationMinutes: 60,
+    notes: 'Problem solving practice',
+    status: 'Scheduled',
+    ...overrides,
+})
+
+const scheduledSessions: ScheduledSession[] = [buildSession(1, 2)]
 
 const renderView = (props: Partial<
     React.ComponentProps<typeof StudentDetailsView>
@@ -212,6 +226,53 @@ describe('StudentDetailsView', () => {
             screen.getByText(/no notes added yet/i)
         ).toBeInTheDocument()
         expect(screen.getByText(/no classes scheduled yet/i)).toBeInTheDocument()
+    })
+
+    it('caps upcoming sessions at three, expandable to the full list', async () => {
+        const user = userEvent.setup()
+        renderView({
+            scheduledSessions: [
+                buildSession(1, 1),
+                buildSession(2, 2, { durationMinutes: 90 }),
+                buildSession(3, 3),
+                buildSession(4, 4),
+                // Cancelled and past classes are not "upcoming".
+                buildSession(5, 5, { status: 'Cancelled' }),
+                buildSession(6, -7),
+                buildSession(7, 6),
+            ],
+        })
+
+        // 5 upcoming (1,2,3,4,7) -> only the first three show.
+        expect(screen.getAllByRole('listitem')).toHaveLength(3)
+        // Duration reads like a teacher says it.
+        expect(
+            screen.getByText(
+                (_, element) =>
+                    element?.tagName === 'LI' &&
+                    /16:00 • Mathematics • 1\.5 hours$/.test(
+                        element.textContent ?? ''
+                    )
+            )
+        ).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /show all 5/i }))
+        expect(screen.getAllByRole('listitem')).toHaveLength(5)
+
+        await user.click(screen.getByRole('button', { name: /show fewer/i }))
+        expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    })
+
+    it('omits the duration for classes booked before durations existed', () => {
+        // The API guarantees the field going forward; a record from the old
+        // contract may lack it, and must not render as "NaN hours".
+        const legacy = buildSession(1, 2)
+        delete (legacy as Partial<ScheduledSession>).durationMinutes
+        renderView({ scheduledSessions: [legacy] })
+
+        const row = screen.getByRole('listitem')
+        expect(row.textContent).toMatch(/16:00 • Mathematics$/)
+        expect(row.textContent).not.toMatch(/NaN/)
     })
 
     it('blocks a second submit while the first is still saving', () => {

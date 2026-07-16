@@ -174,12 +174,38 @@
         }
     }
 
+    /* A calendar stays a calendar on a phone: all 7 columns, compact cells.
+       Two columns broke weekday alignment and made a month ~20 screens tall. */
     .calendar-weekdays,
     .calendar-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+    }
+
+    .calendar-weekdays span {
+        font-size: 0.6rem;
+        letter-spacing: 0;
     }
 
     .calendar-day {
-        min-height: 110px;
+        /* Roomy enough to tap, small enough to see the whole month. */
+        min-height: 44px;
+        padding: 4px;
+        border-radius: 8px;
+        gap: 2px;
+    }
+
+    .calendar-day-number {
+        font-size: 0.8rem;
+    }
+
+    .calendar-day-count {
+        right: 3px;
+        bottom: 3px;
+        min-width: 14px;
+        height: 14px;
+        padding: 0 3px;
+        font-size: 0.6rem;
+        line-height: 14px;
     }
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
     Button,
     Chip,
@@ -13,6 +14,11 @@ import type {
     Student,
 } from '../data/students'
 import { subjectOptions, yearOptions } from '../utils/constants'
+import {
+    formatDuration,
+    formatShortDayLabel,
+    toDateKey,
+} from '../utils/calendar'
 import { parseSubjects } from '../utils/forms'
 
 type StudentDetailsViewProps = {
@@ -32,7 +38,7 @@ type StudentDetailsViewProps = {
     onCancelEdit: () => void
 }
 
-const modeOptions: Student['mode'][] = ['Face to Face', 'Online']
+const modeOptions: Student['mode'][] = ['Face to Face', 'Online', 'Both']
 
 
 export const StudentDetailsView = ({
@@ -52,9 +58,26 @@ export const StudentDetailsView = ({
     // While editing, every control reads from the draft; otherwise from the
     // stored student. One source at a time, so the two can't disagree.
     const shown = isEditing && draftStudent ? draftStudent : student
-    const studentSessions = scheduledSessions.filter(
-        (session) => session.studentId === student.id
-    )
+
+    // Upcoming only, soonest first — with a weekly timetable the full history
+    // runs to dozens of rows and says nothing about what is next.
+    const [showAllSessions, setShowAllSessions] = useState(false)
+    const todayKey = toDateKey(new Date())
+    const upcomingSessions = scheduledSessions
+        .filter(
+            (session) =>
+                session.studentId === student.id &&
+                session.date >= todayKey &&
+                session.status !== 'Cancelled'
+        )
+        .sort((left, right) =>
+            `${left.date} ${left.time}`.localeCompare(
+                `${right.date} ${right.time}`
+            )
+        )
+    const visibleSessions = showAllSessions
+        ? upcomingSessions
+        : upcomingSessions.slice(0, 3)
 
     return (
         <section className="content-stack student-page">
@@ -349,23 +372,44 @@ export const StudentDetailsView = ({
 
                         <div className="student-session-summary">
                             <h4>Upcoming sessions</h4>
-                            {studentSessions.length === 0 ? (
+                            {upcomingSessions.length === 0 ? (
                                 <p>No classes scheduled yet.</p>
                             ) : (
-                                <ul>
-                                    {studentSessions.map((session) => (
-                                        <li key={session.id}>
-                                            {new Date(
-                                                session.date
-                                            ).toLocaleDateString('en-GB', {
-                                                day: '2-digit',
-                                                month: 'short',
-                                                year: 'numeric',
-                                            })}{' '}
-                                            • {session.time} • {session.subject}
-                                        </li>
-                                    ))}
-                                </ul>
+                                <>
+                                    <ul>
+                                        {visibleSessions.map((session) => {
+                                            const duration = formatDuration(
+                                                session.durationMinutes
+                                            )
+                                            return (
+                                                <li key={session.id}>
+                                                    {formatShortDayLabel(
+                                                        session.date
+                                                    )}{' '}
+                                                    • {session.time} •{' '}
+                                                    {session.subject}
+                                                    {duration &&
+                                                        ` • ${duration}`}
+                                                </li>
+                                            )
+                                        })}
+                                    </ul>
+                                    {upcomingSessions.length > 3 && (
+                                        <Button
+                                            size="small"
+                                            variant="text"
+                                            onClick={() =>
+                                                setShowAllSessions(
+                                                    (current) => !current
+                                                )
+                                            }
+                                        >
+                                            {showAllSessions
+                                                ? 'Show fewer'
+                                                : `Show all ${upcomingSessions.length}`}
+                                        </Button>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

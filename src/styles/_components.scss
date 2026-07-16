@@ -123,16 +123,24 @@
 .modal-form {
     padding-top: 8px;
 
-    .subjects-control {
+    .span-2 {
         grid-column: span 2;
     }
+}
 
-    .MuiDialogActions-root {
-        grid-column: span 2;
-        justify-content: flex-end;
-        padding: 0;
-        margin-top: 8px;
-    }
+/* Shared modal header: title left, primary action + ✕ right. Both the
+   student and class-scheduling modals use this shape. */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .student-list,
@@ -1217,4 +1225,13 @@
 .topbar-auth {
     display: flex;
     align-items: center;
+}
+
+/* Global API-activity bar: pinned over everything, gone when idle. */
+.busy-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1400;
 }

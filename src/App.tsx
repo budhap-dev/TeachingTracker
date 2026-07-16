@@ -13,6 +13,8 @@ import {
 } from './store/store'
 import { useAppDispatch } from './hooks'
 import { useTheme } from './hooks/useTheme'
+import { BusyBar } from './components/BusyBar'
+import { NoticeToast } from './components/NoticeToast'
 import { Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
 import { AppRoutes } from './ROUTE'
@@ -32,6 +34,7 @@ const AppShell = () => {
         <ThemeProvider theme={muiTheme}>
             <CssBaseline />
             <div className="app-shell">
+                <BusyBar />
                 <Sidebar sidebarBackground={activeTheme.sidebar} />
                 <main className="main-content">
                     <Topbar
@@ -41,6 +44,7 @@ const AppShell = () => {
                     />
                     <AppRoutes />
                 </main>
+                <NoticeToast />
             </div>
         </ThemeProvider>
     )
@@ -49,7 +53,11 @@ const AppShell = () => {
 const App = () => {
     const app = (
         <Provider store={store}>
-            <BrowserRouter>
+            {/* future flags: opt in to v7 behaviour now, silencing the two
+                upgrade warnings the router prints in the console. */}
+            <BrowserRouter
+                future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+            >
                 <AppShell />
             </BrowserRouter>
         </Provider>

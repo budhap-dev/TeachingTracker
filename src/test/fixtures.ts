@@ -125,6 +125,7 @@ export const buildFixtureSessions = (
             status: i === 3 ? 'Cancelled' : 'Scheduled',
             date: date.toISOString().slice(0, 10),
             time: times[i],
+            durationMinutes: [60, 90, 30, 120][i],
             notes: notes[i],
         }
     })

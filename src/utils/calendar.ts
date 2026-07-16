@@ -37,3 +37,29 @@ export const bookedLevelClass = (count: number): string => {
     if (count <= 3) return 'booked booked-medium'
     return 'booked booked-heavy'
 }
+
+/** Renders a YYYY-MM-DD key as a short date (`20 Jul 2026`), parsed locally. */
+export const formatShortDayLabel = (dateKey: string): string => {
+    const [year, month, day] = dateKey.split('-').map(Number)
+    return new Date(year, month - 1, day).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    })
+}
+
+/** Class lengths the planner offers, in minutes. */
+export const durationOptions = [30, 60, 90, 120] as const
+
+/**
+ * Renders a duration in minutes the way a teacher says it. Empty for a class
+ * that has no usable duration (e.g. booked before durations existed) — callers
+ * skip the field rather than print "NaN hours".
+ */
+export const formatDuration = (minutes: number): string => {
+    if (!Number.isFinite(minutes) || minutes <= 0) return ''
+    if (minutes === 30) return '30 mins'
+    if (minutes % 60 === 0)
+        return `${minutes / 60} ${minutes === 60 ? 'hour' : 'hours'}`
+    return `${minutes / 60} hours`
+}

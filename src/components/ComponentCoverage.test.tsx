@@ -724,6 +724,53 @@ describe('component-level coverage', () => {
         await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
     })
 
+    it('books with a chosen duration, and the ✕ dismisses the day', async () => {
+        const user = userEvent.setup()
+        const onScheduleClass = vi.fn()
+
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[]}
+                onOpenStudentPage={vi.fn()}
+                onScheduleClass={onScheduleClass}
+            />
+        )
+
+        const day = new Date(today.getFullYear(), today.getMonth(), 19, 12)
+        await user.click(openDayCell(day))
+
+        await user.type(
+            screen.getByLabelText(/student name and year/i),
+            'Asha'
+        )
+        await user.click(await screen.findByRole('option', { name: /asha/i }))
+        fireEvent.change(screen.getByLabelText(/subject/i), {
+            target: { value: 'Physics' },
+        })
+        fireEvent.change(screen.getByLabelText(/time/i), {
+            target: { value: '10:00' },
+        })
+
+        // 1 hour is the default; pick 1.5 hours instead.
+        await user.click(screen.getByLabelText(/duration/i))
+        await user.click(
+            await screen.findByRole('option', { name: /1\.5 hours/i })
+        )
+        await user.click(screen.getByRole('button', { name: /add class/i }))
+
+        expect(onScheduleClass).toHaveBeenCalledWith(
+            expect.objectContaining({ durationMinutes: 90 })
+        )
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+
+        // Reopen; the ✕ dismisses without saving anything further.
+        await user.click(openDayCell(day))
+        await user.click(screen.getByRole('button', { name: /^close$/i }))
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        expect(onScheduleClass).toHaveBeenCalledTimes(1)
+    })
+
     it('mirrors the selected class into the form, and presets nothing on an empty day', async () => {
         const user = userEvent.setup()
         const booked = new Date(today.getFullYear(), today.getMonth(), 21, 12)
