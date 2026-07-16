@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookedLevelClass, toDateKey } from './calendar'
+import { bookedLevelClass, toDateKey, formatDuration, formatShortDayLabel } from './calendar'
 
 describe('toDateKey', () => {
     it('formats a date in the local calendar, zero-padded', () => {
@@ -26,5 +26,26 @@ describe('bookedLevelClass', () => {
         expect(bookedLevelClass(3)).toBe('booked booked-medium')
         expect(bookedLevelClass(4)).toBe('booked booked-heavy')
         expect(bookedLevelClass(9)).toBe('booked booked-heavy')
+    })
+})
+
+describe('formatShortDayLabel', () => {
+    it('renders a date key as a short local date', () => {
+        expect(formatShortDayLabel('2026-07-20')).toBe('20 Jul 2026')
+    })
+})
+
+describe('formatDuration', () => {
+    it('reads like a teacher says it', () => {
+        expect(formatDuration(30)).toBe('30 mins')
+        expect(formatDuration(60)).toBe('1 hour')
+        expect(formatDuration(90)).toBe('1.5 hours')
+        expect(formatDuration(120)).toBe('2 hours')
+    })
+
+    it('is empty for a class with no usable duration — never "NaN hours"', () => {
+        expect(formatDuration(Number.NaN)).toBe('')
+        expect(formatDuration(0)).toBe('')
+        expect(formatDuration(undefined as unknown as number)).toBe('')
     })
 })

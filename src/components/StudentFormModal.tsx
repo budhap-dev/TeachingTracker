@@ -3,16 +3,14 @@ import {
     Button,
     Checkbox,
     Dialog,
-    DialogActions,
     DialogContent,
     DialogTitle,
-    FormControl,
-    InputLabel,
+    IconButton,
     ListItemText,
     MenuItem,
-    Select,
     TextField,
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import type { FormEvent } from 'react'
 import type { Student } from '../data/students'
 import { subjectOptions, yearOptions } from '../utils/constants'
@@ -28,6 +26,9 @@ type StudentFormModalProps = {
     onSubmit: (event: FormEvent) => void
 }
 
+/** Uniform floating labels: every field, not just the pre-filled ones. */
+const label = { inputLabel: { shrink: true } } as const
+
 export const StudentFormModal = ({
     open,
     form,
@@ -36,7 +37,24 @@ export const StudentFormModal = ({
     onSubmit,
 }: StudentFormModalProps) => (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle>Add a new student</DialogTitle>
+        {/* Primary action lives in the header: save top-right, ✕ to dismiss —
+            no Cancel button. The scheduling modal follows the same shape. */}
+        <DialogTitle className="modal-header">
+            Add a new student
+            <span className="modal-header-actions">
+                <Button
+                    type="submit"
+                    form="student-form"
+                    variant="contained"
+                    size="small"
+                >
+                    Save student
+                </Button>
+                <IconButton aria-label="Close" size="small" onClick={onClose}>
+                    <CloseIcon fontSize="small" />
+                </IconButton>
+            </span>
+        </DialogTitle>
         <DialogContent>
             <Box
                 component="form"
@@ -51,6 +69,7 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('firstName', event.target.value)
                     }
+                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -60,6 +79,7 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('lastName', event.target.value)
                     }
+                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -68,61 +88,77 @@ export const StudentFormModal = ({
                     type="date"
                     value={form.dob}
                     onChange={(event) => onChange('dob', event.target.value)}
-                    slotProps={{ inputLabel: { shrink: true } }}
+                    slotProps={label}
                     fullWidth
                 />
-                <FormControl
+                <TextField
+                    select
+                    label="Year"
                     size="small"
+                    value={form.year}
+                    onChange={(event) => onChange('year', event.target.value)}
+                    slotProps={label}
                     fullWidth
-                    className="subjects-control"
                 >
-                    <InputLabel id="subjects-label">Subjects</InputLabel>
-                    <Select
-                        labelId="subjects-label"
-                        label="Subjects"
-                        multiple
-                        value={form.subjects}
-                        onChange={(event) => {
-                            onChange('subjects', event.target.value as string[])
-                        }}
-                        renderValue={(selected) =>
-                            (selected as string[]).join(', ')
-                        }
-                    >
-                        {subjectOptions.map((subject) => (
-                            <MenuItem key={subject} value={subject}>
-                                <Checkbox
-                                    checked={form.subjects.includes(subject)}
-                                />
-                                <ListItemText primary={subject} />
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                    {yearOptions.map((year) => (
+                        <MenuItem key={year} value={year}>
+                            {year}
+                        </MenuItem>
+                    ))}
+                </TextField>
+                <TextField
+                    select
+                    label="Subjects"
+                    size="small"
+                    className="span-2"
+                    value={form.subjects}
+                    slotProps={{
+                        ...label,
+                        select: {
+                            multiple: true,
+                            renderValue: (selected) =>
+                                (selected as string[]).join(', '),
+                        },
+                    }}
+                    onChange={(event) =>
+                        onChange(
+                            'subjects',
+                            // With multiple, MUI hands back the array.
+                            event.target.value as unknown as string[]
+                        )
+                    }
+                    fullWidth
+                >
+                    {subjectOptions.map((subject) => (
+                        <MenuItem key={subject} value={subject}>
+                            <Checkbox
+                                checked={form.subjects.includes(subject)}
+                            />
+                            <ListItemText primary={subject} />
+                        </MenuItem>
+                    ))}
+                </TextField>
                 <TextField
                     label="School"
                     size="small"
                     value={form.school}
                     onChange={(event) => onChange('school', event.target.value)}
+                    slotProps={label}
                     fullWidth
                 />
-                <FormControl size="small" fullWidth>
-                    <InputLabel id="year-label">Year</InputLabel>
-                    <Select
-                        labelId="year-label"
-                        label="Year"
-                        value={form.year}
-                        onChange={(event) =>
-                            onChange('year', event.target.value)
-                        }
-                    >
-                        {yearOptions.map((year) => (
-                            <MenuItem key={year} value={year}>
-                                {year}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                <TextField
+                    select
+                    label="Mode"
+                    size="small"
+                    value={form.mode}
+                    onChange={(event) => onChange('mode', event.target.value)}
+                    slotProps={label}
+                    fullWidth
+                >
+                    <MenuItem value="Online">Online</MenuItem>
+                    <MenuItem value="Face to Face">Face to Face</MenuItem>
+                    <MenuItem value="Both">Both</MenuItem>
+                </TextField>
                 <TextField
                     label="Progress %"
                     size="small"
@@ -131,6 +167,7 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('progress', Number(event.target.value))
                     }
+                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -141,22 +178,9 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('fees', Number(event.target.value))
                     }
+                    slotProps={label}
                     fullWidth
                 />
-                <FormControl size="small" fullWidth>
-                    <InputLabel id="mode-label">Mode</InputLabel>
-                    <Select
-                        labelId="mode-label"
-                        label="Mode"
-                        value={form.mode}
-                        onChange={(event) =>
-                            onChange('mode', event.target.value)
-                        }
-                    >
-                        <MenuItem value="Online">Online</MenuItem>
-                        <MenuItem value="Face to Face">Face to Face</MenuItem>
-                    </Select>
-                </FormControl>
                 <TextField
                     label="Parent Name"
                     size="small"
@@ -164,6 +188,7 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('parentName', event.target.value)
                     }
+                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -173,33 +198,34 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('contactNumber', event.target.value)
                     }
+                    slotProps={label}
                     fullWidth
                 />
                 <TextField
                     label="Address"
+                    size="small"
+                    className="span-2"
                     multiline
                     minRows={2}
                     value={form.address}
                     onChange={(event) =>
                         onChange('address', event.target.value)
                     }
+                    slotProps={label}
                     fullWidth
                 />
                 <TextField
                     label="Notes"
+                    size="small"
+                    className="span-2"
                     multiline
-                    minRows={3}
+                    minRows={2}
                     value={form.notes}
                     onChange={(event) => onChange('notes', event.target.value)}
+                    slotProps={label}
                     fullWidth
                 />
             </Box>
         </DialogContent>
-        <DialogActions>
-            <Button onClick={onClose}>Cancel</Button>
-            <Button type="submit" form="student-form" variant="contained">
-                Save student
-            </Button>
-        </DialogActions>
     </Dialog>
 )

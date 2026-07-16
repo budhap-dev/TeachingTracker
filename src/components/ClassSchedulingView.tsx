@@ -6,11 +6,20 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    IconButton,
+    MenuItem,
     TextField,
     Tooltip,
 } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import { activeSessions } from '../data/students'
-import { bookedLevelClass, formatDayLabel, toDateKey } from '../utils/calendar'
+import {
+    bookedLevelClass,
+    durationOptions,
+    formatDayLabel,
+    formatDuration,
+    toDateKey,
+} from '../utils/calendar'
 import type { ScheduledSession, SessionStatus, Student } from '../data/students'
 
 type ClassSchedulingViewProps = {
@@ -82,6 +91,7 @@ export const ClassSchedulingView = ({
     const [studentSearch, setStudentSearch] = useState('')
     const [subject, setSubject] = useState('')
     const [time, setTime] = useState('')
+    const [durationMinutes, setDurationMinutes] = useState(60)
     const [notes, setNotes] = useState('')
     const [monthReference, setMonthReference] = useState(() => new Date())
     // The day whose modal is open. The calendar owns the date now, so there is
@@ -125,6 +135,7 @@ export const ClassSchedulingView = ({
         setStudentSearch(option?.label ?? '')
         setSubject(session?.subject ?? '')
         setTime(session?.time ?? '')
+        setDurationMinutes(session?.durationMinutes ?? 60)
         setNotes(session?.notes ?? '')
     }
 
@@ -203,6 +214,7 @@ export const ClassSchedulingView = ({
             subject,
             date: openDate,
             time,
+            durationMinutes,
             notes: notes.trim() || 'Scheduled from the class planner',
         }
 
@@ -246,8 +258,27 @@ export const ClassSchedulingView = ({
                 maxWidth="sm"
                 fullWidth
             >
-                <DialogTitle>
+                {/* Same header shape as the student modal: title left,
+                    primary action + ✕ right. */}
+                <DialogTitle className="modal-header">
                     {openDate ? formatDayLabel(openDate) : ''}
+                    <span className="modal-header-actions">
+                        <Button
+                            type="submit"
+                            form="scheduling-form"
+                            variant="contained"
+                            size="small"
+                        >
+                            {editingSession ? 'Save changes' : 'Add class'}
+                        </Button>
+                        <IconButton
+                            aria-label="Close"
+                            size="small"
+                            onClick={() => setOpenDate(null)}
+                        >
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    </span>
                 </DialogTitle>
                 <DialogContent className="day-modal-content">
                     {openDateSessions.length > 0 && (
@@ -290,7 +321,11 @@ export const ClassSchedulingView = ({
                     )}
 
                     <h4>{editingSession ? 'Edit class' : 'Add a class'}</h4>
-                    <form className="scheduling-form" onSubmit={handleSubmit}>
+                    <form
+                        id="scheduling-form"
+                        className="scheduling-form"
+                        onSubmit={handleSubmit}
+                    >
                         <Autocomplete
                             options={studentOptions}
                             value={selectedStudent}
@@ -346,6 +381,20 @@ export const ClassSchedulingView = ({
                             slotProps={{ inputLabel: { shrink: true } }}
                         />
                         <TextField
+                            select
+                            label="Duration"
+                            value={durationMinutes}
+                            onChange={(event) =>
+                                setDurationMinutes(Number(event.target.value))
+                            }
+                        >
+                            {durationOptions.map((minutes) => (
+                                <MenuItem key={minutes} value={minutes}>
+                                    {formatDuration(minutes)}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                        <TextField
                             label="Notes"
                             value={notes}
                             onChange={(event) => setNotes(event.target.value)}
@@ -353,12 +402,11 @@ export const ClassSchedulingView = ({
                             minRows={3}
                             placeholder="Homework focus, topics, or parent notes"
                         />
-                        <div className="day-modal-actions">
-                            <Button type="submit" variant="contained">
-                                {editingSession ? 'Save changes' : 'Add class'}
-                            </Button>
-                            {editingSession &&
-                                (editingSession.status === 'Cancelled' ? (
+                        {/* The primary action lives in the modal header; only
+                            the destructive/status actions stay by the form. */}
+                        {editingSession && (
+                            <div className="day-modal-actions">
+                                {editingSession.status === 'Cancelled' ? (
                                     <Button
                                         variant="text"
                                         onClick={() =>
@@ -378,8 +426,9 @@ export const ClassSchedulingView = ({
                                     >
                                         Cancel class
                                     </Button>
-                                ))}
-                        </div>
+                                )}
+                            </div>
+                        )}
                     </form>
                 </DialogContent>
             </Dialog>

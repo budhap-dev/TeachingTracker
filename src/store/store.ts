@@ -13,13 +13,19 @@ import { rootSaga } from './sagas'
 
 export type ScheduledSessionInput = Omit<ScheduledSession, 'id' | 'status'>
 
+/** A transient toast: what just happened, and in what mood. */
+export type Notice = { kind: 'success' | 'error'; message: string }
+
 type StudentState = {
     students: Student[]
     loading: boolean
     paymentsLoading: boolean
     sessionsLoading: boolean
     savingStudent: boolean
+    savingSession: boolean
+    savingPayment: boolean
     error: string | null
+    notice: Notice | null
     scheduledSessions: ScheduledSession[]
     paymentsByMonth: MonthlyPaymentGroup[]
     hasLocalStudentChanges: boolean
@@ -47,13 +53,22 @@ const recalculateTotals = (group: MonthlyPaymentGroup) => {
 
 // Students, payments and scheduled sessions all come from the API, so they
 // start empty (loading) until their sagas fetch them.
+/** Failures set both the sticky error and the transient toast. */
+const fail = (state: StudentState, message: string) => {
+    state.error = message
+    state.notice = { kind: 'error', message }
+}
+
 const createInitialState = (): StudentState => ({
     students: [],
     loading: true,
     paymentsLoading: true,
     sessionsLoading: true,
     savingStudent: false,
+    savingSession: false,
+    savingPayment: false,
     error: null,
+    notice: null,
     scheduledSessions: [],
     paymentsByMonth: [],
     hasLocalStudentChanges: false,
@@ -92,7 +107,7 @@ const studentSlice = createSlice({
         },
         fetchStudentsFailed: (state, action: PayloadAction<string>) => {
             state.loading = false
-            state.error = action.payload
+            fail(state, action.payload)
         },
         // --- Payments (grouped by month, totals computed by the API) ---
         fetchPaymentsRequested: (state) => {
@@ -107,7 +122,7 @@ const studentSlice = createSlice({
         },
         fetchPaymentsFailed: (state, action: PayloadAction<string>) => {
             state.paymentsLoading = false
-            state.error = action.payload
+            fail(state, action.payload)
         },
         // --- Scheduled sessions ---
         fetchSessionsRequested: (state) => {
@@ -122,12 +137,13 @@ const studentSlice = createSlice({
         },
         fetchSessionsFailed: (state, action: PayloadAction<string>) => {
             state.sessionsLoading = false
-            state.error = action.payload
+            fail(state, action.payload)
         },
         // `prepare` gives the action a typed payload for the saga to read,
         // without the reducer needing an unused action parameter.
         createSessionRequested: {
             reducer: (state: StudentState) => {
+                state.savingSession = true
                 state.error = null
             },
             prepare: (input: ScheduledSessionInput) => ({ payload: input }),
@@ -137,13 +153,17 @@ const studentSlice = createSlice({
             action: PayloadAction<ScheduledSession>
         ) => {
             state.scheduledSessions.push(action.payload)
+            state.savingSession = false
+            state.notice = { kind: 'success', message: 'Class booked.' }
         },
         createSessionFailed: (state, action: PayloadAction<string>) => {
-            state.error = action.payload
+            state.savingSession = false
+            fail(state, action.payload)
         },
         // --- Cancelling / un-cancelling a class ---
         setSessionStatusRequested: {
             reducer: (state: StudentState) => {
+                state.savingSession = true
                 state.error = null
             },
             prepare: (input: { id: number; status: SessionStatus }) => ({
@@ -161,13 +181,23 @@ const studentSlice = createSlice({
                 // Replaced, never removed: a cancelled class stays visible.
                 state.scheduledSessions[index] = action.payload
             }
+            state.savingSession = false
+            state.notice = {
+                kind: 'success',
+                message:
+                    action.payload.status === 'Cancelled'
+                        ? 'Class cancelled.'
+                        : 'Class restored.',
+            }
         },
         setSessionStatusFailed: (state, action: PayloadAction<string>) => {
-            state.error = action.payload
+            state.savingSession = false
+            fail(state, action.payload)
         },
         // --- Editing a class's details ---
         editSessionRequested: {
             reducer: (state: StudentState) => {
+                state.savingSession = true
                 state.error = null
             },
             prepare: (input: { id: number; changes: ScheduledSessionInput }) => ({
@@ -184,9 +214,12 @@ const studentSlice = createSlice({
             if (index >= 0) {
                 state.scheduledSessions[index] = action.payload
             }
+            state.savingSession = false
+            state.notice = { kind: 'success', message: 'Class updated.' }
         },
         editSessionFailed: (state, action: PayloadAction<string>) => {
-            state.error = action.payload
+            state.savingSession = false
+            fail(state, action.payload)
         },
         // --- Saving a student (create or update) via the API ---
         saveStudentRequested: {
@@ -212,18 +245,24 @@ const studentSlice = createSlice({
             } else {
                 state.students.push(action.payload)
             }
+            state.notice = { kind: 'success', message: 'Student saved.' }
         },
         saveStudentFailed: (state, action: PayloadAction<string>) => {
             state.savingStudent = false
-            state.error = action.payload
+            fail(state, action.payload)
         },
         /** Clears a save error once the teacher has seen it. */
         dismissError: (state) => {
             state.error = null
         },
+        /** Clears the toast once it has been seen (or timed out). */
+        dismissNotice: (state) => {
+            state.notice = null
+        },
         // --- Recording a payment via the API ---
         savePaymentRequested: {
             reducer: (state: StudentState) => {
+                state.savingPayment = true
                 state.error = null
             },
             prepare: (input: PaymentRecordInput) => ({ payload: input }),
@@ -246,9 +285,12 @@ const studentSlice = createSlice({
                 group.records[index] = saved
                 recalculateTotals(group)
             })
+            state.savingPayment = false
+            state.notice = { kind: 'success', message: 'Payment saved.' }
         },
         savePaymentFailed: (state, action: PayloadAction<string>) => {
-            state.error = action.payload
+            state.savingPayment = false
+            fail(state, action.payload)
         },
     },
 })
@@ -277,6 +319,7 @@ export const {
     saveStudentSucceeded,
     saveStudentFailed,
     dismissError,
+    dismissNotice,
     savePaymentRequested,
     savePaymentSucceeded,
     savePaymentFailed,

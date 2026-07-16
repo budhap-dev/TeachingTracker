@@ -8,7 +8,7 @@ export type Student = {
     school: string
     year: string
     progress: number
-    mode: 'Online' | 'Face to Face'
+    mode: 'Online' | 'Face to Face' | 'Both'
     /** Agreed monthly tuition fee for this student, in GBP. */
     fees: number
     notes: string
@@ -32,6 +32,8 @@ export type ScheduledSession = {
     subject: string
     date: string
     time: string
+    /** Length of the class in minutes (30 / 60 / 90 / 120). */
+    durationMinutes: number
     notes: string
     status: SessionStatus
 }

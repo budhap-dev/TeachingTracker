@@ -59,11 +59,14 @@ const DashboardRoute = () => {
     )
 
     const stats = useMemo(() => {
+        // A "Both" student learns in each mode, so they count in both tiles —
+        // the tiles read "learners using this mode", not a partition.
         const onlineStudents = students.filter(
-            (student) => student.mode === 'Online'
+            (student) => student.mode === 'Online' || student.mode === 'Both'
         ).length
         const faceToFaceStudents = students.filter(
-            (student) => student.mode === 'Face to Face'
+            (student) =>
+                student.mode === 'Face to Face' || student.mode === 'Both'
         ).length
         const avgProgress = students.length
             ? Math.round(

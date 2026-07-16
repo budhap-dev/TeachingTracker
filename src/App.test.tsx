@@ -494,7 +494,11 @@ describe('Teaching Tracker app', () => {
         )
 
         expect(screen.getByRole('dialog')).toBeInTheDocument()
-        await user.click(screen.getByRole('button', { name: /cancel/i }))
+        // No Cancel button any more — the ✕ in the header dismisses.
+        expect(
+            screen.queryByRole('button', { name: /cancel/i })
+        ).not.toBeInTheDocument()
+        await user.click(screen.getByRole('button', { name: /^close$/i }))
 
         await waitFor(() => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
