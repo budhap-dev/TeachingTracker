@@ -1,0 +1,51 @@
+import { Button } from '@mui/material'
+import { useAccount, useIsAuthenticated, useMsal } from '@azure/msal-react'
+import { isAuthConfigured, signOut } from '../auth/msal'
+
+/**
+ * Auth widgets for the topbar. Each is split in two so the MSAL hooks only
+ * ever run under an MsalProvider: the outer components fall back statically
+ * in auth-less mode (local dev, tests), where no provider exists.
+ */
+
+const TeacherNameInner = () => {
+    const { accounts } = useMsal()
+    const account = useAccount(accounts[0] ?? {})
+    // First name only — a heading, not an identity record. The account's
+    // display name can be absent on some account types; "Teacher" then.
+    const firstName = account?.name?.trim().split(/\s+/)[0]
+    return <>{firstName || 'Teacher'}</>
+}
+
+/** The signed-in teacher's first name, or "Teacher" when unknown. */
+export const TeacherName = () =>
+    isAuthConfigured() ? <TeacherNameInner /> : <>Teacher</>
+
+const TopbarAuthInner = () => {
+    const { accounts } = useMsal()
+    const account = useAccount(accounts[0] ?? {})
+    const isAuthenticated = useIsAuthenticated()
+
+    if (!isAuthenticated || !account) {
+        return null
+    }
+
+    return (
+        <div className="topbar-auth">
+            {/* The tooltip carries the account's preferred_username — the
+                exact value the API matches against the teacher allow-list —
+                without the raw email breaking the topbar layout. */}
+            <Button
+                size="small"
+                variant="text"
+                title={`Signed in as ${account.username}`}
+                onClick={() => void signOut()}
+            >
+                Sign out
+            </Button>
+        </div>
+    )
+}
+
+export const TopbarAuth = () =>
+    isAuthConfigured() ? <TopbarAuthInner /> : null

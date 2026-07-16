@@ -13,6 +13,8 @@
  * `students.ts` / `payments.ts`, which route through `apiRequest` here.
  */
 
+import { acquireApiToken } from '../auth/msal'
+
 /** Configured API base URL, e.g. `https://func-teachtracker-dev-xxxx.azurewebsites.net/api`. */
 export const getApiBaseUrl = (): string =>
     import.meta.env.VITE_API_BASE_URL ?? ''
@@ -43,9 +45,16 @@ export async function apiRequest<T>(
 ): Promise<T> {
     const { method = 'GET', body } = options
 
+    // Null in auth-less mode (no Entra config baked in) — the request goes out
+    // bare, exactly as before REQ-004.
+    const token = await acquireApiToken()
+
     const response = await fetch(`${getApiBaseUrl()}${path}`, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: body === undefined ? undefined : JSON.stringify(body),
     })
 

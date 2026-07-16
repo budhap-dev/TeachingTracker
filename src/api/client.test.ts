@@ -5,6 +5,9 @@ import {
     getApiBaseUrl,
     isApiConfigured,
 } from './client'
+// The real module: in tests no Entra config exists, so it yields null (the
+// auth-less path) — the token test spies on this exact binding instead.
+import * as auth from '../auth/msal'
 
 const mockFetch = (body: unknown, ok = true, status = 200) => {
     const fetchMock = vi.fn().mockResolvedValue({
@@ -60,6 +63,22 @@ describe('api client', () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: 'Jo' }),
+        })
+    })
+
+    it('carries the bearer token once sign-in has produced one', async () => {
+        vi.spyOn(auth, 'acquireApiToken').mockResolvedValueOnce('token-123')
+        const fetchMock = mockFetch([])
+
+        await apiRequest('/students')
+
+        expect(fetchMock).toHaveBeenCalledWith('/students', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer token-123',
+            },
+            body: undefined,
         })
     })
 

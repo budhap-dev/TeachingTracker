@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { TeacherName, TopbarAuth } from './TopbarAuth'
 import {
     teacherQuotes,
     themePresets,
@@ -23,7 +24,10 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
         <header className="topbar">
             <div>
                 <p className="eyebrow">Teacher portal</p>
-                <h2>Welcome back, Teacher!!</h2>
+                <h2>
+                    Welcome back, <TeacherName />
+                    !!
+                </h2>
                 <div className="welcome-quote-container ">
                     <p className="welcome-quote">{dailyQuote}</p>
                 </div>
@@ -79,6 +83,7 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
                     )}
                 </div>
                 <div className="pill">Active term • 2026</div>
+                <TopbarAuth />
             </div>
         </header>
     )

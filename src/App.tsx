@@ -3,6 +3,8 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { Provider } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
+import { MsalProvider } from '@azure/msal-react'
+import { getMsalInstance } from './auth/msal'
 import {
     store,
     fetchStudentsRequested,
@@ -44,12 +46,19 @@ const AppShell = () => {
     )
 }
 
-const App = () => (
-    <Provider store={store}>
-        <BrowserRouter>
-            <AppShell />
-        </BrowserRouter>
-    </Provider>
-)
+const App = () => {
+    const app = (
+        <Provider store={store}>
+            <BrowserRouter>
+                <AppShell />
+            </BrowserRouter>
+        </Provider>
+    )
+    // Auth-less mode (no Entra config baked in) has no provider at all — the
+    // app is byte-for-byte the pre-REQ-004 tree, which keeps tests and local
+    // tooling working unchanged.
+    const msal = getMsalInstance()
+    return msal ? <MsalProvider instance={msal}>{app}</MsalProvider> : app
+}
 
 export default App

@@ -322,7 +322,7 @@ visible only to me, so that families' details stay private.
 
 ## REQ-004 — Teacher signs in with Microsoft Entra ID
 
-**Status:** 🔲 Not started (planned) · **Impact:** both + infra · **Effort:** L
+**Status:** 🚧 In progress (T1–T3 done, T4 = flip enforcement) · **Impact:** both + infra · **Effort:** L
 · **Plan:** [docs/PLAN-req-004-entra-signin.md](PLAN-req-004-entra-signin.md)
 
 **Story**

@@ -62,3 +62,18 @@ I will implement items from top to bottom.
 - [x] Total amount received and yet to be paid
 - [x] After this is done, apply the unit tetsts and make suer coverage is 100%
 - [ ] fix if there are any terminal errors
+
+# Modal behaviour
+
+- [ ] The Add New Student Modal : box alignments do not look good. Fix those.
+- [ ] The Add New Student Modal : Save Student button should be top-right, No Cancel
+- [ ] The Add New Student Modal : Mode : Add "Both"
+- [ ] The Add New Student Modal : On successful add or for any error we can show a toast. (this can be added application-wise for all API operations)
+- [ ] The Add New Student, class scheduling Modal : A "X" button should show at top right corner to dismiss the modal
+
+- [ ] Both the modals should look similar w.r.t the buttons, alignments and button functionality.
+
+# Calendar - Class scheuling
+
+- -[ ] Does not look good while opened from mobile browser - for the space - can we do something for that
+- [ ]
