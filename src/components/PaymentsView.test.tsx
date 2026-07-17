@@ -33,7 +33,7 @@ describe('PaymentsView', () => {
             })
         )
 
-        render(<PaymentsView students={students} />)
+        render(<PaymentsView students={students} sessions={[]} />)
 
         await user.selectOptions(
             screen.getByRole('combobox', { name: /rows per page/i }),
@@ -70,7 +70,7 @@ describe('PaymentsView', () => {
             })
         )
 
-        render(<PaymentsView students={students} />)
+        render(<PaymentsView students={students} sessions={[]} />)
 
         expect(screen.getByText(/page 1 of 1/i)).toBeInTheDocument()
         expect(screen.getByText('Student6 Example')).toBeInTheDocument()
@@ -140,7 +140,7 @@ describe('PaymentsView', () => {
             }),
         ]
 
-        render(<PaymentsView students={students} />)
+        render(<PaymentsView students={students} sessions={[]} />)
 
         const previousButton = screen.getByRole('button', { name: /previous/i })
         expect(previousButton).toBeDisabled()

@@ -217,6 +217,12 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
 }
 
+import type { Student } from '../data/students'
+
+/** 'Both' is jargon on screen; say what it means. Stored value unchanged. */
+export const studyModeLabel = (mode: Student['mode']): string =>
+    mode === 'Both' ? 'Online + F2F' : mode
+
 export const teacherQuotes = [
     'A teacher affects eternity; he can never tell where his influence stops. - Henry Adams',
     'The mediocre teacher tells. The good teacher explains. The superior teacher demonstrates. The great teacher inspires. - William Arthur Ward',

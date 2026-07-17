@@ -269,6 +269,9 @@ const StudentDetailRoute = () => {
 const StudySnapshotRoute = () => {
     const openStudentPage = useOpenStudentPage()
     const students = useAppSelector((state) => state.students.students)
+    const sessions = useAppSelector(
+        (state) => state.students.scheduledSessions
+    )
     const loading = useAppSelector((state) => state.students.loading)
     if (loading) {
         return <PageLoading />
@@ -276,6 +279,7 @@ const StudySnapshotRoute = () => {
     return (
         <StudySnapshotView
             students={students}
+            sessions={sessions}
             onOpenStudentPage={openStudentPage}
         />
     )

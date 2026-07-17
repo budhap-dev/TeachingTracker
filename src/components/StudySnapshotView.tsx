@@ -1,24 +1,60 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Student } from '../data/students'
+import type { ScheduledSession, Student } from '../data/students'
+import { studyModeLabel } from '../utils/constants'
 
 type StudySnapshotViewProps = {
     students: Student[]
+    sessions: ScheduledSession[]
     onOpenStudentPage: (studentId: number) => void
 }
 
-type SortKey = 'student' | 'subject' | 'school' | 'mode'
+type SortKey = 'student' | 'year' | 'subject' | 'school' | 'mode' | 'format'
 type SortDirection = 'asc' | 'desc'
 
 const pageSizeOptions = [5, 10, 20]
 
+type FormatFlags = { group: boolean; solo: boolean }
+
+/** Exactly three formats: Group, Solo, or Both. A student with nothing
+    booked (or only solo classes) reads as Solo — solo is the default way
+    to study; group is the exception worth flagging. */
+const formatLabel = (flags?: FormatFlags): string => {
+    if (flags?.group && flags.solo) {
+        return 'Both'
+    }
+    return flags?.group ? 'Group' : 'Solo'
+}
+
 export const StudySnapshotView = ({
     students,
+    sessions,
     onOpenStudentPage,
 }: StudySnapshotViewProps) => {
     const [sortKey, setSortKey] = useState<SortKey>('student')
     const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(10)
+
+    // Whether each student's booked classes run as a group, one to one, or
+    // some of each. Cancelled rows count towards neither.
+    const formatByStudent = useMemo(() => {
+        const flags: Record<number, FormatFlags> = {}
+        sessions.forEach((session) => {
+            if (session.status === 'Cancelled') {
+                return
+            }
+            const entry = (flags[session.studentId] ??= {
+                group: false,
+                solo: false,
+            })
+            if (session.groupId) {
+                entry.group = true
+            } else {
+                entry.solo = true
+            }
+        })
+        return flags
+    }, [sessions])
 
     const sortedStudents = useMemo(() => {
         const copy = [...students]
@@ -30,9 +66,18 @@ export const StudySnapshotView = ({
             const rightSubjects = right.subjects.join(', ').toLowerCase()
             const values = {
                 student: [leftValue, rightValue],
+                // Zero-padded so Year 8 sorts before Year 10 (string compare).
+                year: [
+                    left.year.padStart(2, '0'),
+                    right.year.padStart(2, '0'),
+                ],
                 subject: [leftSubjects, rightSubjects],
                 school: [left.school.toLowerCase(), right.school.toLowerCase()],
                 mode: [left.mode.toLowerCase(), right.mode.toLowerCase()],
+                format: [
+                    formatLabel(formatByStudent[left.id]),
+                    formatLabel(formatByStudent[right.id]),
+                ],
             }[sortKey]
 
             const comparison = values[0].localeCompare(values[1])
@@ -40,7 +85,7 @@ export const StudySnapshotView = ({
         })
 
         return copy
-    }, [students, sortKey, sortDirection])
+    }, [students, sortKey, sortDirection, formatByStudent])
 
     const totalPages = Math.max(
         1,
@@ -91,6 +136,15 @@ export const StudySnapshotView = ({
                                     <button
                                         type="button"
                                         className="sort-button"
+                                        onClick={() => handleSort('year')}
+                                    >
+                                        Year
+                                    </button>
+                                </th>
+                                <th>
+                                    <button
+                                        type="button"
+                                        className="sort-button"
                                         onClick={() => handleSort('subject')}
                                     >
                                         Subject
@@ -111,7 +165,16 @@ export const StudySnapshotView = ({
                                         className="sort-button"
                                         onClick={() => handleSort('mode')}
                                     >
-                                        Mode
+                                        Study mode
+                                    </button>
+                                </th>
+                                <th>
+                                    <button
+                                        type="button"
+                                        className="sort-button"
+                                        onClick={() => handleSort('format')}
+                                    >
+                                        Format
                                     </button>
                                 </th>
                             </tr>
@@ -148,10 +211,16 @@ export const StudySnapshotView = ({
                                                 {student.lastName}
                                             </a>
                                         </td>
+                                        <td>{student.year}</td>
                                         <td>{student.subjects.join(', ')}</td>
                                         <td>{student.school}</td>
                                         <td style={modeStyle}>
-                                            {student.mode}
+                                            {studyModeLabel(student.mode)}
+                                        </td>
+                                        <td>
+                                            {formatLabel(
+                                                formatByStudent[student.id]
+                                            )}
                                         </td>
                                     </tr>
                                 )

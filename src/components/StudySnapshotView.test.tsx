@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import type { Student } from '../data/students'
+import type { ScheduledSession, Student } from '../data/students'
 import { StudySnapshotView } from './StudySnapshotView'
 
 const onOpenStudentPage = vi.fn()
@@ -24,6 +24,89 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
 })
 
 describe('StudySnapshotView', () => {
+    it('shows each student’s year and sorts it numerically', async () => {
+        const user = userEvent.setup()
+        render(
+            <StudySnapshotView
+                students={[
+                    buildStudent({ id: 1, firstName: 'Tania', year: '10' }),
+                    buildStudent({ id: 2, firstName: 'Ben', year: '8' }),
+                ]}
+                sessions={[]}
+                onOpenStudentPage={onOpenStudentPage}
+            />
+        )
+
+        // Year 8 sorts before Year 10 — numeric, not '10' < '8' string order.
+        await user.click(screen.getByRole('button', { name: /^year$/i }))
+        let rows = screen.getAllByRole('row')
+        expect(rows[1]).toHaveTextContent('Ben')
+        expect(rows[1]).toHaveTextContent('8')
+
+        await user.click(screen.getByRole('button', { name: /^year$/i }))
+        rows = screen.getAllByRole('row')
+        expect(rows[1]).toHaveTextContent('Tania')
+        expect(rows[1]).toHaveTextContent('10')
+    })
+
+    it('labels how each student studies — Group, Solo, or Both', async () => {
+        const user = userEvent.setup()
+        const buildSession = (
+            overrides: Partial<ScheduledSession> & {
+                id: number
+                studentId: number
+            }
+        ): ScheduledSession => ({
+            studentName: 'Someone',
+            year: '10',
+            subject: 'Mathematics',
+            date: '2026-09-01',
+            time: '10:00',
+            notes: '',
+            ...overrides,
+        })
+
+        render(
+            <StudySnapshotView
+                students={[
+                    buildStudent({ id: 1, firstName: 'Gia' }),
+                    buildStudent({ id: 2, firstName: 'Sol' }),
+                    buildStudent({ id: 3, firstName: 'Bo' }),
+                    buildStudent({ id: 4, firstName: 'Nia' }),
+                ]}
+                sessions={[
+                    buildSession({ id: 1, studentId: 1, groupId: 'grp-1' }),
+                    buildSession({ id: 2, studentId: 2 }),
+                    // A cancelled group class must not make Sol "Both".
+                    buildSession({
+                        id: 3,
+                        studentId: 2,
+                        groupId: 'grp-9',
+                        status: 'Cancelled',
+                    }),
+                    buildSession({ id: 4, studentId: 3, groupId: 'grp-1' }),
+                    buildSession({ id: 5, studentId: 3 }),
+                ]}
+                onOpenStudentPage={onOpenStudentPage}
+            />
+        )
+
+        const rowFor = (name: string) =>
+            screen
+                .getByRole('link', { name: new RegExp(name, 'i') })
+                .closest('tr') as HTMLElement
+        expect(rowFor('Gia')).toHaveTextContent('Group')
+        expect(rowFor('Sol')).toHaveTextContent('Solo')
+        expect(rowFor('Bo')).toHaveTextContent('Both')
+        // No fourth state: nothing booked reads as Solo, the default way
+        // to study.
+        expect(rowFor('Nia')).toHaveTextContent('Solo')
+
+        // Sortable like every other column: Both < Group < Solo.
+        await user.click(screen.getByRole('button', { name: /format/i }))
+        expect(screen.getAllByRole('row')[1]).toHaveTextContent('Bo Perera')
+    })
+
     it('sorts and paginates the student snapshot table', async () => {
         const user = userEvent.setup()
         const students = Array.from({ length: 6 }, (_, index) =>
@@ -38,6 +121,7 @@ describe('StudySnapshotView', () => {
         render(
             <StudySnapshotView
                 students={students}
+                sessions={[]}
                 onOpenStudentPage={onOpenStudentPage}
             />
         )
@@ -80,6 +164,7 @@ describe('StudySnapshotView', () => {
         render(
             <StudySnapshotView
                 students={students}
+                sessions={[]}
                 onOpenStudentPage={onOpenStudentPage}
             />
         )
@@ -155,6 +240,7 @@ describe('StudySnapshotView', () => {
         render(
             <StudySnapshotView
                 students={students}
+                sessions={[]}
                 onOpenStudentPage={onOpenStudentPage}
             />
         )
@@ -188,6 +274,7 @@ describe('StudySnapshotView', () => {
                         lastName: 'Perera',
                     }),
                 ]}
+                sessions={[]}
                 onOpenStudentPage={onOpenStudentPage}
             />
         )

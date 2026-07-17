@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { ScheduledSession, Student } from '../data/students'
@@ -15,6 +15,7 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     year: overrides.year ?? '10',
     progress: overrides.progress ?? 88,
     mode: overrides.mode ?? 'Face to Face',
+    progressBySubject: overrides.progressBySubject,
     fees: overrides.fees ?? 120,
     notes: overrides.notes ?? 'Excellent problem solving skills.',
     parentName: overrides.parentName ?? 'Nadia Patel',
@@ -162,6 +163,153 @@ describe('StudentDetailsView', () => {
         expect(onCancelEdit).toHaveBeenCalledTimes(1)
     })
 
+    it('shows a bar per subject and derives the overall figure', () => {
+        renderView({
+            student: buildStudent({
+                subjects: ['Mathematics', 'Physics', 'Chemistry'],
+                progressBySubject: { Mathematics: 90, Physics: 70 },
+            }),
+        })
+
+        // Overall = rounded average of the map (80), not the stored figure.
+        // (Selector-scoped: Chemistry's fallback bar also reads 80%.)
+        expect(
+            screen.getByText('80%', { selector: '.progress-value' })
+        ).toBeInTheDocument()
+
+        const maths = screen.getByRole('progressbar', {
+            name: /mathematics progress/i,
+        })
+        expect(maths).toHaveAttribute('aria-valuenow', '90')
+        expect(
+            screen.getByRole('progressbar', { name: /physics progress/i })
+        ).toHaveAttribute('aria-valuenow', '70')
+        // A subject missing from the map falls back to the overall.
+        expect(
+            screen.getByRole('progressbar', { name: /chemistry progress/i })
+        ).toHaveAttribute('aria-valuenow', '80')
+        // The single blended slider belongs to map-less records only.
+        expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    })
+
+    it('edits each subject through its own slider', () => {
+        const onDraftChange = vi.fn()
+        const withMap = buildStudent({
+            progressBySubject: { Mathematics: 90, Physics: 70 },
+        })
+        renderView({
+            student: withMap,
+            editingStudentId: 10,
+            draftStudent: withMap,
+            hasUnsavedChanges: true,
+            onDraftChange,
+        })
+
+        fireEvent.change(
+            screen.getByRole('slider', { name: /mathematics progress/i }),
+            { target: { value: '95' } }
+        )
+        expect(onDraftChange).toHaveBeenCalledWith('progressBySubject', {
+            Mathematics: 95,
+            Physics: 70,
+        })
+    })
+
+    it('adopts per-subject tracking from the single blended slider', async () => {
+        const user = userEvent.setup()
+        const onDraftChange = vi.fn()
+        renderView({
+            editingStudentId: 10,
+            draftStudent: buildStudent(),
+            hasUnsavedChanges: false,
+            onDraftChange,
+        })
+
+        await user.click(
+            screen.getByRole('button', { name: /track per subject/i })
+        )
+        // Each subject seeds at the current blended figure.
+        expect(onDraftChange).toHaveBeenCalledWith('progressBySubject', {
+            Mathematics: 88,
+            Physics: 88,
+        })
+    })
+
+    it('offers no per-subject opt-in when the student has no subjects', () => {
+        renderView({
+            editingStudentId: 10,
+            draftStudent: buildStudent({ subjects: [] }),
+            hasUnsavedChanges: false,
+        })
+        expect(
+            screen.queryByRole('button', { name: /track per subject/i })
+        ).not.toBeInTheDocument()
+    })
+
+    it('keeps the progress map in step with subject changes', async () => {
+        const user = userEvent.setup()
+        const onDraftChange = vi.fn()
+        const withMap = buildStudent({
+            progressBySubject: { Mathematics: 90, Physics: 70 },
+        })
+        renderView({
+            student: withMap,
+            editingStudentId: 10,
+            draftStudent: withMap,
+            hasUnsavedChanges: true,
+            onDraftChange,
+        })
+
+        // Removing a subject drops its entry.
+        const picker = screen.getByRole('combobox', { name: /subjects/i })
+        const chip = within(picker)
+            .getByText('Physics')
+            .closest('.MuiChip-root') as HTMLElement
+        await user.click(within(chip).getByTestId('CancelIcon'))
+        expect(onDraftChange).toHaveBeenCalledWith('subjects', ['Mathematics'])
+        expect(onDraftChange).toHaveBeenCalledWith('progressBySubject', {
+            Mathematics: 90,
+        })
+
+        // Adding one seeds it at the current overall (80).
+        await user.click(picker)
+        await user.click(screen.getByRole('option', { name: 'Chemistry' }))
+        expect(onDraftChange).toHaveBeenCalledWith('progressBySubject', {
+            Mathematics: 90,
+            Physics: 70,
+            Chemistry: 80,
+        })
+    })
+
+    it('removes a subject via its chip ✕ or its menu option', async () => {
+        const user = userEvent.setup()
+        const onDraftChange = vi.fn()
+
+        renderView({
+            editingStudentId: 10,
+            draftStudent: buildStudent(),
+            hasUnsavedChanges: true,
+            onDraftChange,
+        })
+
+        // The chip's ✕ removes just that subject, without opening the menu.
+        // (Scoped to the picker: the sessions table says Mathematics too.)
+        const picker = screen.getByRole('combobox', { name: /subjects/i })
+        const chip = within(picker)
+            .getByText('Mathematics')
+            .closest('.MuiChip-root') as HTMLElement
+        await user.click(within(chip).getByTestId('CancelIcon'))
+        expect(onDraftChange).toHaveBeenCalledWith('subjects', ['Physics'])
+        expect(
+            screen.queryByRole('option', { name: 'Physics' })
+        ).not.toBeInTheDocument()
+
+        // Clicking an already-selected menu option also deselects it.
+        await user.click(screen.getByRole('combobox', { name: /subjects/i }))
+        await user.click(screen.getByRole('option', { name: 'Physics' }))
+        expect(onDraftChange).toHaveBeenCalledWith('subjects', ['Mathematics'])
+    })
+
     it('changes subjects, year and mode from their pickers', async () => {
         const user = userEvent.setup()
         const onDraftChange = vi.fn()
@@ -185,7 +333,7 @@ describe('StudentDetailsView', () => {
         await user.click(screen.getByRole('option', { name: '11' }))
         expect(onDraftChange).toHaveBeenCalledWith('year', '11')
 
-        await user.click(screen.getByLabelText(/^mode$/i))
+        await user.click(screen.getByLabelText(/study mode/i))
         await user.click(screen.getByRole('option', { name: 'Online' }))
         expect(onDraftChange).toHaveBeenCalledWith('mode', 'Online')
     })
@@ -243,24 +391,21 @@ describe('StudentDetailsView', () => {
             ],
         })
 
-        // 5 upcoming (1,2,3,4,7) -> only the first three show.
-        expect(screen.getAllByRole('listitem')).toHaveLength(3)
-        // Duration reads like a teacher says it.
+        // 5 upcoming (1,2,3,4,7) -> only the first three table rows show
+        // (one extra row is the Date/Time/Subject header).
+        const bodyRowCount = () => screen.getAllByRole('row').length - 1
+        expect(bodyRowCount()).toBe(3)
+        // Duration reads like a teacher says it, tucked under the time.
+        expect(screen.getByText('1.5 hours')).toBeInTheDocument()
         expect(
-            screen.getByText(
-                (_, element) =>
-                    element?.tagName === 'LI' &&
-                    /16:00 • Mathematics • 1\.5 hours$/.test(
-                        element.textContent ?? ''
-                    )
-            )
+            screen.getByRole('columnheader', { name: /subject/i })
         ).toBeInTheDocument()
 
         await user.click(screen.getByRole('button', { name: /show all 5/i }))
-        expect(screen.getAllByRole('listitem')).toHaveLength(5)
+        expect(bodyRowCount()).toBe(5)
 
         await user.click(screen.getByRole('button', { name: /show fewer/i }))
-        expect(screen.getAllByRole('listitem')).toHaveLength(3)
+        expect(bodyRowCount()).toBe(3)
     })
 
     it('omits the duration for classes booked before durations existed', () => {
@@ -270,9 +415,12 @@ describe('StudentDetailsView', () => {
         delete (legacy as Partial<ScheduledSession>).durationMinutes
         renderView({ scheduledSessions: [legacy] })
 
-        const row = screen.getByRole('listitem')
-        expect(row.textContent).toMatch(/16:00 • Mathematics$/)
-        expect(row.textContent).not.toMatch(/NaN/)
+        // Header row + the one class.
+        expect(screen.getAllByRole('row')).toHaveLength(2)
+        const [, row] = screen.getAllByRole('row')
+        expect(row.textContent).toContain('16:00')
+        expect(row.textContent).toContain('Mathematics')
+        expect(row.textContent).not.toMatch(/NaN|hour/)
     })
 
     it('blocks a second submit while the first is still saving', () => {

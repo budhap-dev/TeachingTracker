@@ -37,6 +37,15 @@ export const useTheme = () => {
                         primary: isDark ? '#f8fafc' : '#0f172a',
                     },
                 },
+                components: {
+                    // Every MUI button reads the shared corner token, so
+                    // Material and hand-styled buttons round identically.
+                    MuiButton: {
+                        styleOverrides: {
+                            root: { borderRadius: 'var(--radius-button)' },
+                        },
+                    },
+                },
             }),
         [activeTheme.primary, activeTheme.secondary, activeTheme.paper, isDark]
     )

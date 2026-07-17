@@ -224,7 +224,7 @@ describe('component-level coverage', () => {
             })
         )
 
-        render(<PaymentsView students={students} />)
+        render(<PaymentsView students={students} sessions={[]} />)
 
         await user.selectOptions(
             screen.getByRole('combobox', { name: /rows per page/i }),
@@ -403,7 +403,21 @@ describe('component-level coverage', () => {
             />
         )
 
-        expect(screen.getByText('1 / 1 / 1')).toBeInTheDocument()
+        // The status card names each count in a small three-column table.
+        const statusTable = screen
+            .getByRole('columnheader', { name: 'Paid' })
+            .closest('table') as HTMLElement
+        expect(
+            within(statusTable).getByRole('columnheader', { name: 'Partial' })
+        ).toBeInTheDocument()
+        expect(
+            within(statusTable).getByRole('columnheader', { name: 'Pending' })
+        ).toBeInTheDocument()
+        expect(
+            within(statusTable)
+                .getAllByRole('cell')
+                .map((cell) => cell.textContent)
+        ).toEqual(['1', '1', '1'])
         expect(screen.getByText(/£390/i)).toBeInTheDocument()
         expect(screen.getByText(/£185/i)).toBeInTheDocument()
     })
