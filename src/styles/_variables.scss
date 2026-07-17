@@ -11,6 +11,8 @@
     line-height: 1.5;
     font-weight: 400;
     --bg: linear-gradient(135deg, #eff6ff, #f8fafc 45%, #eef2ff);
+    /* One corner radius for every action button — SCSS and MUI both read it. */
+    --radius-button: 14px;
     --surface: #ffffff;
     --surface-alt: #f8fafc;
     --text: #0f172a;

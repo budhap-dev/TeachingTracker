@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-014`**
+**Next id: `REQ-015`**
 
 ## Legend
 
@@ -82,6 +82,7 @@ XS is an afternoon, XL is a project.
 | 9 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
 | 10 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
 | 11 | 🔲 | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | best after REQ-009 |
+| 12 | 🚧 | [REQ-014 — Progress per subject](#req-014--progress-is-tracked-per-subject) | M | both | — (built 2026-07-17) |
 
 **Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–5 are done; REQ-003/REQ-004 are in flight (prod enforcement after the dev soak).
 
@@ -633,3 +634,53 @@ intact, and I can find past students in a teacher-only **Alumni** section.
 - Payments: months already billed keep the alumni's rows (classes happened);
   future months naturally show nothing because the 409 guard means no future
   sessions exist at archive time.
+
+## REQ-014 — Progress is tracked per subject
+
+**Status:** 🚧 Built (awaiting review; API merges/deploys before frontend) · **Impact:** both · **Effort:** M
+
+**Story**
+As a teacher, I want to record progress for each subject a student studies —
+a student can be at 85% in Maths and 60% in Physics — so that the record
+reflects where they actually are, not one blended number.
+
+**Decisions** _(proposed 2026-07-17 — say so if any should change)_
+
+- **Additive field, no breakage:** `progressBySubject?: Record<subject, 0–100>`
+  joins the model (same optional-field pattern as `groupId`). The existing
+  `progress` number stays and becomes the **rounded average** of the
+  per-subject values, maintained by the API on save — old records without
+  the map keep behaving exactly as today, and the dashboard's average-progress
+  stat needs no change.
+- **Subject list changes keep the map honest:** adding a subject to a student
+  seeds its progress at their current overall (not a jarring 0); removing a
+  subject drops its entry; the API rejects keys that aren't in `subjects`.
+- **UI:** the student page's single slider becomes one slider per subject
+  (label + %), with the overall shown as a read-only derived figure.
+
+**Acceptance criteria**
+
+- [x] The student page's meta card shows a small labelled **progress bar per
+      subject** in read mode; in edit mode each bar becomes its slider. The
+      overall figure is derived and read-only.
+- [x] Per-subject bars stay off the Study Snapshot and roster — those remain
+      summary-level (decided 2026-07-17: bars there would be noise).
+- [x] `PUT /students/{id}` accepts `progressBySubject`, validates each value
+      0–100 and each key against the student's subjects, and recomputes the
+      stored `progress` average.
+- [x] Seed data carries per-subject values so every environment demonstrates
+      the feature.
+- [x] Records without `progressBySubject` still work — one blended value,
+      exactly as today (plus a **Track per subject** opt-in while editing).
+- [x] Dashboard average-progress and every other consumer of `progress` are
+      unchanged.
+- [x] Frontend coverage stays 100% (238 tests); API deploys before frontend.
+
+**Notes**
+
+- Built 2026-07-17 against the in-memory store at the owner's request; the
+  additive field slots into REQ-009's Table entities as one more column-ish
+  property when that lands.
+- Same day: "Mode" renamed to **"Study mode"** everywhere user-facing, and
+  the 'Both' value displays as **"Online + F2F"** (stored API value stays
+  'Both' — display only).

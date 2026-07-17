@@ -232,3 +232,15 @@
         grid-column: span 1;
     }
 }
+
+@media (max-width: 640px) {
+    /* One-column phones: paired fields unstack, and the span-2 exceptions
+       must drop to span 1 or they forge phantom grid columns. */
+    .edit-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .edit-span-2 {
+        grid-column: span 1;
+    }
+}

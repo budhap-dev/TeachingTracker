@@ -148,7 +148,7 @@ export const StudentFormModal = ({
                 />
                 <TextField
                     select
-                    label="Mode"
+                    label="Study mode"
                     size="small"
                     value={form.mode}
                     onChange={(event) => onChange('mode', event.target.value)}
@@ -157,7 +157,7 @@ export const StudentFormModal = ({
                 >
                     <MenuItem value="Online">Online</MenuItem>
                     <MenuItem value="Face to Face">Face to Face</MenuItem>
-                    <MenuItem value="Both">Both</MenuItem>
+                    <MenuItem value="Both">Online + F2F</MenuItem>
                 </TextField>
                 <TextField
                     label="Progress %"

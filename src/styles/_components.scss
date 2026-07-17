@@ -6,7 +6,7 @@
 
 .snapshot-table {
     width: 100%;
-    min-width: 620px;
+    min-width: 720px;
     border-collapse: collapse;
     background: var(--surface);
 
@@ -17,12 +17,16 @@
         text-align: left;
     }
 
+    /* The header carries the active theme: an accent-tinted band with an
+       accent rule, so every theme (light or dark) shows its colour here. */
     th {
-        background: var(--surface-alt);
+        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
         color: var(--accent);
         font-size: 0.9rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        border-bottom: 2px solid
+            color-mix(in srgb, var(--accent) 55%, var(--border));
     }
 
     tr:nth-child(even) {
@@ -75,8 +79,8 @@
         border: 1px solid var(--border);
         background: var(--surface);
         color: var(--text);
-        border-radius: 8px;
-        padding: 6px 10px;
+        border-radius: var(--radius-button);
+        padding: 6px 12px;
 
         &:disabled {
             opacity: 0.5;
@@ -308,10 +312,25 @@
     grid-column: span 2;
 }
 
+/* The left rail: the meta card with the session summary tucked beneath it. */
+.student-side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+/* Fields pair up — none of them needs the whole row to itself. Address and
+   Notes are the exceptions and span both columns via .edit-span-2. */
 .edit-fields {
     display: grid;
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
     margin-top: 8px;
+}
+
+.edit-span-2 {
+    grid-column: span 2;
 }
 
 .edit-button {
@@ -343,6 +362,52 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+/* Per-subject progress (REQ-014): label | bar (or slider) | value rows.
+   The overall figure above stays the headline; these are the detail. */
+.subject-progress-list {
+    display: grid;
+    gap: 6px;
+}
+
+.subject-progress-row {
+    display: grid;
+    grid-template-columns: minmax(72px, auto) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+
+    .MuiSlider-root {
+        padding: 8px 0;
+    }
+}
+
+.subject-progress-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.subject-progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--border) 55%, transparent);
+    overflow: hidden;
+}
+
+.subject-progress-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.subject-progress-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .progress-value {
@@ -730,16 +795,44 @@
         margin: 0 0 8px;
     }
 
-    p,
-    ul {
+    p {
         margin: 0;
         color: var(--muted);
     }
 
-    ul {
-        padding-left: 18px;
-        display: grid;
-        gap: 4px;
+    /* A small table wants small furniture: whispered headers, hairline
+       rows, the duration tucked under the time. */
+    .session-mini-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+
+        th {
+            text-align: left;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            padding: 0 6px 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 7px 6px 7px 0;
+            border-bottom: 1px solid
+                color-mix(in srgb, var(--border) 60%, transparent);
+            vertical-align: top;
+
+            small {
+                display: block;
+                color: var(--muted);
+            }
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
     }
 }
 
@@ -1219,6 +1312,45 @@
     padding: 3px 9px;
     border-radius: 999px;
     border: 1px solid currentColor;
+}
+
+/* Paid / Partial / Pending as a tiny three-column table in the status card:
+   coloured label over its count, hairlines between columns — two short
+   lines, so the card matches its neighbours' height. */
+.status-mini-table {
+    width: 100%;
+    margin-top: 6px;
+    border-collapse: collapse;
+
+    th,
+    td {
+        text-align: left;
+        padding: 1px 10px;
+    }
+
+    th:first-child,
+    td:first-child {
+        padding-left: 0;
+    }
+
+    th + th,
+    td + td {
+        border-left: 1px solid
+            color-mix(in srgb, var(--border) 60%, transparent);
+    }
+
+    th {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    td {
+        font-size: 1.05rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
 }
 
 .payment-summary-card small {

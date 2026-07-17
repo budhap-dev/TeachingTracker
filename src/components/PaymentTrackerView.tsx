@@ -176,11 +176,32 @@ export const PaymentTrackerView = ({
                     <small>{summary.sessionsHeld} classes taught</small>
                 </div>
                 <div className="card payment-summary-card status">
-                    <span>Paid / partial / pending</span>
-                    <strong>
-                        {summary.paidCount} / {summary.partialCount} /{' '}
-                        {summary.pendingCount}
-                    </strong>
+                    <span>Payment status</span>
+                    {/* A small table beats "2 / 1 / 3": each status is named
+                        over its count, in its own colour — columns, so the
+                        card stays as short as its neighbours. */}
+                    <table className="status-mini-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" className="paid">
+                                    Paid
+                                </th>
+                                <th scope="col" className="partial">
+                                    Partial
+                                </th>
+                                <th scope="col" className="pending">
+                                    Pending
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{summary.paidCount}</td>
+                                <td>{summary.partialCount}</td>
+                                <td>{summary.pendingCount}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

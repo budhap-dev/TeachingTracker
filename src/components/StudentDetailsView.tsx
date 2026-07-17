@@ -3,7 +3,6 @@ import {
     Button,
     Chip,
     MenuItem,
-    Select,
     Slider,
     TextField,
     Typography,
@@ -13,7 +12,11 @@ import type {
     ScheduledSession,
     Student,
 } from '../data/students'
-import { subjectOptions, yearOptions } from '../utils/constants'
+import {
+    studyModeLabel,
+    subjectOptions,
+    yearOptions,
+} from '../utils/constants'
 import {
     formatDuration,
     formatShortDayLabel,
@@ -32,7 +35,7 @@ type StudentDetailsViewProps = {
     onBeginEdit: (student: Student) => void
     onDraftChange: (
         field: EditableStudentField,
-        value: string | number | string[]
+        value: string | number | string[] | Record<string, number>
     ) => void
     onSaveDetails: () => void
     onCancelEdit: () => void
@@ -58,6 +61,35 @@ export const StudentDetailsView = ({
     // While editing, every control reads from the draft; otherwise from the
     // stored student. One source at a time, so the two can't disagree.
     const shown = isEditing && draftStudent ? draftStudent : student
+
+    // Per-subject progress (REQ-014). The blended figure shown up top is
+    // derived from the map when one exists; the API maintains the stored
+    // value on save, so older map-less records keep their single number.
+    const progressMap = shown.progressBySubject
+    const mapValues = progressMap ? Object.values(progressMap) : []
+    const overallProgress = mapValues.length
+        ? Math.round(
+              mapValues.reduce((sum, value) => sum + value, 0) /
+                  mapValues.length
+          )
+        : shown.progress
+
+    /** Subjects edits keep the map in step: keep known values, seed a new
+        subject at the current overall, drop entries for removed subjects. */
+    const applySubjects = (nextSubjects: string[]) => {
+        onDraftChange('subjects', nextSubjects)
+        if (progressMap) {
+            onDraftChange(
+                'progressBySubject',
+                Object.fromEntries(
+                    nextSubjects.map((subject) => [
+                        subject,
+                        progressMap[subject] ?? overallProgress,
+                    ])
+                )
+            )
+        }
+    }
 
     // Upcoming only, soonest first — with a weekly timetable the full history
     // runs to dozens of rows and says nothing about what is next.
@@ -98,25 +130,111 @@ export const StudentDetailsView = ({
                 </div>
 
                 <div className="student-details student-page-details">
-                    <div className="student-meta">
+                    <div className="student-side">
+                        <div className="student-meta">
                         <div className="meta-top">
                             <Typography variant="body2">Progress</Typography>
                             <strong className="progress-value">
-                                {shown.progress}%
+                                {overallProgress}%
                             </strong>
                         </div>
-                        <Slider
-                            value={shown.progress}
-                            onChange={(_, value) =>
-                                onDraftChange('progress', Number(value))
-                            }
-                            aria-label="Progress"
-                            valueLabelDisplay="auto"
-                            disabled={!isEditing}
-                        />
+                        {progressMap ? (
+                            <div className="subject-progress-list">
+                                {shown.subjects.map((subject) => {
+                                    const value =
+                                        progressMap[subject] ?? overallProgress
+                                    return (
+                                        <div
+                                            key={subject}
+                                            className="subject-progress-row"
+                                        >
+                                            <span className="subject-progress-label">
+                                                {subject}
+                                            </span>
+                                            {isEditing ? (
+                                                <Slider
+                                                    size="small"
+                                                    value={value}
+                                                    onChange={(_, next) =>
+                                                        onDraftChange(
+                                                            'progressBySubject',
+                                                            {
+                                                                ...progressMap,
+                                                                [subject]:
+                                                                    Number(
+                                                                        next
+                                                                    ),
+                                                            }
+                                                        )
+                                                    }
+                                                    aria-label={`${subject} progress`}
+                                                    valueLabelDisplay="auto"
+                                                />
+                                            ) : (
+                                                <div
+                                                    className="subject-progress-track"
+                                                    role="progressbar"
+                                                    aria-label={`${subject} progress`}
+                                                    aria-valuenow={value}
+                                                    aria-valuemin={0}
+                                                    aria-valuemax={100}
+                                                >
+                                                    <span
+                                                        className="subject-progress-fill"
+                                                        style={{
+                                                            width: `${value}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+                                            <span className="subject-progress-value">
+                                                {value}%
+                                            </span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <>
+                                <Slider
+                                    value={shown.progress}
+                                    onChange={(_, value) =>
+                                        onDraftChange(
+                                            'progress',
+                                            Number(value)
+                                        )
+                                    }
+                                    aria-label="Progress"
+                                    valueLabelDisplay="auto"
+                                    disabled={!isEditing}
+                                />
+                                {isEditing && shown.subjects.length > 0 && (
+                                    <Button
+                                        size="small"
+                                        variant="text"
+                                        onClick={() =>
+                                            onDraftChange(
+                                                'progressBySubject',
+                                                Object.fromEntries(
+                                                    shown.subjects.map(
+                                                        (subject) => [
+                                                            subject,
+                                                            shown.progress,
+                                                        ]
+                                                    )
+                                                )
+                                            )
+                                        }
+                                    >
+                                        Track per subject
+                                    </Button>
+                                )}
+                            </>
+                        )}
                         <div className="meta-pills">
                             <span className="mode-pill">
-                                Mode: {shown.mode}
+                                Study mode:{' '}
+                                {studyModeLabel(shown.mode)}
                             </span>
                             <span className="subject-count-pill">
                                 Subjects: {shown.subjects.length}
@@ -133,6 +251,69 @@ export const StudentDetailsView = ({
                             <strong>School:</strong>{' '}
                             {shown.school || 'Not provided'}
                         </p>
+                        </div>
+
+                        <div className="student-session-summary">
+                            <h4>Upcoming sessions</h4>
+                            {upcomingSessions.length === 0 ? (
+                                <p>No classes scheduled yet.</p>
+                            ) : (
+                                <>
+                                    <table className="session-mini-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Time</th>
+                                                <th>Subject</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {visibleSessions.map((session) => {
+                                                const duration =
+                                                    formatDuration(
+                                                        session.durationMinutes
+                                                    )
+                                                return (
+                                                    <tr key={session.id}>
+                                                        <td>
+                                                            {formatShortDayLabel(
+                                                                session.date
+                                                            )}
+                                                        </td>
+                                                        <td>
+                                                            {session.time}
+                                                            {duration && (
+                                                                <small>
+                                                                    {duration}
+                                                                </small>
+                                                            )}
+                                                        </td>
+                                                        <td>
+                                                            {session.subject}
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                    {upcomingSessions.length > 3 && (
+                                        <Button
+                                            size="small"
+                                            variant="text"
+                                            onClick={() =>
+                                                setShowAllSessions(
+                                                    (current) => !current
+                                                )
+                                            }
+                                        >
+                                            {showAllSessions
+                                                ? 'Show fewer'
+                                                : `Show all ${upcomingSessions.length}`}
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     <div className="student-detail-text">
@@ -222,44 +403,69 @@ export const StudentDetailsView = ({
                                 disabled={!isEditing}
                                 slotProps={{ inputLabel: { shrink: true } }}
                             />
-                            <div className="subjects-control">
-                                <Typography variant="caption">
-                                    Subjects
-                                </Typography>
-                                <Select
-                                    multiple
-                                    size="small"
-                                    value={shown.subjects}
-                                    onChange={(event) =>
-                                        onDraftChange(
-                                            'subjects',
-                                            parseSubjects(event.target.value)
-                                        )
-                                    }
-                                    disabled={!isEditing}
-                                    fullWidth
-                                    inputProps={{ 'aria-label': 'Subjects' }}
-                                    renderValue={(selected) => (
-                                        <div className="subject-chips">
-                                            {(selected as string[]).map(
-                                                (subject) => (
-                                                    <Chip
-                                                        key={subject}
-                                                        label={subject}
-                                                        size="small"
-                                                    />
-                                                )
-                                            )}
-                                        </div>
-                                    )}
-                                >
-                                    {subjectOptions.map((subject) => (
-                                        <MenuItem key={subject} value={subject}>
-                                            {subject}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </div>
+                            {/* Same TextField idiom as every neighbour, so
+                                the pair-grid rows line up — the old bare
+                                caption+Select sat lower than its partner. */}
+                            <TextField
+                                label="Subjects"
+                                size="small"
+                                select
+                                value={shown.subjects}
+                                onChange={(event) =>
+                                    applySubjects(
+                                        parseSubjects(event.target.value)
+                                    )
+                                }
+                                fullWidth
+                                disabled={!isEditing}
+                                slotProps={{
+                                    select: {
+                                        multiple: true,
+                                        renderValue: (selected) => (
+                                            <div className="subject-chips">
+                                                {(selected as string[]).map(
+                                                    (subject) => (
+                                                        <Chip
+                                                            key={subject}
+                                                            label={subject}
+                                                            size="small"
+                                                            // ✕ removes just
+                                                            // this subject —
+                                                            // without opening
+                                                            // the menu.
+                                                            onDelete={
+                                                                isEditing
+                                                                    ? () =>
+                                                                          applySubjects(
+                                                                              shown.subjects.filter(
+                                                                                  (
+                                                                                      kept
+                                                                                  ) =>
+                                                                                      kept !==
+                                                                                      subject
+                                                                              )
+                                                                          )
+                                                                    : undefined
+                                                            }
+                                                            onMouseDown={(
+                                                                event
+                                                            ) =>
+                                                                event.stopPropagation()
+                                                            }
+                                                        />
+                                                    )
+                                                )}
+                                            </div>
+                                        ),
+                                    },
+                                }}
+                            >
+                                {subjectOptions.map((subject) => (
+                                    <MenuItem key={subject} value={subject}>
+                                        {subject}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                             <TextField
                                 label="School"
                                 size="small"
@@ -288,7 +494,7 @@ export const StudentDetailsView = ({
                                 ))}
                             </TextField>
                             <TextField
-                                label="Mode"
+                                label="Study mode"
                                 size="small"
                                 select
                                 value={shown.mode}
@@ -300,7 +506,7 @@ export const StudentDetailsView = ({
                             >
                                 {modeOptions.map((mode) => (
                                     <MenuItem key={mode} value={mode}>
-                                        {mode}
+                                        {studyModeLabel(mode)}
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -347,6 +553,7 @@ export const StudentDetailsView = ({
                             <TextField
                                 label="Address"
                                 size="small"
+                                className="edit-span-2"
                                 multiline
                                 minRows={2}
                                 value={shown.address}
@@ -359,6 +566,7 @@ export const StudentDetailsView = ({
                             <TextField
                                 label="Notes"
                                 size="small"
+                                className="edit-span-2"
                                 multiline
                                 minRows={2}
                                 value={shown.notes}
@@ -370,48 +578,6 @@ export const StudentDetailsView = ({
                             />
                         </div>
 
-                        <div className="student-session-summary">
-                            <h4>Upcoming sessions</h4>
-                            {upcomingSessions.length === 0 ? (
-                                <p>No classes scheduled yet.</p>
-                            ) : (
-                                <>
-                                    <ul>
-                                        {visibleSessions.map((session) => {
-                                            const duration = formatDuration(
-                                                session.durationMinutes
-                                            )
-                                            return (
-                                                <li key={session.id}>
-                                                    {formatShortDayLabel(
-                                                        session.date
-                                                    )}{' '}
-                                                    • {session.time} •{' '}
-                                                    {session.subject}
-                                                    {duration &&
-                                                        ` • ${duration}`}
-                                                </li>
-                                            )
-                                        })}
-                                    </ul>
-                                    {upcomingSessions.length > 3 && (
-                                        <Button
-                                            size="small"
-                                            variant="text"
-                                            onClick={() =>
-                                                setShowAllSessions(
-                                                    (current) => !current
-                                                )
-                                            }
-                                        >
-                                            {showAllSessions
-                                                ? 'Show fewer'
-                                                : `Show all ${upcomingSessions.length}`}
-                                        </Button>
-                                    )}
-                                </>
-                            )}
-                        </div>
                     </div>
                 </div>
             </div>
