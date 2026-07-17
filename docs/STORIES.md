@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-013`**
+**Next id: `REQ-014`**
 
 ## Legend
 
@@ -81,6 +81,7 @@ XS is an afternoon, XL is a project.
 | 8 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
 | 9 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
 | 10 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
+| 11 | 🔲 | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | best after REQ-009 |
 
 **Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–5 are done; REQ-003/REQ-004 are in flight (prod enforcement after the dev soak).
 
@@ -584,3 +585,51 @@ so that the class record reflects what was actually covered.
       saving joins them again.
 - [ ] Booking is blocked while no subject chip is committed.
 - [ ] Frontend coverage stays at 100%.
+
+## REQ-013 — Archive a student with a closing note; Alumni section
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+
+**Story**
+As a teacher, I want to archive a student who has finished tutoring — with a
+closing note — so that the active roster stays clean while their history stays
+intact, and I can find past students in a teacher-only **Alumni** section.
+
+**Decisions** _(proposed 2026-07-17 — say so if any should change)_
+
+- **Archive is a state, not a deletion.** New optional student fields
+  (`isArchived`, `archivedOn`, `archiveNotes`) — additive, so existing rows and
+  older deployed frontends are unaffected (same back-compat pattern as
+  `groupId`). GDPR erasure stays REQ-009's DELETE; `archivedOn` is the anchor
+  the REQ-009 §10.3 retention window measures from.
+- **No archiving with future classes on the books.** The API refuses (409)
+  while the student has future non-cancelled sessions — otherwise a leaver
+  keeps generating bills. Cancel or hold those classes first; the UI says so.
+- **Reversible.** Restore returns them to the active roster; the closing note
+  is kept either way.
+- **UI naming:** the model says "archived"; the menu says **Alumni**.
+
+**Acceptance criteria**
+
+- [ ] Archive from the student's page, behind an are-you-sure step, with a
+      **required closing note**; blocked with a clear message while future
+      scheduled classes exist.
+- [ ] Archived students leave the active surfaces: student list, dashboard
+      stats and charts, study snapshot, and the class planner's student picker.
+- [ ] **Alumni** appears in the nav — teacher-only (rides REQ-003's gating) —
+      listing archived students with archive date and closing note.
+- [ ] Opening an alumni record shows the full student page with an "Archived"
+      banner and a **Restore to active** action.
+- [ ] History is untouched in both directions: past sessions and billed months
+      stay exactly as they were; restoring changes no history either.
+- [ ] API enforces the state rules (409 guard, required note); frontend
+      coverage stays 100%.
+
+**Notes**
+
+- Sequencing: buildable against the in-memory store, but **best after
+  REQ-009** — archived flags on real durable rows, one data-model change
+  instead of two, and the retention sweep gains its anchor immediately.
+- Payments: months already billed keep the alumni's rows (classes happened);
+  future months naturally show nothing because the 409 guard means no future
+  sessions exist at archive time.

@@ -14,9 +14,16 @@ export type ThemeName =
     | 'summer'
     | 'autumn'
     | 'winter'
+    | 'graphite'
+    | 'deepsea'
+    | 'pine'
 
 export type ThemePreset = {
     label: string
+    /** Groups the picker and drives MUI's palette mode. */
+    appearance: 'light' | 'dark'
+    /** Card/dialog surface colour handed to MUI's palette. */
+    paper: string
     accent: string
     accentAlt: string
     sidebar: string
@@ -29,6 +36,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     // professional face; every other theme is an opt-in splash of colour.
     mono: {
         label: 'Mono',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#111827',
         accentAlt: '#6b7280',
         sidebar: 'linear-gradient(180deg, #09090b, #3f3f46)',
@@ -37,6 +46,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     ocean: {
         label: 'Ocean',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#2563eb',
         accentAlt: '#4f46e5',
         sidebar: 'linear-gradient(180deg, #0f172a, #1d4ed8)',
@@ -45,6 +56,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     sunset: {
         label: 'Sunset',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#ea580c',
         accentAlt: '#d946ef',
         sidebar: 'linear-gradient(180deg, #431407, #b45309)',
@@ -53,6 +66,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     forest: {
         label: 'Forest',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#15803d',
         accentAlt: '#0f766e',
         sidebar: 'linear-gradient(180deg, #052e16, #166534)',
@@ -61,6 +76,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     midnight: {
         label: 'Midnight',
+        appearance: 'dark',
+        paper: '#111827',
         accent: '#6366f1',
         accentAlt: '#8b5cf6',
         sidebar: 'linear-gradient(180deg, #020617, #312e81)',
@@ -69,6 +86,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     lavender: {
         label: 'Lavender',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#7c3aed',
         accentAlt: '#ec4899',
         sidebar: 'linear-gradient(180deg, #2e1065, #7c3aed)',
@@ -77,6 +96,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     coral: {
         label: 'Coral',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#f43f5e',
         accentAlt: '#fb923c',
         sidebar: 'linear-gradient(180deg, #4c0519, #be123c)',
@@ -85,6 +106,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     sage: {
         label: 'Sage',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#4d7c0f',
         accentAlt: '#65a30d',
         sidebar: 'linear-gradient(180deg, #111827, #4d7c0f)',
@@ -93,6 +116,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     amber: {
         label: 'Amber',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#d97706',
         accentAlt: '#f59e0b',
         sidebar: 'linear-gradient(180deg, #451a03, #92400e)',
@@ -101,6 +126,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     berry: {
         label: 'Berry',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#db2777',
         accentAlt: '#8b5cf6',
         sidebar: 'linear-gradient(180deg, #2d0a1d, #7e22ce)',
@@ -109,6 +136,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     slate: {
         label: 'Slate',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#475569',
         accentAlt: '#64748b',
         sidebar: 'linear-gradient(180deg, #0f172a, #334155)',
@@ -117,6 +146,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     spring: {
         label: 'Spring',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#0f766e',
         accentAlt: '#84cc16',
         sidebar: 'linear-gradient(180deg, #022c22, #0f766e)',
@@ -125,6 +156,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     summer: {
         label: 'Summer',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#0284c7',
         accentAlt: '#f59e0b',
         sidebar: 'linear-gradient(180deg, #082f49, #0f766e)',
@@ -133,6 +166,8 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     autumn: {
         label: 'Autumn',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#b45309',
         accentAlt: '#a16207',
         sidebar: 'linear-gradient(180deg, #431407, #92400e)',
@@ -141,11 +176,44 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
     },
     winter: {
         label: 'Winter',
+        appearance: 'light',
+        paper: '#ffffff',
         accent: '#2563eb',
         accentAlt: '#38bdf8',
         sidebar: 'linear-gradient(180deg, #0f172a, #1d4ed8)',
         primary: '#2563eb',
         secondary: '#38bdf8',
+    },
+    // The dark shelf: Midnight above plus three true dark-surface themes.
+    graphite: {
+        label: 'Graphite',
+        appearance: 'dark',
+        paper: '#18181b',
+        accent: '#a1a1aa',
+        accentAlt: '#71717a',
+        sidebar: 'linear-gradient(180deg, #030303, #27272a)',
+        primary: '#a1a1aa',
+        secondary: '#71717a',
+    },
+    deepsea: {
+        label: 'Deep Sea',
+        appearance: 'dark',
+        paper: '#0a1929',
+        accent: '#38bdf8',
+        accentAlt: '#22d3ee',
+        sidebar: 'linear-gradient(180deg, #041420, #075985)',
+        primary: '#38bdf8',
+        secondary: '#22d3ee',
+    },
+    pine: {
+        label: 'Pine',
+        appearance: 'dark',
+        paper: '#0a1f14',
+        accent: '#34d399',
+        accentAlt: '#2dd4bf',
+        sidebar: 'linear-gradient(180deg, #04140c, #166534)',
+        primary: '#34d399',
+        secondary: '#2dd4bf',
     },
 }
 

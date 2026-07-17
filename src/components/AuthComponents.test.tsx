@@ -6,7 +6,12 @@ import type { ReactNode } from 'react'
 import { RequireTeacher } from './RequireTeacher'
 import { Sidebar } from './Sidebar'
 import { SignInView } from './SignInView'
-import { TeacherName, TopbarAuth, TopbarGreeting } from './TopbarAuth'
+import {
+    TeacherName,
+    TopbarAuth,
+    TopbarGreeting,
+    greetingForHour,
+} from './TopbarAuth'
 import {
     isAuthConfigured,
     signIn,
@@ -181,30 +186,46 @@ describe('Sidebar', () => {
 })
 
 describe('TopbarGreeting', () => {
-    it('welcomes the teacher back when signed in', () => {
+    // The greeting follows the clock; any render lands on one of the three.
+    const anyGreeting = /good (morning|afternoon|evening)/i
+
+    it('greets the teacher by time of day when signed in', () => {
         render(<TopbarGreeting quote="Keep going" />)
         expect(
-            screen.getByRole('heading', { name: /welcome back, ada/i })
+            screen.getByRole('heading', {
+                name: /good (morning|afternoon|evening), ada/i,
+            })
         ).toBeInTheDocument()
         expect(screen.getByText('Keep going')).toBeInTheDocument()
     })
 
-    it('shows the site identity to signed-out visitors — no welcome, no quote', () => {
+    it('shows the site identity to signed-out visitors — no greeting, no quote', () => {
         mockAccount = null
         render(<TopbarGreeting quote="Keep going" />)
         expect(
             screen.getByRole('heading', { name: /personal tutoring/i })
         ).toBeInTheDocument()
-        expect(screen.queryByText(/welcome back/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(anyGreeting)).not.toBeInTheDocument()
         expect(screen.queryByText('Keep going')).not.toBeInTheDocument()
     })
 
-    it('keeps the teacher welcome in auth-less mode', () => {
+    it('keeps the teacher greeting in auth-less mode', () => {
         vi.mocked(isAuthConfigured).mockReturnValue(false)
         render(<TopbarGreeting quote="Keep going" />)
         expect(
-            screen.getByRole('heading', { name: /welcome back, teacher/i })
+            screen.getByRole('heading', {
+                name: /good (morning|afternoon|evening), teacher/i,
+            })
         ).toBeInTheDocument()
+    })
+
+    it('picks the right greeting for each stretch of the day', () => {
+        expect(greetingForHour(7)).toBe('Good morning')
+        expect(greetingForHour(11)).toBe('Good morning')
+        expect(greetingForHour(12)).toBe('Good afternoon')
+        expect(greetingForHour(17)).toBe('Good afternoon')
+        expect(greetingForHour(18)).toBe('Good evening')
+        expect(greetingForHour(23)).toBe('Good evening')
     })
 })
 

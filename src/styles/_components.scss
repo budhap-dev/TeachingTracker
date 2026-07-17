@@ -143,30 +143,100 @@
     gap: 8px;
 }
 
-.student-list,
 .payment-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
+/* Year groups sit side by side — the roster reads across, not down. */
+.student-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+/* One year, one quiet card: the year's colour is a dot and a top rule,
+   not a banner. --year-color/--year-tint arrive inline per group. */
 .year-group {
+    border: 1px solid color-mix(in srgb, var(--year-color) 22%, var(--border));
+    border-top: 3px solid var(--year-color);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--year-tint) 35%, var(--surface));
+    padding: 2px 14px 6px;
+}
+
+.year-group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0 8px;
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--year-color) 18%, var(--border));
+
+    &::before {
+        content: '';
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: var(--year-color);
+    }
+
+    h4 {
+        margin: 0;
+        font-size: 0.95rem;
+    }
+}
+
+.year-count {
+    margin-left: auto;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.year-students {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 0;
+
+        + li {
+            border-top: 1px solid
+                color-mix(in srgb, var(--border) 60%, transparent);
+        }
+    }
+}
+
+.student-cell {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 1px;
+    min-width: 0;
+
+    small {
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 }
 
-.year-group-header {
-    margin: 0;
-    padding: 10px 12px;
-    border-radius: 999px;
-    font-weight: 700;
-    display: inline-flex;
-    align-self: flex-start;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+.student-code {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
-.student-item,
 .payment-item {
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -187,25 +257,6 @@
     text-align: left;
     width: 100%;
     color: var(--text);
-
-    span {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-}
-
-.student-summary-meta {
-    align-items: flex-end;
-    color: #64748b;
-    font-size: 0.9rem;
-}
-
-.student-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
 
     span {
         display: flex;
@@ -1225,18 +1276,19 @@
 }
 
 /* Same pill idiom as its neighbours (.theme-picker, .pill): without it the
-   sign-out floats as a bare flat button at a different height. */
+   sign-out floats as a bare flat button at a different height. Colours come
+   from the sidebar palette — the topbar wears the sidebar gradient now. */
 .topbar-auth {
     display: flex;
     align-items: center;
     padding: 4px 8px;
     border-radius: 999px;
-    background: var(--surface);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    background: var(--button-bg);
 
     .MuiButton-root {
         border-radius: 999px;
         font-weight: 700;
+        color: var(--sidebar-text);
     }
 }
 
