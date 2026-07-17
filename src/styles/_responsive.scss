@@ -244,3 +244,19 @@
         grid-column: span 1;
     }
 }
+
+@media (max-width: 640px) {
+    /* The hero stat strip tightens on phones — four columns still fit. */
+    .dashboard-hero-stats th,
+    .dashboard-hero-stats td {
+        padding: 2px 10px;
+    }
+
+    .dashboard-hero-stats td {
+        font-size: 1.15rem;
+    }
+
+    .dashboard-hero-stats th {
+        white-space: normal;
+    }
+}

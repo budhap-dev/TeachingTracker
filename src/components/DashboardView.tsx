@@ -91,27 +91,36 @@ export const DashboardView = ({
 
     return (
         <section className="grid">
-            <div className="card hero-card">
-                <h3>Today at a glance</h3>
-                <p>
-                    Keep student progress, contact notes, and learning modes in
-                    one calm workspace.
-                </p>
-                <button onClick={onManageStudents}>Manage students</button>
-            </div>
-            <div className="card stat-card">
-                <span>Total students</span>
-                <strong>{stats.totalStudents}</strong>
-            </div>
-            <div className="card stat-card">
-                <span>Average progress</span>
-                <strong>{stats.avgProgress}%</strong>
-            </div>
-            <div className="card stat-card">
-                <span>Online learners</span>
-                <strong>{stats.onlineStudents}</strong>
-                <span>Face to Face learners</span>
-                <strong>{stats.faceToFaceStudents}</strong>
+            {/* One banner instead of a hero plus three stat cards: the copy
+                and action on the left, the numbers as a compact strip on the
+                right — a whole row of vertical space handed back. */}
+            <div className="card hero-card dashboard-hero">
+                <div className="dashboard-hero-copy">
+                    <h3>Today at a glance</h3>
+                    <p>
+                        Keep student progress, contact notes, and learning
+                        modes in one calm workspace.
+                    </p>
+                    <button onClick={onManageStudents}>Manage students</button>
+                </div>
+                <table className="dashboard-hero-stats">
+                    <thead>
+                        <tr>
+                            <th scope="col">Total students</th>
+                            <th scope="col">Avg progress</th>
+                            <th scope="col">Online</th>
+                            <th scope="col">Face to face</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{stats.totalStudents}</td>
+                            <td>{stats.avgProgress}%</td>
+                            <td>{stats.onlineStudents}</td>
+                            <td>{stats.faceToFaceStudents}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             {/* Week at a glance: one series, hours by weekday, each bar a

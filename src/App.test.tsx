@@ -80,12 +80,32 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('button', { name: /select winter theme/i })
         ).toBeInTheDocument()
 
-        // The swatches sit on two labelled shelves: light themes and dark.
+        // The swatches sit on three labelled shelves.
         expect(screen.getByText('Light')).toBeInTheDocument()
         expect(screen.getByText('Dark')).toBeInTheDocument()
+        expect(screen.getByText('Metallic')).toBeInTheDocument()
         expect(
             screen.getByRole('button', { name: /select deep sea theme/i })
         ).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: /select rose gold theme/i })
+        ).toBeInTheDocument()
+    })
+
+    it('switches into a metallic theme from its shelf', async () => {
+        const user = userEvent.setup()
+        render(<App />)
+
+        await user.click(
+            screen.getByRole('button', { name: /show theme options/i })
+        )
+        await user.click(
+            screen.getByRole('button', { name: /select gold theme/i })
+        )
+
+        expect(document.documentElement.getAttribute('data-theme')).toBe(
+            'gold'
+        )
     })
 
     it('switches into a dark theme from the dark shelf', async () => {

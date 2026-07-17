@@ -17,11 +17,18 @@ export type ThemeName =
     | 'graphite'
     | 'deepsea'
     | 'pine'
+    | 'silver'
+    | 'gold'
+    | 'rosegold'
+    | 'steel'
 
 export type ThemePreset = {
     label: string
-    /** Groups the picker and drives MUI's palette mode. */
+    /** Drives MUI's palette mode; also the default picker shelf. */
     appearance: 'light' | 'dark'
+    /** Optional picker shelf override — metallics get their own shelf
+        while still declaring a light/dark appearance for MUI. */
+    shelf?: 'metallic'
     /** Card/dialog surface colour handed to MUI's palette. */
     paper: string
     accent: string
@@ -214,6 +221,52 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
         sidebar: 'linear-gradient(180deg, #04140c, #166534)',
         primary: '#34d399',
         secondary: '#2dd4bf',
+    },
+    // The metallic shelf: the shine is a three-stop sheen gradient on the
+    // sidebar/topbar band — a highlight caught mid-panel.
+    silver: {
+        label: 'Silver',
+        appearance: 'light',
+        shelf: 'metallic',
+        paper: '#ffffff',
+        accent: '#64748b',
+        accentAlt: '#94a3b8',
+        sidebar: 'linear-gradient(160deg, #2f343b, #848d99 48%, #3d434c)',
+        primary: '#64748b',
+        secondary: '#94a3b8',
+    },
+    gold: {
+        label: 'Gold',
+        appearance: 'light',
+        shelf: 'metallic',
+        paper: '#ffffff',
+        accent: '#a16207',
+        accentAlt: '#ca8a04',
+        sidebar: 'linear-gradient(160deg, #56300d, #c1902c 48%, #6f4a0a)',
+        primary: '#a16207',
+        secondary: '#ca8a04',
+    },
+    rosegold: {
+        label: 'Rose Gold',
+        appearance: 'light',
+        shelf: 'metallic',
+        paper: '#ffffff',
+        accent: '#9d5560',
+        accentAlt: '#b76e79',
+        sidebar: 'linear-gradient(160deg, #5f3038, #c8877f 48%, #7e4650)',
+        primary: '#9d5560',
+        secondary: '#b76e79',
+    },
+    steel: {
+        label: 'Steel',
+        appearance: 'dark',
+        shelf: 'metallic',
+        paper: '#12161d',
+        accent: '#9fb0c3',
+        accentAlt: '#7d8da1',
+        sidebar: 'linear-gradient(160deg, #0a0e13, #414d61 48%, #121820)',
+        primary: '#9fb0c3',
+        secondary: '#7d8da1',
     },
 }
 
