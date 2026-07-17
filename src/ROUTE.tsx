@@ -6,6 +6,7 @@ import {
     useLocation,
     useNavigate,
     useParams,
+    useSearchParams,
 } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from './hooks'
 import {
@@ -17,6 +18,7 @@ import {
 } from './store/store'
 import { activeSessions } from './data/students'
 import { toDateKey } from './utils/calendar'
+import { getWeekLoad } from './utils/dashboard'
 import { groupStudentsByYear } from './utils/studentMix'
 import type { EditableStudentField, Student } from './data/students'
 import { useStudentForm } from './hooks/useStudentForm'
@@ -124,6 +126,14 @@ const DashboardRoute = () => {
         [students]
     )
 
+    const todayKey = toDateKey(new Date())
+    const weekLoad = useMemo(
+        () => getWeekLoad(scheduledSessions, new Date()),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the
+        // day, not the Date instance, so the memo is honest across renders.
+        [scheduledSessions, todayKey]
+    )
+
     // After the hooks: a loading gate above them would break hook order.
     if (dataLoading) {
         return <PageLoading />
@@ -134,8 +144,12 @@ const DashboardRoute = () => {
             stats={stats}
             upcomingSessions={upcomingSessions}
             overviewChart={overviewChart}
+            weekLoad={weekLoad}
             onManageStudents={() => navigate(paths.students)}
             onOpenStudentPage={openStudentPage}
+            onOpenDay={(dateKey) =>
+                navigate(`${paths.scheduling}?day=${dateKey}`)
+            }
         />
     )
 }
@@ -294,6 +308,7 @@ const PaymentTrackerRoute = () => {
 
 const SchedulingRoute = () => {
     const dispatch = useAppDispatch()
+    const [searchParams] = useSearchParams()
     const students = useAppSelector((state) => state.students.students)
     const scheduledSessions = useAppSelector(
         (state) => state.students.scheduledSessions
@@ -304,20 +319,25 @@ const SchedulingRoute = () => {
     if (dataLoading) {
         return <PageLoading />
     }
+    // Dashboard week bars land here with ?day=YYYY-MM-DD, straight into
+    // that day's modal.
     return (
         <ClassSchedulingView
             students={students}
             sessions={scheduledSessions}
+            initialOpenDate={searchParams.get('day') ?? undefined}
             // Stay on the planner: the teacher books from a day modal and
             // usually has more to do on the calendar.
-            onScheduleClass={(session) =>
-                dispatch(createSessionRequested(session))
+            onScheduleClass={(input) =>
+                dispatch(createSessionRequested(input))
             }
-            onEditClass={(id, changes) =>
-                dispatch(editSessionRequested({ id, changes }))
+            onEditClass={(id, changes, applyToGroup) =>
+                dispatch(editSessionRequested({ id, changes, applyToGroup }))
             }
-            onSetSessionStatus={(id, status) =>
-                dispatch(setSessionStatusRequested({ id, status }))
+            onSetSessionStatus={(id, status, applyToGroup) =>
+                dispatch(
+                    setSessionStatusRequested({ id, status, applyToGroup })
+                )
             }
         />
     )

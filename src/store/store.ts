@@ -13,6 +13,34 @@ import { rootSaga } from './sagas'
 
 export type ScheduledSessionInput = Omit<ScheduledSession, 'id' | 'status'>
 
+/** Booking payload: several ids make it a group class. */
+export type ScheduleClassInput = {
+    studentIds: number[]
+    subject: string
+    date: string
+    time: string
+    durationMinutes: number
+    notes: string
+}
+
+/** Shared-field edits (student fields only on a solo class). */
+export type EditClassChanges = Partial<
+    Omit<ScheduledSession, 'id' | 'status' | 'groupId'>
+>
+
+/** Replaces rows the API returned, by id — one for solo, several for group. */
+const upsertSessions = (
+    list: ScheduledSession[],
+    updated: ScheduledSession[]
+) => {
+    updated.forEach((row) => {
+        const index = list.findIndex((item) => item.id === row.id)
+        if (index >= 0) {
+            list[index] = row
+        }
+    })
+}
+
 /** A transient toast: what just happened, and in what mood. */
 export type Notice = { kind: 'success' | 'error'; message: string }
 
@@ -146,15 +174,21 @@ const studentSlice = createSlice({
                 state.savingSession = true
                 state.error = null
             },
-            prepare: (input: ScheduledSessionInput) => ({ payload: input }),
+            prepare: (input: ScheduleClassInput) => ({ payload: input }),
         },
         createSessionSucceeded: (
             state,
-            action: PayloadAction<ScheduledSession>
+            action: PayloadAction<ScheduledSession[]>
         ) => {
-            state.scheduledSessions.push(action.payload)
+            state.scheduledSessions.push(...action.payload)
             state.savingSession = false
-            state.notice = { kind: 'success', message: 'Class booked.' }
+            state.notice = {
+                kind: 'success',
+                message:
+                    action.payload.length > 1
+                        ? `Group class booked for ${action.payload.length} students.`
+                        : 'Class booked.',
+            }
         },
         createSessionFailed: (state, action: PayloadAction<string>) => {
             state.savingSession = false
@@ -166,28 +200,30 @@ const studentSlice = createSlice({
                 state.savingSession = true
                 state.error = null
             },
-            prepare: (input: { id: number; status: SessionStatus }) => ({
-                payload: input,
-            }),
+            prepare: (input: {
+                id: number
+                status: SessionStatus
+                applyToGroup?: boolean
+            }) => ({ payload: input }),
         },
         setSessionStatusSucceeded: (
             state,
-            action: PayloadAction<ScheduledSession>
+            action: PayloadAction<ScheduledSession[]>
         ) => {
-            const index = state.scheduledSessions.findIndex(
-                (item) => item.id === action.payload.id
-            )
-            if (index >= 0) {
-                // Replaced, never removed: a cancelled class stays visible.
-                state.scheduledSessions[index] = action.payload
-            }
+            // Replaced, never removed: a cancelled class stays visible.
+            upsertSessions(state.scheduledSessions, action.payload)
             state.savingSession = false
+            const cancelled = action.payload[0]?.status === 'Cancelled'
+            const group = action.payload.length > 1
             state.notice = {
                 kind: 'success',
-                message:
-                    action.payload.status === 'Cancelled'
-                        ? 'Class cancelled.'
-                        : 'Class restored.',
+                message: cancelled
+                    ? group
+                        ? 'Class cancelled for everyone.'
+                        : 'Class cancelled.'
+                    : group
+                      ? 'Class restored for everyone.'
+                      : 'Class restored.',
             }
         },
         setSessionStatusFailed: (state, action: PayloadAction<string>) => {
@@ -200,22 +236,25 @@ const studentSlice = createSlice({
                 state.savingSession = true
                 state.error = null
             },
-            prepare: (input: { id: number; changes: ScheduledSessionInput }) => ({
-                payload: input,
-            }),
+            prepare: (input: {
+                id: number
+                changes: EditClassChanges
+                applyToGroup?: boolean
+            }) => ({ payload: input }),
         },
         editSessionSucceeded: (
             state,
-            action: PayloadAction<ScheduledSession>
+            action: PayloadAction<ScheduledSession[]>
         ) => {
-            const index = state.scheduledSessions.findIndex(
-                (item) => item.id === action.payload.id
-            )
-            if (index >= 0) {
-                state.scheduledSessions[index] = action.payload
-            }
+            upsertSessions(state.scheduledSessions, action.payload)
             state.savingSession = false
-            state.notice = { kind: 'success', message: 'Class updated.' }
+            state.notice = {
+                kind: 'success',
+                message:
+                    action.payload.length > 1
+                        ? 'Group class updated.'
+                        : 'Class updated.',
+            }
         },
         editSessionFailed: (state, action: PayloadAction<string>) => {
             state.savingSession = false

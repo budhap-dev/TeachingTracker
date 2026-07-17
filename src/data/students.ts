@@ -34,6 +34,8 @@ export type ScheduledSession = {
     time: string
     /** Length of the class in minutes (30 / 60 / 90 / 120). */
     durationMinutes: number
+    /** Links the rows of a group class; absent on a solo class. */
+    groupId?: string
     notes: string
     status: SessionStatus
 }

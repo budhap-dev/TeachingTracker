@@ -23,7 +23,8 @@ I will implement items from top to bottom.
 ### Dashboard
 
 - [x] Should contain a calendar view for upcoming sessions for the teacher
-- [x] We will integrate with google calendar later
+- [x] ~~We will integrate with google calendar later~~ _(dropped 2026-07-17 —
+      plan shelved, placeholder removed; see STORIES.md REQ-005)_
 
 ### Create Student component
 
