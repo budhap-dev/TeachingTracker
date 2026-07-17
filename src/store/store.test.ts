@@ -238,12 +238,11 @@ describe('student reducer', () => {
             const requested = studentReducer(
                 failed,
                 createSessionRequested({
-                    studentId: 1,
-                    studentName: 'Test Student',
-                    year: '10',
+                    studentIds: [1],
                     subject: 'Mathematics',
                     date: '2026-08-01',
                     time: '10:00',
+                    durationMinutes: 60,
                     notes: 'Revision',
                 })
             )
@@ -253,10 +252,24 @@ describe('student reducer', () => {
         it('appends the created session on success', () => {
             const state = studentReducer(
                 initial(),
-                createSessionSucceeded(buildSession({ notes: 'New class' }))
+                createSessionSucceeded([buildSession({ notes: 'New class' })])
             )
             expect(state.scheduledSessions).toHaveLength(1)
             expect(state.scheduledSessions[0].notes).toBe('New class')
+        })
+
+        it('books a group and says so in the toast', () => {
+            const state = studentReducer(
+                initial(),
+                createSessionSucceeded([
+                    buildSession({ id: 1 }),
+                    buildSession({ id: 2 }),
+                ])
+            )
+            expect(state.scheduledSessions).toHaveLength(2)
+            expect(state.notice?.message).toBe(
+                'Group class booked for 2 students.'
+            )
         })
 
         it('records an error when creating a session fails', () => {
@@ -350,10 +363,9 @@ describe('student reducer', () => {
 
             const cancelled = studentReducer(
                 loaded,
-                setSessionStatusSucceeded({
-                    id: 101,
-                    status: 'Cancelled',
-                } as never)
+                setSessionStatusSucceeded([
+                    { id: 101, status: 'Cancelled' },
+                ] as never)
             )
 
             // Still two classes: a cancelled one stays visible.
@@ -369,10 +381,42 @@ describe('student reducer', () => {
             )
             const untouched = studentReducer(
                 loaded,
-                setSessionStatusSucceeded({ id: 999, status: 'Cancelled' } as never)
+                setSessionStatusSucceeded([
+                    { id: 999, status: 'Cancelled' },
+                ] as never)
             )
             expect(untouched.scheduledSessions).toHaveLength(1)
             expect(untouched.scheduledSessions[0].status).toBe('Scheduled')
+        })
+
+        it('speaks for the whole group when every row changes', () => {
+            const loaded = studentReducer(
+                initial(),
+                fetchSessionsSucceeded([
+                    { id: 101, status: 'Scheduled', groupId: 'g' },
+                    { id: 102, status: 'Scheduled', groupId: 'g' },
+                ] as never)
+            )
+            const cancelled = studentReducer(
+                loaded,
+                setSessionStatusSucceeded([
+                    { id: 101, status: 'Cancelled', groupId: 'g' },
+                    { id: 102, status: 'Cancelled', groupId: 'g' },
+                ] as never)
+            )
+            expect(cancelled.notice?.message).toBe(
+                'Class cancelled for everyone.'
+            )
+            const restored = studentReducer(
+                cancelled,
+                setSessionStatusSucceeded([
+                    { id: 101, status: 'Scheduled', groupId: 'g' },
+                    { id: 102, status: 'Scheduled', groupId: 'g' },
+                ] as never)
+            )
+            expect(restored.notice?.message).toBe(
+                'Class restored for everyone.'
+            )
         })
 
         it('clears the error on request and surfaces it on failure', () => {
@@ -403,11 +447,9 @@ describe('student reducer', () => {
         it('replaces the edited class with the server copy', () => {
             const edited = studentReducer(
                 loaded(),
-                editSessionSucceeded({
-                    id: 101,
-                    subject: 'Astrophysics',
-                    time: '18:00',
-                } as never)
+                editSessionSucceeded([
+                    { id: 101, subject: 'Astrophysics', time: '18:00' },
+                ] as never)
             )
             expect(edited.scheduledSessions).toHaveLength(2)
             expect(edited.scheduledSessions[0]).toMatchObject({
@@ -418,10 +460,24 @@ describe('student reducer', () => {
             expect(edited.scheduledSessions[1].subject).toBe('Physics')
         })
 
+        it('announces a group edit as one', () => {
+            const edited = studentReducer(
+                loaded(),
+                editSessionSucceeded([
+                    { id: 101, subject: 'Maths', time: '11:00' },
+                    { id: 102, subject: 'Physics', time: '11:00' },
+                ] as never)
+            )
+            expect(edited.notice?.message).toBe('Group class updated.')
+            expect(
+                edited.scheduledSessions.map((s) => s.time)
+            ).toEqual(['11:00', '11:00'])
+        })
+
         it('ignores a class the store does not know', () => {
             const untouched = studentReducer(
                 loaded(),
-                editSessionSucceeded({ id: 999, subject: 'X' } as never)
+                editSessionSucceeded([{ id: 999, subject: 'X' }] as never)
             )
             expect(untouched.scheduledSessions.map((s) => s.subject)).toEqual([
                 'Maths',

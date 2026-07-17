@@ -145,8 +145,10 @@ describe('component-level coverage', () => {
                     { label: 'Upcoming sessions', value: 4 },
                 ]}
                 upcomingSessions={upcomingSessions}
+                weekLoad={[]}
                 onManageStudents={onManageStudents}
                 onOpenStudentPage={vi.fn()}
+                onOpenDay={vi.fn()}
             />
         )
 
@@ -616,14 +618,11 @@ describe('component-level coverage', () => {
 
         await user.click(openDayCell(today))
 
-        // No students to pick, so the student field stays empty.
-        expect(
-            screen.getByLabelText(/student name and year/i)
-        ).toHaveValue('')
+        // No students to pick, so the picker holds no one.
+        expect(screen.getByLabelText(/students/i)).toHaveValue('')
 
-        fireEvent.change(screen.getByLabelText(/subject/i), {
-            target: { value: 'Biology' },
-        })
+        // A subject alone (typed, then committed as a chip) is not enough.
+        await user.type(screen.getByLabelText(/subject/i), 'Biology{Enter}')
         fireEvent.click(screen.getByRole('button', { name: /add class/i }))
 
         expect(onOpenStudentPage).not.toHaveBeenCalled()
@@ -655,28 +654,63 @@ describe('component-level coverage', () => {
         await user.click(openDayCell(today))
 
         const studentSearch = screen.getByRole('combobox', {
-            name: /student name and year/i,
+            name: /students/i,
         })
-        await user.clear(studentSearch)
         await user.type(studentSearch, 'Maya')
         await user.click(
             screen.getByRole('option', { name: /maya fernandoyear 10/i })
         )
 
-        expect(screen.getByLabelText(/student name and year/i)).toHaveValue(
-            'Maya Fernando • Year 10'
-        )
-        // Her first subject comes along with her.
-        expect(screen.getByLabelText(/subject/i)).toHaveValue('Physics')
+        // Picked students wear chips; the first pick brings her subject in as
+        // a chip of its own.
+        expect(
+            screen.getByRole('button', { name: /maya fernando • year 10/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: 'Physics' })
+        ).toBeInTheDocument()
 
-        // Clearing the picker empties the subject too, rather than stranding
-        // the previous student's subject on a class with no student.
-        await user.click(screen.getByTitle('Clear'))
-        expect(screen.getByLabelText(/student name and year/i)).toHaveValue('')
-        expect(screen.getByLabelText(/subject/i)).toHaveValue('')
+        // A second student joins the same class — a group booking.
+        await user.type(studentSearch, 'Asha')
+        await user.click(
+            screen.getByRole('option', { name: /asha pererayear 10/i })
+        )
+        expect(
+            screen.getByRole('button', { name: /asha perera • year 10/i })
+        ).toBeInTheDocument()
+        // The subject stays the first pick's — no silent overwrite.
+        expect(
+            screen.getByRole('button', { name: 'Physics' })
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('button', { name: 'Mathematics' })
+        ).not.toBeInTheDocument()
 
         expect(onOpenStudentPage).not.toHaveBeenCalled()
         expect(onScheduleClass).not.toHaveBeenCalled()
+    })
+
+    it('leaves the subject blank for a student who has none', async () => {
+        const user = userEvent.setup()
+        render(
+            <ClassSchedulingView
+                students={[buildStudent({ subjects: [] })]}
+                sessions={[]}
+                onScheduleClass={vi.fn()}
+                onEditClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        await user.click(openDayCell(today))
+        await user.type(screen.getByLabelText(/students/i), 'Asha')
+        await user.click(await screen.findByRole('option', { name: /asha/i }))
+        expect(screen.getByLabelText(/subject/i)).toHaveValue('')
+
+        // Unpicking her again (backspace eats the chip) still defaults to
+        // no subjects — there is no one left to borrow one from.
+        await user.type(screen.getByLabelText(/students/i), '{Backspace}')
+        expect(screen.getByLabelText(/subject/i)).toHaveValue('')
     })
 
     it('saves a scheduled class with the default note when notes are empty', async () => {
@@ -697,14 +731,9 @@ describe('component-level coverage', () => {
         await user.click(openDayCell(day))
 
         // An empty day presets nothing, so the whole class is entered by hand.
-        await user.type(
-            screen.getByLabelText(/student name and year/i),
-            'Asha'
-        )
+        await user.type(screen.getByLabelText(/students/i), 'Asha')
         await user.click(await screen.findByRole('option', { name: /asha/i }))
-        fireEvent.change(screen.getByLabelText(/subject/i), {
-            target: { value: 'Physics' },
-        })
+        await user.type(screen.getByLabelText(/subject/i), 'Physics{Enter}')
         fireEvent.change(screen.getByLabelText(/time/i), {
             target: { value: '16:00' },
         })
@@ -714,6 +743,7 @@ describe('component-level coverage', () => {
         // The date is the day that was clicked — there is no date field to type.
         expect(onScheduleClass).toHaveBeenCalledWith(
             expect.objectContaining({
+                studentIds: [1],
                 notes: 'Scheduled from the class planner',
                 date: dateKey(day),
             })
@@ -740,14 +770,9 @@ describe('component-level coverage', () => {
         const day = new Date(today.getFullYear(), today.getMonth(), 19, 12)
         await user.click(openDayCell(day))
 
-        await user.type(
-            screen.getByLabelText(/student name and year/i),
-            'Asha'
-        )
+        await user.type(screen.getByLabelText(/students/i), 'Asha')
         await user.click(await screen.findByRole('option', { name: /asha/i }))
-        fireEvent.change(screen.getByLabelText(/subject/i), {
-            target: { value: 'Physics' },
-        })
+        await user.type(screen.getByLabelText(/subject/i), 'Physics{Enter}')
         fireEvent.change(screen.getByLabelText(/time/i), {
             target: { value: '10:00' },
         })
@@ -816,28 +841,36 @@ describe('component-level coverage', () => {
             />
         )
 
-        // Opening the day fills the form from its first class.
+        // Opening the day fills the form from its first class — the student
+        // rides as a chip on the (locked-while-editing) picker.
         await user.click(openDayCell(booked))
-        expect(screen.getByLabelText(/student name and year/i)).toHaveValue(
-            'Asha Perera • Year 10'
-        )
-        expect(screen.getByLabelText(/subject/i)).toHaveValue('Mathematics')
+        expect(screen.getByText('Asha Perera • Year 10')).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: 'Mathematics' })
+        ).toBeInTheDocument()
         expect(screen.getByLabelText(/time/i)).toHaveValue('09:00')
 
-        // Picking another number re-fills it from that class.
+        // Picking another number re-fills it from that class — the first
+        // class's subject chip makes way for the new one.
         await user.click(screen.getByRole('tab', { name: '2' }))
-        expect(screen.getByLabelText(/student name and year/i)).toHaveValue(
-            'Maya Fernando • Year 10'
-        )
-        expect(screen.getByLabelText(/subject/i)).toHaveValue('Physics')
+        expect(screen.getByText('Maya Fernando • Year 10')).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: 'Physics' })
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('button', { name: 'Mathematics' })
+        ).not.toBeInTheDocument()
         expect(screen.getByLabelText(/time/i)).toHaveValue('13:00')
 
         // A day with nothing booked presets nothing at all.
         await user.keyboard('{Escape}')
         await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
         await user.click(openDayCell(empty))
-        expect(screen.getByLabelText(/student name and year/i)).toHaveValue('')
+        expect(screen.getByLabelText(/students/i)).toHaveValue('')
         expect(screen.getByLabelText(/subject/i)).toHaveValue('')
+        expect(
+            screen.queryByRole('button', { name: 'Physics' })
+        ).not.toBeInTheDocument()
         expect(screen.getByLabelText(/time/i)).toHaveValue('')
         // In add mode there is no chip row (nothing booked to pick).
         expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
@@ -913,9 +946,12 @@ describe('component-level coverage', () => {
                 screen.getByRole('heading', { name: /edit class/i })
             ).toBeInTheDocument()
 
-            fireEvent.change(screen.getByLabelText(/subject/i), {
-                target: { value: 'Physics' },
-            })
+            // A second subject joins the first — the class covers both, and
+            // the wire format is the joined string.
+            await user.type(
+                screen.getByLabelText(/subject/i),
+                'Physics{Enter}'
+            )
             await user.click(
                 screen.getByRole('button', { name: /save changes/i })
             )
@@ -925,10 +961,11 @@ describe('component-level coverage', () => {
             expect(onEditClass).toHaveBeenCalledWith(
                 1,
                 expect.objectContaining({
-                    subject: 'Physics',
+                    subject: 'Mathematics, Physics',
                     date: dateKey(day),
                     time: '09:00',
-                })
+                }),
+                false
             )
         })
 
@@ -940,20 +977,21 @@ describe('component-level coverage', () => {
 
             await user.click(openDayCell(day))
             // Prefilled in edit mode.
-            expect(screen.getByLabelText(/subject/i)).toHaveValue('Mathematics')
+            expect(
+                screen.getByRole('button', { name: 'Mathematics' })
+            ).toBeInTheDocument()
 
             await user.click(screen.getByRole('tab', { name: /add a class/i }))
             // Now adding: blank form, and the heading and button say so.
             expect(
                 screen.getByRole('heading', { name: /add a class/i })
             ).toBeInTheDocument()
-            expect(screen.getByLabelText(/subject/i)).toHaveValue('')
+            expect(
+                screen.queryByRole('button', { name: 'Mathematics' })
+            ).not.toBeInTheDocument()
             expect(screen.getByLabelText(/time/i)).toHaveValue('')
 
-            await user.type(
-                screen.getByLabelText(/student name and year/i),
-                'Asha'
-            )
+            await user.type(screen.getByLabelText(/students/i), 'Asha')
             await user.click(
                 await screen.findByRole('option', { name: /asha/i })
             )
@@ -967,6 +1005,191 @@ describe('component-level coverage', () => {
             expect(onScheduleClass).toHaveBeenCalledWith(
                 expect.objectContaining({ time: '13:00', date: dateKey(day) })
             )
+        })
+
+        it('books a group class and runs its whole lifecycle', async () => {
+            const user = userEvent.setup()
+            const onEditClass = vi.fn()
+            const onSetSessionStatus = vi.fn()
+            const groupRows: ScheduledSession[] = [
+                bookedClass({ id: 11, groupId: 'grp-1' }),
+                bookedClass({
+                    id: 12,
+                    studentId: 2,
+                    studentName: 'Maya Fernando',
+                    groupId: 'grp-1',
+                }),
+            ]
+
+            render(
+                <ClassSchedulingView
+                    students={[
+                        buildStudent(),
+                        buildStudent({
+                            id: 2,
+                            firstName: 'Maya',
+                            lastName: 'Fernando',
+                        }),
+                    ]}
+                    sessions={groupRows}
+                    onScheduleClass={vi.fn()}
+                    onEditClass={onEditClass}
+                    onSetSessionStatus={onSetSessionStatus}
+                />
+            )
+
+            // One chip for the group — labelled with its size — not two.
+            const chip = classChip(day, 1)
+            expect(chip).toHaveTextContent('×2')
+            await user.click(chip)
+
+            expect(
+                screen.getByRole('heading', {
+                    name: /edit group class \(2 students\)/i,
+                })
+            ).toBeInTheDocument()
+            // Membership is fixed while editing.
+            expect(screen.getByLabelText(/students/i)).toBeDisabled()
+
+            // Shared-field edits move the whole group.
+            fireEvent.change(screen.getByLabelText(/time/i), {
+                target: { value: '11:30' },
+            })
+            await user.click(
+                screen.getByRole('button', { name: /save changes/i })
+            )
+            expect(onEditClass).toHaveBeenCalledWith(
+                11,
+                expect.objectContaining({ time: '11:30' }),
+                true
+            )
+
+            // Reopen: excuse one member, with the are-you-sure step.
+            await waitForElementToBeRemoved(() =>
+                screen.queryByRole('dialog')
+            )
+            await user.click(classChip(day, 1))
+            const members = screen
+                .getByRole('heading', { name: /attending/i })
+                .closest('.group-members') as HTMLElement
+            await user.click(
+                within(members).getAllByRole('button', {
+                    name: /^cancel$/i,
+                })[1]
+            )
+            expect(
+                screen.getByRole('heading', { name: /cancel this class\?/i })
+            ).toBeInTheDocument()
+            await user.click(screen.getByRole('button', { name: /^yes$/i }))
+            expect(onSetSessionStatus).toHaveBeenCalledWith(12, 'Cancelled')
+
+            // Cancel for everyone, behind its own confirmation. (findBy: the
+            // closing confirm briefly aria-hides the day modal beneath it.)
+            await user.click(
+                await screen.findByRole('button', {
+                    name: /cancel for everyone/i,
+                })
+            )
+            expect(
+                screen.getByRole('heading', {
+                    name: /cancel this class for everyone\?/i,
+                })
+            ).toBeInTheDocument()
+            await user.click(screen.getByRole('button', { name: /^yes$/i }))
+            expect(onSetSessionStatus).toHaveBeenCalledWith(
+                11,
+                'Cancelled',
+                true
+            )
+        })
+
+        it('restores a member, and everyone once all are cancelled', async () => {
+            const user = userEvent.setup()
+            const onSetSessionStatus = vi.fn()
+            const render2 = (rows: ScheduledSession[]) =>
+                render(
+                    <ClassSchedulingView
+                        students={[
+                            buildStudent(),
+                            buildStudent({
+                                id: 2,
+                                firstName: 'Maya',
+                                lastName: 'Fernando',
+                            }),
+                        ]}
+                        sessions={rows}
+                        onScheduleClass={vi.fn()}
+                        onEditClass={vi.fn()}
+                        onSetSessionStatus={onSetSessionStatus}
+                    />
+                )
+
+            // One member off sick: their row restores alone.
+            const { unmount } = render2([
+                bookedClass({ id: 21, groupId: 'g' }),
+                bookedClass({
+                    id: 22,
+                    studentId: 2,
+                    studentName: 'Maya Fernando',
+                    groupId: 'g',
+                    status: 'Cancelled',
+                }),
+            ])
+            await user.click(classChip(day, 1))
+            await user.click(screen.getByRole('button', { name: /restore/i }))
+            expect(onSetSessionStatus).toHaveBeenCalledWith(22, 'Scheduled')
+            unmount()
+
+            // The whole class was cancelled: restore it for everyone.
+            render2([
+                bookedClass({ id: 31, groupId: 'g2', status: 'Cancelled' }),
+                bookedClass({
+                    id: 32,
+                    studentId: 2,
+                    studentName: 'Maya Fernando',
+                    groupId: 'g2',
+                    status: 'Cancelled',
+                }),
+            ])
+            await user.click(classChip(day, 1))
+            await user.click(
+                screen.getByRole('button', { name: /restore for everyone/i })
+            )
+            expect(onSetSessionStatus).toHaveBeenCalledWith(
+                31,
+                'Scheduled',
+                true
+            )
+        })
+
+        it('tells a partially cancelled group apart on hover', async () => {
+            const user = userEvent.setup()
+            render(
+                <ClassSchedulingView
+                    students={[buildStudent()]}
+                    sessions={[
+                        bookedClass({ id: 41, groupId: 'g3' }),
+                        bookedClass({
+                            id: 42,
+                            studentId: 2,
+                            studentName: 'Maya Fernando',
+                            groupId: 'g3',
+                            status: 'Cancelled',
+                        }),
+                    ]}
+                    onScheduleClass={vi.fn()}
+                    onEditClass={vi.fn()}
+                    onSetSessionStatus={vi.fn()}
+                />
+            )
+
+            await user.hover(classChip(day, 1))
+            expect(
+                await screen.findByText(/1 of 2 cancelled/i)
+            ).toBeInTheDocument()
+            expect(
+                screen.getByText(/group of 2 — asha perera, maya fernando/i)
+            ).toBeInTheDocument()
         })
 
         it('backs out of a cancel with Escape, changing nothing', async () => {
@@ -983,9 +1206,10 @@ describe('component-level coverage', () => {
             ).toBeInTheDocument()
 
             await user.keyboard('{Escape}')
-            await waitForElementToBeRemoved(() =>
+            // The confirm content unmounts with its target — instantly.
+            expect(
                 screen.queryByRole('heading', { name: /cancel this class\?/i })
-            )
+            ).not.toBeInTheDocument()
             expect(onSetSessionStatus).not.toHaveBeenCalled()
         })
 

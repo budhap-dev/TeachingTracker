@@ -143,6 +143,25 @@ describe('Teaching Tracker app', () => {
         randomSpy.mockRestore()
     })
 
+    it('opens a planner day straight from a dashboard week bar', async () => {
+        const user = userEvent.setup()
+        const { container } = render(<App />)
+
+        // Wait for the dashboard data, then hit today's bar.
+        await screen.findByRole('img', { name: /teaching load this week/i })
+        const todayBar = container.querySelector('.week-bar-cell.today')
+        expect(todayBar).not.toBeNull()
+        await user.click(todayBar as HTMLElement)
+
+        // Landed on the planner with that day's modal already open.
+        const dialog = await screen.findByRole('dialog')
+        expect(
+            within(dialog).getByRole('heading', {
+                name: /edit class|add a class/i,
+            })
+        ).toBeInTheDocument()
+    })
+
     it('supports dashboard manage action and mobile nav toggle', async () => {
         const user = userEvent.setup()
         render(<App />)
@@ -251,12 +270,16 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('heading', { name: /cancel this class\?/i })
         ).toBeInTheDocument()
         await user.click(screen.getByRole('button', { name: /^no$/i }))
-        await waitForElementToBeRemoved(() =>
+        // The confirm content unmounts with its target — instantly.
+        expect(
             screen.queryByRole('heading', { name: /cancel this class\?/i })
-        )
+        ).not.toBeInTheDocument()
 
-        // Confirming cancels it — still listed, now restorable.
-        await user.click(screen.getByRole('button', { name: /cancel class/i }))
+        // Confirming cancels it — still listed, now restorable. (findBy: the
+        // closing confirm briefly aria-hides the day modal beneath it.)
+        await user.click(
+            await screen.findByRole('button', { name: /cancel class/i })
+        )
         await user.click(screen.getByRole('button', { name: /^yes$/i }))
 
         const restore = await screen.findByRole('button', {
@@ -279,19 +302,21 @@ describe('Teaching Tracker app', () => {
             })
         )
 
-        // Open Asha's fixture class and change its subject.
+        // Open Asha's fixture class and swap its subject: backspace eats the
+        // prefilled chip, the new one is typed and committed with Enter.
         await user.click(openFixtureDayCell(1))
-        fireEvent.change(screen.getByLabelText(/subject/i), {
-            target: { value: 'Astrophysics' },
-        })
+        await user.type(
+            screen.getByLabelText(/subject/i),
+            '{Backspace}Astrophysics{Enter}'
+        )
         await user.click(screen.getByRole('button', { name: /save changes/i }))
         await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
 
         // Reopen the day: the edit came back from the API and stuck.
         await user.click(openFixtureDayCell(1))
-        expect(await screen.findByLabelText(/subject/i)).toHaveValue(
-            'Astrophysics'
-        )
+        expect(
+            await screen.findByRole('button', { name: 'Astrophysics' })
+        ).toBeInTheDocument()
     })
 
     it('lists only each student\'s next three classes, not their whole timetable', async () => {
@@ -307,9 +332,15 @@ describe('Teaching Tracker app', () => {
         const list = await screen.findByRole('list', {
             name: /upcoming sessions calendar/i,
         })
+        // The dashboard previews four; the toggle owns the full count — six
+        // (three per student), not the eleven booked.
         await waitFor(() =>
-            expect(within(list).getAllByRole('listitem')).toHaveLength(6)
+            expect(within(list).getAllByRole('listitem')).toHaveLength(4)
         )
+        await userEvent.setup().click(
+            screen.getByRole('button', { name: /show all 6/i })
+        )
+        expect(within(list).getAllByRole('listitem')).toHaveLength(6)
 
         // The three kept are the *next* three, not any three.
         const shown = within(list)
@@ -344,10 +375,7 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('button', { name: `Open ${soon.toDateString()}` })
         )
 
-        await user.type(
-            screen.getByLabelText(/student name and year/i),
-            'Asha'
-        )
+        await user.type(screen.getByLabelText(/students/i), 'Asha')
         await user.click(await screen.findByRole('option', { name: /asha/i }))
         await user.type(screen.getByLabelText(/time/i), '15:30')
         await user.type(

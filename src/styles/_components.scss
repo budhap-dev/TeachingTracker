@@ -596,25 +596,10 @@
     }
 }
 
-.calendar-note {
-    font-size: 0.82rem;
-    color: var(--muted);
-}
-
 .calendar-actions {
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-.calendar-connect-btn {
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 5px 10px;
-    background: var(--surface);
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 700;
 }
 
 .calendar-list {
@@ -1254,4 +1239,110 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 16px;
+}
+
+/* ----- Dashboard: week-at-a-glance bars ----- */
+/* One series, hours by weekday: thin bars, rounded data-end, quiet labels.
+   Today wears the full accent; other days a lighter step of the same hue. */
+.week-card {
+    grid-column: span 4;
+}
+
+.week-chart {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    align-items: end;
+    margin-top: 8px;
+    max-width: 620px;
+}
+
+.week-bar-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    min-height: 112px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border); /* the baseline */
+
+    .week-bar {
+        width: 14px;
+        border-radius: 4px 4px 0 0; /* data-end rounded, baseline square */
+        background: color-mix(in srgb, var(--accent) 35%, var(--surface));
+    }
+
+    &.today .week-bar {
+        background: var(--accent);
+    }
+
+    &:hover .week-bar,
+    &:focus-visible .week-bar {
+        background: color-mix(in srgb, var(--accent) 70%, var(--surface));
+    }
+
+    &.today:hover .week-bar {
+        background: var(--accent);
+    }
+}
+
+.week-bar-value {
+    font-size: 0.7rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.week-bar-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    padding: 4px 0 2px;
+}
+
+.week-bar-cell.today .week-bar-label {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* Group classes on chips: the ×N badge says several students share the slot. */
+.chip-group-size {
+    font-size: 0.62rem;
+    margin-left: 2px;
+    opacity: 0.85;
+}
+
+.group-members {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+
+    h5 {
+        margin: 0 0 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+        color: var(--muted);
+    }
+
+    ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 0;
+    }
+
+    .member-cancelled {
+        text-decoration: line-through;
+        color: var(--muted);
+    }
 }

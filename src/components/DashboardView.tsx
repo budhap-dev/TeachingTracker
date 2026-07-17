@@ -1,4 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { Button } from '@mui/material'
+import type { DayLoad } from '../utils/dashboard'
+import { formatHours } from '../utils/dashboard'
+
+/** The dashboard shows this many upcoming sessions before "Show all". */
+const upcomingPreviewCount = 4
 
 type DashboardViewProps = {
     stats: {
@@ -21,17 +27,30 @@ type DashboardViewProps = {
         year: string
         notes: string
     }[]
+    weekLoad: DayLoad[]
     onManageStudents: () => void
     onOpenStudentPage: (studentId: number) => void
+    onOpenDay: (dateKey: string) => void
 }
 
 export const DashboardView = ({
     stats,
     overviewChart,
     upcomingSessions,
+    weekLoad,
     onManageStudents,
     onOpenStudentPage,
+    onOpenDay,
 }: DashboardViewProps) => {
+    // Collapsed, the sessions list is a glance; expanded, the full horizon.
+    const [showAllSessions, setShowAllSessions] = useState(false)
+    const visibleSessions = showAllSessions
+        ? upcomingSessions
+        : upcomingSessions.slice(0, upcomingPreviewCount)
+
+    // The tallest bar owns the chart's height; label only it and today
+    // (selective direct labels — every other bar answers on hover).
+    const maxWeekMinutes = Math.max(...weekLoad.map((day) => day.minutes), 1)
     // Every student sits in exactly one year, so the slices genuinely sum to
     // the total in the middle. Year is ordered (8 -> 11), so the slices take one
     // hue light-to-dark rather than four unrelated colours: the reader sees the
@@ -93,6 +112,49 @@ export const DashboardView = ({
                 <strong>{stats.onlineStudents}</strong>
                 <span>Face to Face learners</span>
                 <strong>{stats.faceToFaceStudents}</strong>
+            </div>
+
+            {/* Week at a glance: one series, hours by weekday, each bar a
+                door into that day's planner modal. */}
+            <div className="card week-card">
+                <h3>This week</h3>
+                <div
+                    className="week-chart"
+                    role="img"
+                    aria-label={`Teaching load this week: ${weekLoad
+                        .map(
+                            (day) =>
+                                `${day.label} ${day.classes} ${day.classes === 1 ? 'class' : 'classes'}`
+                        )
+                        .join(', ')}`}
+                >
+                    {weekLoad.map((day) => (
+                        <button
+                            key={day.dateKey}
+                            type="button"
+                            className={`week-bar-cell ${day.isToday ? 'today' : ''}`}
+                            onClick={() => onOpenDay(day.dateKey)}
+                            title={`${day.label} — ${day.classes} ${day.classes === 1 ? 'class' : 'classes'}${day.minutes ? ` · ${formatHours(day.minutes)}` : ''}`}
+                        >
+                            {(day.isToday ||
+                                (day.minutes === maxWeekMinutes &&
+                                    day.minutes > 0)) && (
+                                <span className="week-bar-value">
+                                    {day.minutes > 0
+                                        ? formatHours(day.minutes)
+                                        : '—'}
+                                </span>
+                            )}
+                            <span
+                                className="week-bar"
+                                style={{
+                                    height: `${Math.max((day.minutes / maxWeekMinutes) * 72, day.minutes > 0 ? 8 : 3)}px`,
+                                }}
+                            />
+                            <span className="week-bar-label">{day.label}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
             <div className="card dashboard-chart-card">
                 <div className="section-header">
@@ -182,26 +244,13 @@ export const DashboardView = ({
             <div className="card calendar-card">
                 <div className="calendar-header">
                     <h3>Upcoming sessions</h3>
-                    <div className="calendar-actions">
-                        <span className="calendar-note">
-                            Google Calendar sync coming soon
-                        </span>
-                        <button
-                            type="button"
-                            className="calendar-connect-btn"
-                            title="Google Calendar integration will be available in a future update"
-                            disabled
-                        >
-                            Connect Google Calendar
-                        </button>
-                    </div>
                 </div>
                 <div
                     className="calendar-list"
                     role="list"
                     aria-label="Upcoming sessions calendar"
                 >
-                    {upcomingSessions.map((session) => (
+                    {visibleSessions.map((session) => (
                         <article
                             key={session.id}
                             className="session-item"
@@ -239,6 +288,19 @@ export const DashboardView = ({
                         </article>
                     ))}
                 </div>
+                {upcomingSessions.length > upcomingPreviewCount && (
+                    <Button
+                        size="small"
+                        variant="text"
+                        onClick={() =>
+                            setShowAllSessions((current) => !current)
+                        }
+                    >
+                        {showAllSessions
+                            ? 'Show fewer'
+                            : `Show all ${upcomingSessions.length}`}
+                    </Button>
+                )}
             </div>
         </section>
     )

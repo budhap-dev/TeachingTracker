@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-011`**
+**Next id: `REQ-013`**
 
 ## Legend
 
@@ -80,7 +80,7 @@ XS is an afternoon, XL is a project.
 | 7 | 🔲 | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — (planned) |
 | 8 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
 | 9 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
-| 10 | 🔲 | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | REQ-004, REQ-009 |
+| 10 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
 
 **Next up: [REQ-003](#req-003--public-portal-with-no-login-the-teachers-area-is-private)** — rows 1–5 are done.
 
@@ -467,7 +467,13 @@ will look before anyone else does.
 
 ## REQ-005 — Scheduled classes sync to Google Calendar
 
-**Status:** 🔲 Not started · **Impact:** both + infra · **Future** · **Effort:** XL
+**Status:** ❌ Dropped (2026-07-17) · **Impact:** both + infra · **Effort:** XL
+
+> **Dropped.** The plan is shelved for now; the dashboard's disabled
+> "Connect Google Calendar" placeholder and its "coming soon" note were
+> removed the same day. The story stays here for the record — if it ever
+> comes back, the notes below (OAuth consent, durable refresh-token
+> storage) still apply.
 
 **Story**
 As the teacher, I want classes I schedule to appear in my Google Calendar, so that
@@ -477,8 +483,8 @@ I get reminders and notifications directly without checking the portal.
 
 - [ ] Scheduling a class creates a matching event in the teacher's Google Calendar.
 - [ ] The event carries the student name, subject, date/time, and notes.
-- [ ] The existing **"Connect Google Calendar"** placeholder becomes functional
-      (currently disabled — `DashboardView.tsx:175`, "coming soon").
+- [ ] A "Connect Google Calendar" control lets the teacher link their account
+      (the old disabled placeholder was removed when the story was dropped).
 - [ ] The teacher can connect and disconnect their calendar.
 - [ ] Reminders/notifications are handled by Google Calendar, not built here.
 - [ ] A calendar failure does not lose the scheduled class in the portal.
@@ -494,3 +500,81 @@ I get reminders and notifications directly without checking the portal.
 - Open: is sync one-way (portal → Google) or two-way? Editing/cancelling a class —
   in scope? Assumed **one-way, create-only** for a first cut.
 
+## REQ-011 — Group sessions: several students attend one class
+
+**Status:** 🚧 In progress · **Impact:** both · **Effort:** L
+
+**Story**
+As a teacher, I want to book one class that several students attend together,
+so that group lessons live on the calendar as one slot — while each student's
+attendance, cancellation and bill stay their own.
+
+**Decisions** _(made 2026-07-17)_
+
+- **Linked rows, not a new entity**: a group class is one session row per
+  attending student sharing a `groupId` + date/time/duration. Billing stays
+  the REQ-001 arithmetic untouched — **each attendee is billed their own
+  per-session fee** (group discounts are just lower fees on those students).
+- **Cancellation is per student, with a cancel-for-everyone convenience** —
+  one sick student is excused (and not billed) without touching the rest.
+
+**Acceptance criteria**
+
+- [ ] The planner's student picker takes **multiple students**; one Save books
+      the class for all of them (API: `POST /sessions` with `studentIds[]`
+      creates the linked rows and returns them).
+- [ ] The calendar shows a grouped slot as **one chip**, not one per student;
+      hover and the day modal name every attendee.
+- [ ] Editing a grouped class's shared fields (subject, date, time, duration,
+      notes) applies to **every linked row** — the group moves as one.
+- [ ] A single attendee can be cancelled (and restored) without affecting the
+      others; **Cancel for everyone** cancels every linked row, behind the
+      same are-you-sure confirmation.
+- [ ] A cancelled attendee is **never billed** for that class; the others
+      still are (REQ-010/REQ-001 semantics per row).
+- [ ] Dashboard week-load hours count a group hour **once**, not once per
+      attendee.
+- [ ] Seed includes a weekly group class in every environment, so the state
+      is visible without booking one by hand.
+- [ ] Frontend coverage stays at 100%; API deploys before the frontend.
+
+**Notes**
+
+- A solo class simply has no `groupId` — nothing changes for existing data,
+  and older records keep working.
+- Changing a group's *membership* is cancel-a-row / book-again, not an edit —
+  same reasoning as REQ-010's "cancel + rebook" for moving a class.
+- Named, reusable groups ("Year 8 Physics circle") would be a separate story
+  on top of this model if ever wanted.
+
+## REQ-012 — Class planner: subject is a multi-select
+
+**Status:** 🚧 In progress · **Impact:** frontend · **Effort:** S
+
+**Story**
+As a teacher, I want to tag a class with more than one subject (a combined
+Maths + Physics session, say), picking from the subjects I already teach,
+so that the class record reflects what was actually covered.
+
+**Decisions** _(made 2026-07-17)_
+
+- **The wire format stays one string.** Selected subjects join as
+  `"Mathematics, Physics"` — the API, calendar chips, tooltips, upcoming
+  lists and billing all keep working untouched, and existing records load
+  back into chips by splitting on `", "`.
+- **Options come from the roster** — every distinct subject across all
+  students — but the field stays `freeSolo`, so a brand-new subject can
+  still be typed and committed with Enter (nothing regresses from the old
+  free-text field).
+
+**Acceptance criteria**
+
+- [ ] The planner's Subject field is a chip-based multi-select with the
+      roster's distinct subjects as its dropdown options.
+- [ ] A typed subject not in the list can still be committed (freeSolo).
+- [ ] Picking the first student still seeds their first subject — as a chip,
+      and never overwriting subjects already chosen.
+- [ ] Editing a class splits its stored subject string back into chips;
+      saving joins them again.
+- [ ] Booking is blocked while no subject chip is committed.
+- [ ] Frontend coverage stays at 100%.

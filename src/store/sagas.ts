@@ -78,16 +78,16 @@ export function* loadSessionsSaga() {
     }
 }
 
-/** Persists a newly scheduled class via the API. */
+/** Persists a newly scheduled class via the API — one row, or a group. */
 export function* createSessionSaga(
     action: ReturnType<typeof createSessionRequested>
 ) {
     try {
-        const session: ScheduledSession = yield call(
+        const sessions: ScheduledSession[] = yield call(
             createSession,
             action.payload
         )
-        yield put(createSessionSucceeded(session))
+        yield put(createSessionSucceeded(sessions))
     } catch (error) {
         yield put(createSessionFailed(toMessage(error)))
     }
@@ -108,17 +108,18 @@ export function* saveStudentSaga(
     }
 }
 
-/** Cancels or un-cancels a class via the API. */
+/** Cancels or un-cancels a class via the API — one row, or the group. */
 export function* setSessionStatusSaga(
     action: ReturnType<typeof setSessionStatusRequested>
 ) {
     try {
-        const session: ScheduledSession = yield call(
+        const sessions: ScheduledSession[] = yield call(
             updateSessionStatus,
             action.payload.id,
-            action.payload.status
+            action.payload.status,
+            action.payload.applyToGroup ?? false
         )
-        yield put(setSessionStatusSucceeded(session))
+        yield put(setSessionStatusSucceeded(sessions))
     } catch (error) {
         yield put(
             setSessionStatusFailed(
@@ -135,12 +136,13 @@ export function* editSessionSaga(
     action: ReturnType<typeof editSessionRequested>
 ) {
     try {
-        const session: ScheduledSession = yield call(
+        const sessions: ScheduledSession[] = yield call(
             updateSession,
             action.payload.id,
-            action.payload.changes
+            action.payload.changes,
+            action.payload.applyToGroup ?? false
         )
-        yield put(editSessionSucceeded(session))
+        yield put(editSessionSucceeded(sessions))
     } catch (error) {
         yield put(
             editSessionFailed(

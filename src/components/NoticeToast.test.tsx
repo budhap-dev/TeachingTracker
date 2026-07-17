@@ -45,7 +45,7 @@ describe('NoticeToast', () => {
         const user = userEvent.setup()
         const store = renderWithStore()
 
-        store.dispatch(createSessionSucceeded(session))
+        store.dispatch(createSessionSucceeded([session]))
         expect(await screen.findByText('Class booked.')).toBeInTheDocument()
 
         await user.click(screen.getByRole('button', { name: /close/i }))
@@ -58,7 +58,7 @@ describe('NoticeToast', () => {
         const user = userEvent.setup()
         const store = renderWithStore()
 
-        store.dispatch(createSessionSucceeded(session))
+        store.dispatch(createSessionSucceeded([session]))
         expect(await screen.findByText('Class booked.')).toBeInTheDocument()
 
         await user.keyboard('{Escape}')

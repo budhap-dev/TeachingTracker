@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
     Autocomplete,
     Button,
@@ -12,7 +12,7 @@ import {
     Tooltip,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { activeSessions } from '../data/students'
+import type { EditClassChanges, ScheduleClassInput } from '../store/store'
 import {
     bookedLevelClass,
     durationOptions,
@@ -20,17 +20,30 @@ import {
     formatDuration,
     toDateKey,
 } from '../utils/calendar'
+import {
+    activeMembers,
+    entryTitle,
+    groupDaySessions,
+    type DayEntry,
+} from '../utils/sessionGroups'
 import type { ScheduledSession, SessionStatus, Student } from '../data/students'
 
 type ClassSchedulingViewProps = {
     students: Student[]
     sessions: ScheduledSession[]
-    onScheduleClass: (session: Omit<ScheduledSession, 'id' | 'status'>) => void
+    /** Opens this day's modal on arrival (dashboard deep links, ?day=…). */
+    initialOpenDate?: string
+    onScheduleClass: (input: ScheduleClassInput) => void
     onEditClass: (
         id: number,
-        changes: Omit<ScheduledSession, 'id' | 'status'>
+        changes: EditClassChanges,
+        applyToGroup: boolean
     ) => void
-    onSetSessionStatus: (id: number, status: SessionStatus) => void
+    onSetSessionStatus: (
+        id: number,
+        status: SessionStatus,
+        applyToGroup?: boolean
+    ) => void
 }
 
 type StudentOption = {
@@ -42,11 +55,20 @@ type StudentOption = {
     subjects: string[]
 }
 
+/** What the are-you-sure dialog is about to cancel. */
+type CancelTarget =
+    | { kind: 'row'; session: ScheduledSession }
+    | { kind: 'group'; entry: DayEntry }
+
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-/** A student's first subject — the form's default, blank if they have none. */
-const defaultSubject = (option?: StudentOption) => option?.subjects[0] ?? ''
+/** A student's first subject seeds the form — nothing if they have none. */
+const defaultSubjects = (option?: StudentOption) =>
+    option?.subjects.slice(0, 1) ?? []
 
+/** The API keeps one subject string; the form edits it as chips. */
+const splitSubjects = (subject?: string) =>
+    subject ? subject.split(', ') : []
 
 const getMonthGrid = (referenceDate: Date) => {
     const monthStart = new Date(
@@ -67,6 +89,7 @@ const getMonthGrid = (referenceDate: Date) => {
 export const ClassSchedulingView = ({
     students,
     sessions,
+    initialOpenDate,
     onScheduleClass,
     onEditClass,
     onSetSessionStatus,
@@ -84,12 +107,22 @@ export const ClassSchedulingView = ({
         [students]
     )
 
+    // Every subject taught across the roster, once each — the dropdown's
+    // options. freeSolo on the field still lets a new one be typed in.
+    const subjectOptions = useMemo(
+        () =>
+            [...new Set(students.flatMap((student) => student.subjects))].sort(
+                (a, b) => a.localeCompare(b)
+            ),
+        [students]
+    )
+
     // The form starts empty and is filled from whichever class the modal is
-    // showing. A day with nothing on it presets nothing.
-    const [selectedStudent, setSelectedStudent] =
-        useState<StudentOption | null>(null)
-    const [studentSearch, setStudentSearch] = useState('')
-    const [subject, setSubject] = useState('')
+    // showing. Several students make the booking a group class.
+    const [selectedStudents, setSelectedStudents] = useState<StudentOption[]>(
+        []
+    )
+    const [subjects, setSubjects] = useState<string[]>([])
     const [time, setTime] = useState('')
     const [durationMinutes, setDurationMinutes] = useState(60)
     const [notes, setNotes] = useState('')
@@ -97,18 +130,18 @@ export const ClassSchedulingView = ({
     // The day whose modal is open. The calendar owns the date now, so there is
     // no date field to keep in sync — null means no modal.
     const [openDate, setOpenDate] = useState<string | null>(null)
-    // Which of that day's classes the form is editing. null means the form is
-    // in "add" mode. Held as an id, not an index, so it survives the list
-    // re-sorting when a class is added.
-    const [selectedSessionId, setSelectedSessionId] = useState<number | null>(
+    // Which of that day's entries the form is editing. null means the form is
+    // in "add" mode. Held as the entry key (groupId / solo id), so it survives
+    // the list re-sorting when a class is added.
+    const [selectedEntryKey, setSelectedEntryKey] = useState<string | null>(
         null
     )
-    // Whether the "Cancel this class?" confirmation is open.
-    const [confirmCancel, setConfirmCancel] = useState(false)
+    // What the "are you sure?" dialog is about to cancel, if anything.
+    const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null)
 
-    // Sorted once, here, so a day's classes are numbered identically wherever
-    // they appear: the chips on the grid, the tooltip, and the day modal.
-    const sessionsByDate = useMemo(() => {
+    // A day's rows folded into entries — a group class is ONE entry — sorted
+    // once, here, so chips, tooltips and the day modal number identically.
+    const entriesByDate = useMemo(() => {
         const byDate = sessions.reduce<Record<string, ScheduledSession[]>>(
             (acc, session) => {
                 acc[session.date] = [...(acc[session.date] || []), session]
@@ -116,50 +149,70 @@ export const ClassSchedulingView = ({
             },
             {}
         )
-        Object.values(byDate).forEach((day) =>
-            day.sort((left, right) => left.time.localeCompare(right.time))
-        )
-        return byDate
+        const entries: Record<string, DayEntry[]> = {}
+        Object.entries(byDate).forEach(([date, list]) => {
+            entries[date] = groupDaySessions(list)
+        })
+        return entries
     }, [sessions])
 
     /**
-     * Mirrors a class into the form. Passing nothing clears it — the blank
+     * Mirrors an entry into the form. Passing nothing clears it — the blank
      * "add a new class" state.
      */
-    const applySessionToForm = (session?: ScheduledSession) => {
-        const option =
-            studentOptions.find(
-                (candidate) => candidate.id === session?.studentId
-            ) ?? null
-        setSelectedStudent(option)
-        setStudentSearch(option?.label ?? '')
-        setSubject(session?.subject ?? '')
-        setTime(session?.time ?? '')
-        setDurationMinutes(session?.durationMinutes ?? 60)
-        setNotes(session?.notes ?? '')
+    const applyEntryToForm = (entry?: DayEntry) => {
+        const members = entry
+            ? entry.sessions
+                  .map((session) =>
+                      studentOptions.find(
+                          (candidate) => candidate.id === session.studentId
+                      )
+                  )
+                  .filter((option): option is StudentOption => Boolean(option))
+            : []
+        setSelectedStudents(members)
+        setSubjects(splitSubjects(entry?.lead.subject))
+        setTime(entry?.lead.time ?? '')
+        setDurationMinutes(entry?.lead.durationMinutes ?? 60)
+        setNotes(entry?.lead.notes ?? '')
     }
 
-    /** Opens a day to edit `sessionId`, or its earliest class, or to add one. */
-    const openDay = (dateKey: string, sessionId?: number) => {
-        const daySessions = sessionsByDate[dateKey] ?? []
-        const session =
-            daySessions.find((candidate) => candidate.id === sessionId) ??
-            daySessions[0]
+    /** Opens a day to edit `entryKey`, or its earliest entry, or to add one. */
+    const openDay = (dateKey: string, entryKey?: string) => {
+        const dayEntries = entriesByDate[dateKey] ?? []
+        const entry =
+            dayEntries.find((candidate) => candidate.key === entryKey) ??
+            dayEntries[0]
         setOpenDate(dateKey)
-        setSelectedSessionId(session?.id ?? null)
-        applySessionToForm(session)
+        setSelectedEntryKey(entry?.key ?? null)
+        applyEntryToForm(entry)
     }
 
-    /** Switches the form to edit another of the day's classes. */
-    const selectSession = (session: ScheduledSession) => {
-        setSelectedSessionId(session.id)
-        applySessionToForm(session)
+    // A deep-linked day (dashboard week bar) opens once on arrival — and the
+    // calendar behind the modal turns to that day's month.
+    const openedInitialDate = useRef(false)
+    useEffect(() => {
+        if (!initialOpenDate || openedInitialDate.current) {
+            return
+        }
+        openedInitialDate.current = true
+        const [year, month] = initialOpenDate.split('-').map(Number)
+        setMonthReference(new Date(year, month - 1, 1))
+        openDay(initialOpenDate)
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- run once;
+        // openDay is stable in behaviour and recreating it must not re-open.
+    }, [initialOpenDate])
+
+    /** Switches the form to edit another of the day's entries. */
+    const selectEntry = (entry: DayEntry) => {
+        setSelectedEntryKey(entry.key)
+        applyEntryToForm(entry)
     }
 
     /** Switches the form to "add a new class": clears it, edits nothing. */
     const startAdd = () => {
-        setSelectedSessionId(null)
-        applySessionToForm(undefined)
+        setSelectedEntryKey(null)
+        applyEntryToForm(undefined)
     }
 
     const monthGrid = useMemo(
@@ -172,63 +225,64 @@ export const ClassSchedulingView = ({
     })
     const todayKey = toDateKey(new Date())
 
-    // What is still to come — a count of the whole year's history would say 236
-    // and mean nothing.
+    // What is still to come — classes, not rows: a group hour counts once.
     const upcomingCount = useMemo(
         () =>
-            activeSessions(sessions).filter(
-                (session) => session.date >= todayKey
-            ).length,
-        [sessions, todayKey]
+            Object.entries(entriesByDate)
+                .filter(([date]) => date >= todayKey)
+                .reduce(
+                    (sum, [, entries]) =>
+                        sum +
+                        entries.filter(
+                            (entry) => activeMembers(entry).length > 0
+                        ).length,
+                    0
+                ),
+        [entriesByDate, todayKey]
     )
-
-    const handleStudentChange = (
-        _event: unknown,
-        value: StudentOption | null
-    ) => {
-        setSelectedStudent(value)
-        setStudentSearch(value?.label ?? '')
-        setSubject(defaultSubject(value ?? undefined))
-    }
 
     // Everything booked on the open day, earliest first — including cancelled
     // ones, which stay visible so they can be edited or restored.
-    const openDateSessions = openDate ? (sessionsByDate[openDate] ?? []) : []
-    // The class the form is editing, or undefined in "add" mode. A selected id
-    // that no longer resolves (its class was cancelled elsewhere, say) falls
-    // back to add, so the form never edits a class that is not on screen.
-    const editingSession = openDateSessions.find(
-        (session) => session.id === selectedSessionId
+    const openDateEntries = openDate ? (entriesByDate[openDate] ?? []) : []
+    // The entry the form is editing, or undefined in "add" mode. A selected
+    // key that no longer resolves falls back to add, so the form never edits
+    // a class that is not on screen.
+    const editingEntry = openDateEntries.find(
+        (entry) => entry.key === selectedEntryKey
     )
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
-        if (!selectedStudent || !subject || !openDate || !time) {
+        if (
+            !selectedStudents.length ||
+            !subjects.length ||
+            !openDate ||
+            !time
+        ) {
             return
         }
 
-        const changes = {
-            studentId: selectedStudent.id,
-            studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
-            year: selectedStudent.year,
-            subject,
+        const shared = {
+            subject: subjects.join(', '),
             date: openDate,
             time,
             durationMinutes,
             notes: notes.trim() || 'Scheduled from the class planner',
         }
 
-        if (editingSession) {
-            onEditClass(editingSession.id, changes)
+        if (editingEntry) {
+            // Shared fields move the whole class — every linked row at once.
+            // Membership changes are cancel-a-row / book-again, not an edit.
+            onEditClass(editingEntry.lead.id, shared, editingEntry.isGroup)
         } else {
-            onScheduleClass(changes)
+            onScheduleClass({
+                studentIds: selectedStudents.map((option) => option.id),
+                ...shared,
+            })
         }
 
         setOpenDate(null)
     }
-
-    const shouldOpenAutocomplete =
-        studentSearch.length > 0 && studentSearch !== selectedStudent?.label
 
     return (
         <section className="content-stack">
@@ -236,8 +290,8 @@ export const ClassSchedulingView = ({
                 <div>
                     <h3>Class scheduling</h3>
                     <p>
-                        Pick a day to book a lesson or change what is already
-                        on, and keep the timetable visible in the dashboard.
+                        Pick a day to book a lesson — for one student or a
+                        group — or change what is already on.
                     </p>
                 </div>
                 <div className="scheduling-hero-stats">
@@ -269,7 +323,7 @@ export const ClassSchedulingView = ({
                             variant="contained"
                             size="small"
                         >
-                            {editingSession ? 'Save changes' : 'Add class'}
+                            {editingEntry ? 'Save changes' : 'Add class'}
                         </Button>
                         <IconButton
                             aria-label="Close"
@@ -281,37 +335,41 @@ export const ClassSchedulingView = ({
                     </span>
                 </DialogTitle>
                 <DialogContent className="day-modal-content">
-                    {openDateSessions.length > 0 && (
+                    {openDateEntries.length > 0 && (
                         <div className="day-modal-sessions">
                             <h4>Classes on this day</h4>
-                            {/* One numbered chip per class, in time order,
-                                matching the numbers on the calendar. Selecting
-                                one edits it; the last chip starts a new class. */}
+                            {/* One numbered chip per class — a group is one
+                                chip — matching the numbers on the calendar. */}
                             <div
                                 className="day-modal-picker"
                                 role="tablist"
                                 aria-label="Classes on this day"
                             >
-                                {openDateSessions.map((session, index) => (
+                                {openDateEntries.map((entry, index) => (
                                     <button
-                                        key={session.id}
+                                        key={entry.key}
                                         type="button"
                                         role="tab"
                                         aria-selected={
-                                            session.id === editingSession?.id
+                                            entry.key === editingEntry?.key
                                         }
-                                        className={`day-modal-picker-chip ${session.id === editingSession?.id ? 'selected' : ''} ${session.status === 'Cancelled' ? 'cancelled' : ''}`}
-                                        onClick={() => selectSession(session)}
+                                        className={`day-modal-picker-chip ${entry.key === editingEntry?.key ? 'selected' : ''} ${activeMembers(entry).length === 0 ? 'cancelled' : ''}`}
+                                        onClick={() => selectEntry(entry)}
                                     >
                                         {index + 1}
+                                        {entry.isGroup && (
+                                            <span className="chip-group-size">
+                                                ×{entry.sessions.length}
+                                            </span>
+                                        )}
                                     </button>
                                 ))}
                                 <button
                                     type="button"
                                     role="tab"
-                                    aria-selected={!editingSession}
+                                    aria-selected={!editingEntry}
                                     aria-label="Add a class"
-                                    className={`day-modal-picker-chip add ${!editingSession ? 'selected' : ''}`}
+                                    className={`day-modal-picker-chip add ${!editingEntry ? 'selected' : ''}`}
                                     onClick={startAdd}
                                 >
                                     +
@@ -320,22 +378,33 @@ export const ClassSchedulingView = ({
                         </div>
                     )}
 
-                    <h4>{editingSession ? 'Edit class' : 'Add a class'}</h4>
+                    <h4>
+                        {editingEntry
+                            ? editingEntry.isGroup
+                                ? `Edit group class (${editingEntry.sessions.length} students)`
+                                : 'Edit class'
+                            : 'Add a class'}
+                    </h4>
                     <form
                         id="scheduling-form"
                         className="scheduling-form"
                         onSubmit={handleSubmit}
                     >
                         <Autocomplete
+                            multiple
                             options={studentOptions}
-                            value={selectedStudent}
+                            value={selectedStudents}
                             disablePortal
-                            open={shouldOpenAutocomplete}
-                            inputValue={studentSearch}
-                            onInputChange={(_event, value) =>
-                                setStudentSearch(value)
-                            }
-                            onChange={handleStudentChange}
+                            // Membership is fixed while editing: excuse a
+                            // student below, or book a new class — an edit
+                            // must not silently rewrite who attends.
+                            disabled={Boolean(editingEntry)}
+                            onChange={(_event, value) => {
+                                setSelectedStudents(value)
+                                if (!subjects.length) {
+                                    setSubjects(defaultSubjects(value[0]))
+                                }
+                            }}
                             isOptionEqualToValue={(option, value) =>
                                 option.id === value.id
                             }
@@ -361,15 +430,33 @@ export const ClassSchedulingView = ({
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    label="Student name and year"
+                                    label="Students"
+                                    placeholder={
+                                        selectedStudents.length === 0
+                                            ? 'Pick one student — or several for a group class'
+                                            : ''
+                                    }
                                 />
                             )}
                         />
-                        <TextField
-                            label="Subject"
-                            value={subject}
-                            onChange={(event) => setSubject(event.target.value)}
-                            placeholder="Select or type a subject"
+                        <Autocomplete
+                            multiple
+                            freeSolo
+                            options={subjectOptions}
+                            value={subjects}
+                            disablePortal
+                            onChange={(_event, value) => setSubjects(value)}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Subject"
+                                    placeholder={
+                                        subjects.length === 0
+                                            ? 'Pick subjects — or type your own'
+                                            : ''
+                                    }
+                                />
+                            )}
                         />
                         <TextField
                             label="Time"
@@ -402,16 +489,98 @@ export const ClassSchedulingView = ({
                             minRows={3}
                             placeholder="Homework focus, topics, or parent notes"
                         />
+
+                        {/* Group membership: each attendee can be excused (and
+                            not billed) without touching the others. */}
+                        {editingEntry?.isGroup && (
+                            <div className="group-members">
+                                <h5>Attending</h5>
+                                <ul>
+                                    {editingEntry.sessions.map((member) => (
+                                        <li key={member.id}>
+                                            <span
+                                                className={
+                                                    member.status ===
+                                                    'Cancelled'
+                                                        ? 'member-cancelled'
+                                                        : ''
+                                                }
+                                            >
+                                                {member.studentName}
+                                            </span>
+                                            {member.status === 'Cancelled' ? (
+                                                <Button
+                                                    size="small"
+                                                    variant="text"
+                                                    onClick={() =>
+                                                        onSetSessionStatus(
+                                                            member.id,
+                                                            'Scheduled'
+                                                        )
+                                                    }
+                                                >
+                                                    Restore
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    size="small"
+                                                    variant="text"
+                                                    color="error"
+                                                    onClick={() =>
+                                                        setCancelTarget({
+                                                            kind: 'row',
+                                                            session: member,
+                                                        })
+                                                    }
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         {/* The primary action lives in the modal header; only
                             the destructive/status actions stay by the form. */}
-                        {editingSession && (
+                        {editingEntry && (
                             <div className="day-modal-actions">
-                                {editingSession.status === 'Cancelled' ? (
+                                {editingEntry.isGroup ? (
+                                    activeMembers(editingEntry).length > 0 ? (
+                                        <Button
+                                            color="error"
+                                            variant="contained"
+                                            onClick={() =>
+                                                setCancelTarget({
+                                                    kind: 'group',
+                                                    entry: editingEntry,
+                                                })
+                                            }
+                                        >
+                                            Cancel for everyone
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="text"
+                                            onClick={() =>
+                                                onSetSessionStatus(
+                                                    editingEntry.lead.id,
+                                                    'Scheduled',
+                                                    true
+                                                )
+                                            }
+                                        >
+                                            Restore for everyone
+                                        </Button>
+                                    )
+                                ) : editingEntry.lead.status ===
+                                  'Cancelled' ? (
                                     <Button
                                         variant="text"
                                         onClick={() =>
                                             onSetSessionStatus(
-                                                editingSession.id,
+                                                editingEntry.lead.id,
                                                 'Scheduled'
                                             )
                                         }
@@ -422,7 +591,12 @@ export const ClassSchedulingView = ({
                                     <Button
                                         color="error"
                                         variant="contained"
-                                        onClick={() => setConfirmCancel(true)}
+                                        onClick={() =>
+                                            setCancelTarget({
+                                                kind: 'row',
+                                                session: editingEntry.lead,
+                                            })
+                                        }
                                     >
                                         Cancel class
                                     </Button>
@@ -433,41 +607,56 @@ export const ClassSchedulingView = ({
                 </DialogContent>
             </Dialog>
 
-            {/* Only reachable in edit mode, so `editingSession` gates the whole
-                dialog: inside it the class is always defined. */}
-            {editingSession && (
-                <Dialog
-                    open={confirmCancel}
-                    onClose={() => setConfirmCancel(false)}
-                    maxWidth="xs"
-                >
-                    <DialogTitle>Cancel this class?</DialogTitle>
-                    <DialogContent>
-                        <p className="session-summary-meta">
-                            {editingSession.time} • {editingSession.studentName}{' '}
-                            • {editingSession.subject}
-                        </p>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setConfirmCancel(false)}>
-                            No
-                        </Button>
-                        <Button
-                            color="error"
-                            variant="contained"
-                            onClick={() => {
-                                onSetSessionStatus(
-                                    editingSession.id,
-                                    'Cancelled'
-                                )
-                                setConfirmCancel(false)
-                            }}
-                        >
-                            Yes
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-            )}
+            <Dialog
+                open={cancelTarget !== null}
+                onClose={() => setCancelTarget(null)}
+                maxWidth="xs"
+            >
+                {/* Narrowed once here: the dialog only has content while a
+                    target exists, so no handler needs a null guard. */}
+                {cancelTarget && (
+                    <>
+                        <DialogTitle>
+                            {cancelTarget.kind === 'group'
+                                ? 'Cancel this class for everyone?'
+                                : 'Cancel this class?'}
+                        </DialogTitle>
+                        <DialogContent>
+                            <p className="session-summary-meta">
+                                {cancelTarget.kind === 'row'
+                                    ? `${cancelTarget.session.time} • ${cancelTarget.session.studentName} • ${cancelTarget.session.subject}`
+                                    : `${cancelTarget.entry.lead.time} • ${entryTitle(cancelTarget.entry)} • ${cancelTarget.entry.lead.subject}`}
+                            </p>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setCancelTarget(null)}>
+                                No
+                            </Button>
+                            <Button
+                                color="error"
+                                variant="contained"
+                                onClick={() => {
+                                    if (cancelTarget.kind === 'row') {
+                                        onSetSessionStatus(
+                                            cancelTarget.session.id,
+                                            'Cancelled'
+                                        )
+                                    } else {
+                                        onSetSessionStatus(
+                                            cancelTarget.entry.lead.id,
+                                            'Cancelled',
+                                            true
+                                        )
+                                    }
+                                    setCancelTarget(null)
+                                }}
+                            >
+                                Yes
+                            </Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
 
             <div className="card scheduling-calendar-card">
                     <div className="calendar-header scheduling-calendar-header">
@@ -528,8 +717,10 @@ export const ClassSchedulingView = ({
                     >
                         {monthGrid.map((day) => {
                             const dayKey = toDateKey(day)
-                            const sessionsForDay = sessionsByDate[dayKey] || []
-                            const booked = activeSessions(sessionsForDay)
+                            const dayEntries = entriesByDate[dayKey] || []
+                            const booked = dayEntries.filter(
+                                (entry) => activeMembers(entry).length > 0
+                            )
                             const isCurrentMonth =
                                 day.getMonth() === monthReference.getMonth()
                             const isToday = dayKey === todayKey
@@ -558,33 +749,40 @@ export const ClassSchedulingView = ({
                                             {day.getDate()}
                                         </span>
                                     </button>
-                                    {sessionsForDay.length > 0 && (
+                                    {dayEntries.length > 0 && (
                                         <div className="calendar-day-chips">
-                                            {sessionsForDay.map(
-                                                (session, index) => (
-                                                    <button
-                                                        key={session.id}
-                                                        type="button"
-                                                        className={`calendar-day-chip ${session.status === 'Cancelled' ? 'cancelled' : ''}`}
-                                                        onClick={() =>
-                                                            openDay(
-                                                                dayKey,
-                                                                session.id
-                                                            )
-                                                        }
-                                                        aria-label={`Class ${index + 1} on ${day.toDateString()}: ${session.time} ${session.studentName}, ${session.subject}${session.status === 'Cancelled' ? ' (cancelled)' : ''}`}
-                                                    >
-                                                        {index + 1}
-                                                    </button>
-                                                )
-                                            )}
+                                            {dayEntries.map((entry, index) => (
+                                                <button
+                                                    key={entry.key}
+                                                    type="button"
+                                                    className={`calendar-day-chip ${activeMembers(entry).length === 0 ? 'cancelled' : ''}`}
+                                                    onClick={() =>
+                                                        openDay(
+                                                            dayKey,
+                                                            entry.key
+                                                        )
+                                                    }
+                                                    aria-label={`Class ${index + 1} on ${day.toDateString()}: ${entry.lead.time} ${entryTitle(entry)}, ${entry.lead.subject}${activeMembers(entry).length === 0 ? ' (cancelled)' : ''}`}
+                                                >
+                                                    {index + 1}
+                                                    {entry.isGroup && (
+                                                        <span className="chip-group-size">
+                                                            ×
+                                                            {
+                                                                entry.sessions
+                                                                    .length
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
                             )
 
                             // Nothing on: no tooltip to open.
-                            if (sessionsForDay.length === 0) {
+                            if (dayEntries.length === 0) {
                                 return (
                                     <div key={`${dayKey}-${day.getMonth()}`}>
                                         {cell}
@@ -613,29 +811,55 @@ export const ClassSchedulingView = ({
                                                 hover and the click have to
                                                 agree on which class is which. */}
                                             <ul>
-                                                {sessionsForDay.map(
-                                                    (session, index) => (
-                                                        <li key={session.id}>
-                                                            <span className="tooltip-number">
-                                                                {index + 1}
-                                                            </span>
-                                                            <span className="tooltip-time">
-                                                                {session.time}
-                                                            </span>
-                                                            <span>
-                                                                {
-                                                                    session.studentName
-                                                                }{' '}
-                                                                · {session.subject}
-                                                            </span>
-                                                            {session.status ===
-                                                                'Cancelled' && (
-                                                                <span className="tooltip-cancelled">
-                                                                    Cancelled
+                                                {dayEntries.map(
+                                                    (entry, index) => {
+                                                        const active =
+                                                            activeMembers(
+                                                                entry
+                                                            ).length
+                                                        return (
+                                                            <li key={entry.key}>
+                                                                <span className="tooltip-number">
+                                                                    {index + 1}
                                                                 </span>
-                                                            )}
-                                                        </li>
-                                                    )
+                                                                <span className="tooltip-time">
+                                                                    {
+                                                                        entry
+                                                                            .lead
+                                                                            .time
+                                                                    }
+                                                                </span>
+                                                                <span>
+                                                                    {entryTitle(
+                                                                        entry
+                                                                    )}{' '}
+                                                                    ·{' '}
+                                                                    {
+                                                                        entry
+                                                                            .lead
+                                                                            .subject
+                                                                    }
+                                                                </span>
+                                                                {active ===
+                                                                    0 && (
+                                                                    <span className="tooltip-cancelled">
+                                                                        Cancelled
+                                                                    </span>
+                                                                )}
+                                                                {entry.isGroup &&
+                                                                    active >
+                                                                        0 &&
+                                                                    active <
+                                                                        entry
+                                                                            .sessions
+                                                                            .length && (
+                                                                        <span className="tooltip-cancelled">
+                                                                            {`${entry.sessions.length - active} of ${entry.sessions.length} cancelled`}
+                                                                        </span>
+                                                                    )}
+                                                            </li>
+                                                        )
+                                                    }
                                                 )}
                                             </ul>
                                         </div>

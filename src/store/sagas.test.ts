@@ -57,12 +57,11 @@ const sessions = [{ id: 101, studentId: 1 }] as unknown as ScheduledSession[]
 const session = { id: 101, studentId: 1 } as unknown as ScheduledSession
 
 const sessionInput = {
-    studentId: 1,
-    studentName: 'Asha Perera',
-    year: '10',
+    studentIds: [1],
     subject: 'Mathematics',
     date: '2026-08-01',
     time: '10:00',
+    durationMinutes: 60,
     notes: 'Revision',
 }
 
@@ -142,8 +141,9 @@ describe('createSessionSaga', () => {
         const gen = createSessionSaga(createSessionRequested(sessionInput))
 
         expect(gen.next().value).toEqual(call(createSession, sessionInput))
-        expect(gen.next(session).value).toEqual(
-            put(createSessionSucceeded(session))
+        const created = [session] as ScheduledSession[]
+        expect(gen.next(created).value).toEqual(
+            put(createSessionSucceeded(created))
         )
         expect(gen.next().done).toBe(true)
     })
@@ -207,10 +207,12 @@ describe('setSessionStatusSaga', () => {
         )
 
         expect(gen.next().value).toEqual(
-            call(updateSessionStatus, 101, 'Cancelled')
+            call(updateSessionStatus, 101, 'Cancelled', false)
         )
 
-        const cancelled = { ...session, status: 'Cancelled' } as ScheduledSession
+        const cancelled = [
+            { ...session, status: 'Cancelled' },
+        ] as ScheduledSession[]
         expect(gen.next(cancelled).value).toEqual(
             put(setSessionStatusSucceeded(cancelled))
         )
@@ -222,7 +224,7 @@ describe('setSessionStatusSaga', () => {
             setSessionStatusRequested({ id: 101, status: 'Scheduled' })
         )
         expect(gen.next().value).toEqual(
-            call(updateSessionStatus, 101, 'Scheduled')
+            call(updateSessionStatus, 101, 'Scheduled', false)
         )
     })
 
@@ -248,15 +250,17 @@ describe('setSessionStatusSaga', () => {
 })
 
 describe('editSessionSaga', () => {
-    const changes = { ...sessionInput, subject: 'Physics', time: '17:00' }
+    const changes = { subject: 'Physics', time: '17:00' }
 
     it('edits a class and stores the server copy', () => {
         const gen = editSessionSaga(
             editSessionRequested({ id: 101, changes })
         )
-        expect(gen.next().value).toEqual(call(updateSession, 101, changes))
+        expect(gen.next().value).toEqual(
+            call(updateSession, 101, changes, false)
+        )
 
-        const edited = { ...session, ...changes } as ScheduledSession
+        const edited = [{ ...session, ...changes }] as ScheduledSession[]
         expect(gen.next(edited).value).toEqual(put(editSessionSucceeded(edited)))
         expect(gen.next().done).toBe(true)
     })

@@ -218,3 +218,17 @@
         left: 0;
     }
 }
+
+/* Order matters: ≤640 must trail wider breakpoints or their spans win on
+   phones (a span wider than the single column forges implicit columns). */
+@media (max-width: 1024px) {
+    .week-card {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 640px) {
+    .week-card {
+        grid-column: span 1;
+    }
+}
