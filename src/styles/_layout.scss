@@ -302,16 +302,61 @@
     }
 }
 
-.stat-card {
-    span {
-        color: var(--muted);
-        display: block;
+/* The dashboard banner: hero copy left, the stat strip right. Spans the
+   whole grid row that used to hold four separate cards. */
+.dashboard-hero {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+
+    h3 {
+        margin: 0 0 4px;
     }
 
-    strong {
-        font-size: 1.7rem;
-        display: block;
-        margin-top: 8px;
+    p {
+        margin: 0;
+        max-width: 34rem;
+    }
+}
+
+/* Same label-over-number idiom as the payment status card, recoloured for
+   the hero gradient it sits on. */
+.dashboard-hero-stats {
+    border-collapse: collapse;
+
+    th,
+    td {
+        text-align: left;
+        padding: 2px 16px;
+        color: inherit;
+    }
+
+    th:first-child,
+    td:first-child {
+        padding-left: 0;
+    }
+
+    th + th,
+    td + td {
+        border-left: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    th {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.85;
+        white-space: nowrap;
+    }
+
+    td {
+        font-size: 1.5rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
     }
 }
 

@@ -322,3 +322,75 @@
         var(--sidebar-end)
     );
 }
+
+/* The metallic shelf: sheen gradients (a highlight banding through the
+   panel) carry the shine; accents are the metal's own tones. */
+[data-theme='silver'] {
+    --bg: linear-gradient(135deg, #e6eaef, #f4f6f9 42%, #d5dbe2);
+    --accent: #64748b;
+    --accent-alt: #94a3b8;
+    --sidebar-start: #2f343b;
+    --sidebar-end: #3d434c;
+    --pill-bg: #e5e9ee;
+    --pill-text: #3f4650;
+    --sidebar-gradient: linear-gradient(
+        160deg,
+        var(--sidebar-start),
+        #848d99 48%,
+        var(--sidebar-end)
+    );
+}
+
+[data-theme='gold'] {
+    --bg: linear-gradient(135deg, #f7eed6, #fdf8ea 42%, #ecd9ab);
+    --accent: #a16207;
+    --accent-alt: #ca8a04;
+    --sidebar-start: #56300d;
+    --sidebar-end: #6f4a0a;
+    --pill-bg: #f3e4bd;
+    --pill-text: #713f12;
+    --sidebar-gradient: linear-gradient(
+        160deg,
+        var(--sidebar-start),
+        #c1902c 48%,
+        var(--sidebar-end)
+    );
+}
+
+[data-theme='rosegold'] {
+    --bg: linear-gradient(135deg, #f8e8e6, #fdf4f3 42%, #eed2cc);
+    --accent: #9d5560;
+    --accent-alt: #b76e79;
+    --sidebar-start: #5f3038;
+    --sidebar-end: #7e4650;
+    --pill-bg: #f5dfda;
+    --pill-text: #7c3f48;
+    --sidebar-gradient: linear-gradient(
+        160deg,
+        var(--sidebar-start),
+        #c8877f 48%,
+        var(--sidebar-end)
+    );
+}
+
+[data-theme='steel'] {
+    --bg: linear-gradient(135deg, #0a0d12, #12161d 45%, #1a2029);
+    --text: #dbe2ea;
+    --muted: #93a1b3;
+    --surface: #12161d;
+    --surface-alt: #1a2029;
+    --border: #2c3644;
+    --accent: #9fb0c3;
+    --accent-alt: #7d8da1;
+    --sidebar-start: #0a0e13;
+    --sidebar-end: #121820;
+    --pill-bg: #232c38;
+    --pill-text: #dbe2ea;
+    --input-bg: #1a2029;
+    --sidebar-gradient: linear-gradient(
+        160deg,
+        var(--sidebar-start),
+        #414d61 48%,
+        var(--sidebar-end)
+    );
+}

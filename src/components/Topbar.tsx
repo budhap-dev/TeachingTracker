@@ -57,16 +57,23 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
                     </button>
                     {isThemePickerOpen && (
                         <div className="theme-swatches">
-                            {/* Two shelves: light themes, then dark. */}
-                            {(['light', 'dark'] as const).map((appearance) => (
+                            {/* Three shelves: light, dark, then metallic —
+                                a metallic's light/dark side only matters to
+                                MUI, not to where it sits in the picker. */}
+                            {(['light', 'dark', 'metallic'] as const).map(
+                                (shelf) => (
                                 <div
-                                    key={appearance}
+                                    key={shelf}
                                     className="theme-swatch-group"
                                 >
                                     <p className="theme-swatch-group-label">
-                                        {appearance === 'light'
-                                            ? 'Light'
-                                            : 'Dark'}
+                                        {
+                                            {
+                                                light: 'Light',
+                                                dark: 'Dark',
+                                                metallic: 'Metallic',
+                                            }[shelf]
+                                        }
                                     </p>
                                     <div className="theme-swatch-row">
                                         {(
@@ -77,8 +84,9 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
                                         )
                                             .filter(
                                                 ([, preset]) =>
-                                                    preset.appearance ===
-                                                    appearance
+                                                    (preset.shelf ??
+                                                        preset.appearance) ===
+                                                    shelf
                                             )
                                             .map(([themeKey, preset]) => (
                                                 <button
@@ -112,7 +120,8 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
                                             ))}
                                     </div>
                                 </div>
-                            ))}
+                                )
+                            )}
                         </div>
                     )}
                 </div>
