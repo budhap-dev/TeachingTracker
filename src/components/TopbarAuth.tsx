@@ -21,6 +21,45 @@ const TeacherNameInner = () => {
 export const TeacherName = () =>
     isAuthConfigured() ? <TeacherNameInner /> : <>Teacher</>
 
+/** The signed-in greeting block — also the auth-less default. */
+const TeacherGreeting = ({ quote }: { quote: string }) => (
+    <div>
+        <p className="eyebrow">Teacher portal</p>
+        <h2>
+            Welcome back, <TeacherName />
+            !!
+        </h2>
+        <div className="welcome-quote-container ">
+            <p className="welcome-quote">{quote}</p>
+        </div>
+    </div>
+)
+
+/** Visitors get the site's name — it is not their portal, and the
+    daily quote talks to the teacher, so it stays out too. */
+const VisitorGreeting = () => (
+    <div>
+        <p className="eyebrow">Springboard Tutoring</p>
+        <h2>Personal tutoring</h2>
+    </div>
+)
+
+const TopbarGreetingInner = ({ quote }: { quote: string }) =>
+    useIsAuthenticated() ? (
+        <TeacherGreeting quote={quote} />
+    ) : (
+        <VisitorGreeting />
+    )
+
+/** The topbar's left block: teacher welcome when signed in (or auth-less),
+    site identity for signed-out visitors (REQ-003). */
+export const TopbarGreeting = ({ quote }: { quote: string }) =>
+    isAuthConfigured() ? (
+        <TopbarGreetingInner quote={quote} />
+    ) : (
+        <TeacherGreeting quote={quote} />
+    )
+
 const TopbarAuthInner = () => {
     const { accounts } = useMsal()
     const account = useAccount(accounts[0] ?? {})

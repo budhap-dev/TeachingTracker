@@ -24,6 +24,7 @@ import {
     fetchStudentsRequested,
     fetchStudentsSucceeded,
     resetStudentState,
+    initialLoadSkipped,
     studentReducer,
     savePaymentRequested,
     savePaymentSucceeded,
@@ -119,6 +120,14 @@ describe('student reducer', () => {
         const reset = studentReducer(loaded, resetStudentState())
         expect(reset.students).toEqual([])
         expect(reset.loading).toBe(true)
+    })
+
+    it('settles the boot loaders when the initial load is skipped', () => {
+        // Signed out under auth nothing fetches — the flags must not spin.
+        const settled = studentReducer(initial(), initialLoadSkipped())
+        expect(settled.loading).toBe(false)
+        expect(settled.paymentsLoading).toBe(false)
+        expect(settled.sessionsLoading).toBe(false)
     })
 
     describe('students fetch lifecycle', () => {

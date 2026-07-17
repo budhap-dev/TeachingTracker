@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useIsAuthenticated } from '@azure/msal-react'
+import { isAuthConfigured } from '../auth/msal'
 import { appVersion } from '../version'
 import { paths } from '../paths'
 
@@ -8,6 +10,8 @@ type NavItem = {
     path: string
     /** True when the current location should highlight this item. */
     isActive: (pathname: string) => boolean
+    /** Teacher-only items leave the menu for signed-out visitors (REQ-003). */
+    teacherOnly?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -15,26 +19,31 @@ const navItems: NavItem[] = [
         label: 'Dashboard',
         path: paths.dashboard,
         isActive: (pathname) => pathname === paths.dashboard,
+        teacherOnly: true,
     },
     {
         label: 'Students',
         path: paths.students,
         isActive: (pathname) => pathname.startsWith(paths.students),
+        teacherOnly: true,
     },
     {
         label: 'Study Snapshot',
         path: paths.studySnapshot,
         isActive: (pathname) => pathname.startsWith(paths.studySnapshot),
+        teacherOnly: true,
     },
     {
         label: 'Payment Tracker',
         path: paths.payments,
         isActive: (pathname) => pathname.startsWith(paths.payments),
+        teacherOnly: true,
     },
     {
         label: 'Class scheduling',
         path: paths.scheduling,
         isActive: (pathname) => pathname.startsWith(paths.scheduling),
+        teacherOnly: true,
     },
     {
         label: 'Offerings',
@@ -52,10 +61,21 @@ type SidebarProps = {
     sidebarBackground: string
 }
 
-export const Sidebar = ({ sidebarBackground }: SidebarProps) => {
+type SidebarContentProps = SidebarProps & {
+    showTeacherItems: boolean
+}
+
+const SidebarContent = ({
+    sidebarBackground,
+    showTeacherItems,
+}: SidebarContentProps) => {
     const navigate = useNavigate()
     const { pathname } = useLocation()
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+
+    const visibleItems = navItems.filter(
+        (item) => showTeacherItems || !item.teacherOnly
+    )
 
     const handleNavigate = (path: string) => {
         navigate(path)
@@ -69,11 +89,8 @@ export const Sidebar = ({ sidebarBackground }: SidebarProps) => {
         >
             <div className="sidebar-header">
                 <div>
-                    <h1>TeachTrack</h1>
-                    <p>
-                        One teacher dashboard for student growth and study
-                        snapshots.
-                    </p>
+                    <h1>Springboard</h1>
+                    <p>Where confidence takes off.</p>
                 </div>
                 <button
                     type="button"
@@ -90,7 +107,7 @@ export const Sidebar = ({ sidebarBackground }: SidebarProps) => {
                 </button>
             </div>
             <nav className="sidebar-nav">
-                {navItems.map((item) => (
+                {visibleItems.map((item) => (
                     <button
                         key={item.path}
                         className={item.isActive(pathname) ? 'active' : ''}
@@ -106,3 +123,19 @@ export const Sidebar = ({ sidebarBackground }: SidebarProps) => {
         </aside>
     )
 }
+
+/**
+ * Under MSAL the menu is auth-aware: visitors get only the public pages
+ * until they sign in. The hook lives in this inner component so it only
+ * ever runs beneath an MsalProvider (same split as TopbarAuth).
+ */
+const SidebarSignedAware = (props: SidebarProps) => (
+    <SidebarContent {...props} showTeacherItems={useIsAuthenticated()} />
+)
+
+export const Sidebar = (props: SidebarProps) =>
+    isAuthConfigured() ? (
+        <SidebarSignedAware {...props} />
+    ) : (
+        <SidebarContent {...props} showTeacherItems />
+    )

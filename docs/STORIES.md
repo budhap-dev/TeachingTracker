@@ -76,13 +76,13 @@ XS is an afternoon, XL is a project.
 | 3 | ✅ | [REQ-002 — Student fields editable + saved](#req-002--every-student-field-except-the-id-is-editable-and-persists-via-the-api) | M | both | — |
 | 4 | ✅ | [REQ-010 — Cancel a class](#req-010--a-class-can-be-cancelled-and-a-cancelled-class-is-never-billed) | M | both | — |
 | 5 | ✅ | [REQ-001 — Fees per session, billed on classes taught](#req-001--fees-are-per-session-and-a-month-bills-for-classes-actually-taught) | L | both | REQ-010 |
-| 6 | 🔲 | [REQ-003 — Public / teacher split](#req-003--public-portal-with-no-login-the-teachers-area-is-private) | L | both | REQ-004 to enforce |
-| 7 | 🔲 | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — (planned) |
+| 6 | 🚧 | [REQ-003 — Public / teacher split](#req-003--public-portal-with-no-login-the-teachers-area-is-private) | L | both | REQ-004 to enforce |
+| 7 | 🚧 | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — (planned) |
 | 8 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
 | 9 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
 | 10 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
 
-**Next up: [REQ-003](#req-003--public-portal-with-no-login-the-teachers-area-is-private)** — rows 1–5 are done.
+**Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–5 are done; REQ-003/REQ-004 are in flight (prod enforcement after the dev soak).
 
 **Three things this order is trying to respect:**
 
@@ -290,7 +290,7 @@ mark a student as paid once the month is done.
 
 ## REQ-003 — Public portal with no login; the teacher's area is private
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** L
+**Status:** 🚧 In progress (built; prod enforcement pending REQ-004 T4 soak) · **Impact:** both · **Effort:** L
 
 **Story**
 As a visitor, I want to browse the portal without signing in, so that I can learn
@@ -299,15 +299,21 @@ visible only to me, so that families' details stay private.
 
 **Acceptance criteria**
 
-- [ ] **Public, no login:** landing page, Offerings (REQ-006), Contact us (REQ-007).
-- [ ] **Teacher only:** Dashboard, Students, Student detail, Study snapshot,
-      Payment tracker, Class scheduling.
-- [ ] A visitor opening a teacher route is sent to sign-in — never shown the data,
-      not even briefly while loading.
-- [ ] Navigation only shows teacher menu items when signed in.
-- [ ] **The API rejects unauthenticated requests** for teacher data — hiding it in
-      the UI is not sufficient.
-- [ ] Public and teacher areas share the same hosted URL per environment.
+- [x] **Public, no login:** landing page (leads with Offerings / Contact us;
+      teacher sign-in is a quiet afterline), Offerings (REQ-006), Contact us
+      (REQ-007).
+- [x] **Teacher only:** Dashboard, Students, Student detail, Study snapshot,
+      Payment tracker, Class scheduling — every route wrapped in
+      `RequireTeacher` (REQ-004 T3).
+- [x] A visitor opening a teacher route is sent to sign-in — never shown the data,
+      not even briefly while loading (MSAL templates render nothing until the
+      auth state is known).
+- [x] Navigation only shows teacher menu items when signed in — the sidebar is
+      auth-aware; visitors see Offerings and Contact us only.
+- [x] **The API rejects unauthenticated requests** for teacher data — hiding it in
+      the UI is not sufficient. _(dev enforced 2026-07-17; prod flips after the
+      dev soak — REQ-004 T4)_
+- [x] Public and teacher areas share the same hosted URL per environment.
 
 **Notes**
 
@@ -322,7 +328,7 @@ visible only to me, so that families' details stay private.
 
 ## REQ-004 — Teacher signs in with Microsoft Entra ID
 
-**Status:** 🚧 In progress (T1–T3 done, T4 = flip enforcement) · **Impact:** both + infra · **Effort:** L
+**Status:** 🚧 In progress (T1–T3 done; T4: dev enforced 2026-07-17, prod after soak) · **Impact:** both + infra · **Effort:** L
 · **Plan:** [docs/PLAN-req-004-entra-signin.md](PLAN-req-004-entra-signin.md)
 
 **Story**
