@@ -1207,6 +1207,23 @@
     }
 }
 
+/* The visitor landing (REQ-003) leads with the public actions; teacher
+   sign-in hangs back as a quiet afterline under a soft divider. */
+.signin-visitor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.signin-teacher-line {
+    margin: 12px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    justify-self: stretch;
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+
 /* Same pill idiom as its neighbours (.theme-picker, .pill): without it the
    sign-out floats as a bare flat button at a different height. */
 .topbar-auth {

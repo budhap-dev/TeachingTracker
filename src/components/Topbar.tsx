@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined'
-import { TeacherName, TopbarAuth } from './TopbarAuth'
+import { TopbarAuth, TopbarGreeting } from './TopbarAuth'
 import {
     teacherQuotes,
     themePresets,
@@ -23,16 +23,7 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
 
     return (
         <header className="topbar">
-            <div>
-                <p className="eyebrow">Teacher portal</p>
-                <h2>
-                    Welcome back, <TeacherName />
-                    !!
-                </h2>
-                <div className="welcome-quote-container ">
-                    <p className="welcome-quote">{dailyQuote}</p>
-                </div>
-            </div>
+            <TopbarGreeting quote={dailyQuote} />
             <div className="topbar-actions">
                 <div className="theme-picker" aria-label="Theme selector">
                     <button

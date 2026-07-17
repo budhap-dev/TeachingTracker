@@ -109,6 +109,16 @@ const studentSlice = createSlice({
     initialState,
     reducers: {
         resetStudentState: () => createInitialState(),
+        /**
+         * Signed-out under auth nothing is fetched, so the boot-time loading
+         * flags (kept true for the refresh skeletons) must settle by hand —
+         * otherwise the busy bar runs forever behind the visitor landing.
+         */
+        initialLoadSkipped: (state) => {
+            state.loading = false
+            state.paymentsLoading = false
+            state.sessionsLoading = false
+        },
         // --- Students ---
         fetchStudentsRequested: (state) => {
             state.loading = true
@@ -336,6 +346,7 @@ const studentSlice = createSlice({
 
 export const {
     resetStudentState,
+    initialLoadSkipped,
     fetchStudentsRequested,
     fetchStudentsSucceeded,
     fetchStudentsFailed,

@@ -107,7 +107,7 @@ describe('Teaching Tracker app', () => {
         const navigation = screen.getByRole('navigation')
 
         expect(
-            screen.getByRole('heading', { name: /teachtrack/i })
+            screen.getByRole('heading', { name: /springboard/i })
         ).toBeInTheDocument()
         expect(
             within(navigation).getByRole('button', { name: /^dashboard$/i })

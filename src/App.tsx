@@ -3,13 +3,19 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { Provider } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
-import { MsalProvider } from '@azure/msal-react'
-import { getMsalInstance } from './auth/msal'
+import {
+    MsalProvider,
+    useIsAuthenticated,
+    useMsal,
+} from '@azure/msal-react'
+import { InteractionStatus } from '@azure/msal-browser'
+import { getMsalInstance, isAuthConfigured } from './auth/msal'
 import {
     store,
     fetchStudentsRequested,
     fetchPaymentsRequested,
     fetchSessionsRequested,
+    initialLoadSkipped,
 } from './store/store'
 import { useAppDispatch } from './hooks'
 import { useTheme } from './hooks/useTheme'
@@ -20,19 +26,52 @@ import { Topbar } from './components/Topbar'
 import { AppRoutes } from './ROUTE'
 import './styles.scss'
 
-const AppShell = () => {
+/** Dispatches the app's initial data loads once `ready` turns true. */
+const InitialData = ({ ready }: { ready: boolean }) => {
     const dispatch = useAppDispatch()
-    const { theme, setTheme, activeTheme, muiTheme } = useTheme()
-
     useEffect(() => {
+        if (!ready) {
+            return
+        }
         dispatch(fetchStudentsRequested())
         dispatch(fetchPaymentsRequested())
         dispatch(fetchSessionsRequested())
-    }, [dispatch])
+    }, [ready, dispatch])
+    return null
+}
+
+/**
+ * Under MSAL the initial loads wait for the redirect handshake to finish and
+ * an account to exist. Firing earlier goes out tokenless and 401s now that
+ * the API enforces auth (REQ-004 T4); signed out, nothing is fetched at all —
+ * RequireTeacher is already showing the visitor landing — and the boot-time
+ * loading flags are settled so the busy bar stops.
+ */
+const AuthGatedInitialData = () => {
+    const { inProgress } = useMsal()
+    const isAuthenticated = useIsAuthenticated()
+    const dispatch = useAppDispatch()
+    const settled = inProgress === InteractionStatus.None
+
+    useEffect(() => {
+        if (settled && !isAuthenticated) {
+            dispatch(initialLoadSkipped())
+        }
+    }, [settled, isAuthenticated, dispatch])
+
+    return <InitialData ready={settled && isAuthenticated} />
+}
+
+const InitialDataBoundary = () =>
+    isAuthConfigured() ? <AuthGatedInitialData /> : <InitialData ready />
+
+const AppShell = () => {
+    const { theme, setTheme, activeTheme, muiTheme } = useTheme()
 
     return (
         <ThemeProvider theme={muiTheme}>
             <CssBaseline />
+            <InitialDataBoundary />
             {/* Outside .app-shell: it must never join the layout grid. */}
             <BusyBar />
             <div className="app-shell">
