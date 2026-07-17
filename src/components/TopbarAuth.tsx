@@ -21,24 +21,25 @@ const TeacherNameInner = () => {
 export const TeacherName = () =>
     isAuthConfigured() ? <TeacherNameInner /> : <>Teacher</>
 
+/** 5–11 is morning, 12–17 afternoon, the rest evening. */
+export const greetingForHour = (hour: number): string =>
+    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+
 /** The signed-in greeting block — also the auth-less default. */
 const TeacherGreeting = ({ quote }: { quote: string }) => (
-    <div>
+    <div className="topbar-greeting">
         <p className="eyebrow">Teacher portal</p>
         <h2>
-            Welcome back, <TeacherName />
-            !!
+            {greetingForHour(new Date().getHours())}, <TeacherName />
         </h2>
-        <div className="welcome-quote-container ">
-            <p className="welcome-quote">{quote}</p>
-        </div>
+        <p className="welcome-quote">{quote}</p>
     </div>
 )
 
 /** Visitors get the site's name — it is not their portal, and the
     daily quote talks to the teacher, so it stays out too. */
 const VisitorGreeting = () => (
-    <div>
+    <div className="topbar-greeting">
         <p className="eyebrow">Springboard Tutoring</p>
         <h2>Personal tutoring</h2>
     </div>

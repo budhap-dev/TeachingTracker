@@ -19,24 +19,26 @@ export const useTheme = () => {
     const [theme, setTheme] = useState<ThemeName>(readStoredTheme)
 
     const activeTheme = themePresets[theme]
+    // The preset says whether it's a dark theme — no name lists to maintain.
+    const isDark = activeTheme.appearance === 'dark'
 
     const muiTheme = useMemo(
         () =>
             createTheme({
                 palette: {
-                    mode: theme === 'midnight' ? 'dark' : 'light',
+                    mode: isDark ? 'dark' : 'light',
                     primary: { main: activeTheme.primary },
                     secondary: { main: activeTheme.secondary },
                     background: {
-                        default: theme === 'midnight' ? '#111827' : '#f8fafc',
-                        paper: theme === 'midnight' ? '#111827' : '#ffffff',
+                        default: isDark ? activeTheme.paper : '#f8fafc',
+                        paper: activeTheme.paper,
                     },
                     text: {
-                        primary: theme === 'midnight' ? '#f8fafc' : '#0f172a',
+                        primary: isDark ? '#f8fafc' : '#0f172a',
                     },
                 },
             }),
-        [activeTheme.primary, activeTheme.secondary, theme]
+        [activeTheme.primary, activeTheme.secondary, activeTheme.paper, isDark]
     )
 
     useEffect(() => {

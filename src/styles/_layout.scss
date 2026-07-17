@@ -96,28 +96,44 @@
     overflow-x: hidden;
 }
 
+/* Wears the sidebar gradient (inline background-image from the component),
+   so the left rail and the top band read as one themed frame. Every colour
+   in here comes from the sidebar's own palette — legible on any theme. */
 .topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 18px;
+    color: var(--sidebar-text);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
 
     h2 {
-        margin: 4px 0 0;
+        margin: 2px 0 0;
+        color: var(--sidebar-text);
+    }
+
+    .eyebrow {
+        color: var(--sidebar-muted);
     }
 }
 
-.welcome-quote-container {
-    background: var(--surface-alt);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    width: 100%;
+.topbar-greeting {
+    /* Lets the quote's ellipsis engage instead of stretching the flex row. */
+    min-width: 0;
 }
+
+/* One quiet line under the greeting — decoration, not a card. */
 .welcome-quote {
     margin: 6px 0 0;
     font-style: italic;
-    max-width: 52rem;
-    color: var(--pill-text);
+    font-size: 0.9rem;
+    max-width: 46rem;
+    color: var(--sidebar-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .eyebrow {
@@ -129,17 +145,18 @@
 }
 
 .pill {
-    padding: 10px 14px;
+    padding: 8px 14px;
     border-radius: 999px;
-    background: var(--pill-bg);
-    color: var(--pill-text);
+    background: var(--button-bg);
+    color: var(--sidebar-text);
     font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .topbar-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
@@ -149,10 +166,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px;
+    padding: 8px 12px;
     border-radius: 999px;
-    background: var(--surface);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    background: var(--button-bg);
 }
 
 .theme-toggle {
@@ -162,11 +178,11 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    color: var(--muted);
+    color: var(--sidebar-text);
     cursor: pointer;
 
     &:hover {
-        color: var(--accent);
+        color: var(--button-hover-text);
     }
 }
 
@@ -175,7 +191,7 @@
     width: 14px;
     height: 14px;
     border-radius: 999px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--sidebar-muted);
 }
 
 /* Slides out over the page instead of joining the topbar's flow — opening
@@ -186,9 +202,9 @@
     top: calc(100% + 8px);
     right: 0;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 10px 12px;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
     width: max-content;
     max-width: min(340px, calc(100vw - 24px));
     border-radius: 18px;
@@ -196,6 +212,22 @@
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
     z-index: 30;
     animation: theme-swatches-slide 160ms ease-out;
+}
+
+/* One shelf per appearance: a whispered label over its row of swatches. */
+.theme-swatch-group-label {
+    margin: 0 0 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+}
+
+.theme-swatch-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 @keyframes theme-swatches-slide {

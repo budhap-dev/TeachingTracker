@@ -45,6 +45,29 @@ describe('StudentList', () => {
         expect(onOpenStudentPage).toHaveBeenCalledWith(1)
     })
 
+    it('shows each year as a counted column with students A→Z', () => {
+        render(
+            <StudentList
+                students={[
+                    buildStudent({ id: 2, firstName: 'Maya' }),
+                    buildStudent({ id: 1, firstName: 'Asha' }),
+                    buildStudent({ id: 3, firstName: 'Zara', year: '9' }),
+                ]}
+                onOpenStudentPage={vi.fn()}
+            />
+        )
+
+        // Counts, singular and plural.
+        expect(screen.getByText('2 students')).toBeInTheDocument()
+        expect(screen.getByText('1 student')).toBeInTheDocument()
+
+        // Year 10's roster is alphabetical, regardless of insertion order.
+        const links = screen
+            .getAllByRole('link')
+            .map((link) => link.textContent)
+        expect(links).toEqual(['Asha Perera', 'Maya Perera', 'Zara Perera'])
+    })
+
     it('groups students under unassigned year when year is empty', () => {
         render(
             <StudentList
