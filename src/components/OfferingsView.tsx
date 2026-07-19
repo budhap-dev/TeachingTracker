@@ -1,4 +1,5 @@
 import type { ApproachPoint } from '../data/siteContent'
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 
 type OfferingsViewProps = {
     intro: string
@@ -16,7 +17,10 @@ export const OfferingsView = ({
         <div className="card">
             <div className="section-header">
                 <div>
-                    <h3>Offerings</h3>
+                    <h3 className="page-heading">
+                        <LocalOfferOutlinedIcon fontSize="small" />
+                        Offerings
+                    </h3>
                     <p className="section-subtitle">{intro}</p>
                 </div>
             </div>

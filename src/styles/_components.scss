@@ -296,6 +296,12 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    /* Same card treatment as the left rail's sections, so the two columns
+       read as matching panels rather than a boxed rail beside loose fields. */
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-alt) 70%, transparent);
 }
 
 .detail-grid {
@@ -830,6 +836,19 @@
             }
         }
 
+        /* A group class's classmates read in the accent; "1:1" stays muted. */
+        .session-with-group {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Edit / remove sit tight at the row's end — each in its own colour
+           (accent for edit, red for remove) from the MUI colour prop. */
+        .session-actions {
+            white-space: nowrap;
+            text-align: right;
+        }
+
         tr:last-child td {
             border-bottom: 0;
         }
@@ -1094,8 +1113,50 @@
     min-height: 320px;
 }
 
+/* Header actions (Archive + Back) sit together, right-aligned. */
+.student-page-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* An archived student wears a clear banner over their (otherwise normal)
+   page, with the closing note and the way back to active. */
+.archived-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+
+    p {
+        margin: 4px 0 0;
+        color: var(--muted);
+    }
+}
+
+.archive-dialog-copy {
+    margin: 0 0 12px;
+    color: var(--muted);
+}
+
+/* The in-place edit-a-class form inside its dialog. */
+.session-edit-form {
+    display: grid;
+    gap: 12px;
+    margin-top: 4px;
+}
+
 .student-page-details {
     margin-top: 8px;
+    /* 40 / 60 split — the meta + sessions rail left, the editable fields
+       right. minmax(0, …) lets both columns shrink instead of overflowing. */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
 }
 
 .contact-list {

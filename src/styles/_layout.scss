@@ -69,11 +69,20 @@
             text-align: left;
             background: var(--button-bg);
             color: var(--sidebar-text);
+            /* Icon + label ride on one line, the glyph slightly recessive. */
+            display: flex;
+            align-items: center;
+            gap: 10px;
 
             &.active,
             &:hover {
                 background: var(--button-hover);
                 color: var(--button-hover-text);
+            }
+
+            .nav-icon {
+                display: inline-flex;
+                opacity: 0.85;
             }
         }
     }
@@ -306,6 +315,11 @@
    whole grid row that used to hold four separate cards. */
 .dashboard-hero {
     grid-column: 1 / -1;
+
+    /* On the accent gradient the title is white — its icon matches, not accent. */
+    .page-heading svg {
+        color: inherit;
+    }
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -369,4 +383,15 @@
 .section-subtitle {
     margin: 4px 0 12px;
     color: var(--muted);
+}
+
+/* A page's title carries the same glyph as its menu row, in the accent. */
+.page-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    svg {
+        color: var(--accent);
+    }
 }

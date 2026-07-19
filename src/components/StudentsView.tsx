@@ -1,4 +1,5 @@
 import { Button } from '@mui/material'
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import type { Student } from '../data/students'
 import { StudentFormModal } from './StudentFormModal'
 import { StudentList } from './StudentList'
@@ -33,7 +34,10 @@ export const StudentsView = ({
         <div className="card">
             <div className="section-header">
                 <div>
-                    <h3>View students</h3>
+                    <h3 className="page-heading">
+                        <GroupsOutlinedIcon fontSize="small" />
+                        View students
+                    </h3>
                     <p>
                         Browse students by year and open each student page for
                         full details.

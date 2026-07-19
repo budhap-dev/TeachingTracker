@@ -87,6 +87,16 @@ const fail = (state: StudentState, message: string) => {
     state.notice = { kind: 'error', message }
 }
 
+/** Replaces a student in place by id (append if new) — the server's copy wins. */
+const replaceStudent = (state: StudentState, student: Student) => {
+    const index = state.students.findIndex((item) => item.id === student.id)
+    if (index >= 0) {
+        state.students[index] = student
+    } else {
+        state.students.push(student)
+    }
+}
+
 const createInitialState = (): StudentState => ({
     students: [],
     loading: true,
@@ -300,6 +310,45 @@ const studentSlice = createSlice({
             state.savingStudent = false
             fail(state, action.payload)
         },
+        // --- Archive / restore (REQ-013) ---
+        archiveStudentRequested: {
+            reducer: (state: StudentState) => {
+                state.savingStudent = true
+                state.error = null
+            },
+            prepare: (input: { id: number; notes: string }) => ({
+                payload: input,
+            }),
+        },
+        restoreStudentRequested: {
+            reducer: (state: StudentState) => {
+                state.savingStudent = true
+                state.error = null
+            },
+            prepare: (id: number) => ({ payload: id }),
+        },
+        archiveStudentSucceeded: (state, action: PayloadAction<Student>) => {
+            state.savingStudent = false
+            state.hasLocalStudentChanges = true
+            replaceStudent(state, action.payload)
+            state.notice = {
+                kind: 'success',
+                message: 'Student archived — moved to Alumni.',
+            }
+        },
+        restoreStudentSucceeded: (state, action: PayloadAction<Student>) => {
+            state.savingStudent = false
+            state.hasLocalStudentChanges = true
+            replaceStudent(state, action.payload)
+            state.notice = {
+                kind: 'success',
+                message: 'Student restored to the active roster.',
+            }
+        },
+        archiveStudentFailed: (state, action: PayloadAction<string>) => {
+            state.savingStudent = false
+            fail(state, action.payload)
+        },
         /** Clears a save error once the teacher has seen it. */
         dismissError: (state) => {
             state.error = null
@@ -368,6 +417,11 @@ export const {
     saveStudentRequested,
     saveStudentSucceeded,
     saveStudentFailed,
+    archiveStudentRequested,
+    restoreStudentRequested,
+    archiveStudentSucceeded,
+    restoreStudentSucceeded,
+    archiveStudentFailed,
     dismissError,
     dismissNotice,
     savePaymentRequested,

@@ -287,7 +287,7 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('heading', { name: /asha perera/i })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('button', { name: /back to students/i })
+            screen.getByRole('button', { name: /^back$/i })
         ).toBeInTheDocument()
     })
 
@@ -562,8 +562,113 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('heading', { name: /asha perera/i })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('button', { name: /back to students/i })
+            screen.getByRole('button', { name: /^back$/i })
         ).toBeInTheDocument()
+    })
+
+    it('archives a student from their page and lists them under Alumni', async () => {
+        const user = userEvent.setup()
+        // No sessions → nobody has a future class, so archiving is allowed.
+        // POST /archive returns the student flagged archived.
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+                const url = String(input)
+                const archiveMatch = url.match(/\/students\/(\d+)\/archive$/)
+                if (archiveMatch && init?.method === 'POST') {
+                    const id = Number(archiveMatch[1])
+                    const student = fixtureStudents.find((s) => s.id === id)!
+                    return {
+                        ok: true,
+                        status: 200,
+                        json: async () => ({
+                            ...student,
+                            isArchived: true,
+                            archivedOn: '2026-07-19',
+                            archiveNotes: 'Finished A-levels',
+                        }),
+                    } as Response
+                }
+                const restoreMatch = url.match(/\/students\/(\d+)\/restore$/)
+                if (restoreMatch && init?.method === 'POST') {
+                    const id = Number(restoreMatch[1])
+                    const student = fixtureStudents.find((s) => s.id === id)!
+                    return {
+                        ok: true,
+                        status: 200,
+                        json: async () => ({ ...student, isArchived: false }),
+                    } as Response
+                }
+                let body: unknown = fixtureStudents
+                if (url.includes('/payments'))
+                    body = buildFixturePaymentsByMonth()
+                else if (url.includes('/sessions')) body = []
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => body,
+                } as Response
+            })
+        )
+
+        render(<App />)
+        await user.click(
+            within(screen.getByRole('navigation')).getByRole('button', {
+                name: /^students$/i,
+            })
+        )
+        await user.click(
+            (await screen.findAllByRole('link', { name: /asha perera/i }))[0]
+        )
+
+        // Archive is offered while editing the student.
+        await user.click(screen.getByRole('button', { name: /^edit$/i }))
+        await user.click(screen.getByRole('button', { name: /^archive$/i }))
+        const dialog = screen.getByRole('dialog')
+        await user.type(
+            within(dialog).getByLabelText(/closing note/i),
+            'Finished A-levels'
+        )
+        await user.click(
+            within(dialog).getByRole('button', { name: /^archive$/i })
+        )
+
+        // They now wear the archived banner on their page.
+        expect(await screen.findByText(/finished a-levels/i)).toBeInTheDocument()
+
+        // …and appear under Alumni, gone from the active roster.
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', { name: /alumni/i })
+        )
+        expect(
+            screen.getByRole('heading', { name: /^alumni$/i })
+        ).toBeInTheDocument()
+        const alumnusLink = screen.getByRole('link', { name: /asha perera/i })
+        expect(alumnusLink).toBeInTheDocument()
+
+        // Open the alumnus and restore them to the active roster.
+        await user.click(alumnusLink)
+        await user.click(
+            screen.getByRole('button', { name: /restore to active/i })
+        )
+        expect(
+            await screen.findByText(/restored to the active roster/i)
+        ).toBeInTheDocument()
+    })
+
+    it('shows a loading placeholder for Alumni before data arrives', async () => {
+        const user = userEvent.setup()
+        // Fetch never resolves — the store stays loading.
+        vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
+
+        render(<App />)
+        await user.click(
+            within(screen.getByRole('navigation')).getByRole('button', {
+                name: /alumni/i,
+            })
+        )
+        expect(screen.getByLabelText('Loading')).toBeInTheDocument()
     })
 
     it('supports student detail edit save and cancel flows', async () => {
@@ -592,11 +697,114 @@ describe('Teaching Tracker app', () => {
             target: { value: '91' },
         })
 
+        // Back returns to where we came from — the dashboard, not the roster.
+        await user.click(screen.getByRole('button', { name: /^back$/i }))
+        expect(
+            screen.getByRole('heading', { name: /today at a glance/i })
+        ).toBeInTheDocument()
+    })
+
+    it('returns to the students list when opened from there', async () => {
+        const user = userEvent.setup()
+        render(<App />)
+
         await user.click(
-            screen.getByRole('button', { name: /back to students/i })
+            within(screen.getByRole('navigation')).getByRole('button', {
+                name: /^students$/i,
+            })
         )
+        await user.click(
+            (await screen.findAllByRole('link', { name: /asha perera/i }))[0]
+        )
+        await user.click(screen.getByRole('button', { name: /^back$/i }))
         expect(
             screen.getByRole('heading', { name: /view students/i })
+        ).toBeInTheDocument()
+    })
+
+    it('falls back to the students list from a deep-linked student page', async () => {
+        const user = userEvent.setup()
+        // A fresh deep link has no "from" in router state.
+        window.history.pushState({}, '', '/students/1')
+        render(<App />)
+
+        expect(
+            await screen.findByRole('heading', { name: /asha perera/i })
+        ).toBeInTheDocument()
+        await user.click(screen.getByRole('button', { name: /^back$/i }))
+        expect(
+            screen.getByRole('heading', { name: /view students/i })
+        ).toBeInTheDocument()
+        window.history.pushState({}, '', '/')
+    })
+
+    it('edits and removes a student\'s upcoming session from their page', async () => {
+        const user = userEvent.setup()
+        // PUT /sessions/{id} echoes the change back (edit and cancel both PUT).
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+                const url = String(input)
+                const put = url.match(/\/sessions\/(\d+)$/)
+                if (put && init?.method === 'PUT') {
+                    const body = JSON.parse(String(init.body))
+                    return {
+                        ok: true,
+                        status: 200,
+                        json: async () => ({ id: Number(put[1]), ...body }),
+                    } as Response
+                }
+                let data: unknown = fixtureStudents
+                if (url.includes('/payments'))
+                    data = buildFixturePaymentsByMonth()
+                else if (url.includes('/sessions'))
+                    data = weeklyTimetable(1, 'Asha Perera', 3)
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => data,
+                } as Response
+            })
+        )
+        render(<App />)
+
+        await user.click(
+            (await screen.findAllByRole('link', { name: /asha perera/i }))[0]
+        )
+
+        // Edit opens an in-page dialog — no navigation to the planner.
+        await user.click(
+            (
+                await screen.findAllByRole('button', {
+                    name: /edit mathematics on/i,
+                })
+            )[0]
+        )
+        const dialog = await screen.findByRole('dialog')
+        expect(
+            screen.queryByRole('heading', { name: /class scheduling/i })
+        ).not.toBeInTheDocument()
+        const subject = within(dialog).getByLabelText(/subject/i)
+        await user.clear(subject)
+        await user.type(subject, 'Chemistry')
+        await user.click(
+            within(dialog).getByRole('button', { name: /save changes/i })
+        )
+        expect(
+            await screen.findByText(/class updated|updated/i)
+        ).toBeInTheDocument()
+
+        // Remove an upcoming session, behind its confirm.
+        await user.click(
+            (
+                await screen.findAllByRole('button', {
+                    name: /remove (mathematics|chemistry) on/i,
+                })
+            )[0]
+        )
+        await user.click(screen.getByRole('button', { name: /^remove$/i }))
+        expect(
+            await screen.findByText(/cancelled/i)
         ).toBeInTheDocument()
     })
 

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+    fireEvent,
+    render,
+    screen,
+    waitForElementToBeRemoved,
+    within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { ScheduledSession, Student } from '../data/students'
@@ -21,6 +27,9 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     parentName: overrides.parentName ?? 'Nadia Patel',
     contactNumber: overrides.contactNumber ?? '+44 7700 900123',
     address: overrides.address ?? '12 Oak Road, Kingston upon Thames, KT2 6LP',
+    isArchived: overrides.isArchived,
+    archivedOn: overrides.archivedOn,
+    archiveNotes: overrides.archiveNotes,
 })
 
 /** A future YYYY-MM-DD, `days` from now — "upcoming" must not rot with time. */
@@ -56,6 +65,7 @@ const renderView = (props: Partial<
     render(
         <StudentDetailsView
             student={buildStudent()}
+            students={[buildStudent()]}
             scheduledSessions={scheduledSessions}
             editingStudentId={null}
             draftStudent={null}
@@ -66,6 +76,11 @@ const renderView = (props: Partial<
             onDraftChange={vi.fn()}
             onSaveDetails={vi.fn()}
             onCancelEdit={vi.fn()}
+            onOpenStudentPage={vi.fn()}
+            onArchive={vi.fn()}
+            onRestore={vi.fn()}
+            onEditSession={vi.fn()}
+            onCancelSession={vi.fn()}
             {...props}
         />
     )
@@ -95,7 +110,7 @@ describe('StudentDetailsView', () => {
         expect(screen.queryByLabelText(/student id/i)).not.toBeInTheDocument()
 
         await user.click(
-            screen.getByRole('button', { name: /back to students/i })
+            screen.getByRole('button', { name: /^back$/i })
         )
         expect(onBack).toHaveBeenCalledTimes(1)
 
@@ -161,6 +176,322 @@ describe('StudentDetailsView', () => {
 
         await user.click(screen.getByRole('button', { name: /cancel/i }))
         expect(onCancelEdit).toHaveBeenCalledTimes(1)
+    })
+
+    it('links group classmates to their pages, sorted, and marks solo 1:1', async () => {
+        const user = userEvent.setup()
+        const onOpenStudentPage = vi.fn()
+        const maya = buildStudent({
+            id: 2,
+            firstName: 'Maya',
+            lastName: 'Fernando',
+        })
+        const ben = buildStudent({ id: 3, firstName: 'Ben', lastName: 'Adams' })
+        renderView({
+            onOpenStudentPage,
+            students: [buildStudent(), maya, ben],
+            scheduledSessions: [
+                // A solo class for our student.
+                buildSession(1, 4, { time: '09:00' }),
+                // A group class: our student (id 10) plus Maya and Ben.
+                buildSession(2, 4, { groupId: 'grp-1', time: '11:00' }),
+                {
+                    ...buildSession(3, 4, { groupId: 'grp-1', time: '11:00' }),
+                    studentId: 2,
+                    studentName: 'Stale Copy',
+                },
+                {
+                    ...buildSession(4, 4, { groupId: 'grp-1', time: '11:00' }),
+                    studentId: 3,
+                },
+            ],
+        })
+
+        // Both classmates are links, resolved live and sorted (Ben < Maya) —
+        // not the stale session copy.
+        const ada = screen.getByRole('link', { name: 'Ben Adams' })
+        const may = screen.getByRole('link', { name: 'Maya Fernando' })
+        expect(ada.compareDocumentPosition(may)).toBe(
+            Node.DOCUMENT_POSITION_FOLLOWING
+        )
+        expect(screen.queryByText(/Stale Copy/)).not.toBeInTheDocument()
+
+        // Clicking a classmate opens their page.
+        await user.click(may)
+        expect(onOpenStudentPage).toHaveBeenCalledWith(2)
+
+        // The solo row reads 1:1.
+        expect(screen.getAllByText('1:1').length).toBeGreaterThan(0)
+    })
+
+    it('falls back to 1:1 when every group classmate has cancelled', () => {
+        renderView({
+            students: [buildStudent()],
+            scheduledSessions: [
+                buildSession(2, 4, { groupId: 'grp-9', time: '11:00' }),
+                {
+                    ...buildSession(3, 4, { groupId: 'grp-9', time: '11:00' }),
+                    studentId: 2,
+                    status: 'Cancelled' as const,
+                },
+            ],
+        })
+        // The only classmate cancelled, so the class is effectively 1:1.
+        expect(screen.getByText('1:1')).toBeInTheDocument()
+    })
+
+    it('names an orphaned classmate from the session when off-roster', () => {
+        renderView({
+            students: [buildStudent()], // classmate id 2 not in the roster
+            scheduledSessions: [
+                buildSession(2, 4, { groupId: 'grp-2', time: '11:00' }),
+                {
+                    ...buildSession(3, 4, { groupId: 'grp-2', time: '11:00' }),
+                    studentId: 2,
+                    studentName: 'Ghost Mate',
+                },
+            ],
+        })
+        expect(screen.getByText('Ghost Mate')).toBeInTheDocument()
+    })
+
+    it('edits an upcoming session in place on the student page', async () => {
+        const user = userEvent.setup()
+        const onEditSession = vi.fn()
+        const session = buildSession(1, 3)
+        renderView({ onEditSession, scheduledSessions: [session] })
+
+        await user.click(
+            screen.getByRole('button', { name: /edit mathematics on/i })
+        )
+        // The edit form opens on the page — no navigation away. Every field
+        // is editable.
+        const dialog = screen.getByRole('dialog')
+        const subject = within(dialog).getByLabelText(/subject/i)
+        await user.clear(subject)
+        await user.type(subject, 'Physics')
+        fireEvent.change(within(dialog).getByLabelText(/time/i), {
+            target: { value: '17:30' },
+        })
+        await user.click(within(dialog).getByLabelText(/duration/i))
+        await user.click(
+            await screen.findByRole('option', { name: /1\.5 hours/i })
+        )
+        await user.type(within(dialog).getByLabelText(/notes/i), ' extra')
+
+        await user.click(
+            within(dialog).getByRole('button', { name: /save changes/i })
+        )
+        expect(onEditSession).toHaveBeenCalledWith(
+            1,
+            {
+                subject: 'Physics',
+                time: '17:30',
+                durationMinutes: 90,
+                notes: 'Problem solving practice extra',
+            },
+            false
+        )
+    })
+
+    it('applies a group class edit to everyone', async () => {
+        const user = userEvent.setup()
+        const onEditSession = vi.fn()
+        renderView({
+            onEditSession,
+            scheduledSessions: [buildSession(1, 3, { groupId: 'grp-1' })],
+        })
+
+        await user.click(
+            screen.getByRole('button', { name: /edit mathematics on/i })
+        )
+        const dialog = screen.getByRole('dialog')
+        expect(
+            within(dialog).getByText(/applies to everyone/i)
+        ).toBeInTheDocument()
+        await user.click(
+            within(dialog).getByRole('button', { name: /save changes/i })
+        )
+        expect(onEditSession).toHaveBeenCalledWith(
+            1,
+            expect.any(Object),
+            true // applyToGroup
+        )
+    })
+
+    it('dismisses the edit dialog without saving', async () => {
+        const user = userEvent.setup()
+        const onEditSession = vi.fn()
+        renderView({ onEditSession, scheduledSessions: [buildSession(1, 3)] })
+
+        const editBtn = screen.getByRole('button', {
+            name: /edit mathematics on/i,
+        })
+        // Dismiss via Escape (the dialog's onClose)…
+        await user.click(editBtn)
+        await user.keyboard('{Escape}')
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        // …and via the Cancel button.
+        await user.click(editBtn)
+        await user.click(screen.getByRole('button', { name: /^cancel$/i }))
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        expect(onEditSession).not.toHaveBeenCalled()
+    })
+
+    it('removes an upcoming session behind a confirm', async () => {
+        const user = userEvent.setup()
+        const onCancelSession = vi.fn()
+        const session = buildSession(1, 3)
+        renderView({ onCancelSession, scheduledSessions: [session] })
+
+        await user.click(
+            screen.getByRole('button', { name: /remove mathematics on/i })
+        )
+        // Confirms before cancelling.
+        expect(
+            screen.getByRole('heading', { name: /remove this class\?/i })
+        ).toBeInTheDocument()
+        await user.click(screen.getByRole('button', { name: /^remove$/i }))
+        expect(onCancelSession).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 1 })
+        )
+    })
+
+    it('keeps the session when the remove dialog is dismissed', async () => {
+        const user = userEvent.setup()
+        const onCancelSession = vi.fn()
+        renderView({ onCancelSession, scheduledSessions: [buildSession(1, 3)] })
+
+        const removeBtn = screen.getByRole('button', {
+            name: /remove mathematics on/i,
+        })
+        // Dismiss via the Keep button…
+        await user.click(removeBtn)
+        await user.click(screen.getByRole('button', { name: /^keep$/i }))
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        // …and via Escape (the dialog's own onClose).
+        await user.click(removeBtn)
+        await user.keyboard('{Escape}')
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        expect(onCancelSession).not.toHaveBeenCalled()
+    })
+
+    it('only offers Archive while editing the student', () => {
+        // Not editing → the header Archive button is disabled.
+        renderView({ scheduledSessions: [] })
+        expect(
+            screen.getByRole('button', { name: /^archive$/i })
+        ).toBeDisabled()
+    })
+
+    it('archives a student behind a required closing note', async () => {
+        const user = userEvent.setup()
+        const onArchive = vi.fn()
+        // Archiving is offered while editing (no future classes here).
+        renderView({
+            onArchive,
+            scheduledSessions: [],
+            editingStudentId: 10,
+            draftStudent: buildStudent(),
+        })
+
+        await user.click(screen.getByRole('button', { name: /^archive$/i }))
+        const dialog = screen.getByRole('dialog')
+        // The Archive action is disabled until a note is written.
+        const confirm = within(dialog).getByRole('button', {
+            name: /^archive$/i,
+        })
+        expect(confirm).toBeDisabled()
+
+        await user.type(
+            within(dialog).getByLabelText(/closing note/i),
+            'Finished GCSEs — great progress'
+        )
+        expect(confirm).toBeEnabled()
+        await user.click(confirm)
+        expect(onArchive).toHaveBeenCalledWith(
+            10,
+            'Finished GCSEs — great progress'
+        )
+    })
+
+    it('warns that upcoming classes will be cancelled on archive', async () => {
+        const user = userEvent.setup()
+        renderView({
+            scheduledSessions: [buildSession(1, 5)], // one future class
+            editingStudentId: 10,
+            draftStudent: buildStudent(),
+        })
+        // Archiving cancels the class rather than blocking.
+        const archive = screen.getByRole('button', { name: /^archive$/i })
+        expect(archive).toBeEnabled()
+
+        await user.click(archive)
+        expect(
+            screen.getByText(/1 upcoming class/i)
+        ).toBeInTheDocument()
+        expect(screen.getByText(/will be cancelled/i)).toBeInTheDocument()
+    })
+
+    it('closes the archive dialog on cancel without archiving', async () => {
+        const user = userEvent.setup()
+        const onArchive = vi.fn()
+        renderView({
+            onArchive,
+            scheduledSessions: [],
+            editingStudentId: 10,
+            draftStudent: buildStudent(),
+        })
+
+        // Close via the dialog's Cancel button…
+        await user.click(screen.getByRole('button', { name: /^archive$/i }))
+        await user.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: /^cancel$/i,
+            })
+        )
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+
+        // …and via Escape (the dialog's own onClose).
+        await user.click(screen.getByRole('button', { name: /^archive$/i }))
+        await user.keyboard('{Escape}')
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        expect(onArchive).not.toHaveBeenCalled()
+    })
+
+    it('shows a bare archived banner when there is no date or note', () => {
+        renderView({
+            student: buildStudent({ isArchived: true }),
+        })
+        expect(screen.getByText(/archived/i)).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: /restore to active/i })
+        ).toBeInTheDocument()
+    })
+
+    it('shows the archived banner and restores an alumnus', async () => {
+        const user = userEvent.setup()
+        const onRestore = vi.fn()
+        renderView({
+            onRestore,
+            student: buildStudent({
+                isArchived: true,
+                archivedOn: '2026-07-19',
+                archiveNotes: 'Moved abroad',
+            }),
+        })
+
+        // Archived students show a banner, not an Archive button.
+        expect(screen.getByText(/archived/i)).toBeInTheDocument()
+        expect(screen.getByText('Moved abroad')).toBeInTheDocument()
+        expect(
+            screen.queryByRole('button', { name: /^archive$/i })
+        ).not.toBeInTheDocument()
+
+        await user.click(
+            screen.getByRole('button', { name: /restore to active/i })
+        )
+        expect(onRestore).toHaveBeenCalledWith(10)
     })
 
     it('shows a bar per subject and derives the overall figure', () => {

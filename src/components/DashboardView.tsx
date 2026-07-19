@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button } from '@mui/material'
+import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined'
 import type { DayLoad } from '../utils/dashboard'
 import { formatHours } from '../utils/dashboard'
 
@@ -96,7 +97,10 @@ export const DashboardView = ({
                 right — a whole row of vertical space handed back. */}
             <div className="card hero-card dashboard-hero">
                 <div className="dashboard-hero-copy">
-                    <h3>Today at a glance</h3>
+                    <h3 className="page-heading">
+                        <SpaceDashboardOutlinedIcon fontSize="small" />
+                        Today at a glance
+                    </h3>
                     <p>
                         Keep student progress, contact notes, and learning
                         modes in one calm workspace.

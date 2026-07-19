@@ -5,7 +5,12 @@ import type {
     ScheduledSession,
     Student,
 } from '../data/students'
-import { fetchStudents, upsertStudent } from '../api/students'
+import {
+    archiveStudent,
+    fetchStudents,
+    restoreStudent,
+    upsertStudent,
+} from '../api/students'
 import { fetchPaymentsByMonth, savePayments } from '../api/payments'
 import {
     createSession,
@@ -32,6 +37,11 @@ import {
     saveStudentFailed,
     saveStudentRequested,
     saveStudentSucceeded,
+    archiveStudentRequested,
+    restoreStudentRequested,
+    archiveStudentSucceeded,
+    restoreStudentSucceeded,
+    archiveStudentFailed,
     setSessionStatusFailed,
     setSessionStatusRequested,
     setSessionStatusSucceeded,
@@ -105,6 +115,49 @@ export function* saveStudentSaga(
         yield put(saveStudentSucceeded(student))
     } catch (error) {
         yield put(saveStudentFailed(toSaveMessage(error)))
+    }
+}
+
+/** Archives a student (REQ-013); the API's 409 message surfaces as the toast. */
+export function* archiveStudentSaga(
+    action: ReturnType<typeof archiveStudentRequested>
+) {
+    try {
+        const student: Student = yield call(
+            archiveStudent,
+            action.payload.id,
+            action.payload.notes
+        )
+        yield put(archiveStudentSucceeded(student))
+        // Archiving cancels the student's future classes server-side; refresh
+        // sessions so the calendar and dashboard reflect the cancellations.
+        yield put(fetchSessionsRequested())
+    } catch (error) {
+        yield put(
+            archiveStudentFailed(
+                error instanceof Error
+                    ? error.message
+                    : 'Could not archive the student.'
+            )
+        )
+    }
+}
+
+/** Restores an alumnus to the active roster. */
+export function* restoreStudentSaga(
+    action: ReturnType<typeof restoreStudentRequested>
+) {
+    try {
+        const student: Student = yield call(restoreStudent, action.payload)
+        yield put(restoreStudentSucceeded(student))
+    } catch (error) {
+        yield put(
+            archiveStudentFailed(
+                error instanceof Error
+                    ? error.message
+                    : 'Could not restore the student.'
+            )
+        )
     }
 }
 
@@ -183,6 +236,8 @@ export function* rootSaga() {
         takeLatest(fetchSessionsRequested.type, loadSessionsSaga),
         takeEvery(createSessionRequested.type, createSessionSaga),
         takeEvery(saveStudentRequested.type, saveStudentSaga),
+        takeEvery(archiveStudentRequested.type, archiveStudentSaga),
+        takeEvery(restoreStudentRequested.type, restoreStudentSaga),
         takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
         takeEvery(editSessionRequested.type, editSessionSaga),
         takeEvery(savePaymentRequested.type, savePaymentSaga),

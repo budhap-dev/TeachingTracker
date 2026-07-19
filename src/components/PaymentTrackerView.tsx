@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import { Button, TextField } from '@mui/material'
 import type {
     MonthlyPaymentGroup,
@@ -70,10 +71,13 @@ export const PaymentTrackerView = ({
 
     const recordsByStudentId = useMemo(
         () =>
-            monthRecords.reduce<Record<number, PaymentRecord>>((acc, record) => {
-                acc[record.studentId] = record
-                return acc
-            }, {}),
+            monthRecords.reduce<Record<number, PaymentRecord>>(
+                (acc, record) => {
+                    acc[record.studentId] = record
+                    return acc
+                },
+                {}
+            ),
         [monthRecords]
     )
 
@@ -136,7 +140,10 @@ export const PaymentTrackerView = ({
             <div className="card payment-tracker-hero">
                 <div>
                     <p className="eyebrow">Payment tracker</p>
-                    <h3>Monthly payment tracking</h3>
+                    <h3 className="page-heading">
+                        <PaymentsOutlinedIcon fontSize="small" />
+                        Monthly payment tracking
+                    </h3>
                     <p>
                         Each student owes for the classes that actually took
                         place. A month builds up as lessons are taught — mark it
@@ -244,7 +251,9 @@ export const PaymentTrackerView = ({
                                                 type="button"
                                                 className="payment-student-link"
                                                 onClick={() =>
-                                                    onOpenStudentPage(student.id)
+                                                    onOpenStudentPage(
+                                                        student.id
+                                                    )
                                                 }
                                             >
                                                 {student.firstName}{' '}
@@ -253,7 +262,9 @@ export const PaymentTrackerView = ({
                                             <small>{student.school}</small>
                                         </td>
                                         <td className="payment-basis">
-                                            <strong>{record.sessionsHeld}</strong>
+                                            <strong>
+                                                {record.sessionsHeld}
+                                            </strong>
                                             <small>
                                                 ×{' '}
                                                 {formatCurrency(

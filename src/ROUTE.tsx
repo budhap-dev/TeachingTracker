@@ -10,8 +10,10 @@ import {
 } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from './hooks'
 import {
+    archiveStudentRequested,
     createSessionRequested,
     editSessionRequested,
+    restoreStudentRequested,
     savePaymentRequested,
     saveStudentRequested,
     setSessionStatusRequested,
@@ -26,6 +28,7 @@ import { paths } from './paths'
 import { DashboardView } from './components/DashboardView'
 import { StudentsView } from './components/StudentsView'
 import { StudentDetailsView } from './components/StudentDetailsView'
+import { AlumniView } from './components/AlumniView'
 import { StudySnapshotView } from './components/StudySnapshotView'
 import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { ClassSchedulingView } from './components/ClassSchedulingView'
@@ -47,16 +50,31 @@ const ScrollToTop = () => {
     return null
 }
 
-/** Returns a callback that navigates to a student's detail page. */
+/**
+ * Returns a callback that opens a student's page, remembering where it was
+ * opened from (in router state) so the page's Back button can return there —
+ * the dashboard, the calendar, the roster, wherever — instead of always the
+ * students list.
+ */
 const useOpenStudentPage = () => {
     const navigate = useNavigate()
-    return (studentId: number) => navigate(paths.studentDetail(studentId))
+    const location = useLocation()
+    return (studentId: number) =>
+        navigate(paths.studentDetail(studentId), {
+            state: { from: `${location.pathname}${location.search}` },
+        })
 }
 
 const DashboardRoute = () => {
     const navigate = useNavigate()
     const openStudentPage = useOpenStudentPage()
-    const students = useAppSelector((state) => state.students.students)
+    const allStudents = useAppSelector((state) => state.students.students)
+    // Archived students (REQ-013) leave every active surface — the dashboard,
+    // the roster, snapshot and the planner — for the Alumni section.
+    const students = useMemo(
+        () => allStudents.filter((student) => !student.isArchived),
+        [allStudents]
+    )
     const scheduledSessions = useAppSelector(
         (state) => state.students.scheduledSessions
     )
@@ -172,7 +190,11 @@ const DashboardRoute = () => {
 const StudentsRoute = () => {
     const openStudentPage = useOpenStudentPage()
     const dispatch = useAppDispatch()
-    const students = useAppSelector((state) => state.students.students)
+    const allStudents = useAppSelector((state) => state.students.students)
+    const students = useMemo(
+        () => allStudents.filter((student) => !student.isArchived),
+        [allStudents]
+    )
     const loading = useAppSelector((state) => state.students.loading)
     const { form, setField, resetForm } = useStudentForm()
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -221,8 +243,16 @@ const StudentsRoute = () => {
 
 const StudentDetailRoute = () => {
     const navigate = useNavigate()
+    const location = useLocation()
     const dispatch = useAppDispatch()
+    const openStudentPage = useOpenStudentPage()
     const { studentId } = useParams()
+
+    // Return to wherever the teacher came from — carried in router state by
+    // useOpenStudentPage. A fresh deep link has no such state, so fall back to
+    // the students list.
+    const from = (location.state as { from?: string } | null)?.from
+    const goBack = () => navigate(from ?? paths.students)
     const students = useAppSelector((state) => state.students.students)
     const loading = useAppSelector((state) => state.students.loading)
     const scheduledSessions = useAppSelector(
@@ -259,12 +289,13 @@ const StudentDetailRoute = () => {
     return (
         <StudentDetailsView
             student={student}
+            students={students}
             scheduledSessions={scheduledSessions}
             editingStudentId={editingStudentId}
             draftStudent={draftStudent}
             hasUnsavedChanges={Boolean(draftStudent && editingStudentId)}
             saving={savingStudent}
-            onBack={() => navigate(paths.students)}
+            onBack={goBack}
             onBeginEdit={(target) => {
                 setEditingStudentId(target.id)
                 setDraftStudent({ ...target })
@@ -272,18 +303,53 @@ const StudentDetailRoute = () => {
             onDraftChange={(field: EditableStudentField, value) =>
                 setDraftStudent((current) => ({ ...current!, [field]: value }))
             }
+            onOpenStudentPage={openStudentPage}
             onSaveDetails={handleSaveDetails}
             onCancelEdit={() => {
                 setEditingStudentId(null)
                 setDraftStudent(null)
             }}
+            onArchive={(id, notes) =>
+                dispatch(archiveStudentRequested({ id, notes }))
+            }
+            onRestore={(id) => dispatch(restoreStudentRequested(id))}
+            onEditSession={(id, changes, applyToGroup) =>
+                dispatch(editSessionRequested({ id, changes, applyToGroup }))
+            }
+            onCancelSession={(session) =>
+                dispatch(
+                    setSessionStatusRequested({
+                        id: session.id,
+                        status: 'Cancelled',
+                        applyToGroup: false,
+                    })
+                )
+            }
         />
     )
 }
 
+const AlumniRoute = () => {
+    const openStudentPage = useOpenStudentPage()
+    const allStudents = useAppSelector((state) => state.students.students)
+    const loading = useAppSelector((state) => state.students.loading)
+    const alumni = useMemo(
+        () => allStudents.filter((student) => student.isArchived),
+        [allStudents]
+    )
+    if (loading) {
+        return <PageLoading />
+    }
+    return <AlumniView alumni={alumni} onOpenStudentPage={openStudentPage} />
+}
+
 const StudySnapshotRoute = () => {
     const openStudentPage = useOpenStudentPage()
-    const students = useAppSelector((state) => state.students.students)
+    const allStudents = useAppSelector((state) => state.students.students)
+    const students = useMemo(
+        () => allStudents.filter((student) => !student.isArchived),
+        [allStudents]
+    )
     const sessions = useAppSelector(
         (state) => state.students.scheduledSessions
     )
@@ -328,7 +394,13 @@ const PaymentTrackerRoute = () => {
 const SchedulingRoute = () => {
     const dispatch = useAppDispatch()
     const [searchParams] = useSearchParams()
-    const students = useAppSelector((state) => state.students.students)
+    const allStudents = useAppSelector((state) => state.students.students)
+    // Archived students can't be booked into new classes — only the active
+    // roster appears in the planner's picker.
+    const students = useMemo(
+        () => allStudents.filter((student) => !student.isArchived),
+        [allStudents]
+    )
     const scheduledSessions = useAppSelector(
         (state) => state.students.scheduledSessions
     )
@@ -400,6 +472,7 @@ export const AppRoutes = () => (
                 path={paths.studySnapshot}
                 element={teacher(<StudySnapshotRoute />)}
             />
+            <Route path={paths.alumni} element={teacher(<AlumniRoute />)} />
             <Route
                 path={paths.payments}
                 element={teacher(<PaymentTrackerRoute />)}

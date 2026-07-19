@@ -1,12 +1,19 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import {
     Button,
     Chip,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    IconButton,
     MenuItem,
     Slider,
     TextField,
     Typography,
 } from '@mui/material'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import type {
     EditableStudentField,
     ScheduledSession,
@@ -18,14 +25,18 @@ import {
     yearOptions,
 } from '../utils/constants'
 import {
+    durationOptions,
     formatDuration,
     formatShortDayLabel,
     toDateKey,
 } from '../utils/calendar'
 import { parseSubjects } from '../utils/forms'
+import type { EditClassChanges } from '../store/store'
 
 type StudentDetailsViewProps = {
     student: Student
+    /** The whole roster — used to name a group class's other members. */
+    students: Student[]
     scheduledSessions: ScheduledSession[]
     editingStudentId: number | null
     draftStudent: Student | null
@@ -39,6 +50,20 @@ type StudentDetailsViewProps = {
     ) => void
     onSaveDetails: () => void
     onCancelEdit: () => void
+    /** Opens another student's page — the classmate links in a group class. */
+    onOpenStudentPage: (studentId: number) => void
+    /** Archives the student to Alumni with a closing note (REQ-013). */
+    onArchive: (id: number, notes: string) => void
+    /** Returns an alumnus to the active roster. */
+    onRestore: (id: number) => void
+    /** Saves edits to a single upcoming class, in place on the student page. */
+    onEditSession: (
+        id: number,
+        changes: EditClassChanges,
+        applyToGroup: boolean
+    ) => void
+    /** Cancels (removes) a single upcoming class. */
+    onCancelSession: (session: ScheduledSession) => void
 }
 
 const modeOptions: Student['mode'][] = ['Face to Face', 'Online', 'Both']
@@ -46,6 +71,7 @@ const modeOptions: Student['mode'][] = ['Face to Face', 'Online', 'Both']
 
 export const StudentDetailsView = ({
     student,
+    students,
     scheduledSessions,
     editingStudentId,
     draftStudent,
@@ -56,6 +82,11 @@ export const StudentDetailsView = ({
     onDraftChange,
     onSaveDetails,
     onCancelEdit,
+    onOpenStudentPage,
+    onArchive,
+    onRestore,
+    onEditSession,
+    onCancelSession,
 }: StudentDetailsViewProps) => {
     const isEditing = editingStudentId === student.id
     // While editing, every control reads from the draft; otherwise from the
@@ -95,6 +126,39 @@ export const StudentDetailsView = ({
     // runs to dozens of rows and says nothing about what is next.
     const [showAllSessions, setShowAllSessions] = useState(false)
     const todayKey = toDateKey(new Date())
+
+    // Archiving (REQ-013): allowed any time. Any class still to come is
+    // cancelled as part of archiving (the API does it) — the dialog warns
+    // how many, so it's never a surprise.
+    const [archiveOpen, setArchiveOpen] = useState(false)
+    const [archiveNote, setArchiveNote] = useState('')
+    // The upcoming class the "remove this class?" dialog is about to cancel.
+    const [cancelTarget, setCancelTarget] = useState<ScheduledSession | null>(
+        null
+    )
+    // The class being edited in place, and the form behind its dialog.
+    const [editTarget, setEditTarget] = useState<ScheduledSession | null>(null)
+    const [editForm, setEditForm] = useState({
+        subject: '',
+        time: '',
+        durationMinutes: 60,
+        notes: '',
+    })
+    const openEditSession = (session: ScheduledSession) => {
+        setEditForm({
+            subject: session.subject,
+            time: session.time,
+            durationMinutes: session.durationMinutes ?? 60,
+            notes: session.notes,
+        })
+        setEditTarget(session)
+    }
+    const futureClassCount = scheduledSessions.filter(
+        (session) =>
+            session.studentId === student.id &&
+            session.status !== 'Cancelled' &&
+            session.date > todayKey
+    ).length
     const upcomingSessions = scheduledSessions
         .filter(
             (session) =>
@@ -111,6 +175,40 @@ export const StudentDetailsView = ({
         ? upcomingSessions
         : upcomingSessions.slice(0, 3)
 
+    /**
+     * The other active members of a class — named from the live roster (the
+     * session copy can be stale), so the teacher sees who this student studies
+     * alongside. Empty for a solo class, or a group whose others all cancelled
+     * (which is then effectively 1:1). `onRoster` gates the link: an off-roster
+     * name has no page to open.
+     */
+    const studentsById = new Map(students.map((s) => [s.id, s]))
+    const classmatesOf = (
+        session: ScheduledSession
+    ): { id: number; name: string; onRoster: boolean }[] => {
+        if (!session.groupId) {
+            return []
+        }
+        return scheduledSessions
+            .filter(
+                (row) =>
+                    row.groupId === session.groupId &&
+                    row.studentId !== student.id &&
+                    row.status !== 'Cancelled'
+            )
+            .map((row) => {
+                const mate = studentsById.get(row.studentId)
+                return {
+                    id: row.studentId,
+                    name: mate
+                        ? `${mate.firstName} ${mate.lastName}`
+                        : row.studentName,
+                    onRoster: Boolean(mate),
+                }
+            })
+            .sort((a, b) => a.name.localeCompare(b.name))
+    }
+
     return (
         <section className="content-stack student-page">
             <div className="card">
@@ -124,10 +222,50 @@ export const StudentDetailsView = ({
                             {student.year || 'Unassigned'}
                         </p>
                     </div>
-                    <Button variant="text" onClick={onBack}>
-                        Back to students
-                    </Button>
+                    <div className="student-page-actions">
+                        {!student.isArchived && (
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                disabled={!isEditing || saving}
+                                title={
+                                    isEditing
+                                        ? undefined
+                                        : 'Edit the student to archive them.'
+                                }
+                                onClick={() => {
+                                    setArchiveNote('')
+                                    setArchiveOpen(true)
+                                }}
+                            >
+                                Archive
+                            </Button>
+                        )}
+                        <Button variant="text" onClick={onBack}>
+                            Back
+                        </Button>
+                    </div>
                 </div>
+
+                {student.isArchived && (
+                    <div className="archived-banner">
+                        <div>
+                            <strong>Archived</strong>
+                            {student.archivedOn &&
+                                ` on ${student.archivedOn}`}
+                            {student.archiveNotes && (
+                                <p>{student.archiveNotes}</p>
+                            )}
+                        </div>
+                        <Button
+                            variant="contained"
+                            disabled={saving}
+                            onClick={() => onRestore(student.id)}
+                        >
+                            Restore to active
+                        </Button>
+                    </div>
+                )}
 
                 <div className="student-details student-page-details">
                     <div className="student-side">
@@ -265,6 +403,8 @@ export const StudentDetailsView = ({
                                                 <th>Date</th>
                                                 <th>Time</th>
                                                 <th>Subject</th>
+                                                <th>With</th>
+                                                <th aria-label="Actions" />
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -273,6 +413,8 @@ export const StudentDetailsView = ({
                                                     formatDuration(
                                                         session.durationMinutes
                                                     )
+                                                const mates =
+                                                    classmatesOf(session)
                                                 return (
                                                     <tr key={session.id}>
                                                         <td>
@@ -290,6 +432,83 @@ export const StudentDetailsView = ({
                                                         </td>
                                                         <td>
                                                             {session.subject}
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                mates.length
+                                                                    ? 'session-with-group'
+                                                                    : undefined
+                                                            }
+                                                            title={
+                                                                mates.length
+                                                                    ? `Group class with ${mates.map((m) => m.name).join(', ')}`
+                                                                    : 'One to one'
+                                                            }
+                                                        >
+                                                            {mates.length === 0
+                                                                ? '1:1'
+                                                                : mates.map(
+                                                                      (
+                                                                          mate,
+                                                                          index
+                                                                      ) => (
+                                                                          <Fragment
+                                                                              key={
+                                                                                  mate.id
+                                                                              }
+                                                                          >
+                                                                              {index >
+                                                                                  0 &&
+                                                                                  ', '}
+                                                                              {mate.onRoster ? (
+                                                                                  <a
+                                                                                      href={`#student-${mate.id}`}
+                                                                                      className="student-link"
+                                                                                      onClick={(
+                                                                                          event
+                                                                                      ) => {
+                                                                                          event.preventDefault()
+                                                                                          onOpenStudentPage(
+                                                                                              mate.id
+                                                                                          )
+                                                                                      }}
+                                                                                  >
+                                                                                      {
+                                                                                          mate.name
+                                                                                      }
+                                                                                  </a>
+                                                                              ) : (
+                                                                                  mate.name
+                                                                              )}
+                                                                          </Fragment>
+                                                                      )
+                                                                  )}
+                                                        </td>
+                                                        <td className="session-actions">
+                                                            <IconButton
+                                                                size="small"
+                                                                color="primary"
+                                                                aria-label={`Edit ${session.subject} on ${formatShortDayLabel(session.date)}`}
+                                                                onClick={() =>
+                                                                    openEditSession(
+                                                                        session
+                                                                    )
+                                                                }
+                                                            >
+                                                                <EditOutlinedIcon fontSize="inherit" />
+                                                            </IconButton>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                aria-label={`Remove ${session.subject} on ${formatShortDayLabel(session.date)}`}
+                                                                onClick={() =>
+                                                                    setCancelTarget(
+                                                                        session
+                                                                    )
+                                                                }
+                                                            >
+                                                                <CloseIcon fontSize="inherit" />
+                                                            </IconButton>
                                                         </td>
                                                     </tr>
                                                 )
@@ -581,6 +800,203 @@ export const StudentDetailsView = ({
                     </div>
                 </div>
             </div>
+
+            <Dialog
+                open={Boolean(editTarget)}
+                onClose={() => setEditTarget(null)}
+                fullWidth
+                maxWidth="xs"
+            >
+                <DialogTitle>
+                    Edit class
+                    {editTarget && ` — ${formatShortDayLabel(editTarget.date)}`}
+                </DialogTitle>
+                <DialogContent>
+                    <div className="session-edit-form">
+                        <TextField
+                            label="Subject"
+                            size="small"
+                            value={editForm.subject}
+                            onChange={(event) =>
+                                setEditForm((form) => ({
+                                    ...form,
+                                    subject: event.target.value,
+                                }))
+                            }
+                            fullWidth
+                        />
+                        <TextField
+                            label="Time"
+                            size="small"
+                            type="time"
+                            value={editForm.time}
+                            onChange={(event) =>
+                                setEditForm((form) => ({
+                                    ...form,
+                                    time: event.target.value,
+                                }))
+                            }
+                            slotProps={{ inputLabel: { shrink: true } }}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Duration"
+                            size="small"
+                            select
+                            value={editForm.durationMinutes}
+                            onChange={(event) =>
+                                setEditForm((form) => ({
+                                    ...form,
+                                    durationMinutes: Number(event.target.value),
+                                }))
+                            }
+                            fullWidth
+                        >
+                            {durationOptions.map((minutes) => (
+                                <MenuItem key={minutes} value={minutes}>
+                                    {formatDuration(minutes)}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                        <TextField
+                            label="Notes"
+                            size="small"
+                            multiline
+                            minRows={2}
+                            value={editForm.notes}
+                            onChange={(event) =>
+                                setEditForm((form) => ({
+                                    ...form,
+                                    notes: event.target.value,
+                                }))
+                            }
+                            fullWidth
+                        />
+                        {editTarget?.groupId && (
+                            <p className="archive-dialog-copy">
+                                This is a group class — the change applies to
+                                everyone in it.
+                            </p>
+                        )}
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditTarget(null)}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        disabled={
+                            !editForm.subject.trim() ||
+                            !editForm.time ||
+                            saving
+                        }
+                        onClick={() => {
+                            // Only reachable while the dialog is open (target set).
+                            onEditSession(
+                                editTarget!.id,
+                                {
+                                    subject: editForm.subject.trim(),
+                                    time: editForm.time,
+                                    durationMinutes: editForm.durationMinutes,
+                                    notes: editForm.notes,
+                                },
+                                Boolean(editTarget!.groupId)
+                            )
+                            setEditTarget(null)
+                        }}
+                    >
+                        Save changes
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={Boolean(cancelTarget)}
+                onClose={() => setCancelTarget(null)}
+                fullWidth
+                maxWidth="xs"
+            >
+                <DialogTitle>Remove this class?</DialogTitle>
+                <DialogContent>
+                    <p className="archive-dialog-copy">
+                        {cancelTarget &&
+                            `${formatShortDayLabel(cancelTarget.date)} · ${cancelTarget.time} · ${cancelTarget.subject}`}{' '}
+                        will be cancelled. You can rebook it from the planner.
+                    </p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCancelTarget(null)}>Keep</Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        disabled={saving}
+                        onClick={() => {
+                            // Only reachable while the dialog is open (target set).
+                            onCancelSession(cancelTarget!)
+                            setCancelTarget(null)
+                        }}
+                    >
+                        Remove
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
+                open={archiveOpen}
+                onClose={() => setArchiveOpen(false)}
+                fullWidth
+                maxWidth="xs"
+            >
+                <DialogTitle>
+                    Archive {student.firstName} {student.lastName}?
+                </DialogTitle>
+                <DialogContent>
+                    <p className="archive-dialog-copy">
+                        They&apos;ll move to Alumni and leave the active
+                        roster — their history stays.
+                        {futureClassCount > 0 && (
+                            <>
+                                {' '}
+                                Their{' '}
+                                <strong>
+                                    {futureClassCount} upcoming{' '}
+                                    {futureClassCount === 1
+                                        ? 'class'
+                                        : 'classes'}
+                                </strong>{' '}
+                                will be cancelled.
+                            </>
+                        )}{' '}
+                        Add a closing note.
+                    </p>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        label="Closing note"
+                        value={archiveNote}
+                        onChange={(event) =>
+                            setArchiveNote(event.target.value)
+                        }
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setArchiveOpen(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        disabled={!archiveNote.trim() || saving}
+                        onClick={() => {
+                            onArchive(student.id, archiveNote.trim())
+                            setArchiveOpen(false)
+                        }}
+                    >
+                        Archive
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </section>
     )
 }

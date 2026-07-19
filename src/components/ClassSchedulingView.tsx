@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import {
     Autocomplete,
     Button,
@@ -67,8 +68,7 @@ const defaultSubjects = (option?: StudentOption) =>
     option?.subjects.slice(0, 1) ?? []
 
 /** The API keeps one subject string; the form edits it as chips. */
-const splitSubjects = (subject?: string) =>
-    subject ? subject.split(', ') : []
+const splitSubjects = (subject?: string) => (subject ? subject.split(', ') : [])
 
 const getMonthGrid = (referenceDate: Date) => {
     const monthStart = new Date(
@@ -288,10 +288,13 @@ export const ClassSchedulingView = ({
         <section className="content-stack">
             <div className="card scheduling-hero">
                 <div>
-                    <h3>Class scheduling</h3>
+                    <h3 className="page-heading">
+                        <CalendarMonthOutlinedIcon fontSize="small" />
+                        Class scheduling
+                    </h3>
                     <p>
-                        Pick a day to book a lesson — for one student or a
-                        group — or change what is already on.
+                        Pick a day to book a lesson — for one student or a group
+                        — or change what is already on.
                     </p>
                 </div>
                 <div className="scheduling-hero-stats">
@@ -574,8 +577,7 @@ export const ClassSchedulingView = ({
                                             Restore for everyone
                                         </Button>
                                     )
-                                ) : editingEntry.lead.status ===
-                                  'Cancelled' ? (
+                                ) : editingEntry.lead.status === 'Cancelled' ? (
                                     <Button
                                         variant="text"
                                         onClick={() =>
@@ -659,217 +661,190 @@ export const ClassSchedulingView = ({
             </Dialog>
 
             <div className="card scheduling-calendar-card">
-                    <div className="calendar-header scheduling-calendar-header">
-                        <div>
-                            <h3>{monthLabel}</h3>
-                            <p>
-                                Booked days are shaded by how many classes they
-                                hold. Pick a day to add a class, or cancel and
-                                restore the ones already on it.
-                            </p>
-                        </div>
-                        <div className="calendar-actions">
-                            <button
-                                type="button"
-                                className="calendar-nav-button"
-                                onClick={() =>
-                                    setMonthReference(
-                                        (current) =>
-                                            new Date(
-                                                current.getFullYear(),
-                                                current.getMonth() - 1,
-                                                1
-                                            )
-                                    )
-                                }
-                            >
-                                Previous
-                            </button>
-                            <button
-                                type="button"
-                                className="calendar-nav-button"
-                                onClick={() =>
-                                    setMonthReference(
-                                        (current) =>
-                                            new Date(
-                                                current.getFullYear(),
-                                                current.getMonth() + 1,
-                                                1
-                                            )
-                                    )
-                                }
-                            >
-                                Next
-                            </button>
-                        </div>
+                <div className="calendar-header scheduling-calendar-header">
+                    <div>
+                        <h3>{monthLabel}</h3>
+                        <p>
+                            Booked days are shaded by how many classes they
+                            hold. Pick a day to add a class, or cancel and
+                            restore the ones already on it.
+                        </p>
                     </div>
-
-                    <div className="calendar-weekdays" aria-hidden="true">
-                        {weekdayLabels.map((weekday) => (
-                            <span key={weekday}>{weekday}</span>
-                        ))}
-                    </div>
-
-                    <div
-                        className="calendar-grid"
-                        role="grid"
-                        aria-label="Class schedule calendar"
-                    >
-                        {monthGrid.map((day) => {
-                            const dayKey = toDateKey(day)
-                            const dayEntries = entriesByDate[dayKey] || []
-                            const booked = dayEntries.filter(
-                                (entry) => activeMembers(entry).length > 0
-                            )
-                            const isCurrentMonth =
-                                day.getMonth() === monthReference.getMonth()
-                            const isToday = dayKey === todayKey
-
-                            // The cell is a plain gridcell, not a button: the
-                            // numbered chips inside are buttons, and buttons
-                            // cannot nest. The day-opening button fills the
-                            // space above them instead.
-                            const cell = (
-                                <div
-                                    className={`calendar-day ${isCurrentMonth ? '' : 'muted'} ${isToday ? 'today' : ''} ${bookedLevelClass(booked.length)}`}
-                                    role="gridcell"
-                                    aria-label={
-                                        booked.length > 0
-                                            ? `${day.toDateString()}: ${booked.length} ${booked.length === 1 ? 'class' : 'classes'}`
-                                            : day.toDateString()
-                                    }
-                                >
-                                    <button
-                                        type="button"
-                                        className="calendar-day-open"
-                                        onClick={() => openDay(dayKey)}
-                                        aria-label={`Open ${day.toDateString()}`}
-                                    >
-                                        <span className="calendar-day-number">
-                                            {day.getDate()}
-                                        </span>
-                                    </button>
-                                    {dayEntries.length > 0 && (
-                                        <div className="calendar-day-chips">
-                                            {dayEntries.map((entry, index) => (
-                                                <button
-                                                    key={entry.key}
-                                                    type="button"
-                                                    className={`calendar-day-chip ${activeMembers(entry).length === 0 ? 'cancelled' : ''}`}
-                                                    onClick={() =>
-                                                        openDay(
-                                                            dayKey,
-                                                            entry.key
-                                                        )
-                                                    }
-                                                    aria-label={`Class ${index + 1} on ${day.toDateString()}: ${entry.lead.time} ${entryTitle(entry)}, ${entry.lead.subject}${activeMembers(entry).length === 0 ? ' (cancelled)' : ''}`}
-                                                >
-                                                    {index + 1}
-                                                    {entry.isGroup && (
-                                                        <span className="chip-group-size">
-                                                            ×
-                                                            {
-                                                                entry.sessions
-                                                                    .length
-                                                            }
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )
-
-                            // Nothing on: no tooltip to open.
-                            if (dayEntries.length === 0) {
-                                return (
-                                    <div key={`${dayKey}-${day.getMonth()}`}>
-                                        {cell}
-                                    </div>
+                    <div className="calendar-actions">
+                        <button
+                            type="button"
+                            className="calendar-nav-button"
+                            onClick={() =>
+                                setMonthReference(
+                                    (current) =>
+                                        new Date(
+                                            current.getFullYear(),
+                                            current.getMonth() - 1,
+                                            1
+                                        )
                                 )
                             }
+                        >
+                            Previous
+                        </button>
+                        <button
+                            type="button"
+                            className="calendar-nav-button"
+                            onClick={() =>
+                                setMonthReference(
+                                    (current) =>
+                                        new Date(
+                                            current.getFullYear(),
+                                            current.getMonth() + 1,
+                                            1
+                                        )
+                                )
+                            }
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
 
-                            return (
-                                <Tooltip
-                                    key={`${dayKey}-${day.getMonth()}`}
-                                    arrow
-                                    placement="top"
-                                    title={
-                                        <div className="calendar-tooltip">
-                                            <strong>
-                                                {day.toLocaleDateString(
-                                                    'en-GB',
-                                                    {
-                                                        weekday: 'short',
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                    }
+                <div className="calendar-weekdays" aria-hidden="true">
+                    {weekdayLabels.map((weekday) => (
+                        <span key={weekday}>{weekday}</span>
+                    ))}
+                </div>
+
+                <div
+                    className="calendar-grid"
+                    role="grid"
+                    aria-label="Class schedule calendar"
+                >
+                    {monthGrid.map((day) => {
+                        const dayKey = toDateKey(day)
+                        const dayEntries = entriesByDate[dayKey] || []
+                        const booked = dayEntries.filter(
+                            (entry) => activeMembers(entry).length > 0
+                        )
+                        const isCurrentMonth =
+                            day.getMonth() === monthReference.getMonth()
+                        const isToday = dayKey === todayKey
+
+                        // The cell is a plain gridcell, not a button: the
+                        // numbered chips inside are buttons, and buttons
+                        // cannot nest. The day-opening button fills the
+                        // space above them instead.
+                        const cell = (
+                            <div
+                                className={`calendar-day ${isCurrentMonth ? '' : 'muted'} ${isToday ? 'today' : ''} ${bookedLevelClass(booked.length)}`}
+                                role="gridcell"
+                                aria-label={
+                                    booked.length > 0
+                                        ? `${day.toDateString()}: ${booked.length} ${booked.length === 1 ? 'class' : 'classes'}`
+                                        : day.toDateString()
+                                }
+                            >
+                                <button
+                                    type="button"
+                                    className="calendar-day-open"
+                                    onClick={() => openDay(dayKey)}
+                                    aria-label={`Open ${day.toDateString()}`}
+                                >
+                                    <span className="calendar-day-number">
+                                        {day.getDate()}
+                                    </span>
+                                </button>
+                                {dayEntries.length > 0 && (
+                                    <div className="calendar-day-chips">
+                                        {dayEntries.map((entry, index) => (
+                                            <button
+                                                key={entry.key}
+                                                type="button"
+                                                className={`calendar-day-chip ${activeMembers(entry).length === 0 ? 'cancelled' : ''}`}
+                                                onClick={() =>
+                                                    openDay(dayKey, entry.key)
+                                                }
+                                                aria-label={`Class ${index + 1} on ${day.toDateString()}: ${entry.lead.time} ${entryTitle(entry)}, ${entry.lead.subject}${activeMembers(entry).length === 0 ? ' (cancelled)' : ''}`}
+                                            >
+                                                {index + 1}
+                                                {entry.isGroup && (
+                                                    <span className="chip-group-size">
+                                                        ×{entry.sessions.length}
+                                                    </span>
                                                 )}
-                                            </strong>
-                                            {/* Numbered to match the chips: the
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )
+
+                        // Nothing on: no tooltip to open.
+                        if (dayEntries.length === 0) {
+                            return (
+                                <div key={`${dayKey}-${day.getMonth()}`}>
+                                    {cell}
+                                </div>
+                            )
+                        }
+
+                        return (
+                            <Tooltip
+                                key={`${dayKey}-${day.getMonth()}`}
+                                arrow
+                                placement="top"
+                                title={
+                                    <div className="calendar-tooltip">
+                                        <strong>
+                                            {day.toLocaleDateString('en-GB', {
+                                                weekday: 'short',
+                                                day: 'numeric',
+                                                month: 'short',
+                                            })}
+                                        </strong>
+                                        {/* Numbered to match the chips: the
                                                 hover and the click have to
                                                 agree on which class is which. */}
-                                            <ul>
-                                                {dayEntries.map(
-                                                    (entry, index) => {
-                                                        const active =
-                                                            activeMembers(
-                                                                entry
-                                                            ).length
-                                                        return (
-                                                            <li key={entry.key}>
-                                                                <span className="tooltip-number">
-                                                                    {index + 1}
+                                        <ul>
+                                            {dayEntries.map((entry, index) => {
+                                                const active =
+                                                    activeMembers(entry).length
+                                                return (
+                                                    <li key={entry.key}>
+                                                        <span className="tooltip-number">
+                                                            {index + 1}
+                                                        </span>
+                                                        <span className="tooltip-time">
+                                                            {entry.lead.time}
+                                                        </span>
+                                                        <span>
+                                                            {entryTitle(entry)}{' '}
+                                                            ·{' '}
+                                                            {entry.lead.subject}
+                                                        </span>
+                                                        {active === 0 && (
+                                                            <span className="tooltip-cancelled">
+                                                                Cancelled
+                                                            </span>
+                                                        )}
+                                                        {entry.isGroup &&
+                                                            active > 0 &&
+                                                            active <
+                                                                entry.sessions
+                                                                    .length && (
+                                                                <span className="tooltip-cancelled">
+                                                                    {`${entry.sessions.length - active} of ${entry.sessions.length} cancelled`}
                                                                 </span>
-                                                                <span className="tooltip-time">
-                                                                    {
-                                                                        entry
-                                                                            .lead
-                                                                            .time
-                                                                    }
-                                                                </span>
-                                                                <span>
-                                                                    {entryTitle(
-                                                                        entry
-                                                                    )}{' '}
-                                                                    ·{' '}
-                                                                    {
-                                                                        entry
-                                                                            .lead
-                                                                            .subject
-                                                                    }
-                                                                </span>
-                                                                {active ===
-                                                                    0 && (
-                                                                    <span className="tooltip-cancelled">
-                                                                        Cancelled
-                                                                    </span>
-                                                                )}
-                                                                {entry.isGroup &&
-                                                                    active >
-                                                                        0 &&
-                                                                    active <
-                                                                        entry
-                                                                            .sessions
-                                                                            .length && (
-                                                                        <span className="tooltip-cancelled">
-                                                                            {`${entry.sessions.length - active} of ${entry.sessions.length} cancelled`}
-                                                                        </span>
-                                                                    )}
-                                                            </li>
-                                                        )
-                                                    }
-                                                )}
-                                            </ul>
-                                        </div>
-                                    }
-                                >
-                                    {cell}
-                                </Tooltip>
-                            )
-                        })}
-                    </div>
+                                                            )}
+                                                    </li>
+                                                )
+                                            })}
+                                        </ul>
+                                    </div>
+                                }
+                            >
+                                {cell}
+                            </Tooltip>
+                        )
+                    })}
+                </div>
             </div>
         </section>
     )

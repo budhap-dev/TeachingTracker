@@ -10,6 +10,11 @@ import {
     saveStudentRequested,
     saveStudentSucceeded,
     saveStudentFailed,
+    archiveStudentRequested,
+    restoreStudentRequested,
+    archiveStudentSucceeded,
+    restoreStudentSucceeded,
+    archiveStudentFailed,
     dismissError,
     createSessionFailed,
     createSessionRequested,
@@ -46,6 +51,9 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     parentName: overrides.parentName ?? 'Parent Name',
     contactNumber: overrides.contactNumber ?? '0700000000',
     address: overrides.address ?? 'Test Address',
+    isArchived: overrides.isArchived,
+    archivedOn: overrides.archivedOn,
+    archiveNotes: overrides.archiveNotes,
 })
 
 /** Mirrors the API: a bill is classes taught x the per-session fee. */
@@ -357,6 +365,78 @@ describe('student reducer', () => {
 
             // The teacher acknowledges it; the message goes away.
             expect(studentReducer(failed, dismissError()).error).toBeNull()
+        })
+    })
+
+    describe('archive and restore (REQ-013)', () => {
+        const loaded = () =>
+            studentReducer(
+                initial(),
+                fetchStudentsSucceeded([buildStudent({ id: 1 })])
+            )
+
+        it('replaces the student with the archived copy and toasts', () => {
+            const requested = studentReducer(
+                loaded(),
+                archiveStudentRequested({ id: 1, notes: 'Done' })
+            )
+            expect(requested.savingStudent).toBe(true)
+
+            const archived = studentReducer(
+                requested,
+                archiveStudentSucceeded(
+                    buildStudent({ id: 1, isArchived: true })
+                )
+            )
+            expect(archived.savingStudent).toBe(false)
+            expect(archived.students[0].isArchived).toBe(true)
+            expect(archived.notice?.kind).toBe('success')
+        })
+
+        it('restores the student and clears the archived flag', () => {
+            const start = studentReducer(
+                loaded(),
+                archiveStudentSucceeded(
+                    buildStudent({ id: 1, isArchived: true })
+                )
+            )
+            const requested = studentReducer(
+                start,
+                restoreStudentRequested(1)
+            )
+            expect(requested.savingStudent).toBe(true)
+
+            const restored = studentReducer(
+                requested,
+                restoreStudentSucceeded(
+                    buildStudent({ id: 1, isArchived: false })
+                )
+            )
+            expect(restored.students[0].isArchived).toBe(false)
+            expect(restored.notice?.message).toMatch(/restored/i)
+        })
+
+        it('surfaces the API message (e.g. the 409) on failure', () => {
+            const failed = studentReducer(
+                studentReducer(
+                    loaded(),
+                    archiveStudentRequested({ id: 1, notes: 'x' })
+                ),
+                archiveStudentFailed('This student still has a class scheduled.')
+            )
+            expect(failed.savingStudent).toBe(false)
+            expect(failed.error).toMatch(/still has a class/i)
+        })
+
+        it('appends when the archived student is not already in the store', () => {
+            const appended = studentReducer(
+                loaded(),
+                archiveStudentSucceeded(
+                    buildStudent({ id: 999, isArchived: true })
+                )
+            )
+            expect(appended.students).toHaveLength(2)
+            expect(appended.students.at(-1)?.id).toBe(999)
         })
     })
 

@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchStudent, fetchStudents, upsertStudent } from './students'
+import {
+    archiveStudent,
+    fetchStudent,
+    fetchStudents,
+    restoreStudent,
+    upsertStudent,
+} from './students'
 import type { StudentInput } from './students'
 
 const jsonResponse = (body: unknown) =>
@@ -62,6 +68,35 @@ describe('students api', () => {
                 method: 'POST',
                 body: JSON.stringify(sampleInput),
             })
+        )
+    })
+
+    it('archives a student via POST /students/{id}/archive with the note', async () => {
+        const fetchMock = jsonResponse({ id: 5, isArchived: true })
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(archiveStudent(5, 'Finished')).resolves.toMatchObject({
+            isArchived: true,
+        })
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/students/5/archive',
+            expect.objectContaining({
+                method: 'POST',
+                body: JSON.stringify({ notes: 'Finished' }),
+            })
+        )
+    })
+
+    it('restores a student via POST /students/{id}/restore', async () => {
+        const fetchMock = jsonResponse({ id: 5, isArchived: false })
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(restoreStudent(5)).resolves.toMatchObject({
+            isArchived: false,
+        })
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/students/5/restore',
+            expect.objectContaining({ method: 'POST' })
         )
     })
 })
