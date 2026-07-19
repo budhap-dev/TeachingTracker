@@ -397,6 +397,54 @@ describe('Teaching Tracker app', () => {
         expect(shown).not.toContain('Maya Fernando week 4')
     })
 
+    it('shows each student\'s current name on the dashboard, not the one frozen on the session', async () => {
+        const soon = new Date()
+        soon.setDate(soon.getDate() + 3)
+        const date = `${soon.getFullYear()}-${String(soon.getMonth() + 1).padStart(2, '0')}-${String(soon.getDate()).padStart(2, '0')}`
+        serveSessions([
+            // A stale denormalised name; fixture student 1 is Asha Perera now.
+            {
+                id: 900,
+                studentId: 1,
+                studentName: 'Old Name',
+                year: '9',
+                subject: 'Mathematics',
+                date,
+                time: '16:00',
+                notes: 'Booked under the old name',
+                status: 'Scheduled',
+            },
+            // No such student — nothing to resolve to, so its own copy stands.
+            {
+                id: 901,
+                studentId: 9999,
+                studentName: 'Ghost Student',
+                year: '11',
+                subject: 'Physics',
+                date,
+                time: '17:00',
+                notes: 'Orphaned session',
+                status: 'Scheduled',
+            },
+        ])
+
+        render(<App />)
+
+        const list = await screen.findByRole('list', {
+            name: /upcoming sessions calendar/i,
+        })
+        await waitFor(() =>
+            expect(
+                within(list).getAllByRole('listitem').length
+            ).toBeGreaterThan(0)
+        )
+        // Resolved live from the roster — the rename shows through.
+        expect(within(list).getByText('Asha Perera')).toBeInTheDocument()
+        expect(within(list).queryByText('Old Name')).not.toBeInTheDocument()
+        // An unknown student keeps the session's own (only available) copy.
+        expect(within(list).getByText('Ghost Student')).toBeInTheDocument()
+    })
+
     it('saves a scheduled class and shows it in the dashboard', async () => {
         const user = userEvent.setup()
         render(<App />)

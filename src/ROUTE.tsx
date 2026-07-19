@@ -99,6 +99,7 @@ const DashboardRoute = () => {
         // happens to fall outside it.
         const from = toDateKey(new Date())
         const taken = new Map<number, number>()
+        const studentsById = new Map(students.map((s) => [s.id, s]))
 
         return activeSessions(scheduledSessions)
             .filter((session) => session.date >= from)
@@ -116,7 +117,21 @@ const DashboardRoute = () => {
                 taken.set(session.studentId, kept + 1)
                 return true
             })
-    }, [scheduledSessions])
+            .map((session) => {
+                // Resolve name and year from the live student record. The
+                // session carries a denormalised copy frozen at booking time,
+                // which goes stale when a student is renamed — the dashboard
+                // was the last screen still trusting that copy.
+                const student = studentsById.get(session.studentId)
+                return student
+                    ? {
+                          ...session,
+                          studentName: `${student.firstName} ${student.lastName}`,
+                          year: student.year,
+                      }
+                    : session
+            })
+    }, [scheduledSessions, students])
 
     // Students by year: the old chart added students to sessions and counted
     // each student twice (once as a student, once by mode), so its "total" meant

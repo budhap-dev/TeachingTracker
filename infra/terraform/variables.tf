@@ -22,6 +22,11 @@ variable "environments" {
     sku_size = optional(string, "Free")
   }))
   default = {
+    # REQ-009 phase 0 note: the SWA stays here deliberately. It serves only
+    # the static bundle — no personal data is processed or stored on it (the
+    # browser talks to the Function App directly), westeurope rejected new
+    # customers at move time, and SWA offers no UK region. The data stack
+    # (Functions, Key Vault, storage) is what moved to UK South.
     dev = {
       location = "eastus2"
     }
