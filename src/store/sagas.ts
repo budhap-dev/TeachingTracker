@@ -13,7 +13,9 @@ import {
 } from '../api/students'
 import { fetchPaymentsByMonth, savePayments } from '../api/payments'
 import {
+    addSessionMember,
     createSession,
+    deleteSession,
     fetchSessions,
     updateSession,
     updateSessionStatus,
@@ -22,6 +24,9 @@ import {
     createSessionFailed,
     createSessionRequested,
     createSessionSucceeded,
+    addSessionMemberRequested,
+    addSessionMemberSucceeded,
+    addSessionMemberFailed,
     fetchPaymentsFailed,
     fetchPaymentsRequested,
     fetchPaymentsSucceeded,
@@ -45,6 +50,9 @@ import {
     setSessionStatusFailed,
     setSessionStatusRequested,
     setSessionStatusSucceeded,
+    deleteSessionRequested,
+    deleteSessionSucceeded,
+    deleteSessionFailed,
     editSessionFailed,
     editSessionRequested,
     editSessionSucceeded,
@@ -103,6 +111,28 @@ export function* createSessionSaga(
     }
 }
 
+/** Adds a student to a class (solo → group); the group's rows come back. */
+export function* addSessionMemberSaga(
+    action: ReturnType<typeof addSessionMemberRequested>
+) {
+    try {
+        const rows: ScheduledSession[] = yield call(
+            addSessionMember,
+            action.payload.sessionId,
+            action.payload.studentId
+        )
+        yield put(addSessionMemberSucceeded(rows))
+    } catch (error) {
+        yield put(
+            addSessionMemberFailed(
+                error instanceof Error
+                    ? `Could not add the student: ${error.message}`
+                    : 'Could not add the student to the class.'
+            )
+        )
+    }
+}
+
 /**
  * Persists a student — created when the payload has no id, updated when it has.
  * The API's response, not the submitted draft, is what reaches the store.
@@ -113,6 +143,10 @@ export function* saveStudentSaga(
     try {
         const student: Student = yield call(upsertStudent, action.payload)
         yield put(saveStudentSucceeded(student))
+        // A rename refreshes the denormalised name/year the API keeps on the
+        // student's classes; pull them back so the planner and student page
+        // show the new name at once, not only after a reload.
+        yield put(fetchSessionsRequested())
     } catch (error) {
         yield put(saveStudentFailed(toSaveMessage(error)))
     }
@@ -184,6 +218,24 @@ export function* setSessionStatusSaga(
     }
 }
 
+/** Deletes a class via the API — the removed ids come back to drop from state. */
+export function* deleteSessionSaga(
+    action: ReturnType<typeof deleteSessionRequested>
+) {
+    try {
+        const ids: number[] = yield call(deleteSession, action.payload)
+        yield put(deleteSessionSucceeded(ids))
+    } catch (error) {
+        yield put(
+            deleteSessionFailed(
+                error instanceof Error
+                    ? `Could not delete the class: ${error.message}`
+                    : 'Could not delete the class.'
+            )
+        )
+    }
+}
+
 /** Edits a class's details via the API, taking the server's copy as truth. */
 export function* editSessionSaga(
     action: ReturnType<typeof editSessionRequested>
@@ -235,10 +287,12 @@ export function* rootSaga() {
         takeLatest(fetchPaymentsRequested.type, loadPaymentsSaga),
         takeLatest(fetchSessionsRequested.type, loadSessionsSaga),
         takeEvery(createSessionRequested.type, createSessionSaga),
+        takeEvery(addSessionMemberRequested.type, addSessionMemberSaga),
         takeEvery(saveStudentRequested.type, saveStudentSaga),
         takeEvery(archiveStudentRequested.type, archiveStudentSaga),
         takeEvery(restoreStudentRequested.type, restoreStudentSaga),
         takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
+        takeEvery(deleteSessionRequested.type, deleteSessionSaga),
         takeEvery(editSessionRequested.type, editSessionSaga),
         takeEvery(savePaymentRequested.type, savePaymentSaga),
     ])

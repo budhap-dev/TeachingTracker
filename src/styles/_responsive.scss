@@ -53,6 +53,14 @@
         gap: 12px;
     }
 
+    /* On the stacked column the one-line ellipsis truncates the daily quote —
+       let it wrap so the whole thing reads on a phone. */
+    .welcome-quote {
+        white-space: normal;
+        overflow: visible;
+        max-width: none;
+    }
+
     .topbar-actions {
         width: 100%;
         justify-content: space-between;
@@ -75,7 +83,6 @@
         grid-template-columns: 1fr;
     }
 
-    .dashboard-chart,
     .payment-summary-grid {
         grid-template-columns: 1fr;
     }

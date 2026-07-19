@@ -13,13 +13,17 @@ import {
 } from '../api/students'
 import { fetchPaymentsByMonth, savePayments } from '../api/payments'
 import {
+    addSessionMember,
     createSession,
+    deleteSession,
     fetchSessions,
     updateSession,
     updateSessionStatus,
 } from '../api/sessions'
 import {
+    addSessionMemberSaga,
     createSessionSaga,
+    deleteSessionSaga,
     editSessionSaga,
     loadPaymentsSaga,
     savePaymentSaga,
@@ -32,6 +36,9 @@ import {
     setSessionStatusSaga,
 } from './sagas'
 import {
+    addSessionMemberFailed,
+    addSessionMemberRequested,
+    addSessionMemberSucceeded,
     createSessionFailed,
     createSessionRequested,
     createSessionSucceeded,
@@ -61,6 +68,9 @@ import {
     setSessionStatusFailed,
     setSessionStatusRequested,
     setSessionStatusSucceeded,
+    deleteSessionRequested,
+    deleteSessionSucceeded,
+    deleteSessionFailed,
 } from './store'
 
 const students = [{ id: 1, firstName: 'Asha' }] as unknown as Student[]
@@ -170,6 +180,39 @@ describe('createSessionSaga', () => {
     })
 })
 
+describe('addSessionMemberSaga', () => {
+    const action = addSessionMemberRequested({ sessionId: 101, studentId: 7 })
+
+    it('posts the member and puts the returned rows on success', () => {
+        const gen = addSessionMemberSaga(action)
+
+        expect(gen.next().value).toEqual(call(addSessionMember, 101, 7))
+        const rows = [session] as ScheduledSession[]
+        expect(gen.next(rows).value).toEqual(
+            put(addSessionMemberSucceeded(rows))
+        )
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('reports the error message when the POST throws', () => {
+        const gen = addSessionMemberSaga(action)
+        gen.next()
+
+        expect(gen.throw(new Error('already a member')).value).toEqual(
+            put(addSessionMemberFailed('Could not add the student: already a member'))
+        )
+    })
+
+    it('falls back to a generic message for a non-Error throw', () => {
+        const gen = addSessionMemberSaga(action)
+        gen.next()
+
+        expect(gen.throw('boom').value).toEqual(
+            put(addSessionMemberFailed('Could not add the student to the class.'))
+        )
+    })
+})
+
 describe('saveStudentSaga', () => {
     const draft = {
         id: 1,
@@ -185,6 +228,9 @@ describe('saveStudentSaga', () => {
         // The API's response wins, not the draft we sent.
         const stored = { ...draft, studentId: 'STU-0001' } as Student
         expect(gen.next(stored).value).toEqual(put(saveStudentSucceeded(stored)))
+        // A rename refreshes denormalised session names server-side, so the
+        // sagas pulls the classes back afterwards.
+        expect(gen.next().value).toEqual(put(fetchSessionsRequested()))
         expect(gen.next().done).toBe(true)
     })
 
@@ -329,6 +375,34 @@ describe('setSessionStatusSaga', () => {
     })
 })
 
+describe('deleteSessionSaga', () => {
+    it('deletes the class and puts the removed ids on success', () => {
+        const gen = deleteSessionSaga(deleteSessionRequested(101))
+
+        expect(gen.next().value).toEqual(call(deleteSession, 101))
+        expect(gen.next([101, 102]).value).toEqual(
+            put(deleteSessionSucceeded([101, 102]))
+        )
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('reports the error message when the DELETE throws', () => {
+        const gen = deleteSessionSaga(deleteSessionRequested(101))
+        gen.next()
+        expect(gen.throw(new Error('boom')).value).toEqual(
+            put(deleteSessionFailed('Could not delete the class: boom'))
+        )
+    })
+
+    it('falls back to a readable message for a non-Error throw', () => {
+        const gen = deleteSessionSaga(deleteSessionRequested(101))
+        gen.next()
+        expect(gen.throw('kaboom').value).toEqual(
+            put(deleteSessionFailed('Could not delete the class.'))
+        )
+    })
+})
+
 describe('editSessionSaga', () => {
     const changes = { subject: 'Physics', time: '17:00' }
 
@@ -406,10 +480,15 @@ describe('rootSaga', () => {
                 takeLatest(fetchPaymentsRequested.type, loadPaymentsSaga),
                 takeLatest(fetchSessionsRequested.type, loadSessionsSaga),
                 takeEvery(createSessionRequested.type, createSessionSaga),
+                takeEvery(
+                    addSessionMemberRequested.type,
+                    addSessionMemberSaga
+                ),
                 takeEvery(saveStudentRequested.type, saveStudentSaga),
                 takeEvery(archiveStudentRequested.type, archiveStudentSaga),
                 takeEvery(restoreStudentRequested.type, restoreStudentSaga),
                 takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
+                takeEvery(deleteSessionRequested.type, deleteSessionSaga),
                 takeEvery(editSessionRequested.type, editSessionSaga),
                 takeEvery(savePaymentRequested.type, savePaymentSaga),
             ])

@@ -81,6 +81,8 @@ const renderView = (props: Partial<
             onRestore={vi.fn()}
             onEditSession={vi.fn()}
             onCancelSession={vi.fn()}
+            onAddMember={vi.fn()}
+            onRemoveMember={vi.fn()}
             {...props}
         />
     )
@@ -317,6 +319,71 @@ describe('StudentDetailsView', () => {
             expect.any(Object),
             true // applyToGroup
         )
+    })
+
+    it('adds a student to the class from the edit dialog', async () => {
+        const user = userEvent.setup()
+        const onAddMember = vi.fn()
+        renderView({
+            onAddMember,
+            // Two students on the roster; only the joiner (id 20) is addable —
+            // id 10 is already the class member.
+            students: [
+                buildStudent(),
+                buildStudent({ id: 20, firstName: 'Ben', lastName: 'Kaur' }),
+            ],
+            scheduledSessions: [buildSession(1, 3)],
+        })
+
+        await user.click(
+            screen.getByRole('button', { name: /edit mathematics on/i })
+        )
+        const dialog = screen.getByRole('dialog')
+        await user.click(within(dialog).getByLabelText(/add a student/i))
+        await user.click(await screen.findByRole('option', { name: 'Ben Kaur' }))
+
+        expect(onAddMember).toHaveBeenCalledWith(1, 20)
+    })
+
+    it('removes a member from a group class, but never the last one', async () => {
+        const user = userEvent.setup()
+        const onRemoveMember = vi.fn()
+        renderView({
+            onRemoveMember,
+            scheduledSessions: [
+                buildSession(1, 3, {
+                    groupId: 'grp-1',
+                    studentName: 'Asha Perera',
+                }),
+                buildSession(2, 3, {
+                    groupId: 'grp-1',
+                    studentId: 20,
+                    studentName: 'Ben Kaur',
+                }),
+            ],
+        })
+
+        await user.click(
+            screen.getByRole('button', { name: /edit mathematics on/i })
+        )
+        const dialog = screen.getByRole('dialog')
+        // Two chips, each removable while more than one member remains.
+        const deletes = within(dialog).getAllByTestId('CancelIcon')
+        expect(deletes).toHaveLength(2)
+        await user.click(deletes[1])
+
+        expect(onRemoveMember).toHaveBeenCalledWith(2)
+    })
+
+    it('cannot remove the sole member of a solo class', async () => {
+        renderView({ scheduledSessions: [buildSession(1, 3)] })
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /edit mathematics on/i })
+        )
+        const dialog = screen.getByRole('dialog')
+        // The one attendee's chip has no delete affordance.
+        expect(within(dialog).queryByTestId('CancelIcon')).toBeNull()
     })
 
     it('dismisses the edit dialog without saving', async () => {

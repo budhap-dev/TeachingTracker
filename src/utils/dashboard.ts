@@ -1,7 +1,63 @@
-import type { ScheduledSession } from '../data/students'
+import type { ScheduledSession, Student } from '../data/students'
 import { activeSessions } from '../data/students'
 import { toDateKey } from './calendar'
 import { groupDaySessions } from './sessionGroups'
+
+/** A student in a progress band — enough to name and open their page. */
+export type BandStudent = { id: number; name: string }
+
+/**
+ * Students split by how their progress is tracking, for the dashboard. Each
+ * band carries its students so hovering a bar can name them; needs-attention is
+ * worst first, the others alphabetical.
+ */
+export type ProgressBands = {
+    onTrack: BandStudent[]
+    developing: BandStudent[]
+    needsAttention: BandStudent[]
+    total: number
+}
+
+/** Below this, a student needs attention; at or above `onTrackAt`, on track. */
+const developingAt = 40
+const onTrackAt = 70
+
+/** Buckets students by progress so the dashboard can surface who to follow up with. */
+export const getProgressBands = (students: Student[]): ProgressBands => {
+    type Scored = BandStudent & { progress: number }
+    const onTrack: Scored[] = []
+    const developing: Scored[] = []
+    const needsAttention: Scored[] = []
+    students.forEach((student) => {
+        const entry: Scored = {
+            id: student.id,
+            name: `${student.firstName} ${student.lastName}`,
+            progress: student.progress,
+        }
+        if (student.progress >= onTrackAt) {
+            onTrack.push(entry)
+        } else if (student.progress >= developingAt) {
+            developing.push(entry)
+        } else {
+            needsAttention.push(entry)
+        }
+    })
+    const byName = (left: Scored, right: Scored) =>
+        left.name.localeCompare(right.name)
+    const strip = (band: Scored[]) => band.map(({ id, name }) => ({ id, name }))
+    return {
+        onTrack: strip([...onTrack].sort(byName)),
+        developing: strip([...developing].sort(byName)),
+        // Worst first, so the most urgent follow-up leads the list.
+        needsAttention: strip(
+            [...needsAttention].sort(
+                (left, right) =>
+                    left.progress - right.progress || byName(left, right)
+            )
+        ),
+        total: students.length,
+    }
+}
 
 /** A day's teaching load, for the week-at-a-glance chart. */
 export type DayLoad = {

@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import type { ScheduledSession } from '../data/students'
-import { formatHours, getWeekLoad, totalMinutes } from './dashboard'
+import type { ScheduledSession, Student } from '../data/students'
+import {
+    formatHours,
+    getProgressBands,
+    getWeekLoad,
+    totalMinutes,
+} from './dashboard'
+
+const student = (id: number, progress: number, name = `S${id}`): Student =>
+    ({
+        id,
+        firstName: name,
+        lastName: 'Test',
+        progress,
+    }) as unknown as Student
 
 const session = (
     id: number,
@@ -17,6 +30,53 @@ const session = (
     notes: '',
     status: 'Scheduled',
     ...overrides,
+})
+
+describe('getProgressBands', () => {
+    it('buckets students by progress, names each band, worst attention first', () => {
+        const bands = getProgressBands([
+            student(1, 90, 'Onya'), // on track (>= 70)
+            student(2, 70, 'Trey'), // on track (boundary)
+            student(3, 55, 'Devi'), // developing (40–69)
+            student(4, 40, 'Della'), // developing (boundary)
+            student(5, 30, 'Flo'), // needs attention (< 40)
+            student(6, 10, 'Zed'), // needs attention, worst
+        ])
+
+        // Non-attention bands read alphabetically.
+        expect(bands.onTrack.map((s) => s.name)).toEqual([
+            'Onya Test',
+            'Trey Test',
+        ])
+        expect(bands.developing.map((s) => s.name)).toEqual([
+            'Della Test',
+            'Devi Test',
+        ])
+        // Worst progress leads the needs-attention list.
+        expect(bands.needsAttention).toEqual([
+            { id: 6, name: 'Zed Test' },
+            { id: 5, name: 'Flo Test' },
+        ])
+        expect(bands.total).toBe(6)
+    })
+
+    it('ties in the attention list break by name, and an empty roster is empty bands', () => {
+        const tied = getProgressBands([
+            student(2, 20, 'Beau'),
+            student(1, 20, 'Ana'),
+        ])
+        expect(tied.needsAttention.map((s) => s.name)).toEqual([
+            'Ana Test',
+            'Beau Test',
+        ])
+
+        expect(getProgressBands([])).toEqual({
+            onTrack: [],
+            developing: [],
+            needsAttention: [],
+            total: 0,
+        })
+    })
 })
 
 describe('formatHours', () => {

@@ -4,6 +4,9 @@ import {
     setSessionStatusRequested,
     setSessionStatusSucceeded,
     setSessionStatusFailed,
+    deleteSessionRequested,
+    deleteSessionSucceeded,
+    deleteSessionFailed,
     editSessionRequested,
     editSessionSucceeded,
     editSessionFailed,
@@ -16,6 +19,9 @@ import {
     restoreStudentSucceeded,
     archiveStudentFailed,
     dismissError,
+    addSessionMemberRequested,
+    addSessionMemberSucceeded,
+    addSessionMemberFailed,
     createSessionFailed,
     createSessionRequested,
     createSessionSucceeded,
@@ -100,6 +106,8 @@ const buildSession = (overrides: Partial<ScheduledSession> = {}): ScheduledSessi
     date: overrides.date ?? '2026-08-01',
     time: overrides.time ?? '10:00',
     notes: overrides.notes ?? 'Revision',
+    ...(overrides.groupId ? { groupId: overrides.groupId } : {}),
+    ...(overrides.status ? { status: overrides.status } : {}),
 })
 
 /** Fresh initial state straight from the reducer. */
@@ -295,6 +303,53 @@ describe('student reducer', () => {
                 createSessionFailed('create failed')
             )
             expect(state.error).toBe('create failed')
+        })
+    })
+
+    describe('adding a student to a class', () => {
+        it('marks a save in flight and clears any previous error on request', () => {
+            const errored = studentReducer(
+                initial(),
+                addSessionMemberFailed('previous failure')
+            )
+            expect(errored.error).toBe('previous failure')
+
+            const requested = studentReducer(
+                errored,
+                addSessionMemberRequested({ sessionId: 101, studentId: 7 })
+            )
+            expect(requested.savingSession).toBe(true)
+            expect(requested.error).toBeNull()
+        })
+
+        it('replaces the promoted row and appends the new member', () => {
+            // Start with the solo row already in state; the promotion replaces
+            // it (now with a groupId) and appends the joiner's fresh row.
+            const seeded = studentReducer(
+                initial(),
+                fetchSessionsSucceeded([buildSession({ id: 101 })])
+            )
+            const state = studentReducer(
+                seeded,
+                addSessionMemberSucceeded([
+                    buildSession({ id: 101, groupId: 'grp-101' }),
+                    buildSession({ id: 102, studentId: 7, groupId: 'grp-101' }),
+                ])
+            )
+            expect(state.scheduledSessions).toHaveLength(2)
+            expect(state.scheduledSessions[0].groupId).toBe('grp-101')
+            expect(state.scheduledSessions[1].id).toBe(102)
+            expect(state.savingSession).toBe(false)
+            expect(state.notice?.message).toBe('Student added to the class.')
+        })
+
+        it('records an error when the add fails', () => {
+            const state = studentReducer(
+                initial(),
+                addSessionMemberFailed('already a member')
+            )
+            expect(state.savingSession).toBe(false)
+            expect(state.error).toBe('already a member')
         })
     })
 
@@ -520,6 +575,52 @@ describe('student reducer', () => {
                 setSessionStatusFailed('Could not update the class: 503')
             )
             expect(failed.error).toBe('Could not update the class: 503')
+        })
+    })
+
+    describe('deleting a class', () => {
+        const twoClasses = () =>
+            studentReducer(
+                initial(),
+                fetchSessionsSucceeded([
+                    { id: 101, status: 'Scheduled', groupId: 'g' },
+                    { id: 102, status: 'Scheduled', groupId: 'g' },
+                    { id: 200, status: 'Scheduled' },
+                ] as never)
+            )
+
+        it('removes the deleted rows entirely, unlike a cancel', () => {
+            const after = studentReducer(
+                twoClasses(),
+                deleteSessionSucceeded([101, 102])
+            )
+            // The group's two rows are gone; the unrelated solo class remains.
+            expect(after.scheduledSessions.map((s) => s.id)).toEqual([200])
+            expect(after.notice?.message).toBe('Class deleted for everyone.')
+        })
+
+        it('names a single deleted class', () => {
+            const after = studentReducer(
+                twoClasses(),
+                deleteSessionSucceeded([200])
+            )
+            expect(after.scheduledSessions.map((s) => s.id)).toEqual([101, 102])
+            expect(after.notice?.message).toBe('Class deleted.')
+        })
+
+        it('clears the error on request and surfaces it on failure', () => {
+            const requested = studentReducer(
+                studentReducer(initial(), deleteSessionFailed('old')),
+                deleteSessionRequested(101)
+            )
+            expect(requested.savingSession).toBe(true)
+            expect(requested.error).toBeNull()
+
+            const failed = studentReducer(
+                requested,
+                deleteSessionFailed('Could not delete the class: 500')
+            )
+            expect(failed.error).toBe('Could not delete the class: 500')
         })
     })
 

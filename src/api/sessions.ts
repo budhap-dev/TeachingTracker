@@ -78,3 +78,25 @@ export const updateSession = async (
             }
         )
     )
+
+/** DELETE /sessions/{id} — permanently removes a class (the whole group);
+ *  the removed ids come back so they can be dropped from the store. */
+export const deleteSession = async (id: number): Promise<number[]> => {
+    const { ids } = await apiRequest<{ ids: number[] }>(`/sessions/${id}`, {
+        method: 'DELETE',
+    })
+    return ids
+}
+
+/** POST /sessions/{id}/members — adds a student to a class (solo → group);
+ *  the whole group's rows come back. */
+export const addSessionMember = async (
+    sessionId: number,
+    studentId: number
+): Promise<ScheduledSession[]> =>
+    asRows(
+        await apiRequest<ScheduledSession | ScheduledSession[]>(
+            `/sessions/${sessionId}/members`,
+            { method: 'POST', body: { studentId } }
+        )
+    )

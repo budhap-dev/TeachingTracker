@@ -112,16 +112,16 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     address: overrides.address ?? '12 Oak Road, Kingston upon Thames, KT2 6LP',
 })
 
-const upcomingSessions: ScheduledSession[] = [
+const upcomingSessions = [
     {
         id: 1,
-        studentId: 1,
-        studentName: 'Asha Perera',
-        year: '10',
         subject: 'Mathematics',
         date: '2026-07-11',
         time: '16:00',
         notes: 'Problem solving practice',
+        members: [
+            { studentId: 1, studentName: 'Asha Perera', year: '10' },
+        ],
     },
 ]
 
@@ -138,12 +138,16 @@ describe('component-level coverage', () => {
                     avgProgress: 82,
                     totalStudents: 5,
                 }}
-                overviewChart={[
-                    { label: 'Students', value: 5 },
-                    { label: 'Face to Face', value: 3 },
-                    { label: 'Online', value: 2 },
-                    { label: 'Upcoming sessions', value: 4 },
-                ]}
+                attention={{
+                    onTrack: [
+                        { id: 2, name: 'Bea Two' },
+                        { id: 3, name: 'Cy Three' },
+                        { id: 4, name: 'Dee Four' },
+                    ],
+                    developing: [{ id: 5, name: 'Evan Five' }],
+                    needsAttention: [{ id: 1, name: 'Asha Perera' }],
+                    total: 5,
+                }}
                 upcomingSessions={upcomingSessions}
                 weekLoad={[]}
                 onManageStudents={onManageStudents}
@@ -287,14 +291,32 @@ describe('component-level coverage', () => {
         // rather than a figure typed here in the hope it matches.
         expect(markPaidCall.amountPaid).toBeUndefined()
 
-        fireEvent.change(
-            screen.getByLabelText(/asha perera amount received/i),
-            {
-                target: { value: '120' },
-            }
+        // The amount box is free to type in — typing (and any non-Enter key)
+        // must NOT hit the API on every keystroke.
+        const amountInput = screen.getByLabelText(
+            /asha perera amount received/i
         )
-        expect(onUpdatePaymentRecord).toHaveBeenCalledWith(
-            expect.objectContaining({ amountPaid: 120 })
+        const beforeTyping = onUpdatePaymentRecord.mock.calls.length
+        fireEvent.change(amountInput, { target: { value: '9' } })
+        fireEvent.change(amountInput, { target: { value: '90' } })
+        fireEvent.keyDown(amountInput, { key: 'a' })
+        expect(onUpdatePaymentRecord.mock.calls.length).toBe(beforeTyping)
+
+        // Enter commits the typed amount.
+        fireEvent.keyDown(amountInput, { key: 'Enter' })
+        expect(onUpdatePaymentRecord).toHaveBeenLastCalledWith(
+            expect.objectContaining({ amountPaid: 90 })
+        )
+
+        // Blur with nothing freshly typed is a no-op; blur after typing commits
+        // (an empty box settles to 0).
+        const afterEnter = onUpdatePaymentRecord.mock.calls.length
+        fireEvent.blur(amountInput)
+        expect(onUpdatePaymentRecord.mock.calls.length).toBe(afterEnter)
+        fireEvent.change(amountInput, { target: { value: '' } })
+        fireEvent.blur(amountInput)
+        expect(onUpdatePaymentRecord).toHaveBeenLastCalledWith(
+            expect.objectContaining({ amountPaid: 0 })
         )
 
         fireEvent.change(screen.getByLabelText(/asha perera payment notes/i), {
@@ -934,6 +956,7 @@ describe('component-level coverage', () => {
                 onEditClass: ReturnType<typeof vi.fn>
                 onScheduleClass: ReturnType<typeof vi.fn>
                 onSetSessionStatus: ReturnType<typeof vi.fn>
+                onDeleteClass: ReturnType<typeof vi.fn>
             }>,
             session: ScheduledSession = bookedClass()
         ) =>
@@ -946,19 +969,133 @@ describe('component-level coverage', () => {
                     onSetSessionStatus={
                         handlers.onSetSessionStatus ?? vi.fn()
                     }
+                    onDeleteClass={handlers.onDeleteClass ?? vi.fn()}
                 />
             )
+
+        it('deletes a class from the modal, behind a confirm', async () => {
+            const user = userEvent.setup()
+            const onDeleteClass = vi.fn()
+            renderBooked({ onDeleteClass })
+
+            await user.click(openDayCell(day))
+
+            // Dismissing the confirm with Escape keeps the class.
+            await user.click(
+                await screen.findByRole('button', { name: /delete class/i })
+            )
+            expect(
+                screen.getByRole('heading', { name: /delete this class\?/i })
+            ).toBeInTheDocument()
+            await user.keyboard('{Escape}')
+            expect(onDeleteClass).not.toHaveBeenCalled()
+
+            // Backing out with Keep also keeps it.
+            await user.click(
+                await screen.findByRole('button', { name: /delete class/i })
+            )
+            await user.click(screen.getByRole('button', { name: /^keep$/i }))
+            expect(onDeleteClass).not.toHaveBeenCalled()
+
+            // Confirming deletes it and closes the day modal.
+            await user.click(
+                await screen.findByRole('button', { name: /delete class/i })
+            )
+            await user.click(screen.getByRole('button', { name: /^delete$/i }))
+            expect(onDeleteClass).toHaveBeenCalledWith(1)
+        })
+
+        it('deletes a whole group class with the everyone confirm', async () => {
+            const user = userEvent.setup()
+            const onDeleteClass = vi.fn()
+            render(
+                <ClassSchedulingView
+                    students={[
+                        buildStudent(),
+                        buildStudent({
+                            id: 2,
+                            firstName: 'Maya',
+                            lastName: 'Fernando',
+                        }),
+                    ]}
+                    sessions={[
+                        bookedClass({ id: 11, groupId: 'grp-1' }),
+                        bookedClass({
+                            id: 12,
+                            studentId: 2,
+                            studentName: 'Maya Fernando',
+                            groupId: 'grp-1',
+                        }),
+                    ]}
+                    onScheduleClass={vi.fn()}
+                    onEditClass={vi.fn()}
+                    onSetSessionStatus={vi.fn()}
+                    onDeleteClass={onDeleteClass}
+                />
+            )
+
+            await user.click(classChip(day, 1))
+            await user.click(
+                screen.getByRole('button', { name: /delete class/i })
+            )
+            expect(
+                screen.getByRole('heading', {
+                    name: /delete this class for everyone\?/i,
+                })
+            ).toBeInTheDocument()
+            await user.click(screen.getByRole('button', { name: /^delete$/i }))
+            // The lead row's id — the service deletes the whole group.
+            expect(onDeleteClass).toHaveBeenCalledWith(11)
+        })
+
+        it('names a cancelled class whose student has left the active roster', async () => {
+            const user = userEvent.setup()
+            // The student isn't in the picker (archived → auto-cancelled), so
+            // the field must fall back to the row's stored name, not blank.
+            render(
+                <ClassSchedulingView
+                    students={[]}
+                    sessions={[
+                        bookedClass({
+                            id: 5,
+                            studentId: 99,
+                            studentName: 'Sam Bailey',
+                            year: '9',
+                            status: 'Cancelled',
+                        }),
+                    ]}
+                    onScheduleClass={vi.fn()}
+                    onEditClass={vi.fn()}
+                    onSetSessionStatus={vi.fn()}
+                    onDeleteClass={vi.fn()}
+                />
+            )
+
+            await user.click(classChip(day, 1))
+            const dialog = await screen.findByRole('dialog')
+            expect(
+                within(dialog).getByText(/Sam Bailey/)
+            ).toBeInTheDocument()
+        })
 
         it('saves an edit to the open class via onEditClass', async () => {
             const user = userEvent.setup()
             const onEditClass = vi.fn()
             const onScheduleClass = vi.fn()
-            renderBooked({ onEditClass, onScheduleClass })
+            // A class booked without notes: Save must still start disabled
+            // (nothing changed) and the empty notes baseline is honoured.
+            renderBooked(
+                { onEditClass, onScheduleClass },
+                bookedClass({ notes: undefined })
+            )
 
             await user.click(openDayCell(day))
             expect(
                 screen.getByRole('heading', { name: /edit class/i })
             ).toBeInTheDocument()
+            expect(
+                screen.getByRole('button', { name: /save changes/i })
+            ).toBeDisabled()
 
             // A second subject joins the first — the class covers both, and
             // the wire format is the joined string.
@@ -1062,13 +1199,19 @@ describe('component-level coverage', () => {
                     name: /edit group class \(2 students\)/i,
                 })
             ).toBeInTheDocument()
-            // Membership is fixed while editing.
-            expect(screen.getByLabelText(/students/i)).toBeDisabled()
+            // Membership is editable now, and Save waits for an actual change.
+            expect(screen.getByLabelText(/students/i)).toBeEnabled()
+            expect(
+                screen.getByRole('button', { name: /save changes/i })
+            ).toBeDisabled()
 
             // Shared-field edits move the whole group.
             fireEvent.change(screen.getByLabelText(/time/i), {
                 target: { value: '11:30' },
             })
+            expect(
+                screen.getByRole('button', { name: /save changes/i })
+            ).toBeEnabled()
             await user.click(
                 screen.getByRole('button', { name: /save changes/i })
             )
@@ -1078,27 +1221,28 @@ describe('component-level coverage', () => {
                 true
             )
 
-            // Reopen: excuse one member, with the are-you-sure step.
+            // Reopen and drop a member by removing their chip from the field;
+            // Save cancels just that row.
             await waitForElementToBeRemoved(() =>
                 screen.queryByRole('dialog')
             )
             await user.click(classChip(day, 1))
-            const members = screen
-                .getByRole('heading', { name: /attending/i })
-                .closest('.group-members') as HTMLElement
+            const studentsRoot = screen
+                .getByLabelText(/students/i)
+                .closest('.MuiAutocomplete-root') as HTMLElement
+            // Chips are the active members in id order: [Asha, Maya].
             await user.click(
-                within(members).getAllByRole('button', {
-                    name: /^cancel$/i,
-                })[1]
+                within(studentsRoot).getAllByTestId('CancelIcon')[1]
             )
-            expect(
-                screen.getByRole('heading', { name: /cancel this class\?/i })
-            ).toBeInTheDocument()
-            await user.click(screen.getByRole('button', { name: /^yes$/i }))
-            expect(onSetSessionStatus).toHaveBeenCalledWith(12, 'Cancelled')
+            await user.click(
+                screen.getByRole('button', { name: /save changes/i })
+            )
+            expect(onSetSessionStatus).toHaveBeenCalledWith(12, 'Cancelled', false)
 
             // Cancel for everyone, behind its own confirmation. (findBy: the
             // closing confirm briefly aria-hides the day modal beneath it.)
+            await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+            await user.click(classChip(day, 1))
             await user.click(
                 await screen.findByRole('button', {
                     name: /cancel for everyone/i,
@@ -1117,9 +1261,65 @@ describe('component-level coverage', () => {
             )
         })
 
-        it('restores a member, and everyone once all are cancelled', async () => {
+        it('adds a student to a group class from the day modal', async () => {
+            const user = userEvent.setup()
+            const onAddMember = vi.fn()
+            const groupRows: ScheduledSession[] = [
+                bookedClass({ id: 11, groupId: 'grp-1' }),
+                bookedClass({
+                    id: 12,
+                    studentId: 2,
+                    studentName: 'Maya Fernando',
+                    groupId: 'grp-1',
+                }),
+            ]
+
+            render(
+                <ClassSchedulingView
+                    students={[
+                        buildStudent(),
+                        buildStudent({
+                            id: 2,
+                            firstName: 'Maya',
+                            lastName: 'Fernando',
+                        }),
+                        // On the roster but not in the class — the only one the
+                        // Students field should offer to add.
+                        buildStudent({
+                            id: 3,
+                            firstName: 'Rohan',
+                            lastName: 'Silva',
+                        }),
+                    ]}
+                    sessions={groupRows}
+                    onScheduleClass={vi.fn()}
+                    onEditClass={vi.fn()}
+                    onSetSessionStatus={vi.fn()}
+                    onAddMember={onAddMember}
+                />
+            )
+
+            await user.click(classChip(day, 1))
+            // Add the roster student straight in the Students field, then Save.
+            await user.type(
+                screen.getByRole('combobox', { name: /students/i }),
+                'Rohan'
+            )
+            await user.click(
+                await screen.findByRole('option', { name: /Rohan Silva/i })
+            )
+            await user.click(
+                screen.getByRole('button', { name: /save changes/i })
+            )
+
+            // Save applies the membership diff: the joiner is added to the lead.
+            expect(onAddMember).toHaveBeenCalledWith(11, 3)
+        })
+
+        it('re-adds an excused member, and restores everyone once all are cancelled', async () => {
             const user = userEvent.setup()
             const onSetSessionStatus = vi.fn()
+            const onAddMember = vi.fn()
             const render2 = (rows: ScheduledSession[]) =>
                 render(
                     <ClassSchedulingView
@@ -1135,10 +1335,13 @@ describe('component-level coverage', () => {
                         onScheduleClass={vi.fn()}
                         onEditClass={vi.fn()}
                         onSetSessionStatus={onSetSessionStatus}
+                        onAddMember={onAddMember}
                     />
                 )
 
-            // One member off sick: their row restores alone.
+            // One member was excused: the field seeds with the active member
+            // only, so re-adding the other brings them back (the API restores
+            // their cancelled row).
             const { unmount } = render2([
                 bookedClass({ id: 21, groupId: 'g' }),
                 bookedClass({
@@ -1150,8 +1353,17 @@ describe('component-level coverage', () => {
                 }),
             ])
             await user.click(classChip(day, 1))
-            await user.click(screen.getByRole('button', { name: /restore/i }))
-            expect(onSetSessionStatus).toHaveBeenCalledWith(22, 'Scheduled')
+            await user.type(
+                screen.getByRole('combobox', { name: /students/i }),
+                'Maya'
+            )
+            await user.click(
+                await screen.findByRole('option', { name: /Maya Fernando/i })
+            )
+            await user.click(
+                screen.getByRole('button', { name: /save changes/i })
+            )
+            expect(onAddMember).toHaveBeenCalledWith(21, 2)
             unmount()
 
             // The whole class was cancelled: restore it for everyone.

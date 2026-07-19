@@ -154,7 +154,9 @@
 }
 
 .pill {
-    padding: 8px 14px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 14px;
     border-radius: 999px;
     background: var(--button-bg);
     color: var(--sidebar-text);
@@ -167,6 +169,14 @@
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+
+    /* The theme pill, term pill and sign-out pill are different shapes inside
+       (a button, plain text, a MUI button), so pin them to one height and
+       centre their content — otherwise the sign-out pill sits a few px taller
+       and the row reads as misaligned. */
+    > * {
+        min-height: 40px;
+    }
 }
 
 .theme-picker {
@@ -175,7 +185,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    padding: 0 12px;
     border-radius: 999px;
     background: var(--button-bg);
 }

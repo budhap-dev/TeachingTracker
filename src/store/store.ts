@@ -214,6 +214,42 @@ const studentSlice = createSlice({
             state.savingSession = false
             fail(state, action.payload)
         },
+        // --- Adding a student to a class (solo → group) ---
+        addSessionMemberRequested: {
+            reducer: (state: StudentState) => {
+                state.savingSession = true
+                state.error = null
+            },
+            prepare: (input: { sessionId: number; studentId: number }) => ({
+                payload: input,
+            }),
+        },
+        addSessionMemberSucceeded: (
+            state,
+            action: PayloadAction<ScheduledSession[]>
+        ) => {
+            // The group's rows come back: the promoted original row (now with a
+            // groupId) is replaced in place, the new member's row is appended.
+            action.payload.forEach((row) => {
+                const index = state.scheduledSessions.findIndex(
+                    (item) => item.id === row.id
+                )
+                if (index >= 0) {
+                    state.scheduledSessions[index] = row
+                } else {
+                    state.scheduledSessions.push(row)
+                }
+            })
+            state.savingSession = false
+            state.notice = {
+                kind: 'success',
+                message: 'Student added to the class.',
+            }
+        },
+        addSessionMemberFailed: (state, action: PayloadAction<string>) => {
+            state.savingSession = false
+            fail(state, action.payload)
+        },
         // --- Cancelling / un-cancelling a class ---
         setSessionStatusRequested: {
             reducer: (state: StudentState) => {
@@ -247,6 +283,36 @@ const studentSlice = createSlice({
             }
         },
         setSessionStatusFailed: (state, action: PayloadAction<string>) => {
+            state.savingSession = false
+            fail(state, action.payload)
+        },
+        // --- Deleting a class outright (distinct from cancelling) ---
+        deleteSessionRequested: {
+            reducer: (state: StudentState) => {
+                state.savingSession = true
+                state.error = null
+            },
+            prepare: (id: number) => ({ payload: id }),
+        },
+        deleteSessionSucceeded: (
+            state,
+            action: PayloadAction<number[]>
+        ) => {
+            // A real delete: the rows leave the store entirely, unlike a cancel.
+            const removed = new Set(action.payload)
+            state.scheduledSessions = state.scheduledSessions.filter(
+                (session) => !removed.has(session.id)
+            )
+            state.savingSession = false
+            state.notice = {
+                kind: 'success',
+                message:
+                    action.payload.length > 1
+                        ? 'Class deleted for everyone.'
+                        : 'Class deleted.',
+            }
+        },
+        deleteSessionFailed: (state, action: PayloadAction<string>) => {
             state.savingSession = false
             fail(state, action.payload)
         },
@@ -408,9 +474,15 @@ export const {
     createSessionRequested,
     createSessionSucceeded,
     createSessionFailed,
+    addSessionMemberRequested,
+    addSessionMemberSucceeded,
+    addSessionMemberFailed,
     setSessionStatusRequested,
     setSessionStatusSucceeded,
     setSessionStatusFailed,
+    deleteSessionRequested,
+    deleteSessionSucceeded,
+    deleteSessionFailed,
     editSessionRequested,
     editSessionSucceeded,
     editSessionFailed,

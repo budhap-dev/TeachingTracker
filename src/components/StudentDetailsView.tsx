@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react'
 import {
+    Autocomplete,
     Button,
     Chip,
     Dialog,
@@ -64,6 +65,10 @@ type StudentDetailsViewProps = {
     ) => void
     /** Cancels (removes) a single upcoming class. */
     onCancelSession: (session: ScheduledSession) => void
+    /** Adds a student to a class (solo → group). */
+    onAddMember: (sessionId: number, studentId: number) => void
+    /** Removes a member — cancels that member's row in the group. */
+    onRemoveMember: (memberSessionId: number) => void
 }
 
 const modeOptions: Student['mode'][] = ['Face to Face', 'Online', 'Both']
@@ -87,6 +92,8 @@ export const StudentDetailsView = ({
     onRestore,
     onEditSession,
     onCancelSession,
+    onAddMember,
+    onRemoveMember,
 }: StudentDetailsViewProps) => {
     const isEditing = editingStudentId === student.id
     // While editing, every control reads from the draft; otherwise from the
@@ -153,6 +160,22 @@ export const StudentDetailsView = ({
         })
         setEditTarget(session)
     }
+
+    // The class being edited, read live from state so add/remove reflect at
+    // once. A solo class is a group of one until someone joins.
+    const editingSession = editTarget
+        ? scheduledSessions.find((s) => s.id === editTarget.id)
+        : undefined
+    const editGroupMembers = editingSession
+        ? (editingSession.groupId
+              ? scheduledSessions.filter(
+                    (s) => s.groupId === editingSession.groupId
+                )
+              : [editingSession]
+          ).filter((s) => s.status !== 'Cancelled')
+        : []
+    const memberIds = new Set(editGroupMembers.map((s) => s.studentId))
+    const addableStudents = students.filter((s) => !memberIds.has(s.id))
     const futureClassCount = scheduledSessions.filter(
         (session) =>
             session.studentId === student.id &&
@@ -223,6 +246,31 @@ export const StudentDetailsView = ({
                         </p>
                     </div>
                     <div className="student-page-actions">
+                        {!isEditing ? (
+                            <Button
+                                variant="outlined"
+                                onClick={() => onBeginEdit(student)}
+                            >
+                                Edit
+                            </Button>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="contained"
+                                    disabled={!hasUnsavedChanges || saving}
+                                    onClick={onSaveDetails}
+                                >
+                                    {saving ? 'Saving…' : 'Save'}
+                                </Button>
+                                <Button
+                                    variant="text"
+                                    onClick={onCancelEdit}
+                                    disabled={saving}
+                                >
+                                    Cancel
+                                </Button>
+                            </>
+                        )}
                         {!student.isArchived && (
                             <Button
                                 variant="outlined"
@@ -559,36 +607,6 @@ export const StudentDetailsView = ({
                             </p>
                         </div>
 
-                        {!isEditing ? (
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                className="edit-button"
-                                onClick={() => onBeginEdit(student)}
-                            >
-                                Edit
-                            </Button>
-                        ) : (
-                            <div className="edit-actions">
-                                <Button
-                                    size="small"
-                                    variant="contained"
-                                    disabled={!hasUnsavedChanges || saving}
-                                    onClick={onSaveDetails}
-                                >
-                                    {saving ? 'Saving…' : 'Save'}
-                                </Button>
-                                <Button
-                                    size="small"
-                                    variant="text"
-                                    onClick={onCancelEdit}
-                                    disabled={saving}
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
-                        )}
-
                         <div className="edit-fields">
                             <TextField
                                 label="First Name"
@@ -872,12 +890,58 @@ export const StudentDetailsView = ({
                             }
                             fullWidth
                         />
-                        {editTarget?.groupId && (
+                        {editingSession?.groupId && (
                             <p className="archive-dialog-copy">
-                                This is a group class — the change applies to
-                                everyone in it.
+                                Group class — this edit (subject, time and
+                                duration) applies to everyone in it.
                             </p>
                         )}
+
+                        <div className="session-members">
+                            <Typography variant="caption">
+                                Students in this class
+                            </Typography>
+                            <div className="session-member-chips">
+                                {editGroupMembers.map((member) => (
+                                    <Chip
+                                        key={member.id}
+                                        size="small"
+                                        label={member.studentName}
+                                        // A class needs at least one student —
+                                        // the last one can't be removed here.
+                                        onDelete={
+                                            editGroupMembers.length > 1
+                                                ? () =>
+                                                      onRemoveMember(member.id)
+                                                : undefined
+                                        }
+                                    />
+                                ))}
+                            </div>
+                            <Autocomplete
+                                options={addableStudents}
+                                value={null}
+                                blurOnSelect
+                                clearOnBlur
+                                disablePortal
+                                getOptionLabel={(option) =>
+                                    `${option.firstName} ${option.lastName}`
+                                }
+                                // The dialog only renders with a target set, and
+                                // a null-controlled picker fires onChange solely
+                                // on selection — so both are always present.
+                                onChange={(_event, picked) =>
+                                    onAddMember(editTarget!.id, picked!.id)
+                                }
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        size="small"
+                                        label="Add a student"
+                                    />
+                                )}
+                            />
+                        </div>
                     </div>
                 </DialogContent>
                 <DialogActions>
