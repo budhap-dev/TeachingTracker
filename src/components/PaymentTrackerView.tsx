@@ -64,6 +64,11 @@ export const PaymentTrackerView = ({
     const currentMonth = useMemo(getCurrentMonth, [])
     const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
+    // What's typed in each row's "amount received" box, keyed by student, until
+    // it's committed. The box is free to type in; the API is only hit on Enter
+    // or blur — not on every keystroke.
+    const [amountDrafts, setAmountDrafts] = useState<Record<number, string>>({})
+
     const monthGroup = paymentsByMonth.find(
         (group) => group.month === selectedMonth
     )
@@ -103,13 +108,24 @@ export const PaymentTrackerView = ({
         }
     }, [monthGroup, monthRecords])
 
-    const handleAmountChange = (record: PaymentRecord, value: string) => {
-        const parsed = Number.parseInt(value, 10)
+    /** Commits the typed amount for a row, then drops the draft so the box
+     *  tracks the stored figure again. No draft (untouched box) is a no-op. */
+    const commitAmount = (record: PaymentRecord) => {
+        const draft = amountDrafts[record.studentId]
+        if (draft === undefined) {
+            return
+        }
+        const parsed = Number.parseInt(draft, 10)
         onUpdatePaymentRecord({
             studentId: record.studentId,
             month: selectedMonth,
             amountPaid: Number.isNaN(parsed) ? 0 : parsed,
             notes: record.notes,
+        })
+        setAmountDrafts((drafts) => {
+            const next = { ...drafts }
+            delete next[record.studentId]
+            return next
         })
     }
 
@@ -287,12 +303,28 @@ export const PaymentTrackerView = ({
                                                         step: 1,
                                                     },
                                                 }}
-                                                value={record.amountPaid}
+                                                value={
+                                                    amountDrafts[
+                                                        record.studentId
+                                                    ] ?? record.amountPaid
+                                                }
                                                 onChange={(event) =>
-                                                    handleAmountChange(
-                                                        record,
-                                                        event.target.value
+                                                    setAmountDrafts(
+                                                        (drafts) => ({
+                                                            ...drafts,
+                                                            [record.studentId]:
+                                                                event.target
+                                                                    .value,
+                                                        })
                                                     )
+                                                }
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter') {
+                                                        commitAmount(record)
+                                                    }
+                                                }}
+                                                onBlur={() =>
+                                                    commitAmount(record)
                                                 }
                                             />
                                         </td>

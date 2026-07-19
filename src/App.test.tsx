@@ -170,7 +170,9 @@ describe('Teaching Tracker app', () => {
             })
         ).toBeInTheDocument()
         expect(
-            await screen.findByRole('img', { name: /students by year group/i })
+            await screen.findByRole('heading', {
+                name: /who needs attention/i,
+            })
         ).toBeInTheDocument()
     })
 
@@ -334,6 +336,26 @@ describe('Teaching Tracker app', () => {
         ).toBeInTheDocument()
     })
 
+    it('deletes a booked class from the planner and it stays gone', async () => {
+        const user = userEvent.setup()
+        render(<App />)
+
+        await user.click(
+            within(screen.getByRole('navigation')).getByRole('button', {
+                name: /class scheduling/i,
+            })
+        )
+
+        await user.click(openFixtureDayCell(1))
+        await user.click(
+            await screen.findByRole('button', { name: /delete class/i })
+        )
+        await user.click(screen.getByRole('button', { name: /^delete$/i }))
+
+        // The delete toast confirms it went through the API and the store.
+        expect(await screen.findByText(/class deleted/i)).toBeInTheDocument()
+    })
+
     it('edits a booked class and keeps the change', async () => {
         const user = userEvent.setup()
         render(<App />)
@@ -359,6 +381,99 @@ describe('Teaching Tracker app', () => {
         await user.click(openFixtureDayCell(1))
         expect(
             await screen.findByRole('button', { name: 'Astrophysics' })
+        ).toBeInTheDocument()
+    })
+
+    it('adds a student to a group class from the planner day modal', async () => {
+        const user = userEvent.setup()
+        const day = new Date()
+        day.setDate(day.getDate() + 1)
+        const date = day.toISOString().slice(0, 10)
+        const group: ScheduledSession[] = [
+            {
+                id: 501,
+                studentId: 1,
+                studentName: 'Asha Perera',
+                year: '10',
+                subject: 'Mathematics',
+                date,
+                time: '16:00',
+                notes: '',
+                status: 'Scheduled',
+                groupId: 'grp-501',
+            },
+            {
+                id: 502,
+                studentId: 2,
+                studentName: 'Nimal Perera',
+                year: '10',
+                subject: 'Mathematics',
+                date,
+                time: '16:00',
+                notes: '',
+                status: 'Scheduled',
+                groupId: 'grp-501',
+            },
+        ]
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+                const url = String(input)
+                if (/\/sessions\/\d+\/members$/.test(url)) {
+                    const body = JSON.parse(String(init!.body))
+                    return {
+                        ok: true,
+                        status: 201,
+                        json: async () => [
+                            ...group,
+                            {
+                                ...group[0],
+                                id: 503,
+                                studentId: body.studentId,
+                                studentName: 'Kavindi Silva',
+                            },
+                        ],
+                    } as Response
+                }
+                let data: unknown = fixtureStudents
+                if (url.includes('/payments'))
+                    data = buildFixturePaymentsByMonth()
+                else if (url.includes('/sessions')) data = group
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => data,
+                } as Response
+            })
+        )
+        render(<App />)
+
+        await user.click(
+            within(screen.getByRole('navigation')).getByRole('button', {
+                name: /class scheduling/i,
+            })
+        )
+        await user.click(openFixtureDayCell(1))
+
+        // The lone entry auto-selects, with its members already in the field.
+        expect(
+            await screen.findByRole('heading', {
+                name: /edit group class \(2 students\)/i,
+            })
+        ).toBeInTheDocument()
+
+        // Add a roster student in the Students field, then Save applies it.
+        await user.type(
+            screen.getByRole('combobox', { name: /students/i }),
+            'Kavindi'
+        )
+        await user.click(
+            await screen.findByRole('option', { name: /kavindi/i })
+        )
+        await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+        expect(
+            await screen.findByText(/student added to the class/i)
         ).toBeInTheDocument()
     })
 
@@ -636,6 +751,14 @@ describe('Teaching Tracker app', () => {
         // They now wear the archived banner on their page.
         expect(await screen.findByText(/finished a-levels/i)).toBeInTheDocument()
 
+        // Archiving ends edit mode — no stale Save/Cancel over the banner.
+        expect(
+            screen.queryByRole('button', { name: /^save$/i })
+        ).not.toBeInTheDocument()
+        expect(
+            screen.queryByRole('button', { name: /^cancel$/i })
+        ).not.toBeInTheDocument()
+
         // …and appear under Alumni, gone from the active roster.
         const navigation = screen.getByRole('navigation')
         await user.click(
@@ -745,6 +868,42 @@ describe('Teaching Tracker app', () => {
             'fetch',
             vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
                 const url = String(input)
+                const addMember = url.match(/\/sessions\/(\d+)\/members$/)
+                if (addMember && init?.method === 'POST') {
+                    const body = JSON.parse(String(init.body))
+                    const lead = Number(addMember[1])
+                    // The promoted lead row plus the joiner, sharing a groupId.
+                    return {
+                        ok: true,
+                        status: 201,
+                        json: async () => [
+                            {
+                                id: lead,
+                                studentId: 1,
+                                studentName: 'Asha Perera',
+                                year: '10',
+                                subject: 'Mathematics',
+                                date: '2026-01-01',
+                                time: '16:00',
+                                notes: '',
+                                status: 'Scheduled',
+                                groupId: `grp-${lead}`,
+                            },
+                            {
+                                id: 9001,
+                                studentId: body.studentId,
+                                studentName: 'Nimal Perera',
+                                year: '10',
+                                subject: 'Mathematics',
+                                date: '2026-01-01',
+                                time: '16:00',
+                                notes: '',
+                                status: 'Scheduled',
+                                groupId: `grp-${lead}`,
+                            },
+                        ],
+                    } as Response
+                }
                 const put = url.match(/\/sessions\/(\d+)$/)
                 if (put && init?.method === 'PUT') {
                     const body = JSON.parse(String(init.body))
@@ -784,6 +943,29 @@ describe('Teaching Tracker app', () => {
         expect(
             screen.queryByRole('heading', { name: /class scheduling/i })
         ).not.toBeInTheDocument()
+
+        // Add a classmate to the session — POST /sessions/{id}/members turns
+        // the solo class into a group.
+        await user.click(within(dialog).getByLabelText(/add a student/i))
+        await user.click(await screen.findByRole('option', { name: /nimal/i }))
+        expect(
+            await screen.findByText(/student added to the class/i)
+        ).toBeInTheDocument()
+
+        // Now a group of two: remove the joiner's chip — PUT cancels their row.
+        const chipDeletes = () =>
+            Array.from(dialog.querySelectorAll('.MuiChip-deleteIcon'))
+        await waitFor(() => expect(chipDeletes()).toHaveLength(2))
+        await user.click(chipDeletes()[1])
+        // Back to a solo class: the joiner's chip is gone and the lone
+        // remaining member can no longer be removed.
+        await waitFor(() =>
+            expect(
+                within(dialog).queryByText('Nimal Perera')
+            ).not.toBeInTheDocument()
+        )
+        expect(chipDeletes()).toHaveLength(0)
+
         const subject = within(dialog).getByLabelText(/subject/i)
         await user.clear(subject)
         await user.type(subject, 'Chemistry')
@@ -884,11 +1066,15 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('columnheader', { name: /classes taught/i })
         ).toBeInTheDocument()
 
+        // Free entry, then commit with Enter — the API is not hit per keystroke.
         await user.clear(screen.getByLabelText(/asha perera amount received/i))
         await user.type(
             screen.getByLabelText(/asha perera amount received/i),
-            '120'
+            '120{Enter}'
         )
+        expect(
+            await screen.findByText(/payment saved/i)
+        ).toBeInTheDocument()
 
         // Status is derived from what is owed against what was paid — there is
         // no dropdown that could contradict it.

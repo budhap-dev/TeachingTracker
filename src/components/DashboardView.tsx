@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { Button } from '@mui/material'
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined'
 import type { DayLoad } from '../utils/dashboard'
@@ -14,19 +14,24 @@ type DashboardViewProps = {
         avgProgress: number
         totalStudents: number
     }
-    overviewChart: {
-        label: string
-        value: number
-    }[]
+    attention: {
+        onTrack: { id: number; name: string }[]
+        developing: { id: number; name: string }[]
+        needsAttention: { id: number; name: string }[]
+        total: number
+    }
     upcomingSessions: {
         id: number
-        studentId: number
         date: string
         time: string
-        studentName: string
         subject: string
-        year: string
         notes: string
+        /** One entry per class: a group class carries every attendee. */
+        members: {
+            studentId: number
+            studentName: string
+            year: string
+        }[]
     }[]
     weekLoad: DayLoad[]
     onManageStudents: () => void
@@ -36,7 +41,7 @@ type DashboardViewProps = {
 
 export const DashboardView = ({
     stats,
-    overviewChart,
+    attention,
     upcomingSessions,
     weekLoad,
     onManageStudents,
@@ -52,43 +57,43 @@ export const DashboardView = ({
     // The tallest bar owns the chart's height; label only it and today
     // (selective direct labels — every other bar answers on hover).
     const maxWeekMinutes = Math.max(...weekLoad.map((day) => day.minutes), 1)
-    // Every student sits in exactly one year, so the slices genuinely sum to
-    // the total in the middle. Year is ordered (8 -> 11), so the slices take one
-    // hue light-to-dark rather than four unrelated colours: the reader sees the
-    // order in the colour. The ramp is mixed from the active theme's accent, so
-    // it follows whichever of the 14 themes is on.
-    const chartTotal = overviewChart.reduce((sum, item) => sum + item.value, 0)
-    const chartRadius = 42
-    const chartCircumference = 2 * Math.PI * chartRadius
-    /** A 2px gap of surface between slices, so neighbours never merge. */
-    const sliceGap = 2
 
-    const chartSegments = useMemo(() => {
-        if (chartTotal === 0) {
-            return []
-        }
-        let offset = 0
+    // Progress bands, worst first — status colours (reserved for state), each
+    // shown with its own label and count, never colour alone.
+    const attentionBands = useMemo(
+        () => [
+            {
+                key: 'needsAttention' as const,
+                label: 'Needs attention',
+                students: attention.needsAttention,
+                className: 'needs-attention',
+            },
+            {
+                key: 'developing' as const,
+                label: 'Developing',
+                students: attention.developing,
+                className: 'developing',
+            },
+            {
+                key: 'onTrack' as const,
+                label: 'On track',
+                students: attention.onTrack,
+                className: 'on-track',
+            },
+        ],
+        [attention]
+    )
 
-        return overviewChart.map((item, index) => {
-            const share = item.value / chartTotal
-            const segmentLength = Math.max(
-                share * chartCircumference - sliceGap,
-                0
-            )
-            const weight = 35 + (index / Math.max(overviewChart.length - 1, 1)) * 65
-            const segment = {
-                ...item,
-                share,
-                color: `color-mix(in srgb, var(--accent) ${Math.round(weight)}%, var(--surface))`,
-                dashArray: `${segmentLength} ${chartCircumference - segmentLength}`,
-                dashOffset: -offset,
-            }
-
-            offset += share * chartCircumference
-
-            return segment
-        })
-    }, [chartCircumference, chartTotal, overviewChart])
+    // Which band's students are shown: hover previews on desktop, a tap pins on
+    // mobile (no hover), and a pin survives the pointer leaving.
+    const [hoveredBand, setHoveredBand] = useState<string | null>(null)
+    const [pinnedBand, setPinnedBand] = useState<string | null>(null)
+    const activeBand = hoveredBand ?? pinnedBand
+    const activeBandData = attentionBands.find(
+        (band) => band.key === activeBand
+    )
+    const toggleBand = (key: string) =>
+        setPinnedBand((current) => (current === key ? null : key))
 
     return (
         <section className="grid">
@@ -125,6 +130,213 @@ export const DashboardView = ({
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div className="card calendar-card">
+                <div className="calendar-header">
+                    <h3>Upcoming sessions</h3>
+                </div>
+                <div
+                    className="calendar-list"
+                    role="list"
+                    aria-label="Upcoming sessions calendar"
+                >
+                    {visibleSessions.map((session) => (
+                        <article
+                            key={session.id}
+                            className="session-item"
+                            role="listitem"
+                        >
+                            <div className="session-date-pill">
+                                {new Date(session.date).toLocaleDateString(
+                                    'en-GB',
+                                    {
+                                        day: '2-digit',
+                                        month: 'short',
+                                    }
+                                )}
+                            </div>
+                            <div className="session-content">
+                                <strong className="session-attendees">
+                                    {session.members.length > 1 && (
+                                        <span className="session-group-tag">
+                                            Group
+                                        </span>
+                                    )}
+                                    {session.members.map((member, index) => (
+                                        <Fragment key={member.studentId}>
+                                            {index > 0 && ', '}
+                                            <a
+                                                href={`#student-${member.studentId}`}
+                                                className="student-link"
+                                                onClick={(event) => {
+                                                    event.preventDefault()
+                                                    onOpenStudentPage(
+                                                        member.studentId
+                                                    )
+                                                }}
+                                            >
+                                                {member.studentName}
+                                            </a>
+                                        </Fragment>
+                                    ))}
+                                </strong>
+                                <p>
+                                    {session.subject} •{' '}
+                                    {session.members.length === 1 &&
+                                        `Year ${session.members[0].year} • `}
+                                    {session.time}
+                                </p>
+                                <small>{session.notes}</small>
+                            </div>
+                            <span className="session-mode booked">
+                                {session.members.length > 1
+                                    ? `Group · ${session.members.length}`
+                                    : 'Booked'}
+                            </span>
+                        </article>
+                    ))}
+                </div>
+                {upcomingSessions.length > upcomingPreviewCount && (
+                    <Button
+                        size="small"
+                        variant="text"
+                        onClick={() =>
+                            setShowAllSessions((current) => !current)
+                        }
+                    >
+                        {showAllSessions
+                            ? 'Show fewer'
+                            : `Show all ${upcomingSessions.length}`}
+                    </Button>
+                )}
+            </div>
+
+            <div className="card dashboard-chart-card attention-card">
+                <div className="section-header">
+                    <div>
+                        <h3>Who needs attention</h3>
+                        <p>
+                            Students grouped by progress, so follow-ups are easy
+                            to spot.
+                        </p>
+                    </div>
+                </div>
+
+                {attention.total === 0 ? (
+                    <p className="attention-empty">
+                        No students yet — add a few to see how they're tracking.
+                    </p>
+                ) : (
+                    <div className="attention-body">
+                        {/* Hover a segment (or tap it on mobile) to name its
+                            students; the same drives the legend rows. */}
+                        <div
+                            className="attention-bar"
+                            role="img"
+                            aria-label={`Progress of ${attention.total} students: ${attentionBands
+                                .map(
+                                    (band) =>
+                                        `${band.students.length} ${band.label}`
+                                )
+                                .join(', ')}`}
+                        >
+                            {attentionBands
+                                .filter((band) => band.students.length > 0)
+                                .map((band) => (
+                                    <button
+                                        type="button"
+                                        key={band.key}
+                                        className={`attention-bar-segment ${band.className}${
+                                            activeBand === band.key
+                                                ? ' active'
+                                                : ''
+                                        }`}
+                                        style={{
+                                            flexGrow: band.students.length,
+                                        }}
+                                        onMouseEnter={() =>
+                                            setHoveredBand(band.key)
+                                        }
+                                        onMouseLeave={() =>
+                                            setHoveredBand(null)
+                                        }
+                                        onClick={() => toggleBand(band.key)}
+                                        aria-label={`${band.label}: ${band.students
+                                            .map((student) => student.name)
+                                            .join(', ')}`}
+                                    />
+                                ))}
+                        </div>
+
+                        <ul
+                            className="attention-legend"
+                            aria-label="Students by progress band"
+                        >
+                            {attentionBands.map((band) => (
+                                <li
+                                    key={band.key}
+                                    className="attention-legend-item"
+                                >
+                                    <button
+                                        type="button"
+                                        className={`attention-legend-button${
+                                            activeBand === band.key
+                                                ? ' active'
+                                                : ''
+                                        }`}
+                                        onMouseEnter={() =>
+                                            setHoveredBand(band.key)
+                                        }
+                                        onMouseLeave={() =>
+                                            setHoveredBand(null)
+                                        }
+                                        onClick={() => toggleBand(band.key)}
+                                    >
+                                        <span
+                                            className={`attention-dot ${band.className}`}
+                                        />
+                                        <span className="attention-legend-label">
+                                            {band.label}
+                                        </span>
+                                        <strong className="attention-legend-count">
+                                            {band.students.length}
+                                        </strong>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+
+                        {/* The revealed band's students — links to their pages.
+                            Falls back to the neediest band so there's always a
+                            useful list, and a tap/hover swaps it. */}
+                        {(activeBandData ?? attentionBands[0]).students.length >
+                            0 && (
+                            <div className="attention-detail">
+                                <span className="attention-detail-title">
+                                    {(activeBandData ?? attentionBands[0]).label}
+                                </span>
+                                <div className="attention-detail-names">
+                                    {(
+                                        activeBandData ?? attentionBands[0]
+                                    ).students.map((student) => (
+                                        <a
+                                            key={student.id}
+                                            href={`#student-${student.id}`}
+                                            className="student-link"
+                                            onClick={(event) => {
+                                                event.preventDefault()
+                                                onOpenStudentPage(student.id)
+                                            }}
+                                        >
+                                            {student.name}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Week at a glance: one series, hours by weekday, each bar a
@@ -168,152 +380,6 @@ export const DashboardView = ({
                         </button>
                     ))}
                 </div>
-            </div>
-            <div className="card dashboard-chart-card">
-                <div className="section-header">
-                    <div>
-                        <h3>Who you're teaching</h3>
-                        <p>
-                            Your students by year group. Every student is
-                            counted once.
-                        </p>
-                    </div>
-                </div>
-                <div
-                    className="dashboard-chart"
-                    role="img"
-                    aria-label={`Students by year group: ${chartSegments
-                        .map((s) => `${s.label} ${s.value}`)
-                        .join(', ')}`}
-                >
-                    <div className="dashboard-chart-figure">
-                        <svg
-                            viewBox="0 0 120 120"
-                            className="dashboard-chart-pie"
-                            aria-hidden="true"
-                        >
-                            <circle
-                                className="dashboard-chart-pie-track"
-                                cx="60"
-                                cy="60"
-                                r={chartRadius}
-                            />
-                            {chartSegments.map((segment) => (
-                                <circle
-                                    key={segment.label}
-                                    className="dashboard-chart-pie-segment"
-                                    cx="60"
-                                    cy="60"
-                                    r={chartRadius}
-                                    stroke={segment.color}
-                                    strokeDasharray={segment.dashArray}
-                                    strokeDashoffset={segment.dashOffset}
-                                >
-                                    <title>
-                                        {`${segment.label}: ${segment.value} of ${chartTotal}`}
-                                    </title>
-                                </circle>
-                            ))}
-                            <circle
-                                className="dashboard-chart-pie-center"
-                                cx="60"
-                                cy="60"
-                                r="26"
-                            />
-                        </svg>
-                        <div className="dashboard-chart-total">
-                            <strong>{chartTotal}</strong>
-                            <span>
-                                {chartTotal === 1 ? 'Student' : 'Students'}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="dashboard-chart-legend">
-                        {chartSegments.map((segment) => (
-                            <div
-                                key={segment.label}
-                                className="dashboard-chart-legend-item"
-                            >
-                                <span
-                                    className="dashboard-chart-legend-swatch"
-                                    style={{ backgroundColor: segment.color }}
-                                />
-                                <div className="dashboard-chart-legend-copy">
-                                    <strong>{segment.label}</strong>
-                                    <span>
-                                        {segment.value}{' '}
-                                        {segment.value === 1
-                                            ? 'student'
-                                            : 'students'}{' '}
-                                        · {Math.round(segment.share * 100)}%
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className="card calendar-card">
-                <div className="calendar-header">
-                    <h3>Upcoming sessions</h3>
-                </div>
-                <div
-                    className="calendar-list"
-                    role="list"
-                    aria-label="Upcoming sessions calendar"
-                >
-                    {visibleSessions.map((session) => (
-                        <article
-                            key={session.id}
-                            className="session-item"
-                            role="listitem"
-                        >
-                            <div className="session-date-pill">
-                                {new Date(session.date).toLocaleDateString(
-                                    'en-GB',
-                                    {
-                                        day: '2-digit',
-                                        month: 'short',
-                                    }
-                                )}
-                            </div>
-                            <div className="session-content">
-                                <strong>
-                                    <a
-                                        href={`#student-${session.studentId}`}
-                                        className="student-link"
-                                        onClick={(event) => {
-                                            event.preventDefault()
-                                            onOpenStudentPage(session.studentId)
-                                        }}
-                                    >
-                                        {session.studentName}
-                                    </a>
-                                </strong>
-                                <p>
-                                    {session.subject} • Year {session.year} •{' '}
-                                    {session.time}
-                                </p>
-                                <small>{session.notes}</small>
-                            </div>
-                            <span className="session-mode booked">Booked</span>
-                        </article>
-                    ))}
-                </div>
-                {upcomingSessions.length > upcomingPreviewCount && (
-                    <Button
-                        size="small"
-                        variant="text"
-                        onClick={() =>
-                            setShowAllSessions((current) => !current)
-                        }
-                    >
-                        {showAllSessions
-                            ? 'Show fewer'
-                            : `Show all ${upcomingSessions.length}`}
-                    </Button>
-                )}
             </div>
         </section>
     )

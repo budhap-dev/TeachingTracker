@@ -45,6 +45,10 @@ type ClassSchedulingViewProps = {
         status: SessionStatus,
         applyToGroup?: boolean
     ) => void
+    /** Adds a student to an existing class (a solo class becomes a group). */
+    onAddMember: (sessionId: number, studentId: number) => void
+    /** Permanently deletes a class (the whole group) — distinct from cancel. */
+    onDeleteClass: (id: number) => void
 }
 
 type StudentOption = {
@@ -62,6 +66,16 @@ type CancelTarget =
     | { kind: 'group'; entry: DayEntry }
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+/**
+ * Who the Students field shows for an entry: its active attendees — but when
+ * the whole class is cancelled, its members, so a cancelled class still names
+ * the students it was for rather than opening to an empty field.
+ */
+const displayMembers = (entry: DayEntry) => {
+    const active = activeMembers(entry)
+    return active.length ? active : entry.sessions
+}
 
 /** A student's first subject seeds the form — nothing if they have none. */
 const defaultSubjects = (option?: StudentOption) =>
@@ -93,6 +107,8 @@ export const ClassSchedulingView = ({
     onScheduleClass,
     onEditClass,
     onSetSessionStatus,
+    onAddMember,
+    onDeleteClass,
 }: ClassSchedulingViewProps) => {
     const studentOptions = useMemo<StudentOption[]>(
         () =>
@@ -138,6 +154,8 @@ export const ClassSchedulingView = ({
     )
     // What the "are you sure?" dialog is about to cancel, if anything.
     const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null)
+    // The class the delete confirmation is about, if any (a whole entry).
+    const [deleteTarget, setDeleteTarget] = useState<DayEntry | null>(null)
 
     // A day's rows folded into entries — a group class is ONE entry — sorted
     // once, here, so chips, tooltips and the day modal number identically.
@@ -161,14 +179,30 @@ export const ClassSchedulingView = ({
      * "add a new class" state.
      */
     const applyEntryToForm = (entry?: DayEntry) => {
+        // Active attendees seed the field (an excused member is not in the
+        // class until re-added); a fully cancelled class still shows its names.
         const members = entry
-            ? entry.sessions
-                  .map((session) =>
-                      studentOptions.find(
-                          (candidate) => candidate.id === session.studentId
-                      )
+            ? displayMembers(entry).map((session) => {
+                  const option = studentOptions.find(
+                      (candidate) => candidate.id === session.studentId
                   )
-                  .filter((option): option is StudentOption => Boolean(option))
+                  if (option) {
+                      return option
+                  }
+                  // The student has left the active roster — archiving them
+                  // auto-cancels their classes, and archived students are not
+                  // in the picker. Name them from the row's denormalised copy
+                  // so a cancelled class is never a nameless blank field.
+                  const [firstName, ...rest] = session.studentName.split(' ')
+                  return {
+                      id: session.studentId,
+                      label: `${session.studentName} • Year ${session.year}`,
+                      firstName,
+                      lastName: rest.join(' '),
+                      year: session.year,
+                      subjects: [],
+                  }
+              })
             : []
         setSelectedStudents(members)
         setSubjects(splitSubjects(entry?.lead.subject))
@@ -251,14 +285,45 @@ export const ClassSchedulingView = ({
         (entry) => entry.key === selectedEntryKey
     )
 
+    // The entry's values when the modal opened — the baseline the Save button
+    // compares against. Students are the field's seeded attendees, in id order
+    // so a reordering of the chips never reads as a change.
+    const originalForm = editingEntry
+        ? {
+              studentIds: displayMembers(editingEntry)
+                  .map((session) => session.studentId)
+                  .sort((left, right) => left - right),
+              subject: splitSubjects(editingEntry.lead.subject).join(', '),
+              time: editingEntry.lead.time,
+              durationMinutes: editingEntry.lead.durationMinutes ?? 60,
+              notes: editingEntry.lead.notes ?? '',
+          }
+        : null
+
+    const currentStudentIds = selectedStudents
+        .map((option) => option.id)
+        .sort((left, right) => left - right)
+
+    // A class must keep at least one student and a subject and a time.
+    const formValid =
+        selectedStudents.length > 0 && subjects.length > 0 && time.length > 0
+
+    // Only a real change to a field arms Save — reopening a class and closing
+    // it unchanged must not fire a no-op edit.
+    const isDirty =
+        originalForm !== null &&
+        (originalForm.subject !== subjects.join(', ') ||
+            originalForm.time !== time ||
+            originalForm.durationMinutes !== durationMinutes ||
+            originalForm.notes !== notes ||
+            originalForm.studentIds.join(',') !== currentStudentIds.join(','))
+
+    // Save is always live when adding; when editing it waits for a valid change.
+    const saveDisabled = Boolean(editingEntry) && (!formValid || !isDirty)
+
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
-        if (
-            !selectedStudents.length ||
-            !subjects.length ||
-            !openDate ||
-            !time
-        ) {
+        if (!formValid || !openDate) {
             return
         }
 
@@ -271,9 +336,44 @@ export const ClassSchedulingView = ({
         }
 
         if (editingEntry) {
+            const originalIds = new Set(
+                displayMembers(editingEntry).map((session) => session.studentId)
+            )
+            const currentIds = new Set(selectedStudents.map((o) => o.id))
+
             // Shared fields move the whole class — every linked row at once.
-            // Membership changes are cancel-a-row / book-again, not an edit.
-            onEditClass(editingEntry.lead.id, shared, editingEntry.isGroup)
+            // Only send the edit when one of them actually changed.
+            const detailsChanged =
+                originalForm!.subject !== subjects.join(', ') ||
+                originalForm!.time !== time ||
+                originalForm!.durationMinutes !== durationMinutes ||
+                originalForm!.notes !== notes
+            if (detailsChanged) {
+                onEditClass(
+                    editingEntry.lead.id,
+                    shared,
+                    currentIds.size > 1 || editingEntry.isGroup
+                )
+            }
+
+            // Dropped attendees: cancel their row, kept for billing history.
+            editingEntry.sessions
+                .filter(
+                    (session) =>
+                        session.status !== 'Cancelled' &&
+                        !currentIds.has(session.studentId)
+                )
+                .forEach((session) =>
+                    onSetSessionStatus(session.id, 'Cancelled', false)
+                )
+
+            // New attendees join the class — a solo class becomes a group, and
+            // a previously excused member is restored server-side.
+            selectedStudents
+                .filter((option) => !originalIds.has(option.id))
+                .forEach((option) =>
+                    onAddMember(editingEntry.lead.id, option.id)
+                )
         } else {
             onScheduleClass({
                 studentIds: selectedStudents.map((option) => option.id),
@@ -325,6 +425,7 @@ export const ClassSchedulingView = ({
                             form="scheduling-form"
                             variant="contained"
                             size="small"
+                            disabled={saveDisabled}
                         >
                             {editingEntry ? 'Save changes' : 'Add class'}
                         </Button>
@@ -398,10 +499,6 @@ export const ClassSchedulingView = ({
                             options={studentOptions}
                             value={selectedStudents}
                             disablePortal
-                            // Membership is fixed while editing: excuse a
-                            // student below, or book a new class — an edit
-                            // must not silently rewrite who attends.
-                            disabled={Boolean(editingEntry)}
                             onChange={(_event, value) => {
                                 setSelectedStudents(value)
                                 if (!subjects.length) {
@@ -493,58 +590,6 @@ export const ClassSchedulingView = ({
                             placeholder="Homework focus, topics, or parent notes"
                         />
 
-                        {/* Group membership: each attendee can be excused (and
-                            not billed) without touching the others. */}
-                        {editingEntry?.isGroup && (
-                            <div className="group-members">
-                                <h5>Attending</h5>
-                                <ul>
-                                    {editingEntry.sessions.map((member) => (
-                                        <li key={member.id}>
-                                            <span
-                                                className={
-                                                    member.status ===
-                                                    'Cancelled'
-                                                        ? 'member-cancelled'
-                                                        : ''
-                                                }
-                                            >
-                                                {member.studentName}
-                                            </span>
-                                            {member.status === 'Cancelled' ? (
-                                                <Button
-                                                    size="small"
-                                                    variant="text"
-                                                    onClick={() =>
-                                                        onSetSessionStatus(
-                                                            member.id,
-                                                            'Scheduled'
-                                                        )
-                                                    }
-                                                >
-                                                    Restore
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    size="small"
-                                                    variant="text"
-                                                    color="error"
-                                                    onClick={() =>
-                                                        setCancelTarget({
-                                                            kind: 'row',
-                                                            session: member,
-                                                        })
-                                                    }
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
                         {/* The primary action lives in the modal header; only
                             the destructive/status actions stay by the form. */}
                         {editingEntry && (
@@ -603,10 +648,64 @@ export const ClassSchedulingView = ({
                                         Cancel class
                                     </Button>
                                 )}
+
+                                {/* Delete removes the class outright — a booking
+                                    made by mistake — as opposed to cancelling a
+                                    class that was genuinely scheduled. */}
+                                <Button
+                                    color="error"
+                                    variant="outlined"
+                                    onClick={() =>
+                                        setDeleteTarget(editingEntry)
+                                    }
+                                >
+                                    Delete class
+                                </Button>
                             </div>
                         )}
                     </form>
                 </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={deleteTarget !== null}
+                onClose={() => setDeleteTarget(null)}
+                maxWidth="xs"
+            >
+                {deleteTarget && (
+                    <>
+                        <DialogTitle>
+                            {deleteTarget.isGroup
+                                ? 'Delete this class for everyone?'
+                                : 'Delete this class?'}
+                        </DialogTitle>
+                        <DialogContent>
+                            <p className="session-summary-meta">
+                                {`${deleteTarget.lead.time} • ${entryTitle(deleteTarget)} • ${deleteTarget.lead.subject}`}
+                            </p>
+                            <p className="delete-warning">
+                                This permanently removes the class. To keep a
+                                record instead, cancel it.
+                            </p>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setDeleteTarget(null)}>
+                                Keep
+                            </Button>
+                            <Button
+                                color="error"
+                                variant="contained"
+                                onClick={() => {
+                                    onDeleteClass(deleteTarget.lead.id)
+                                    setDeleteTarget(null)
+                                    setOpenDate(null)
+                                }}
+                            >
+                                Delete
+                            </Button>
+                        </DialogActions>
+                    </>
+                )}
             </Dialog>
 
             <Dialog

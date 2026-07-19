@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+    addSessionMember,
     createSession,
+    deleteSession,
     fetchSessions,
     updateSession,
     updateSessionStatus,
@@ -60,6 +62,31 @@ describe('sessions api', () => {
         const body = JSON.parse(fetchMock.mock.calls[0][1].body)
         expect(body.studentIds).toEqual([1, 2])
         expect(body.studentId).toBeUndefined()
+    })
+
+    it('deletes a class with DELETE /sessions/{id} and returns the removed ids', async () => {
+        const fetchMock = jsonResponse({ ids: [101, 102] })
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(deleteSession(101)).resolves.toEqual([101, 102])
+        const [url, init] = fetchMock.mock.calls[0]
+        expect(url).toContain('/sessions/101')
+        expect(init.method).toBe('DELETE')
+    })
+
+    it('adds a member with POST /sessions/{id}/members and takes the group rows', async () => {
+        const rows = [
+            { id: 101, groupId: 'grp-101' },
+            { id: 102, groupId: 'grp-101' },
+        ]
+        const fetchMock = jsonResponse(rows)
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(addSessionMember(101, 7)).resolves.toEqual(rows)
+        const [url, init] = fetchMock.mock.calls[0]
+        expect(url).toContain('/sessions/101/members')
+        expect(init.method).toBe('POST')
+        expect(JSON.parse(init.body)).toEqual({ studentId: 7 })
     })
 
     it('cancels a class with PUT /sessions/{id}', async () => {

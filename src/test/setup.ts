@@ -36,7 +36,26 @@ beforeEach(() => {
             if (url.includes('/payments')) {
                 body = buildFixturePaymentsByMonth()
             } else if (url.includes('/sessions')) {
-                if (init.method === 'POST') {
+                const memberMatch = url.match(/\/sessions\/(\d+)\/members$/)
+                if (memberMatch && init.method === 'POST') {
+                    // Adding a member returns the group's rows: the promoted
+                    // lead (now with a groupId) and the joiner's new row.
+                    const lead = Number(memberMatch[1])
+                    const { studentId } = JSON.parse(String(init.body))
+                    const leadRow = buildFixtureSessions().find(
+                        (session) => session.id === lead
+                    )
+                    body = [
+                        { ...leadRow, id: lead, groupId: `grp-${lead}` },
+                        {
+                            ...leadRow,
+                            id: 9000 + studentId,
+                            studentId,
+                            studentName: `Student ${studentId}`,
+                            groupId: `grp-${lead}`,
+                        },
+                    ]
+                } else if (init.method === 'POST') {
                     // Creating echoes the new class back, as the API does.
                     body = { id: 999, ...JSON.parse(String(init.body)) }
                 } else if (init.method === 'PUT') {
@@ -47,6 +66,19 @@ beforeEach(() => {
                         (session) => session.id === id
                     )
                     body = { ...existing, ...JSON.parse(String(init.body)) }
+                } else if (init.method === 'DELETE') {
+                    // Deleting returns the removed ids — the whole group when
+                    // the class is one.
+                    const id = Number(url.split('/sessions/')[1])
+                    const lead = buildFixtureSessions().find(
+                        (session) => session.id === id
+                    )
+                    const ids = lead?.groupId
+                        ? buildFixtureSessions()
+                              .filter((s) => s.groupId === lead.groupId)
+                              .map((s) => s.id)
+                        : [id]
+                    body = { ids }
                 } else {
                     body = buildFixtureSessions()
                 }

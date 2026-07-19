@@ -11,7 +11,9 @@ import {
 import { useAppDispatch, useAppSelector } from './hooks'
 import {
     archiveStudentRequested,
+    addSessionMemberRequested,
     createSessionRequested,
+    deleteSessionRequested,
     editSessionRequested,
     restoreStudentRequested,
     savePaymentRequested,
@@ -20,9 +22,12 @@ import {
 } from './store/store'
 import { activeSessions } from './data/students'
 import { toDateKey } from './utils/calendar'
-import { getWeekLoad } from './utils/dashboard'
-import { groupStudentsByYear } from './utils/studentMix'
-import type { EditableStudentField, Student } from './data/students'
+import { getProgressBands, getWeekLoad } from './utils/dashboard'
+import type {
+    EditableStudentField,
+    ScheduledSession,
+    Student,
+} from './data/students'
 import { useStudentForm } from './hooks/useStudentForm'
 import { paths } from './paths'
 import { DashboardView } from './components/DashboardView'
@@ -119,45 +124,87 @@ const DashboardRoute = () => {
         const taken = new Map<number, number>()
         const studentsById = new Map(students.map((s) => [s.id, s]))
 
-        return activeSessions(scheduledSessions)
+        const futureRows = activeSessions(scheduledSessions)
             .filter((session) => session.date >= from)
             .sort((left, right) =>
                 `${left.date} ${left.time}`.localeCompare(
                     `${right.date} ${right.time}`
                 )
             )
-            .filter((session) => {
-                // Sorted first, so the ones kept are genuinely the earliest.
-                const kept = taken.get(session.studentId) ?? 0
-                if (kept >= upcomingPerStudent) {
+
+        // Fold a group class — linked rows sharing a groupId — into one entry,
+        // so the dashboard lists it once rather than once per attendee.
+        // Insertion order is preserved, so entries stay earliest-first.
+        const entries: { rows: ScheduledSession[] }[] = []
+        const byKey = new Map<string, { rows: ScheduledSession[] }>()
+        futureRows.forEach((row) => {
+            const key = row.groupId ?? `solo-${row.id}`
+            const existing = byKey.get(key)
+            if (existing) {
+                existing.rows.push(row)
+            } else {
+                const entry = { rows: [row] }
+                byKey.set(key, entry)
+                entries.push(entry)
+            }
+        })
+
+        return entries
+            .filter((entry) => {
+                // Sorted first, so the ones kept are genuinely the earliest. A
+                // group stays while at least one attendee is still under the
+                // cap, and counts against every attendee's tally.
+                const under = entry.rows.some(
+                    (row) =>
+                        (taken.get(row.studentId) ?? 0) < upcomingPerStudent
+                )
+                if (!under) {
                     return false
                 }
-                taken.set(session.studentId, kept + 1)
+                entry.rows.forEach((row) =>
+                    taken.set(
+                        row.studentId,
+                        (taken.get(row.studentId) ?? 0) + 1
+                    )
+                )
                 return true
             })
-            .map((session) => {
-                // Resolve name and year from the live student record. The
-                // session carries a denormalised copy frozen at booking time,
-                // which goes stale when a student is renamed — the dashboard
-                // was the last screen still trusting that copy.
-                const student = studentsById.get(session.studentId)
-                return student
-                    ? {
-                          ...session,
-                          studentName: `${student.firstName} ${student.lastName}`,
-                          year: student.year,
-                      }
-                    : session
+            .map((entry) => {
+                const lead = entry.rows[0]
+                // Resolve name and year from the live student record. The row
+                // carries a denormalised copy frozen at booking time, which
+                // goes stale when a student is renamed.
+                const members = entry.rows
+                    .map((row) => {
+                        const student = studentsById.get(row.studentId)
+                        return student
+                            ? {
+                                  studentId: row.studentId,
+                                  studentName: `${student.firstName} ${student.lastName}`,
+                                  year: student.year,
+                              }
+                            : {
+                                  studentId: row.studentId,
+                                  studentName: row.studentName,
+                                  year: row.year,
+                              }
+                    })
+                    .sort((a, b) => a.studentName.localeCompare(b.studentName))
+                return {
+                    id: lead.id,
+                    date: lead.date,
+                    time: lead.time,
+                    subject: lead.subject,
+                    notes: lead.notes,
+                    members,
+                }
             })
     }, [scheduledSessions, students])
 
     // Students by year: the old chart added students to sessions and counted
-    // each student twice (once as a student, once by mode), so its "total" meant
-    // nothing. Mode already has its own stat tiles.
-    const overviewChart = useMemo(
-        () => groupStudentsByYear(students),
-        [students]
-    )
+    // Progress bands: who's on track, developing, or needs a follow-up — far
+    // more actionable on a dashboard than a headcount by year.
+    const attention = useMemo(() => getProgressBands(students), [students])
 
     const todayKey = toDateKey(new Date())
     const weekLoad = useMemo(
@@ -176,7 +223,7 @@ const DashboardRoute = () => {
         <DashboardView
             stats={stats}
             upcomingSessions={upcomingSessions}
-            overviewChart={overviewChart}
+            attention={attention}
             weekLoad={weekLoad}
             onManageStudents={() => navigate(paths.students)}
             onOpenStudentPage={openStudentPage}
@@ -293,7 +340,13 @@ const StudentDetailRoute = () => {
             scheduledSessions={scheduledSessions}
             editingStudentId={editingStudentId}
             draftStudent={draftStudent}
-            hasUnsavedChanges={Boolean(draftStudent && editingStudentId)}
+            // Dirty only once the draft actually differs from the stored
+            // student — entering edit mode alone must not arm Save.
+            hasUnsavedChanges={Boolean(
+                draftStudent &&
+                    editingStudentId &&
+                    JSON.stringify(draftStudent) !== JSON.stringify(student)
+            )}
             saving={savingStudent}
             onBack={goBack}
             onBeginEdit={(target) => {
@@ -309,9 +362,14 @@ const StudentDetailRoute = () => {
                 setEditingStudentId(null)
                 setDraftStudent(null)
             }}
-            onArchive={(id, notes) =>
+            onArchive={(id, notes) => {
                 dispatch(archiveStudentRequested({ id, notes }))
-            }
+                // Archiving moves the student to Alumni, so leave edit mode —
+                // otherwise the stale Save/Cancel controls linger over the
+                // archived banner.
+                setEditingStudentId(null)
+                setDraftStudent(null)
+            }}
             onRestore={(id) => dispatch(restoreStudentRequested(id))}
             onEditSession={(id, changes, applyToGroup) =>
                 dispatch(editSessionRequested({ id, changes, applyToGroup }))
@@ -320,6 +378,20 @@ const StudentDetailRoute = () => {
                 dispatch(
                     setSessionStatusRequested({
                         id: session.id,
+                        status: 'Cancelled',
+                        applyToGroup: false,
+                    })
+                )
+            }
+            onAddMember={(sessionId, sId) =>
+                dispatch(
+                    addSessionMemberRequested({ sessionId, studentId: sId })
+                )
+            }
+            onRemoveMember={(memberSessionId) =>
+                dispatch(
+                    setSessionStatusRequested({
+                        id: memberSessionId,
                         status: 'Cancelled',
                         applyToGroup: false,
                     })
@@ -430,6 +502,12 @@ const SchedulingRoute = () => {
                     setSessionStatusRequested({ id, status, applyToGroup })
                 )
             }
+            onAddMember={(sessionId, studentId) =>
+                dispatch(
+                    addSessionMemberRequested({ sessionId, studentId })
+                )
+            }
+            onDeleteClass={(id) => dispatch(deleteSessionRequested(id))}
         />
     )
 }
