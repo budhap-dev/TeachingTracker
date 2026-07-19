@@ -15,3 +15,17 @@ export const fetchStudent = (id: number): Promise<Student> =>
 /** POST /students — create or update a student (upsert). */
 export const upsertStudent = (input: StudentInput): Promise<Student> =>
     apiRequest<Student>('/students', { method: 'POST', body: input })
+
+/** POST /students/{id}/archive — move a student to Alumni (REQ-013). */
+export const archiveStudent = (
+    id: number,
+    notes: string
+): Promise<Student> =>
+    apiRequest<Student>(`/students/${id}/archive`, {
+        method: 'POST',
+        body: { notes },
+    })
+
+/** POST /students/{id}/restore — return an alumnus to the active roster. */
+export const restoreStudent = (id: number): Promise<Student> =>
+    apiRequest<Student>(`/students/${id}/restore`, { method: 'POST' })

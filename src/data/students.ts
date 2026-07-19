@@ -20,6 +20,14 @@ export type Student = {
     parentName: string
     contactNumber: string
     address: string
+    /** Archived students have finished tutoring: they leave the active roster
+        for the teacher-only Alumni view but keep their history (REQ-013).
+        Absent/false means active. */
+    isArchived?: boolean
+    /** ISO date the student was archived. */
+    archivedOn?: string
+    /** The teacher's closing note, kept through archive and restore. */
+    archiveNotes?: string
 }
 
 /**

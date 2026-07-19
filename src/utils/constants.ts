@@ -21,6 +21,8 @@ export type ThemeName =
     | 'gold'
     | 'rosegold'
     | 'steel'
+    | 'daylight'
+    | 'parchment'
 
 export type ThemePreset = {
     label: string
@@ -267,6 +269,28 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
         sidebar: 'linear-gradient(160deg, #0a0e13, #414d61 48%, #121820)',
         primary: '#9fb0c3',
         secondary: '#7d8da1',
+    },
+    // Light-chrome themes: the sidebar and topbar band are pale, so their
+    // text is dark. Everything else stays a normal light theme.
+    daylight: {
+        label: 'Daylight',
+        appearance: 'light',
+        paper: '#ffffff',
+        accent: '#2563eb',
+        accentAlt: '#0ea5e9',
+        sidebar: 'linear-gradient(180deg, #f1f5f9, #dbe4ee)',
+        primary: '#2563eb',
+        secondary: '#0ea5e9',
+    },
+    parchment: {
+        label: 'Parchment',
+        appearance: 'light',
+        paper: '#ffffff',
+        accent: '#b45309',
+        accentAlt: '#c2701a',
+        sidebar: 'linear-gradient(180deg, #faf5ec, #ece0cc)',
+        primary: '#b45309',
+        secondary: '#c2701a',
     },
 }
 

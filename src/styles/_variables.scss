@@ -394,3 +394,47 @@
         var(--sidebar-end)
     );
 }
+
+/* Light-chrome themes (REQ: light themes with dark menu/header text). The
+   sidebar/topbar band is pale, so --sidebar-text goes dark, --button-bg
+   becomes a faint dark wash, and the active/hover nav sits on the accent. */
+[data-theme='daylight'] {
+    --bg: linear-gradient(135deg, #f8fafc, #eff6ff 45%, #e0f2fe);
+    --accent: #2563eb;
+    --accent-alt: #0ea5e9;
+    --sidebar-start: #f1f5f9;
+    --sidebar-end: #dbe4ee;
+    --sidebar-text: #1e293b;
+    --sidebar-muted: #5b6b7f;
+    --button-bg: rgba(15, 23, 42, 0.06);
+    --button-hover: var(--accent);
+    --button-hover-text: #ffffff;
+    --pill-bg: #dbeafe;
+    --pill-text: #1d4ed8;
+    --sidebar-gradient: linear-gradient(
+        180deg,
+        var(--sidebar-start),
+        var(--sidebar-end)
+    );
+}
+
+[data-theme='parchment'] {
+    --bg: linear-gradient(135deg, #fdfaf3, #faf5ea 45%, #f3e9d6);
+    --surface-alt: #faf6ee;
+    --accent: #b45309;
+    --accent-alt: #c2701a;
+    --sidebar-start: #faf5ec;
+    --sidebar-end: #ece0cc;
+    --sidebar-text: #4a3418;
+    --sidebar-muted: #8a7355;
+    --button-bg: rgba(74, 52, 24, 0.07);
+    --button-hover: var(--accent);
+    --button-hover-text: #ffffff;
+    --pill-bg: #f3e6cf;
+    --pill-text: #92400e;
+    --sidebar-gradient: linear-gradient(
+        180deg,
+        var(--sidebar-start),
+        var(--sidebar-end)
+    );
+}

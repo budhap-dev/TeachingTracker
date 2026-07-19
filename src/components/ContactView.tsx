@@ -1,4 +1,5 @@
 import { toTelHref } from '../data/siteContent'
+import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
 
 type ContactViewProps = {
     email: string
@@ -11,7 +12,10 @@ export const ContactView = ({ email, phone }: ContactViewProps) => (
         <div className="card">
             <div className="section-header">
                 <div>
-                    <h3>Contact us</h3>
+                    <h3 className="page-heading">
+                        <MailOutlineRoundedIcon fontSize="small" />
+                        Contact us
+                    </h3>
                     <p className="section-subtitle">
                         Questions about tutoring, availability, or a particular
                         subject? Get in touch and we&apos;ll come back to you.

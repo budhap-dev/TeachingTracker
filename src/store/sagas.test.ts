@@ -5,7 +5,12 @@ import type {
     ScheduledSession,
     Student,
 } from '../data/students'
-import { fetchStudents, upsertStudent } from '../api/students'
+import {
+    archiveStudent,
+    fetchStudents,
+    restoreStudent,
+    upsertStudent,
+} from '../api/students'
 import { fetchPaymentsByMonth, savePayments } from '../api/payments'
 import {
     createSession,
@@ -21,6 +26,8 @@ import {
     loadSessionsSaga,
     loadStudentsSaga,
     rootSaga,
+    archiveStudentSaga,
+    restoreStudentSaga,
     saveStudentSaga,
     setSessionStatusSaga,
 } from './sagas'
@@ -46,6 +53,11 @@ import {
     saveStudentFailed,
     saveStudentRequested,
     saveStudentSucceeded,
+    archiveStudentRequested,
+    restoreStudentRequested,
+    archiveStudentSucceeded,
+    restoreStudentSucceeded,
+    archiveStudentFailed,
     setSessionStatusFailed,
     setSessionStatusRequested,
     setSessionStatusSucceeded,
@@ -200,6 +212,74 @@ describe('saveStudentSaga', () => {
     })
 })
 
+describe('archiveStudentSaga', () => {
+    const stored = { id: 10, isArchived: true } as unknown as Student
+
+    it('archives with the note and stores the server copy', () => {
+        const gen = archiveStudentSaga(
+            archiveStudentRequested({ id: 10, notes: 'Finished GCSEs' })
+        )
+        expect(gen.next().value).toEqual(
+            call(archiveStudent, 10, 'Finished GCSEs')
+        )
+        expect(gen.next(stored).value).toEqual(
+            put(archiveStudentSucceeded(stored))
+        )
+        // Archiving cancels future classes server-side, so sessions refresh.
+        expect(gen.next().value).toEqual(put(fetchSessionsRequested()))
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('surfaces the API message (e.g. the 409) on failure', () => {
+        const gen = archiveStudentSaga(
+            archiveStudentRequested({ id: 10, notes: 'x' })
+        )
+        gen.next()
+        expect(gen.throw(new Error('still has a class')).value).toEqual(
+            put(archiveStudentFailed('still has a class'))
+        )
+    })
+
+    it('falls back to a readable message for a non-Error throw', () => {
+        const gen = archiveStudentSaga(
+            archiveStudentRequested({ id: 10, notes: 'x' })
+        )
+        gen.next()
+        expect(gen.throw('kaboom').value).toEqual(
+            put(archiveStudentFailed('Could not archive the student.'))
+        )
+    })
+})
+
+describe('restoreStudentSaga', () => {
+    const stored = { id: 10, isArchived: false } as unknown as Student
+
+    it('restores and stores the server copy', () => {
+        const gen = restoreStudentSaga(restoreStudentRequested(10))
+        expect(gen.next().value).toEqual(call(restoreStudent, 10))
+        expect(gen.next(stored).value).toEqual(
+            put(restoreStudentSucceeded(stored))
+        )
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('surfaces the API error message on failure', () => {
+        const gen = restoreStudentSaga(restoreStudentRequested(10))
+        gen.next()
+        expect(gen.throw(new Error('nope')).value).toEqual(
+            put(archiveStudentFailed('nope'))
+        )
+    })
+
+    it('falls back to a readable message for a non-Error throw', () => {
+        const gen = restoreStudentSaga(restoreStudentRequested(10))
+        gen.next()
+        expect(gen.throw('kaboom').value).toEqual(
+            put(archiveStudentFailed('Could not restore the student.'))
+        )
+    })
+})
+
 describe('setSessionStatusSaga', () => {
     it('cancels a class and stores the server copy', () => {
         const gen = setSessionStatusSaga(
@@ -327,6 +407,8 @@ describe('rootSaga', () => {
                 takeLatest(fetchSessionsRequested.type, loadSessionsSaga),
                 takeEvery(createSessionRequested.type, createSessionSaga),
                 takeEvery(saveStudentRequested.type, saveStudentSaga),
+                takeEvery(archiveStudentRequested.type, archiveStudentSaga),
+                takeEvery(restoreStudentRequested.type, restoreStudentSaga),
                 takeEvery(setSessionStatusRequested.type, setSessionStatusSaga),
                 takeEvery(editSessionRequested.type, editSessionSaga),
                 takeEvery(savePaymentRequested.type, savePaymentSaga),

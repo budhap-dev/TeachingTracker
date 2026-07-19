@@ -81,7 +81,7 @@ XS is an afternoon, XL is a project.
 | 8 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
 | 9 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
 | 10 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
-| 11 | 🔲 | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | best after REQ-009 |
+| 11 | 🚧 | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | — (built 2026-07-19) |
 | 12 | 🚧 | [REQ-014 — Progress per subject](#req-014--progress-is-tracked-per-subject) | M | both | — (built 2026-07-17) |
 
 **Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–5 are done; REQ-003/REQ-004 are in flight (prod enforcement after the dev soak).
@@ -589,7 +589,7 @@ so that the class record reflects what was actually covered.
 
 ## REQ-013 — Archive a student with a closing note; Alumni section
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+**Status:** 🚧 Built (awaiting review; API merges/deploys before frontend) · **Impact:** both · **Effort:** M
 
 **Story**
 As a teacher, I want to archive a student who has finished tutoring — with a
@@ -612,19 +612,19 @@ intact, and I can find past students in a teacher-only **Alumni** section.
 
 **Acceptance criteria**
 
-- [ ] Archive from the student's page, behind an are-you-sure step, with a
+- [x] Archive from the student's page — future classes are auto-cancelled on confirmation (changed 2026-07-19 from a block to a cancel-and-archive), the dialog warns how many., behind an are-you-sure step, with a
       **required closing note**; blocked with a clear message while future
       scheduled classes exist.
-- [ ] Archived students leave the active surfaces: student list, dashboard
+- [x] Archived students leave the active surfaces: student list, dashboard
       stats and charts, study snapshot, and the class planner's student picker.
-- [ ] **Alumni** appears in the nav — teacher-only (rides REQ-003's gating) —
+- [x] **Alumni** appears in the nav — teacher-only (rides REQ-003's gating) —
       listing archived students with archive date and closing note.
-- [ ] Opening an alumni record shows the full student page with an "Archived"
+- [x] Opening an alumni record shows the full student page with an "Archived"
       banner and a **Restore to active** action.
-- [ ] History is untouched in both directions: past sessions and billed months
+- [x] History is untouched in both directions: past sessions and billed months
       stay exactly as they were; restoring changes no history either.
-- [ ] API enforces the state rules (409 guard, required note); frontend
-      coverage stays 100%.
+- [x] API enforces the state rules (409 guard, required note); frontend
+      coverage stays 100% (266 tests).
 
 **Notes**
 

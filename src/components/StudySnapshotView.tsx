@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
 import type { ScheduledSession, Student } from '../data/students'
 import { studyModeLabel } from '../utils/constants'
 
@@ -67,10 +68,7 @@ export const StudySnapshotView = ({
             const values = {
                 student: [leftValue, rightValue],
                 // Zero-padded so Year 8 sorts before Year 10 (string compare).
-                year: [
-                    left.year.padStart(2, '0'),
-                    right.year.padStart(2, '0'),
-                ],
+                year: [left.year.padStart(2, '0'), right.year.padStart(2, '0')],
                 subject: [leftSubjects, rightSubjects],
                 school: [left.school.toLowerCase(), right.school.toLowerCase()],
                 mode: [left.mode.toLowerCase(), right.mode.toLowerCase()],
@@ -113,7 +111,10 @@ export const StudySnapshotView = ({
     return (
         <section className="content-stack">
             <div className="card">
-                <h3>Study snapshot</h3>
+                <h3 className="page-heading">
+                    <InsightsOutlinedIcon fontSize="small" />
+                    Study snapshot
+                </h3>
                 <p className="section-subtitle">
                     A quick tabular view of students, subjects, and delivery
                     mode.
