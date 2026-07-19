@@ -54,6 +54,16 @@ describe('groupDaySessions', () => {
         expect(entryTitle(group)).toBe('Group of 2 — Ava Devlin, Sam Bailey')
     })
 
+    it('breaks a same-time tie by key, so the order is stable', () => {
+        // Two classes at the same time — the time compare is a draw, so the
+        // key decides. Without the tie-break the order would be undefined.
+        const entries = groupDaySessions([
+            session(2, { time: '11:00' }),
+            session(1, { time: '11:00' }),
+        ])
+        expect(entries.map((entry) => entry.key)).toEqual(['solo-1', 'solo-2'])
+    })
+
     it('reports which members are still on', () => {
         const [group] = groupDaySessions([
             session(1, { groupId: 'g' }),
