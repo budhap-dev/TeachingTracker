@@ -12,6 +12,13 @@ import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import App from './App'
 import type { ScheduledSession } from './data/students'
+import {
+    fetchPaymentsSucceeded,
+    fetchSessionsSucceeded,
+    fetchStudentsSucceeded,
+    resetStudentState,
+    store,
+} from './store/store'
 import { buildFixturePaymentsByMonth, fixtureStudents } from './test/fixtures'
 
 /**
@@ -651,9 +658,6 @@ describe('Teaching Tracker app', () => {
         fireEvent.change(screen.getByLabelText(/address/i), {
             target: { value: '10, Main Street, Colombo' },
         })
-        fireEvent.change(screen.getByLabelText(/notes/i), {
-            target: { value: 'Very focused' },
-        })
 
         await user.click(screen.getByRole('button', { name: /save student/i }))
 
@@ -679,6 +683,38 @@ describe('Teaching Tracker app', () => {
         expect(
             screen.getByRole('button', { name: /^back$/i })
         ).toBeInTheDocument()
+    })
+
+    it('adds a dated note to a student from the Diary tab and persists it', async () => {
+        const user = userEvent.setup()
+        render(<App />)
+
+        await user.click(
+            (await screen.findAllByRole('link', { name: /asha perera/i }))[0]
+        )
+
+        // The diary lives on its own tab, deep-linkable at /students/:id/diary.
+        await user.click(screen.getByRole('tab', { name: /diary/i }))
+        expect(window.location.pathname).toMatch(/\/students\/1\/diary$/)
+        expect(screen.getByText(/no entries yet/i)).toBeInTheDocument()
+
+        await user.type(
+            screen.getByLabelText('New note text'),
+            'Covered quadratic equations today.'
+        )
+        await user.click(screen.getByRole('button', { name: /add entry/i }))
+
+        // The save round-trips through the store (the mock echoes the student
+        // back), so the entry sticks and the empty state is gone.
+        expect(
+            await screen.findByText(/covered quadratic equations today/i)
+        ).toBeInTheDocument()
+        expect(screen.queryByText(/no entries yet/i)).not.toBeInTheDocument()
+
+        // Back to Details returns to the plain student URL.
+        await user.click(screen.getByRole('tab', { name: /details/i }))
+        expect(window.location.pathname).toMatch(/\/students\/1$/)
+        expect(screen.getByLabelText(/first name/i)).toBeInTheDocument()
     })
 
     it('archives a student from their page and lists them under Alumni', async () => {
@@ -770,14 +806,120 @@ describe('Teaching Tracker app', () => {
         const alumnusLink = screen.getByRole('link', { name: /asha perera/i })
         expect(alumnusLink).toBeInTheDocument()
 
+        // They also drop off the payment tracker — only the active roster is
+        // billed, so an active student stays while the alumnus is gone.
+        await user.click(
+            within(navigation).getByRole('button', { name: /payment tracker/i })
+        )
+        expect(
+            screen.getByRole('heading', { name: /monthly payment tracking/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: 'Nimal Fernando' })
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('button', { name: 'Asha Perera' })
+        ).not.toBeInTheDocument()
+
         // Open the alumnus and restore them to the active roster.
-        await user.click(alumnusLink)
+        await user.click(
+            within(navigation).getByRole('button', { name: /alumni/i })
+        )
+        await user.click(screen.getByRole('link', { name: /asha perera/i }))
         await user.click(
             screen.getByRole('button', { name: /restore to active/i })
         )
         expect(
             await screen.findByText(/restored to the active roster/i)
         ).toBeInTheDocument()
+    })
+
+    it('drops an archived student’s classes from the dashboard and planner', async () => {
+        const user = userEvent.setup()
+
+        // One archived student, one active — each with a class tomorrow, so both
+        // would be "upcoming" were the archived one not hidden.
+        const archived = {
+            ...fixtureStudents[0],
+            isArchived: true,
+            archivedOn: '2026-07-01',
+        }
+        const active = fixtureStudents[1]
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const dateKey = tomorrow.toISOString().slice(0, 10)
+        const sessions: ScheduledSession[] = [
+            {
+                id: 501,
+                studentId: archived.id,
+                studentName: `${archived.firstName} ${archived.lastName}`,
+                year: archived.year,
+                subject: 'Mathematics',
+                date: dateKey,
+                time: '16:00',
+                durationMinutes: 60,
+                notes: 'Archived learner class',
+                status: 'Scheduled',
+            },
+            {
+                id: 502,
+                studentId: active.id,
+                studentName: `${active.firstName} ${active.lastName}`,
+                year: active.year,
+                subject: 'Physics',
+                date: dateKey,
+                time: '17:30',
+                durationMinutes: 90,
+                notes: 'Active learner class',
+                status: 'Scheduled',
+            },
+        ]
+
+        // Seed the store and mock re-fetch with the same data, so the archived
+        // student is never momentarily active.
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (input: RequestInfo | URL) => {
+                const url = String(input)
+                let body: unknown = [archived, active]
+                if (url.includes('/payments')) body = []
+                else if (url.includes('/sessions')) body = sessions
+                return { ok: true, status: 200, json: async () => body } as Response
+            })
+        )
+        store.dispatch(resetStudentState())
+        store.dispatch(fetchStudentsSucceeded([archived, active]))
+        store.dispatch(fetchSessionsSucceeded(sessions))
+        store.dispatch(fetchPaymentsSucceeded([]))
+
+        render(<App />)
+
+        // Dashboard: the active learner's class is upcoming; the archived one's
+        // is gone even though a session exists for them.
+        expect(
+            await screen.findByRole('heading', { name: /today at a glance/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText(`${active.firstName} ${active.lastName}`)
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByText(`${archived.firstName} ${archived.lastName}`)
+        ).not.toBeInTheDocument()
+
+        // Planner: no calendar chip carries the archived student.
+        await user.click(
+            within(screen.getByRole('navigation')).getByRole('button', {
+                name: /class scheduling/i,
+            })
+        )
+        expect(
+            screen.getByLabelText(/class schedule calendar/i)
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByLabelText(
+                new RegExp(`${archived.firstName} ${archived.lastName}`, 'i')
+            )
+        ).not.toBeInTheDocument()
     })
 
     it('shows a loading placeholder for Alumni before data arrives', async () => {
@@ -1067,11 +1209,11 @@ describe('Teaching Tracker app', () => {
         ).toBeInTheDocument()
 
         // Free entry, then commit with Enter — the API is not hit per keystroke.
-        await user.clear(screen.getByLabelText(/asha perera amount received/i))
-        await user.type(
-            screen.getByLabelText(/asha perera amount received/i),
-            '120{Enter}'
-        )
+        const amountInput = screen.getByRole('spinbutton', {
+            name: /asha perera amount received/i,
+        })
+        await user.clear(amountInput)
+        await user.type(amountInput, '120{Enter}')
         expect(
             await screen.findByText(/payment saved/i)
         ).toBeInTheDocument()

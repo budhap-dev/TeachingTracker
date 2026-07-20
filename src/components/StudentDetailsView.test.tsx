@@ -30,6 +30,7 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     isArchived: overrides.isArchived,
     archivedOn: overrides.archivedOn,
     archiveNotes: overrides.archiveNotes,
+    datedNotes: overrides.datedNotes,
 })
 
 /** A future YYYY-MM-DD, `days` from now — "upcoming" must not rot with time. */
@@ -83,6 +84,9 @@ const renderView = (props: Partial<
             onCancelSession={vi.fn()}
             onAddMember={vi.fn()}
             onRemoveMember={vi.fn()}
+            onUpdateNotes={vi.fn()}
+            activeTab="details"
+            onSelectTab={vi.fn()}
             {...props}
         />
     )
@@ -166,7 +170,6 @@ describe('StudentDetailsView', () => {
         await user.type(screen.getByLabelText(/parent name/i), 'x')
         await user.type(screen.getByLabelText(/contact number/i), '1')
         await user.type(screen.getByLabelText(/address/i), 'x')
-        await user.type(screen.getByLabelText(/notes/i), 'x')
         await user.type(screen.getByLabelText(/first name/i), 'z')
         fireEvent.change(screen.getByLabelText(/date of birth/i), {
             target: { value: '2012-01-01' },
@@ -768,10 +771,55 @@ describe('StudentDetailsView', () => {
                 (_, element) => element?.textContent === 'School: Not provided'
             )
         ).toBeInTheDocument()
-        expect(
-            screen.getByText(/no notes added yet/i)
-        ).toBeInTheDocument()
         expect(screen.getByText(/no classes scheduled yet/i)).toBeInTheDocument()
+    })
+
+    it('shows Details by default, with the diary behind its own tab', async () => {
+        const user = userEvent.setup()
+        const onSelectTab = vi.fn()
+        renderView({
+            student: buildStudent({
+                datedNotes: [{ id: 1, date: '2026-07-04', text: 'Great progress' }],
+            }),
+            onSelectTab,
+        })
+
+        // Details tab is active: profile fields show; the diary heading does not.
+        expect(
+            screen.getByRole('tab', { name: /details/i })
+        ).toHaveAttribute('aria-selected', 'true')
+        expect(screen.getByLabelText(/first name/i)).toBeInTheDocument()
+        expect(
+            screen.queryByRole('heading', { name: /^diary$/i })
+        ).not.toBeInTheDocument()
+
+        await user.click(screen.getByRole('tab', { name: /diary/i }))
+        expect(onSelectTab).toHaveBeenCalledWith('diary')
+    })
+
+    it('shows the diary, not the profile fields, on the Diary tab', async () => {
+        const user = userEvent.setup()
+        const onSelectTab = vi.fn()
+        renderView({
+            activeTab: 'diary',
+            student: buildStudent({
+                datedNotes: [{ id: 1, date: '2026-07-04', text: 'Great progress' }],
+            }),
+            onSelectTab,
+        })
+
+        expect(
+            screen.getByRole('tab', { name: /diary/i })
+        ).toHaveAttribute('aria-selected', 'true')
+        expect(
+            screen.getByRole('heading', { name: /^diary$/i })
+        ).toBeInTheDocument()
+        expect(screen.getByText('Great progress')).toBeInTheDocument()
+        // Profile fields are hidden while the diary is open.
+        expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument()
+
+        await user.click(screen.getByRole('tab', { name: /details/i }))
+        expect(onSelectTab).toHaveBeenCalledWith('details')
     })
 
     it('caps upcoming sessions at three, expandable to the full list', async () => {

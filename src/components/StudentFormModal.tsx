@@ -214,17 +214,8 @@ export const StudentFormModal = ({
                     slotProps={label}
                     fullWidth
                 />
-                <TextField
-                    label="Notes"
-                    size="small"
-                    className="span-2"
-                    multiline
-                    minRows={2}
-                    value={form.notes}
-                    onChange={(event) => onChange('notes', event.target.value)}
-                    slotProps={label}
-                    fullWidth
-                />
+                {/* Notes are kept per date on the student's page, not here — a
+                    new student simply starts with an empty notes log. */}
             </Box>
         </DialogContent>
     </Dialog>

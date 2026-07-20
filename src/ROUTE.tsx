@@ -80,9 +80,21 @@ const DashboardRoute = () => {
         () => allStudents.filter((student) => !student.isArchived),
         [allStudents]
     )
-    const scheduledSessions = useAppSelector(
+    const allSessions = useAppSelector(
         (state) => state.students.scheduledSessions
     )
+    // Archived students leave the dashboard, so their classes leave with them:
+    // both the upcoming list and the week-load bars ignore their rows.
+    const scheduledSessions = useMemo(() => {
+        const archivedIds = new Set(
+            allStudents
+                .filter((student) => student.isArchived)
+                .map((student) => student.id)
+        )
+        return allSessions.filter(
+            (session) => !archivedIds.has(session.studentId)
+        )
+    }, [allStudents, allSessions])
     const dataLoading = useAppSelector(
         (state) => state.students.loading || state.students.sessionsLoading
     )
@@ -288,7 +300,11 @@ const StudentsRoute = () => {
     )
 }
 
-const StudentDetailRoute = () => {
+const StudentDetailRoute = ({
+    tab = 'details',
+}: {
+    tab?: 'details' | 'diary'
+}) => {
     const navigate = useNavigate()
     const location = useLocation()
     const dispatch = useAppDispatch()
@@ -397,6 +413,22 @@ const StudentDetailRoute = () => {
                     })
                 )
             }
+            // The notes log saves on its own, outside profile edit mode: send
+            // the whole student with the updated list through the usual upsert.
+            onUpdateNotes={(datedNotes) =>
+                dispatch(saveStudentRequested({ ...student, datedNotes }))
+            }
+            activeTab={tab}
+            // Switching tab is a URL change (deep-linkable), replacing history so
+            // the tabs don't pile up entries; `from` is kept so Back still works.
+            onSelectTab={(next) =>
+                navigate(
+                    next === 'diary'
+                        ? paths.studentDiary(student.id)
+                        : paths.studentDetail(student.id),
+                    { state: { from }, replace: true }
+                )
+            }
         />
     )
 }
@@ -441,7 +473,13 @@ const StudySnapshotRoute = () => {
 const PaymentTrackerRoute = () => {
     const dispatch = useAppDispatch()
     const openStudentPage = useOpenStudentPage()
-    const students = useAppSelector((state) => state.students.students)
+    const allStudents = useAppSelector((state) => state.students.students)
+    // Archived students have finished tutoring, so they drop off the payment
+    // tracker — only the active roster is billed here.
+    const students = useMemo(
+        () => allStudents.filter((student) => !student.isArchived),
+        [allStudents]
+    )
     const paymentsByMonth = useAppSelector(
         (state) => state.students.paymentsByMonth
     )
@@ -476,6 +514,19 @@ const SchedulingRoute = () => {
     const scheduledSessions = useAppSelector(
         (state) => state.students.scheduledSessions
     )
+    // An archived student's classes drop off the planner with them — their rows
+    // (including their seat in a group class) are hidden, leaving active
+    // attendees untouched.
+    const sessions = useMemo(() => {
+        const archivedIds = new Set(
+            allStudents
+                .filter((student) => student.isArchived)
+                .map((student) => student.id)
+        )
+        return scheduledSessions.filter(
+            (session) => !archivedIds.has(session.studentId)
+        )
+    }, [allStudents, scheduledSessions])
     const dataLoading = useAppSelector(
         (state) => state.students.loading || state.students.sessionsLoading
     )
@@ -487,7 +538,7 @@ const SchedulingRoute = () => {
     return (
         <ClassSchedulingView
             students={students}
-            sessions={scheduledSessions}
+            sessions={sessions}
             initialOpenDate={searchParams.get('day') ?? undefined}
             // Stay on the planner: the teacher books from a day modal and
             // usually has more to do on the calendar.
@@ -545,6 +596,10 @@ export const AppRoutes = () => (
             <Route
                 path="/students/:studentId"
                 element={teacher(<StudentDetailRoute />)}
+            />
+            <Route
+                path="/students/:studentId/diary"
+                element={teacher(<StudentDetailRoute tab="diary" />)}
             />
             <Route
                 path={paths.studySnapshot}

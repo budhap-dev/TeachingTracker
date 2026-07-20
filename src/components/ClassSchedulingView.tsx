@@ -835,9 +835,10 @@ export const ClassSchedulingView = ({
                                 className={`calendar-day ${isCurrentMonth ? '' : 'muted'} ${isToday ? 'today' : ''} ${bookedLevelClass(booked.length)}`}
                                 role="gridcell"
                                 aria-label={
-                                    booked.length > 0
+                                    (booked.length > 0
                                         ? `${day.toDateString()}: ${booked.length} ${booked.length === 1 ? 'class' : 'classes'}`
-                                        : day.toDateString()
+                                        : day.toDateString()) +
+                                    (isToday ? ' (today)' : '')
                                 }
                             >
                                 <button
