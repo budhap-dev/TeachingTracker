@@ -1,50 +1,33 @@
 name: Deploy
-# One pipeline for both environments: dev (auto) → approval → prod. The run
-# graph shows both stages together, so it's clear which commit is going where.
-run-name: "Deploy ${{ github.sha }} → dev, then prod on approval"
+# One workflow, both environments. Push auto-deploys dev; prod is a manual
+# promotion (Actions → Run workflow). No waiting/polling job, so nothing logs
+# or burns minutes while a manual approval is pending — promote whenever.
+run-name: "Deploy: ${{ github.event.head_commit.message || github.sha }} (@${{ github.actor }})"
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  workflow_dispatch: # = promote this commit to prod
 
-# contents: checkout · issues: the approval gate opens/closes its issue.
 permissions:
   contents: read
-  issues: write
 
 # The frontend bakes VITE_API_BASE_URL in at build time, so (unlike the API)
 # each environment is built separately with its own API URL and Entra config.
 jobs:
-  # Stage 1 — every push auto-builds and deploys to dev.
+  # Auto — every push to main builds and deploys to dev. Skipped on a manual run.
   dev:
+    if: ${{ github.event_name == 'push' }}
     uses: ./.github/workflows/deploy-env.yml
     with:
       environment: dev
     secrets: inherit
 
-  # Manual gate — pauses the run until an approver comments on the auto-opened
-  # issue. The free-plan stand-in for a GitHub Environment required-reviewer
-  # rule; prod stays greyed/pending until this passes.
-  approve-prod:
-    needs: dev
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Await production approval
-        uses: trstringer/manual-approval@fa642940caf8412403569b28b2db4a1df08a83a3 # v1.13.1
-        with:
-          secret: ${{ github.token }}
-          approvers: budhap-dev
-          minimum-approvals: 1
-          issue-title: "Deploy ${{ github.sha }} to production?"
-          issue-body: >
-            This commit is live on **dev**. Comment `approved` to promote it to
-            **prod**, or `denied` to stop. Auto-fails after 60 minutes.
-
-  # Stage 2 — build with prod config and deploy to prod once approved.
+  # Manual — promote to prod by running this workflow (Actions → Run workflow).
+  # Skipped (greyed) on push runs, so it's clearly the gated stage without any
+  # job sitting and polling for approval.
   prod:
-    needs: approve-prod
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     uses: ./.github/workflows/deploy-env.yml
     with:
       environment: prod
