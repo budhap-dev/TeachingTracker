@@ -1,0 +1,539 @@
+<title>Teaching Tracker — System Design</title>
+<style>
+  :root {
+    --bg: #eaeef3;
+    --surface: #ffffff;
+    --surface-2: #f3f6f9;
+    --ink: #17212e;
+    --ink-soft: #4a5a70;
+    --ink-faint: #7c8aa0;
+    --line: #d5dce5;
+    --line-soft: #e6ebf1;
+    --accent: #0d7684;
+    --accent-ink: #0a5a66;
+    --accent-soft: #d9edef;
+    --good: #2c8f62;
+    --warn: #a8721b;
+    --crit: #c14a3a;
+    --radius: 10px;
+    --maxw: 74ch;
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c1119;
+      --surface: #131b28;
+      --surface-2: #1a2432;
+      --ink: #e8edf4;
+      --ink-soft: #9dabc0;
+      --ink-faint: #6d7b91;
+      --line: #26313f;
+      --line-soft: #1e2734;
+      --accent: #35bcc9;
+      --accent-ink: #7fe0e9;
+      --accent-soft: #10333a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0c1119; --surface: #131b28; --surface-2: #1a2432;
+    --ink: #e8edf4; --ink-soft: #9dabc0; --ink-faint: #6d7b91;
+    --line: #26313f; --line-soft: #1e2734;
+    --accent: #35bcc9; --accent-ink: #7fe0e9; --accent-soft: #10333a;
+  }
+  :root[data-theme="light"] {
+    --bg: #eaeef3; --surface: #ffffff; --surface-2: #f3f6f9;
+    --ink: #17212e; --ink-soft: #4a5a70; --ink-faint: #7c8aa0;
+    --line: #d5dce5; --line-soft: #e6ebf1;
+    --accent: #0d7684; --accent-ink: #0a5a66; --accent-soft: #d9edef;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 0; max-width: 1240px; margin: 0 auto; }
+
+  /* ---- Sidebar nav ---- */
+  .nav {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 30px 22px 40px; border-right: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 55%, var(--bg));
+  }
+  .brand { display: flex; align-items: baseline; gap: 9px; margin-bottom: 4px; }
+  .brand .glyph { font-family: var(--mono); font-weight: 700; color: var(--accent); font-size: .78rem; letter-spacing: .12em; }
+  .brand .name { font-weight: 650; font-size: .92rem; letter-spacing: -.01em; }
+  .nav .tag { font-family: var(--mono); font-size: .64rem; text-transform: uppercase; letter-spacing: .16em; color: var(--ink-faint); margin: 26px 0 9px; }
+  .nav a { display: block; text-decoration: none; color: var(--ink-soft); font-size: .86rem; padding: 5px 10px; border-radius: 6px; border-left: 2px solid transparent; margin-left: -2px; }
+  .nav a:hover { color: var(--ink); background: var(--surface-2); }
+  .nav a.active { color: var(--accent-ink); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 550; }
+  .nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* ---- Content ---- */
+  main { padding: 0 clamp(20px, 4vw, 56px) 120px; min-width: 0; }
+  .prose { max-width: var(--maxw); }
+  .wide { max-width: 960px; }
+
+  /* Hero */
+  header.hero { padding: 56px 0 34px; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
+  .eyebrow { font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .2em; color: var(--accent); margin: 0 0 16px; }
+  h1 { font-size: clamp(2.1rem, 4.6vw, 3.15rem); line-height: 1.04; letter-spacing: -.025em; margin: 0 0 16px; text-wrap: balance; font-weight: 680; }
+  .lede { font-size: 1.14rem; color: var(--ink-soft); max-width: 62ch; margin: 0 0 26px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: .72rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); }
+  .chip strong { color: var(--ink); font-weight: 600; }
+
+  section { padding-top: 30px; margin-top: 30px; scroll-margin-top: 20px; }
+  section + section { border-top: 1px solid var(--line-soft); }
+  h2 { font-size: 1.62rem; letter-spacing: -.02em; margin: 0 0 6px; font-weight: 640; display: flex; align-items: baseline; gap: 12px; }
+  h2 .num { font-family: var(--mono); font-size: .82rem; color: var(--accent); font-weight: 600; }
+  h3 { font-size: 1.06rem; margin: 30px 0 8px; letter-spacing: -.01em; }
+  .sub { color: var(--ink-soft); margin: 2px 0 22px; max-width: 66ch; }
+  p { margin: 0 0 14px; }
+  a.inline { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+  code { font-family: var(--mono); font-size: .84em; background: var(--surface-2); padding: 1.5px 5px; border-radius: 4px; border: 1px solid var(--line-soft); color: var(--accent-ink); }
+  strong { color: var(--ink); font-weight: 620; }
+  ul { margin: 0 0 14px; padding-left: 20px; }
+  li { margin: 5px 0; }
+
+  /* Diagram = drafting-paper panel, deliberately light in both themes */
+  .diagram { background: #f6f9fc; border: 1px solid #d3dde6; border-radius: var(--radius); padding: 18px; margin: 20px 0; overflow-x: auto; background-image: linear-gradient(#e7eef4 1px, transparent 1px), linear-gradient(90deg, #e7eef4 1px, transparent 1px); background-size: 22px 22px; }
+  .diagram pre.mermaid { margin: 0; background: transparent; text-align: center; min-width: 520px; }
+  .diagram .cap { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .13em; color: #5a6b7d; margin-top: 12px; text-align: center; }
+
+  /* Cards grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 20px 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .card h4 { margin: 0 0 6px; font-size: .95rem; }
+  .card p { font-size: .88rem; color: var(--ink-soft); margin: 0; }
+  .card .k { font-family: var(--mono); font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); display: block; margin-bottom: 8px; }
+
+  /* Tables */
+  .tablewrap { overflow-x: auto; margin: 18px 0; border: 1px solid var(--line); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; font-size: .87rem; min-width: 480px; }
+  th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); background: var(--surface-2); font-weight: 600; position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  td code { background: transparent; border: 0; padding: 0; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* API endpoint rows */
+  .api { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .ep { display: grid; grid-template-columns: 62px 1fr; gap: 12px; align-items: baseline; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 11px 14px; }
+  .verb { font-family: var(--mono); font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; text-align: center; padding: 3px 0; border-radius: 5px; color: #fff; }
+  .verb.get { background: var(--good); } .verb.post { background: #2f6f8f; } .verb.put { background: var(--warn); } .verb.del { background: var(--crit); }
+  .ep .path { font-family: var(--mono); font-size: .84rem; color: var(--ink); font-weight: 550; }
+  .ep .desc { font-size: .84rem; color: var(--ink-soft); margin-top: 3px; }
+  .ep .desc b { color: var(--ink); font-weight: 600; }
+
+  /* Callouts (semantic) */
+  .note { border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 16px 0; font-size: .9rem; }
+  .note.warn { border-left-color: var(--warn); }
+  .note.crit { border-left-color: var(--crit); }
+  .note .lbl { font-family: var(--mono); font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-faint); }
+  .sev { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
+  .sev.g { background: var(--good); } .sev.w { background: var(--warn); } .sev.c { background: var(--crit); }
+
+  footer { margin-top: 60px; padding-top: 26px; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: .84rem; }
+  footer code { font-size: .8rem; }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    .nav { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 16px 20px; }
+    .nav .brand { width: 100%; }
+    .nav .tag { display: none; }
+    .nav a { border-left: 0; padding: 4px 8px; font-size: .8rem; }
+    .nav a.active { border-left: 0; }
+  }
+</style>
+
+<div class="layout">
+  <aside class="nav">
+    <div class="brand"><span class="glyph">[ TT ]</span><span class="name">System Design</span></div>
+    <div class="tag">Technical design</div>
+    <a href="#overview">Overview</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#frontend">Frontend</a>
+    <a href="#backend">Backend</a>
+    <a href="#data">Data model</a>
+    <a href="#flow">Key flow</a>
+    <a href="#security">Security</a>
+    <a href="#gdpr">GDPR &amp; data protection</a>
+    <a href="#infra">Infrastructure</a>
+    <a href="#delivery">CI/CD & delivery</a>
+    <a href="#risks">Risks & gaps</a>
+    <div class="tag">Interface & functional</div>
+    <a href="#api">API reference</a>
+    <a href="#dict">Data dictionary</a>
+    <a href="#screens">Screens</a>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <p class="eyebrow">Teaching Tracker — whole-system design</p>
+      <h1>A tutoring tracker, drawn from the source up.</h1>
+      <p class="lede">Technical &amp; interface design across two repositories — a React SPA and an Azure Functions API with Terraform infrastructure. Reverse-engineered from code, so every claim is checkable.</p>
+      <div class="meta">
+        <span class="chip"><strong>SPA</strong> · React 18 + Redux-saga</span>
+        <span class="chip"><strong>API</strong> · Azure Functions v4 · Node 24</span>
+        <span class="chip"><strong>Store</strong> · Azure Table Storage</span>
+        <span class="chip"><strong>Auth</strong> · Entra ID + Key Vault</span>
+        <span class="chip">v1.0.0</span>
+      </div>
+    </header>
+
+    <section id="overview">
+      <h2><span class="num">01</span> Overview</h2>
+      <p class="sub">A private, single-teacher tool for students, classes, monthly payments, and per-student dated notes.</p>
+      <div class="prose">
+        <p>A browser SPA talks to a stateless HTTP API that persists to Azure Table Storage. Microsoft Entra ID provides sign-in; a teacher allow-list held in Key Vault authorises. Four design tenets shape everything:</p>
+      </div>
+      <div class="grid">
+        <div class="card"><span class="k">Tenet 01</span><h4>The API owns truth</h4><p>Bills and payment status are derived server-side from classes actually held. The client never recomputes what is owed.</p></div>
+        <div class="card"><span class="k">Tenet 02</span><h4>Config over code</h4><p>One API artifact; behaviour comes from app settings. The SPA is built once per environment because Vite inlines config.</p></div>
+        <div class="card"><span class="k">Tenet 03</span><h4>Keyless everywhere</h4><p>CI deploys via GitHub OIDC; the API reaches storage and secrets through its managed identity and AAD RBAC.</p></div>
+        <div class="card"><span class="k">Tenet 04</span><h4>Graceful degradation</h4><p>Auth is a flag — when not enforced the API logs "would refuse" and proceeds, so the app works before sign-in is switched on.</p></div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2><span class="num">02</span> Architecture</h2>
+      <p class="sub">System context and the containers inside each tier.</p>
+      <div class="diagram wide">
+        <pre class="mermaid">
+graph TB
+    Teacher([Teacher / Visitor])
+    SPA["React SPA<br/>Static Web Apps"]
+    API["Functions API<br/>Flex Consumption, Node 24"]
+    TS[("Table Storage<br/>students · sessions<br/>settlements · counters")]
+    KV["Key Vault<br/>teacher-emails"]
+    Entra["Microsoft Entra ID"]
+    Teacher -->|HTTPS| SPA
+    SPA -->|"REST /api · Bearer JWT"| API
+    SPA -.->|OAuth2 redirect| Entra
+    API -->|"managed identity"| TS
+    API -->|allow-list| KV
+    API -->|"verify JWT · JWKS"| Entra
+        </pre>
+        <div class="cap">Fig 1 — System context</div>
+      </div>
+      <div class="diagram wide">
+        <pre class="mermaid">
+graph LR
+    subgraph SPA
+      R[router] --> RTK[Redux slice] --> SAGA[redux-saga] --> APIC[api client]
+      MSAL[MSAL] -. token .-> APIC
+    end
+    subgraph API
+      FN[HTTP handlers] --> AUTH[requireTeacher]
+      FN --> SVC[services] --> DS[DataStore]
+      DS --> MEM[MemoryStore]
+      DS --> TAB[TableStore]
+    end
+    APIC --> FN
+        </pre>
+        <div class="cap">Fig 2 — Container / module architecture</div>
+      </div>
+    </section>
+
+    <section id="frontend">
+      <h2><span class="num">03</span> Frontend</h2>
+      <p class="sub">React 18 + TypeScript + Vite, one Redux slice, all async through sagas, all HTTP through one wrapper.</p>
+      <div class="prose">
+        <h3>State &amp; the request lifecycle</h3>
+        <p>A single RTK slice <code>state.students</code> holds the <code>students</code>, <code>scheduledSessions</code> and <code>paymentsByMonth</code> collections, three <code>loading</code> flags, three <code>saving</code> flags, a sticky <code>error</code>, and a transient <code>notice</code> toast. Every mutation follows one shape: <strong>request → saga → API → succeeded/failed</strong>. The <code>*Succeeded</code> reducer merges the server's returned record and raises a success toast; <code>*Failed</code> sets the error and an error toast.</p>
+        <div class="note"><span class="lbl">Invariant</span><br><code>recalculateTotals</code> recomputes only <code>totalReceived = Σ amountPaid</code> and <code>totalOutstanding = max(due − received, 0)</code>. <code>totalDue</code> is summed from the API's per-record <code>amountDue</code> — never re-derived from fees on the client.</p></div>
+        <h3>Routing &amp; auth-less mode</h3>
+        <p>Ten routes; eight teacher-gated by a <code>RequireTeacher</code> wrapper, two public (<code>/offerings</code>, <code>/contact</code>). Route wrappers filter archived students out of every active surface. The student page is one component with two deep-linkable tabs — <code>/students/:id</code> (Details) and <code>/students/:id/diary</code> (Diary). When the three <code>VITE_ENTRA_*</code> vars are unset the app runs <strong>auth-less</strong>: no MSAL provider, requests go tokenless — the mode tests and local dev use.</p>
+      </div>
+    </section>
+
+    <section id="backend">
+      <h2><span class="num">04</span> Backend</h2>
+      <p class="sub">Thin Azure Functions handlers over services over a two-adapter DataStore.</p>
+      <div class="prose">
+        <p>Handlers validate and delegate; logic lives in <code>studentService</code>, <code>sessionService</code>, <code>paymentService</code>. Notable rules: a <strong>group class is N session rows sharing a <code>groupId</code></strong>; archiving <strong>cancels (never deletes)</strong> future classes; and <strong>bills are derived, never stored</strong> — only a <code>PaymentSettlement</code> (<code>amountPaid</code> + <code>notes</code>) persists.</p>
+      </div>
+      <div class="diagram">
+        <pre class="mermaid">
+graph TD
+    F["createDataStore()<br/>reads DATA_STORE"] -->|"'memory' / unset"| M["MemoryStore<br/>self-seeding, ephemeral"]
+    F -->|"'tables'"| T["TableStore<br/>Azure Tables, durable"]
+    F -->|other| E["throws — no silent fallback"]
+        </pre>
+        <div class="cap">Fig 3 — Persistence adapter selection (at process start)</div>
+      </div>
+      <div class="note warn"><span class="lbl">Gotcha</span><br>The <code>dataStore</code> singleton is created once at import, so a <code>DATA_STORE</code> app-setting change needs a <strong>restart/redeploy</strong> to take effect.</div>
+    </section>
+
+    <section id="data">
+      <h2><span class="num">05</span> Data model</h2>
+      <p class="sub">Three stored entities; payments are computed on read.</p>
+      <div class="diagram wide">
+        <pre class="mermaid">
+erDiagram
+    STUDENT ||--o{ SESSION : "studentId"
+    STUDENT ||--o{ SETTLEMENT : "studentId + month"
+    STUDENT ||--o{ DATED_NOTE : "datedNotes[]"
+    SESSION }o--o| SESSION : "groupId"
+    STUDENT {
+      number id PK
+      string studentId "STU/DEV code"
+      string mode "Online|F2F|Both"
+      number fees "GBP per session"
+      DatedNote datedNotes "optional log"
+      bool isArchived "optional"
+    }
+    SESSION {
+      number id PK
+      number studentId FK
+      string groupId "links group rows"
+      string status "Scheduled|Cancelled"
+    }
+    SETTLEMENT {
+      number studentId PK
+      string month PK "YYYY-MM"
+      number amountPaid
+    }
+        </pre>
+        <div class="cap">Fig 4 — Stored entities (bills derived from these)</div>
+      </div>
+      <div class="note"><span class="lbl">Encoding</span><br>Table Storage has no array/object columns, so <code>subjects</code>, <code>progressBySubject</code> and <code>datedNotes</code> ride as JSON strings (<code>*Json</code> columns). Ids come from an ETag-guarded counter; settlements use the composite key <code>pad(studentId)_month</code>.</div>
+    </section>
+
+    <section id="flow">
+      <h2><span class="num">06</span> Key flow</h2>
+      <p class="sub">Payment save — the canonical authenticated request lifecycle.</p>
+      <div class="diagram wide">
+        <pre class="mermaid">
+sequenceDiagram
+    participant U as Teacher
+    participant St as Redux/saga
+    participant Cl as api client
+    participant Fn as savePayments
+    participant Sv as paymentService
+    U->>St: click Save (dirty row)
+    St->>Cl: savePayments(input)
+    Cl->>Cl: acquireApiToken()
+    Cl->>Fn: POST /api/payments (Bearer)
+    Fn->>Fn: requireTeacher()
+    Fn->>Sv: savePayments(inputs)
+    Sv-->>Fn: PaymentRecord[]
+    Fn-->>Cl: 200 records
+    Cl-->>St: savePaymentSucceeded
+    St->>St: recalculateTotals → "Payment saved."
+        </pre>
+        <div class="cap">Fig 5 — Payment save sequence</div>
+      </div>
+    </section>
+
+    <section id="security">
+      <h2><span class="num">07</span> Security</h2>
+      <p class="sub">Two walls: single-tenant Entra sign-in, then a Key-Vault email allow-list.</p>
+      <ul class="prose">
+        <li><strong>Sign-in</strong> — single-tenant (<code>AzureADMyOrg</code>) SPA + API app registrations; the API issues v2.0 tokens and exposes one scope, <code>access_as_teacher</code>.</li>
+        <li><strong>Authorisation</strong> — JWT scope check <em>and</em> an email allow-list (<code>teacher-emails</code> in an RBAC Key Vault), <strong>fail-closed</strong> if the vault is unreachable.</li>
+        <li><strong>Keyless CI</strong> — per-env GitHub OIDC, subject <code>repo:owner/repo:environment:&lt;env&gt;</code>; a dev job can't assume the prod identity. Each identity is Contributor on its <em>app</em> RG only.</li>
+        <li><strong>Keyless data</strong> — the Function App's managed identity holds Table Data Contributor on the data account and Key Vault Secrets User on the vault. No account keys in code.</li>
+      </ul>
+    </section>
+
+    <section id="gdpr">
+      <h2><span class="num">REQ-009</span> GDPR &amp; data protection</h2>
+      <p class="sub">The store holds personal data about children — the teacher is the data controller under UK GDPR. What's in place, and the honest gaps.</p>
+      <h3>Steps taken</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Measure</th><th>How it's implemented</th><th>State</th></tr></thead>
+          <tbody>
+            <tr><td>Right to erasure (Art. 17)</td><td><code>DELETE /students/{id}</code> cascades to sessions + settlements; real Table deletes, no tombstones</td><td><span class="sev g"></span></td></tr>
+            <tr><td>Rectification (Art. 16)</td><td><code>PUT /students/{id}</code></td><td><span class="sev g"></span></td></tr>
+            <tr><td>Access control (Art. 32)</td><td>Single-tenant Entra + Key Vault allow-list (fail-closed); keyless AAD data plane; least-privilege RBAC</td><td><span class="sev g"></span></td></tr>
+            <tr><td>Encryption</td><td>SSE at rest; TLS ≥ 1.2 in transit (verified)</td><td><span class="sev g"></span></td></tr>
+            <tr><td>Storage isolation</td><td>Dedicated per-env data account, <code>prevent_destroy</code>, no public blob</td><td><span class="sev g"></span></td></tr>
+            <tr><td>Data residency</td><td>Prod data + compute moved to <strong>UK South</strong> — no international transfer (done while empty)</td><td><span class="sev g"></span></td></tr>
+            <tr><td>Clean register</td><td>Prod launched <strong>empty</strong> — no synthetic children in the real roster</td><td><span class="sev g"></span></td></tr>
+            <tr><td>Minimisation &amp; retention anchor</td><td>Only tutoring/billing fields; <code>archivedOn</code> anchors the retention window</td><td><span class="sev g"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Outstanding</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Sev</th><th>Gap</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><span class="sev w"></span></td><td>Prod <code>auth_enforced = false</code> — API accepts unauthenticated calls</td><td>Queued: PR #26 flips to enforced (sign-in verified); apply pending</td></tr>
+            <tr><td><span class="sev w"></span></td><td>Shared key still enabled on the data account</td><td>Disable — the app already uses AAD</td></tr>
+            <tr><td><span class="sev w"></span></td><td>Retention sweep is manual; SAR export not built</td><td>Scheduled deletion off <code>archivedOn</code> + <code>npm run export</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="infra">
+      <h2><span class="num">08</span> Infrastructure</h2>
+      <p class="sub">Local-state Terraform, three resource groups per environment, Flex Consumption Functions.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Resource group</th><th>Contents</th></tr></thead>
+          <tbody>
+            <tr><td><code>rg-teachtracker-&lt;env&gt;</code></td><td>App/deploy storage, Log Analytics, App Insights, Flex Consumption (FC1) plan, Function App (system-assigned MI)</td></tr>
+            <tr><td><code>rg-teachtracker-&lt;env&gt;-data</code></td><td>Dedicated data storage account, <code>prevent_destroy</code></td></tr>
+            <tr><td><code>rg-teachtracker-&lt;env&gt;-auth</code></td><td>Entra SPA + API app registrations, RBAC Key Vault (<code>teacher-emails</code>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Environment matrix</h3>
+      <div class="tablewrap">
+        <table class="tabular">
+          <thead><tr><th>Setting</th><th>dev</th><th>prod</th></tr></thead>
+          <tbody>
+            <tr><td>region</td><td><code>uksouth</code></td><td><code>uksouth</code></td></tr>
+            <tr><td>max instances</td><td>40</td><td>100</td></tr>
+            <tr><td><code>auth_enforced</code></td><td><code>true</code></td><td><code>false</code></td></tr>
+            <tr><td><code>data_store</code></td><td><code>tables</code></td><td><code>tables</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="delivery">
+      <h2><span class="num">09</span> CI/CD &amp; delivery</h2>
+      <p class="sub">Merge auto-ships dev; prod is a deliberate manual dispatch.</p>
+      <div class="diagram">
+        <pre class="mermaid">
+graph LR
+    PR[Pull Request] -->|"CI: lint + 100% coverage + build"| M[merge to main]
+    M -->|auto| DEV["deploy → dev<br/>both repos"]
+    DEV -->|"manual dispatch"| PROD["deploy-prod → prod<br/>both repos"]
+        </pre>
+        <div class="cap">Fig 6 — Promotion path</div>
+      </div>
+      <ul class="prose">
+        <li><strong>Build-once (backend)</strong> — one artifact, OIDC login, deployed to any env; config is app settings.</li>
+        <li><strong>Build-per-env (frontend)</strong> — Vite inlines the API URL + Entra config at build time, so dev and prod are separate builds to separate Static Web Apps.</li>
+        <li><strong>Data-store cutover</strong> — seed tables over AAD (<code>--empty</code> for prod) → flip <code>data_store</code> in Terraform → <code>apply</code> → restart so the process re-reads config.</li>
+      </ul>
+    </section>
+
+    <section id="risks">
+      <h2><span class="num">10</span> Risks &amp; gaps</h2>
+      <p class="sub">Surfaced during extraction — fix candidates, ordered by blast radius.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Sev</th><th>Finding</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><span class="sev w"></span></td><td>Prod <code>auth_enforced = false</code> — API logs but does not reject unauthenticated calls</td><td>Queued in PR #26 (in-place flip; sign-in verified) — apply pending</td></tr>
+            <tr><td><span class="sev w"></span></td><td><code>DATA_STORE</code> read once at process start</td><td>Always restart/redeploy after flipping it</td></tr>
+            <tr><td><span class="sev w"></span></td><td>OpenAPI omits <code>DELETE /sessions/{id}</code>, <code>POST /sessions/{id}/members</code>, and <code>datedNotes</code>; says <code>totalExpected</code> vs code <code>totalDue</code></td><td>Regenerate / extend the spec</td></tr>
+            <tr><td><span class="sev w"></span></td><td>Terraform state is local and holds secrets</td><td>Consider a remote encrypted backend</td></tr>
+            <tr><td><span class="sev g"></span></td><td>Session rows cache student name/year</td><td>Self-heals on save via <code>refreshSessionNames</code> — acceptable</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="api">
+      <h2><span class="num">11</span> API reference</h2>
+      <p class="sub">Base path <code>/api</code>. Teacher-gated unless noted. Error bodies <code>{ error }</code>.</p>
+
+      <h3>Students</h3>
+      <div class="api">
+        <div class="ep"><span class="verb get">GET</span><div><span class="path">/students</span><div class="desc">All students (no archived filtering — the client filters). → <b>200</b> Student[]</div></div></div>
+        <div class="ep"><span class="verb get">GET</span><div><span class="path">/students/{id}</span><div class="desc">One student. → 200 · <b>400</b> bad id · <b>404</b></div></div></div>
+        <div class="ep"><span class="verb post">POST</span><div><span class="path">/students &nbsp;·&nbsp; PUT /students/{id}</span><div class="desc">Upsert. → <b>201</b> created · <b>200</b> updated · 400 validation</div></div></div>
+        <div class="ep"><span class="verb del">DEL</span><div><span class="path">/students/{id}</span><div class="desc">GDPR cascade erase (student + sessions + settlements). → <b>204</b></div></div></div>
+        <div class="ep"><span class="verb post">POST</span><div><span class="path">/students/{id}/archive</span><div class="desc">To Alumni; <b>closing note required</b>; cancels future classes. → 200</div></div></div>
+        <div class="ep"><span class="verb post">POST</span><div><span class="path">/students/{id}/restore</span><div class="desc">Back to active roster. → 200</div></div></div>
+      </div>
+
+      <h3>Sessions</h3>
+      <div class="api">
+        <div class="ep"><span class="verb get">GET</span><div><span class="path">/sessions?studentId=</span><div class="desc">Classes, date+time ordered. → 200 ScheduledSession[]</div></div></div>
+        <div class="ep"><span class="verb post">POST</span><div><span class="path">/sessions</span><div class="desc">Book — solo (<code>studentId</code>) or group (<code>studentIds[]</code> ⇒ N rows). → <b>201</b> one or array</div></div></div>
+        <div class="ep"><span class="verb put">PUT</span><div><span class="path">/sessions/{id}</span><div class="desc">Edit / cancel; <code>applyToGroup</code> fans out. → 200</div></div></div>
+        <div class="ep"><span class="verb del">DEL</span><div><span class="path">/sessions/{id}</span><div class="desc">Permanent delete (all group rows). → <b>200</b> { ids } <em>(not 204)</em></div></div></div>
+        <div class="ep"><span class="verb post">POST</span><div><span class="path">/sessions/{id}/members</span><div class="desc">Add student (solo→group; restores a cancelled member). → 201 · <b>409</b> already member</div></div></div>
+      </div>
+
+      <h3>Payments <span style="font-family:var(--mono);font-size:.66rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.1em;">bills derived · only settlements stored</span></h3>
+      <div class="api">
+        <div class="ep"><span class="verb get">GET</span><div><span class="path">/payments?studentId=&amp;month=&amp;status=</span><div class="desc">Flat records. → 200 PaymentRecord[]</div></div></div>
+        <div class="ep"><span class="verb get">GET</span><div><span class="path">/payments/by-month?studentId=&amp;status=</span><div class="desc">Grouped with totals (ascending). → 200 MonthlyPaymentGroup[]</div></div></div>
+        <div class="ep"><span class="verb post">POST</span><div><span class="path">/payments</span><div class="desc">Settle. Omit <code>amountPaid</code> ⇒ settle in full; omit <code>notes</code> ⇒ keep existing. → 200</div></div></div>
+      </div>
+    </section>
+
+    <section id="dict">
+      <h2><span class="num">12</span> Data dictionary</h2>
+      <p class="sub">The shapes the API and UI exchange.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Type</th><th>Key fields</th></tr></thead>
+          <tbody>
+            <tr><td><code>Student</code></td><td><code>id</code>, <code>studentId</code> (code), name, <code>subjects[]</code>, <code>progress</code> 0–100 + <code>progressBySubject?</code>, <code>mode</code>, <code>fees</code>, <code>datedNotes?</code>, <code>isArchived?</code>/<code>archivedOn?</code>/<code>archiveNotes?</code>. Legacy <code>notes</code> string retained, unsurfaced.</td></tr>
+            <tr><td><code>DatedNote</code></td><td><code>{ id, date (YYYY-MM-DD), text }</code></td></tr>
+            <tr><td><code>ScheduledSession</code></td><td><code>id</code>, <code>studentId</code>, denormalised <code>studentName</code>/<code>year</code>, <code>subject</code>, <code>date</code>, <code>time</code>, <code>durationMinutes</code> ∈ {30,60,90,120}, <code>groupId?</code>, <code>status</code></td></tr>
+            <tr><td><code>PaymentSettlement</code> <em>(stored)</em></td><td><code>studentId</code>, <code>month</code>, <code>amountPaid</code>, <code>notes</code></td></tr>
+            <tr><td><code>PaymentRecord</code> <em>(derived)</em></td><td><code>feePerSession</code>, <code>sessionsHeld</code>, <code>amountDue</code>, <code>amountPaid</code>, <code>outstanding</code>, <code>status</code></td></tr>
+            <tr><td><code>MonthlyPaymentGroup</code></td><td><code>month</code>, <code>totalDue</code>, <code>totalReceived</code>, <code>totalOutstanding</code>, <code>sessionsHeld</code>, <code>records[]</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="screens">
+      <h2><span class="num">13</span> Screens</h2>
+      <p class="sub">Functional surface — a BusyBar tracks any load/save; a NoticeToast reports success (auto-hide) or error (persists).</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Screen</th><th>Route</th><th>Behaviour</th></tr></thead>
+          <tbody>
+            <tr><td>Dashboard</td><td><code>/</code></td><td>Stat tiles, upcoming sessions (archived excluded), progress bands, week-load bars deep-linking the planner</td></tr>
+            <tr><td>Students</td><td><code>/students</code></td><td>Roster by year; "Add new student" modal (no Notes field — diary lives on the student page)</td></tr>
+            <tr><td>Student · Details</td><td><code>/students/:id</code></td><td>Profile grid + edit form (locked until Edit); upcoming-sessions mini-table; Archive requires edit mode + closing note</td></tr>
+            <tr><td>Student · Diary</td><td><code>/students/:id/diary</code></td><td>Ruled-notebook dated log; inline add (date defaults today) saves immediately; per-entry edit/delete</td></tr>
+            <tr><td>Payment Tracker</td><td><code>/payments</code></td><td>Per-row amount box + <b>Save</b> (commits on Save/Enter only, disabled until dirty); totals summed from visible rows</td></tr>
+            <tr><td>Class Scheduling</td><td><code>/scheduling</code></td><td>Month calendar; day modal to book/edit/add-member/cancel/delete; multi-select ⇒ group</td></tr>
+            <tr><td>Study Snapshot</td><td><code>/study-snapshot</code></td><td>Sortable/paginated table; Group/Solo/Both per student</td></tr>
+            <tr><td>Alumni</td><td><code>/alumni</code></td><td>Archived students; open → restore</td></tr>
+            <tr><td>Offerings / Contact</td><td><code>/offerings</code> · <code>/contact</code></td><td>Public marketing; reachable signed-out</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <p>Source of truth lives in the repo: <code>docs/design/TDD.md</code> and <code>docs/design/IFDD.md</code>. Reverse-engineered from both repositories via parallel extraction, then synthesised — re-verify against the code rather than trusting a snapshot.</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.nav a'));
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+    var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+    if (!('IntersectionObserver' in window)) return;
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (l) { l.classList.remove('active'); });
+          var a = byId[e.target.id];
+          if (a) a.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-15% 0px -75% 0px', threshold: 0 });
+    sections.forEach(function (s) { obs.observe(s); });
+  })();
+</script>

@@ -11,11 +11,22 @@ API and loaded through **redux-saga** — the frontend ships no data of its own.
 | Env      | Frontend                                                 | API base URL                                                | Data          |
 | -------- | -------------------------------------------------------- | ----------------------------------------------------------- | ------------- |
 | **dev**  | https://delightful-water-09b7c480f.7.azurestaticapps.net  | https://func-teachtracker-dev-pjlmrq.azurewebsites.net/api   | 5 students    |
-| **prod** | https://nice-sea-095463c0f.7.azurestaticapps.net          | https://func-teachtracker-prod-gjvecw.azurewebsites.net/api  | 15 students   |
+| **prod** | https://nice-sea-095463c0f.7.azurestaticapps.net          | https://func-teachtracker-prod-gjvecw.azurewebsites.net/api  | empty (live roster) |
 
 Each environment has its own Static Web App wired to its own Function App, and
 serves a distinct dataset. Full details, CORS, and the deploy runbook:
 **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+
+## Design documentation
+
+Whole-system technical + interface/functional design, spanning this SPA and the
+`func-teaching-tracker` API — reverse-engineered from source and kept grounded in
+`file:line` citations.
+
+- **[System Design — rendered hub](https://claude.ai/code/artifact/d5897b6f-9012-4eca-8399-93959a9c4c89)** — interactive, with diagrams (private until shared)
+- **[Technical Design Document](docs/design/TDD.md)** — architecture, data model, security, infrastructure, CI/CD, risks
+- **[Interface & Functional Design Document](docs/design/IFDD.md)** — API reference, data dictionary, per-screen specs, user journeys
+- Index: **[docs/design/](docs/design/README.md)**
 
 ## Features
 
