@@ -26,9 +26,6 @@ type StudentFormModalProps = {
     onSubmit: (event: FormEvent) => void
 }
 
-/** Uniform floating labels: every field, not just the pre-filled ones. */
-const label = { inputLabel: { shrink: true } } as const
-
 export const StudentFormModal = ({
     open,
     form,
@@ -69,7 +66,6 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('firstName', event.target.value)
                     }
-                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -79,7 +75,6 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('lastName', event.target.value)
                     }
-                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -88,7 +83,9 @@ export const StudentFormModal = ({
                     type="date"
                     value={form.dob}
                     onChange={(event) => onChange('dob', event.target.value)}
-                    slotProps={label}
+                    // A date input always draws its own control, so its label
+                    // must shrink or it sits on top of "dd/mm/yyyy".
+                    slotProps={{ inputLabel: { shrink: true } }}
                     fullWidth
                 />
                 <TextField
@@ -97,7 +94,6 @@ export const StudentFormModal = ({
                     size="small"
                     value={form.year}
                     onChange={(event) => onChange('year', event.target.value)}
-                    slotProps={label}
                     fullWidth
                 >
                     {yearOptions.map((year) => (
@@ -113,7 +109,6 @@ export const StudentFormModal = ({
                     className="span-2"
                     value={form.subjects}
                     slotProps={{
-                        ...label,
                         select: {
                             multiple: true,
                             renderValue: (selected) =>
@@ -143,7 +138,6 @@ export const StudentFormModal = ({
                     size="small"
                     value={form.school}
                     onChange={(event) => onChange('school', event.target.value)}
-                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -152,7 +146,6 @@ export const StudentFormModal = ({
                     size="small"
                     value={form.mode}
                     onChange={(event) => onChange('mode', event.target.value)}
-                    slotProps={label}
                     fullWidth
                 >
                     <MenuItem value="Online">Online</MenuItem>
@@ -167,20 +160,36 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('progress', Number(event.target.value))
                     }
-                    slotProps={label}
                     fullWidth
                 />
                 <TextField
-                    label="Fee per session (£)"
+                    select
+                    label="Fee type"
                     size="small"
-                    type="number"
-                    value={form.fees}
-                    onChange={(event) =>
-                        onChange('fees', Number(event.target.value))
-                    }
-                    slotProps={label}
+                    value={form.feeType ?? 'per-session'}
+                    onChange={(event) => onChange('feeType', event.target.value)}
                     fullWidth
-                />
+                >
+                    <MenuItem value="per-session">Per session</MenuItem>
+                    <MenuItem value="monthly">Monthly</MenuItem>
+                    <MenuItem value="none">No fee</MenuItem>
+                </TextField>
+                {(form.feeType ?? 'per-session') !== 'none' && (
+                    <TextField
+                        label={
+                            form.feeType === 'monthly'
+                                ? 'Monthly fee (£)'
+                                : 'Fee per session (£)'
+                        }
+                        size="small"
+                        type="number"
+                        value={form.fees}
+                        onChange={(event) =>
+                            onChange('fees', Number(event.target.value))
+                        }
+                        fullWidth
+                    />
+                )}
                 <TextField
                     label="Parent Name"
                     size="small"
@@ -188,7 +197,6 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('parentName', event.target.value)
                     }
-                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -198,7 +206,6 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('contactNumber', event.target.value)
                     }
-                    slotProps={label}
                     fullWidth
                 />
                 <TextField
@@ -211,7 +218,6 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('address', event.target.value)
                     }
-                    slotProps={label}
                     fullWidth
                 />
                 {/* Notes are kept per date on the student's page, not here — a

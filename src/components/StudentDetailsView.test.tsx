@@ -23,6 +23,7 @@ const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     mode: overrides.mode ?? 'Face to Face',
     progressBySubject: overrides.progressBySubject,
     fees: overrides.fees ?? 120,
+    feeType: overrides.feeType,
     notes: overrides.notes ?? 'Excellent problem solving skills.',
     parentName: overrides.parentName ?? 'Nadia Patel',
     contactNumber: overrides.contactNumber ?? '+44 7700 900123',
@@ -181,6 +182,44 @@ describe('StudentDetailsView', () => {
 
         await user.click(screen.getByRole('button', { name: /cancel/i }))
         expect(onCancelEdit).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows the monthly fee basis and edits the fee type', async () => {
+        const user = userEvent.setup()
+        const onDraftChange = vi.fn()
+        const { container } = renderView({
+            editingStudentId: 10,
+            draftStudent: buildStudent({ feeType: 'monthly', fees: 400 }),
+            hasUnsavedChanges: true,
+            onDraftChange,
+        })
+
+        // A monthly student's fee reads per month, and the amount field is
+        // labelled to match.
+        expect(container.querySelector('.fees-pill')?.textContent).toMatch(
+            /£400\s*\/month/
+        )
+        expect(screen.getByLabelText(/monthly fee/i)).toBeInTheDocument()
+
+        // Switching the basis emits the draft change.
+        await user.click(screen.getByRole('combobox', { name: /fee type/i }))
+        await user.click(screen.getByRole('option', { name: 'Per session' }))
+        expect(onDraftChange).toHaveBeenCalledWith('feeType', 'per-session')
+    })
+
+    it('reads "No fee" and hides the amount for a no-fee student', () => {
+        const { container } = renderView({
+            editingStudentId: 10,
+            draftStudent: buildStudent({ feeType: 'none' }),
+        })
+
+        expect(container.querySelector('.fees-pill')?.textContent).toBe(
+            'Fees: No fee'
+        )
+        // No amount field for a student who isn't billed.
+        expect(
+            screen.queryByLabelText(/fee per session|monthly fee/i)
+        ).not.toBeInTheDocument()
     })
 
     it('links group classmates to their pages, sorted, and marks solo 1:1', async () => {

@@ -14,6 +14,7 @@ export const emptyStudentForm: StudentFormValues = {
     progress: 0,
     mode: 'Face to Face',
     fees: 0,
+    feeType: 'per-session',
     notes: '',
     parentName: '',
     contactNumber: '',

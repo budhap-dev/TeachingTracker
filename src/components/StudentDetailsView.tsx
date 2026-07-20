@@ -463,7 +463,9 @@ export const StudentDetailsView = ({
                                 Subjects: {shown.subjects.length}
                             </span>
                             <span className="fees-pill">
-                                Fees: £{shown.fees}/session
+                                {shown.feeType === 'none'
+                                    ? 'Fees: No fee'
+                                    : `Fees: £${shown.fees}${shown.feeType === 'monthly' ? '/month' : '/session'}`}
                             </span>
                         </div>
                         <p className="subjects-line">
@@ -663,6 +665,7 @@ export const StudentDetailsView = ({
                             />
                             <TextField
                                 label="Date of Birth"
+                                className="col-4"
                                 size="small"
                                 type="date"
                                 value={shown.dob}
@@ -678,6 +681,7 @@ export const StudentDetailsView = ({
                                 caption+Select sat lower than its partner. */}
                             <TextField
                                 label="Subjects"
+                                className="col-8"
                                 size="small"
                                 select
                                 value={shown.subjects}
@@ -748,6 +752,7 @@ export const StudentDetailsView = ({
                             />
                             <TextField
                                 label="Year"
+                                className="col-2"
                                 size="small"
                                 select
                                 value={shown.year}
@@ -765,6 +770,7 @@ export const StudentDetailsView = ({
                             </TextField>
                             <TextField
                                 label="Study mode"
+                                className="col-4"
                                 size="small"
                                 select
                                 value={shown.mode}
@@ -781,21 +787,47 @@ export const StudentDetailsView = ({
                                 ))}
                             </TextField>
                             <TextField
-                                label="Fee per session (£)"
+                                select
+                                label="Fee type"
+                                className="col-4"
                                 size="small"
-                                type="number"
-                                value={shown.fees}
+                                value={shown.feeType ?? 'per-session'}
                                 onChange={(event) =>
-                                    onDraftChange(
-                                        'fees',
-                                        Number(event.target.value)
-                                    )
+                                    onDraftChange('feeType', event.target.value)
                                 }
                                 fullWidth
                                 disabled={!isEditing}
-                            />
+                            >
+                                <MenuItem value="per-session">
+                                    Per session
+                                </MenuItem>
+                                <MenuItem value="monthly">Monthly</MenuItem>
+                                <MenuItem value="none">No fee</MenuItem>
+                            </TextField>
+                            {shown.feeType !== 'none' && (
+                                <TextField
+                                    label={
+                                        shown.feeType === 'monthly'
+                                            ? 'Monthly fee (£)'
+                                            : 'Fee per session (£)'
+                                    }
+                                    className="col-3"
+                                    size="small"
+                                    type="number"
+                                    value={shown.fees}
+                                    onChange={(event) =>
+                                        onDraftChange(
+                                            'fees',
+                                            Number(event.target.value)
+                                        )
+                                    }
+                                    fullWidth
+                                    disabled={!isEditing}
+                                />
+                            )}
                             <TextField
                                 label="Parent Name"
+                                className="col-5"
                                 size="small"
                                 value={shown.parentName}
                                 onChange={(event) =>
@@ -809,6 +841,7 @@ export const StudentDetailsView = ({
                             />
                             <TextField
                                 label="Contact Number"
+                                className="col-6"
                                 size="small"
                                 value={shown.contactNumber}
                                 onChange={(event) =>
