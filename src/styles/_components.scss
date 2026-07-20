@@ -117,6 +117,15 @@
         color: var(--text);
     }
 
+    /* Native inputs (the text and date fields) otherwise render taller than the
+       MUI selects; pin them to the selects' 40px so paired fields line up. */
+    input {
+        box-sizing: border-box;
+        height: 40px;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
     textarea {
         grid-column: span 2;
         min-height: 80px;
@@ -357,17 +366,59 @@
     min-width: 0;
 }
 
-/* Fields pair up — none of them needs the whole row to itself. Address and
-   Notes are the exceptions and span both columns via .edit-span-2. */
+/* A 12-column grid so each field takes a width that suits its content: small
+   ones (Year, Fee, DoB) stay narrow, text fields take half, Address the whole
+   row. Fields default to half width; .col-N overrides per field. */
 .edit-fields {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 10px 12px;
     margin-top: 8px;
+    align-items: start;
 }
 
-.edit-span-2 {
+.edit-fields > * {
+    grid-column: span 6;
+}
+
+.edit-fields .col-2 {
     grid-column: span 2;
+}
+.edit-fields .col-3 {
+    grid-column: span 3;
+}
+.edit-fields .col-4 {
+    grid-column: span 4;
+}
+.edit-fields .col-5 {
+    grid-column: span 5;
+}
+.edit-fields .col-7 {
+    grid-column: span 7;
+}
+.edit-fields .col-8 {
+    grid-column: span 8;
+}
+.edit-fields .col-12,
+.edit-span-2 {
+    grid-column: span 12;
+}
+
+/* On narrow screens, stack every field full-width (flex ignores grid spans). */
+@media (max-width: 640px) {
+    .edit-fields {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* Subjects render as removable chips inside the select — wrap them so several
+   subjects don't clip the (disabled) field. */
+.subject-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 1px 0;
 }
 
 .student-meta {
@@ -1689,6 +1740,17 @@ $note-rule: 32px;
     padding: 3px 9px;
     border-radius: 999px;
     border: 1px solid currentColor;
+}
+
+/* No-fee students are listed but not billed: muted, uncoloured markers. */
+.payment-status-pill.nofee {
+    color: var(--muted);
+    border-color: var(--border);
+}
+
+.payment-nofee {
+    color: var(--muted);
+    font-size: 0.85rem;
 }
 
 /* Paid / Partial / Pending as a tiny three-column table in the status card:

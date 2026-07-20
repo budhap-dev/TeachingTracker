@@ -36,6 +36,7 @@ const buildRecord = (overrides: Partial<PaymentRecord> = {}): PaymentRecord => (
     studentName: overrides.studentName ?? 'Asha Perera',
     month: overrides.month ?? currentMonth(),
     feePerSession: overrides.feePerSession ?? 30,
+    feeType: overrides.feeType,
     sessionsHeld: overrides.sessionsHeld ?? 4,
     amountDue: overrides.amountDue ?? 120,
     amountPaid: overrides.amountPaid ?? 0,
@@ -205,5 +206,81 @@ describe('PaymentTrackerView archived students', () => {
         // Status tally counts the one visible record: a single Partial.
         const cells = card('Payment status').getAllByRole('cell')
         expect(cells.map((cell) => cell.textContent)).toEqual(['0', '1', '0'])
+    })
+})
+
+describe('PaymentTrackerView fee types', () => {
+    it('shows a flat monthly basis for a monthly-fee student', () => {
+        const active = buildStudent({
+            id: 1,
+            firstName: 'Asha',
+            lastName: 'Perera',
+        })
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feeType: 'monthly',
+            feePerSession: 400,
+            sessionsHeld: 3,
+        })
+
+        render(
+            <PaymentTrackerView
+                students={[active]}
+                paymentsByMonth={[buildGroup(record)]}
+                onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+            />
+        )
+
+        // The basis reads as a flat monthly fee, not "× £X a session".
+        expect(
+            screen.getByText(/£400 a month \(flat\)/i)
+        ).toBeInTheDocument()
+        expect(screen.queryByText(/a session/i)).not.toBeInTheDocument()
+    })
+
+    it('shows a no-fee student as "No fee" and excludes them from totals', () => {
+        const active = buildStudent({
+            id: 1,
+            firstName: 'Asha',
+            lastName: 'Perera',
+        })
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feeType: 'none',
+            feePerSession: 0,
+            amountDue: 0,
+            outstanding: 0,
+        })
+
+        render(
+            <PaymentTrackerView
+                students={[active]}
+                paymentsByMonth={[buildGroup(record)]}
+                onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+            />
+        )
+
+        // The row is present but shows "No fee" — no amount box, no status.
+        expect(screen.getByText('Asha Perera')).toBeInTheDocument()
+        expect(screen.getAllByText('No fee').length).toBeGreaterThan(0)
+        expect(
+            screen.queryByRole('spinbutton', { name: /amount received/i })
+        ).not.toBeInTheDocument()
+
+        // They don't count toward the summary: Due and the status tally are 0.
+        const dueCard = within(
+            screen
+                .getByText('Due for classes taught')
+                .closest('.payment-summary-card')!
+        )
+        expect(dueCard.getByText('£0')).toBeInTheDocument()
+        const cells = within(
+            screen.getByText('Payment status').closest('.payment-summary-card')!
+        ).getAllByRole('cell')
+        expect(cells.map((c) => c.textContent)).toEqual(['0', '0', '0'])
     })
 })

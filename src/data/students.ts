@@ -8,6 +8,14 @@ export type DatedNote = {
     text: string
 }
 
+/**
+ * How a student's `fees` amount is billed:
+ * - `per-session` (default): charged per class held — `fees × classes that month`.
+ * - `monthly`: a flat retainer charged every month, regardless of class count.
+ * - `none`: the student is not billed at all (their `fees` amount is ignored).
+ */
+export type FeeType = 'per-session' | 'monthly' | 'none'
+
 export type Student = {
     id: number
     studentId: string
@@ -24,8 +32,12 @@ export type Student = {
         only the blended figure. */
     progressBySubject?: Record<string, number>
     mode: 'Online' | 'Face to Face' | 'Both'
-    /** Agreed monthly tuition fee for this student, in GBP. */
+    /** The agreed fee amount in GBP. Its meaning depends on {@link feeType}:
+        a per-session price (default) or a flat monthly retainer. */
     fees: number
+    /** How `fees` is billed. Optional — absent means `per-session` (older
+        records and the default for new students). */
+    feeType?: FeeType
     /** Legacy single free-text note. Superseded by {@link datedNotes} in the UI
         but kept on the record for older data; not shown on the profile. */
     notes: string
@@ -75,22 +87,25 @@ export const activeSessions = (sessions: ScheduledSession[]) =>
 export type PaymentStatus = 'Paid' | 'Partial' | 'Pending'
 
 /**
- * A student's bill for one month.
+ * A student's bill for one month, derived by the API.
  *
- * `amountDue` is derived by the API: the per-session fee times the classes that
- * actually took place that month. It grows as lessons are taught, and a month
- * with no classes yet owes nothing.
+ * For a per-session student `amountDue` is the fee times the classes that took
+ * place that month (a month with no classes owes nothing). For a monthly
+ * student it is the flat monthly fee, charged regardless of class count.
  */
 export type PaymentRecord = {
     id: number
     studentId: number
     studentName: string
     month: string
-    /** The student's agreed price for a single session. */
+    /** The student's fee amount — a per-session price or a monthly retainer,
+        per {@link feeType}. */
     feePerSession: number
+    /** How this bill is charged; absent means `per-session`. */
+    feeType?: FeeType
     /** How many classes actually took place this month. */
     sessionsHeld: number
-    /** `feePerSession × sessionsHeld`. */
+    /** Per-session: `feePerSession × sessionsHeld`. Monthly: the flat fee. */
     amountDue: number
     amountPaid: number
     outstanding: number

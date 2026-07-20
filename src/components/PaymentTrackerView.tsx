@@ -106,6 +106,11 @@ export const PaymentTrackerView = ({
     const summary = useMemo(() => {
         const totals = monthRecords.reduce(
             (acc, record) => {
+                // No-fee students are shown but never billed, so they don't
+                // touch the totals or the status tally.
+                if (record.feeType === 'none') {
+                    return acc
+                }
                 acc.totalDue += record.amountDue
                 acc.totalReceived += record.amountPaid
                 acc.sessionsHeld += record.sessionsHeld
@@ -281,10 +286,14 @@ export const PaymentTrackerView = ({
                                 const record = recordsByStudentId[student.id]
                                 if (!record) return null
 
+                                // A no-fee student is listed but never billed:
+                                // no amount, no status, no contribution to totals.
+                                const isNoFee = record.feeType === 'none'
+
                                 return (
                                     <tr
                                         key={record.id}
-                                        className={`payment-row ${getStatusClass(record.status)}`}
+                                        className={`payment-row ${isNoFee ? 'nofee' : getStatusClass(record.status)}`}
                                     >
                                         <td>
                                             <button
@@ -306,17 +315,27 @@ export const PaymentTrackerView = ({
                                                 {record.sessionsHeld}
                                             </strong>
                                             <small>
-                                                ×{' '}
-                                                {formatCurrency(
-                                                    record.feePerSession
-                                                )}{' '}
-                                                a session
+                                                {isNoFee
+                                                    ? 'No fee'
+                                                    : record.feeType ===
+                                                        'monthly'
+                                                      ? `${formatCurrency(record.feePerSession)} a month (flat)`
+                                                      : `× ${formatCurrency(record.feePerSession)} a session`}
                                             </small>
                                         </td>
                                         <td>
-                                            {formatCurrency(record.amountDue)}
+                                            {isNoFee
+                                                ? '—'
+                                                : formatCurrency(
+                                                      record.amountDue
+                                                  )}
                                         </td>
                                         <td>
+                                            {isNoFee ? (
+                                                <span className="payment-nofee">
+                                                    No fee
+                                                </span>
+                                            ) : (
                                             <div className="payment-amount-cell">
                                                 <TextField
                                                     type="number"
@@ -366,6 +385,7 @@ export const PaymentTrackerView = ({
                                                     Save
                                                 </Button>
                                             </div>
+                                            )}
                                         </td>
                                         <td>
                                             <TextField
@@ -387,13 +407,19 @@ export const PaymentTrackerView = ({
                                             />
                                         </td>
                                         <td>
-                                            {formatCurrency(record.outstanding)}
+                                            {isNoFee
+                                                ? '—'
+                                                : formatCurrency(
+                                                      record.outstanding
+                                                  )}
                                         </td>
                                         <td>
                                             <span
-                                                className={`payment-status-pill ${getStatusClass(record.status)}`}
+                                                className={`payment-status-pill ${isNoFee ? 'nofee' : getStatusClass(record.status)}`}
                                             >
-                                                {record.status}
+                                                {isNoFee
+                                                    ? 'No fee'
+                                                    : record.status}
                                             </span>
                                         </td>
                                     </tr>

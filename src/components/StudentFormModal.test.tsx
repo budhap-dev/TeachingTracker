@@ -84,4 +84,45 @@ describe('StudentFormModal', () => {
         })
         expect(onChange).toHaveBeenCalledWith('fees', 145)
     })
+
+    it('labels the fee amount by type and emits the chosen fee type', async () => {
+        const user = userEvent.setup()
+        const onChange = vi.fn()
+
+        render(
+            <StudentFormModal
+                open
+                form={{
+                    studentId: '',
+                    firstName: '',
+                    lastName: '',
+                    dob: '',
+                    subjects: [],
+                    school: '',
+                    year: '',
+                    progress: 0,
+                    mode: 'Face to Face',
+                    fees: 0,
+                    feeType: 'monthly',
+                    notes: '',
+                    parentName: '',
+                    contactNumber: '',
+                    address: '',
+                }}
+                onClose={vi.fn()}
+                onChange={onChange}
+                onSubmit={vi.fn()}
+            />
+        )
+
+        // A monthly student's amount is labelled per month, not per session.
+        expect(screen.getByLabelText(/monthly fee/i)).toBeInTheDocument()
+        expect(
+            screen.queryByLabelText(/fee per session/i)
+        ).not.toBeInTheDocument()
+
+        await user.click(screen.getByRole('combobox', { name: /fee type/i }))
+        await user.click(screen.getByRole('option', { name: 'Per session' }))
+        expect(onChange).toHaveBeenCalledWith('feeType', 'per-session')
+    })
 })
