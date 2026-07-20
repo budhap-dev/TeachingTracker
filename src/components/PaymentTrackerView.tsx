@@ -65,14 +65,27 @@ export const PaymentTrackerView = ({
     const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
     // What's typed in each row's "amount received" box, keyed by student, until
-    // it's committed. The box is free to type in; the API is only hit on Enter
-    // or blur — not on every keystroke.
+    // it's committed. The box is free to type in; the API is only hit when the
+    // row's Save button is pressed (or Enter) — never on a keystroke or blur.
     const [amountDrafts, setAmountDrafts] = useState<Record<number, string>>({})
+
+    // Only the active roster is billed here, so archived students' records are
+    // dropped before anything is rendered or totalled.
+    const activeStudentIds = useMemo(
+        () => new Set(students.map((student) => student.id)),
+        [students]
+    )
 
     const monthGroup = paymentsByMonth.find(
         (group) => group.month === selectedMonth
     )
-    const monthRecords = useMemo(() => monthGroup?.records ?? [], [monthGroup])
+    const monthRecords = useMemo(
+        () =>
+            (monthGroup?.records ?? []).filter((record) =>
+                activeStudentIds.has(record.studentId)
+            ),
+        [monthGroup, activeStudentIds]
+    )
 
     const recordsByStudentId = useMemo(
         () =>
@@ -86,27 +99,36 @@ export const PaymentTrackerView = ({
         [monthRecords]
     )
 
-    // Totals come from the API — it alone decides what is due, from the classes
-    // that took place. Only the per-status tally is counted here.
+    // Summed from the visible records, not the server's whole-month totals, so
+    // an archived student's dues and payments leave the summary with their row.
+    // What is *due* is still the API's figure per record — never recomputed from
+    // fees here; this only re-adds the rows that remain.
     const summary = useMemo(() => {
-        const counts = monthRecords.reduce(
+        const totals = monthRecords.reduce(
             (acc, record) => {
+                acc.totalDue += record.amountDue
+                acc.totalReceived += record.amountPaid
+                acc.sessionsHeld += record.sessionsHeld
                 if (record.status === 'Paid') acc.paidCount += 1
                 if (record.status === 'Partial') acc.partialCount += 1
                 if (record.status === 'Pending') acc.pendingCount += 1
                 return acc
             },
-            { paidCount: 0, partialCount: 0, pendingCount: 0 }
+            {
+                totalDue: 0,
+                totalReceived: 0,
+                sessionsHeld: 0,
+                paidCount: 0,
+                partialCount: 0,
+                pendingCount: 0,
+            }
         )
 
         return {
-            totalDue: monthGroup?.totalDue ?? 0,
-            totalReceived: monthGroup?.totalReceived ?? 0,
-            outstanding: monthGroup?.totalOutstanding ?? 0,
-            sessionsHeld: monthGroup?.sessionsHeld ?? 0,
-            ...counts,
+            ...totals,
+            outstanding: Math.max(totals.totalDue - totals.totalReceived, 0),
         }
-    }, [monthGroup, monthRecords])
+    }, [monthRecords])
 
     /** Commits the typed amount for a row, then drops the draft so the box
      *  tracks the stored figure again. No draft (untouched box) is a no-op. */
@@ -129,21 +151,23 @@ export const PaymentTrackerView = ({
         })
     }
 
+    /** True when a row has a typed amount that differs from what's stored, so
+     *  the Save button lights up only when there's something to commit. */
+    const isAmountDirty = (record: PaymentRecord) => {
+        const draft = amountDrafts[record.studentId]
+        if (draft === undefined) {
+            return false
+        }
+        const parsed = Number.parseInt(draft, 10)
+        return (Number.isNaN(parsed) ? 0 : parsed) !== record.amountPaid
+    }
+
     const handleNotesChange = (record: PaymentRecord, value: string) => {
         onUpdatePaymentRecord({
             studentId: record.studentId,
             month: selectedMonth,
             amountPaid: record.amountPaid,
             notes: value,
-        })
-    }
-
-    /** Settles the month: the API pays exactly what the classes came to. */
-    const handleMarkPaid = (record: PaymentRecord) => {
-        onUpdatePaymentRecord({
-            studentId: record.studentId,
-            month: selectedMonth,
-            notes: record.notes,
         })
     }
 
@@ -293,40 +317,55 @@ export const PaymentTrackerView = ({
                                             {formatCurrency(record.amountDue)}
                                         </td>
                                         <td>
-                                            <TextField
-                                                type="number"
-                                                size="small"
-                                                slotProps={{
-                                                    htmlInput: {
-                                                        'aria-label': `${student.firstName} ${student.lastName} amount received`,
-                                                        min: 0,
-                                                        step: 1,
-                                                    },
-                                                }}
-                                                value={
-                                                    amountDrafts[
-                                                        record.studentId
-                                                    ] ?? record.amountPaid
-                                                }
-                                                onChange={(event) =>
-                                                    setAmountDrafts(
-                                                        (drafts) => ({
-                                                            ...drafts,
-                                                            [record.studentId]:
-                                                                event.target
-                                                                    .value,
-                                                        })
-                                                    )
-                                                }
-                                                onKeyDown={(event) => {
-                                                    if (event.key === 'Enter') {
+                                            <div className="payment-amount-cell">
+                                                <TextField
+                                                    type="number"
+                                                    size="small"
+                                                    slotProps={{
+                                                        htmlInput: {
+                                                            'aria-label': `${student.firstName} ${student.lastName} amount received`,
+                                                            min: 0,
+                                                            step: 1,
+                                                        },
+                                                    }}
+                                                    value={
+                                                        amountDrafts[
+                                                            record.studentId
+                                                        ] ?? record.amountPaid
+                                                    }
+                                                    onChange={(event) =>
+                                                        setAmountDrafts(
+                                                            (drafts) => ({
+                                                                ...drafts,
+                                                                [record.studentId]:
+                                                                    event.target
+                                                                        .value,
+                                                            })
+                                                        )
+                                                    }
+                                                    onKeyDown={(event) => {
+                                                        if (
+                                                            event.key === 'Enter'
+                                                        ) {
+                                                            commitAmount(record)
+                                                        }
+                                                    }}
+                                                />
+                                                <Button
+                                                    size="small"
+                                                    variant="contained"
+                                                    className="payment-amount-save"
+                                                    disabled={
+                                                        !isAmountDirty(record)
+                                                    }
+                                                    onClick={() =>
                                                         commitAmount(record)
                                                     }
-                                                }}
-                                                onBlur={() =>
-                                                    commitAmount(record)
-                                                }
-                                            />
+                                                    aria-label={`Save ${student.firstName} ${student.lastName} amount received`}
+                                                >
+                                                    Save
+                                                </Button>
+                                            </div>
                                         </td>
                                         <td>
                                             <TextField
@@ -356,18 +395,6 @@ export const PaymentTrackerView = ({
                                             >
                                                 {record.status}
                                             </span>
-                                            {record.outstanding > 0 && (
-                                                <Button
-                                                    size="small"
-                                                    variant="text"
-                                                    onClick={() =>
-                                                        handleMarkPaid(record)
-                                                    }
-                                                    aria-label={`Mark ${student.firstName} ${student.lastName} as paid`}
-                                                >
-                                                    Mark paid
-                                                </Button>
-                                            )}
                                         </td>
                                     </tr>
                                 )

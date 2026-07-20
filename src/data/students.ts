@@ -1,3 +1,13 @@
+/**
+ * One dated entry in a student's notes log. `id` is stable for the life of the
+ * entry so it can be edited or deleted; `date` is an ISO `YYYY-MM-DD` day.
+ */
+export type DatedNote = {
+    id: number
+    date: string
+    text: string
+}
+
 export type Student = {
     id: number
     studentId: string
@@ -16,7 +26,12 @@ export type Student = {
     mode: 'Online' | 'Face to Face' | 'Both'
     /** Agreed monthly tuition fee for this student, in GBP. */
     fees: number
+    /** Legacy single free-text note. Superseded by {@link datedNotes} in the UI
+        but kept on the record for older data; not shown on the profile. */
     notes: string
+    /** The student's dated notes log, newest activity first is up to the view.
+        Optional — absent on records created before the log existed. */
+    datedNotes?: DatedNote[]
     parentName: string
     contactNumber: string
     address: string

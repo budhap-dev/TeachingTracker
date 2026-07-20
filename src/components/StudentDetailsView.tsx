@@ -16,10 +16,12 @@ import {
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import type {
+    DatedNote,
     EditableStudentField,
     ScheduledSession,
     Student,
 } from '../data/students'
+import { StudentNotesSection } from './StudentNotesSection'
 import {
     studyModeLabel,
     subjectOptions,
@@ -69,6 +71,12 @@ type StudentDetailsViewProps = {
     onAddMember: (sessionId: number, studentId: number) => void
     /** Removes a member — cancels that member's row in the group. */
     onRemoveMember: (memberSessionId: number) => void
+    /** Persists the student's dated notes log after an add, edit or delete. */
+    onUpdateNotes: (notes: DatedNote[]) => void
+    /** Which tab is shown — the profile details, or the notes diary. */
+    activeTab: 'details' | 'diary'
+    /** Switches tab; the route reflects it in the URL for deep-linking. */
+    onSelectTab: (tab: 'details' | 'diary') => void
 }
 
 const modeOptions: Student['mode'][] = ['Face to Face', 'Online', 'Both']
@@ -94,6 +102,9 @@ export const StudentDetailsView = ({
     onCancelSession,
     onAddMember,
     onRemoveMember,
+    onUpdateNotes,
+    activeTab,
+    onSelectTab,
 }: StudentDetailsViewProps) => {
     const isEditing = editingStudentId === student.id
     // While editing, every control reads from the draft; otherwise from the
@@ -315,6 +326,32 @@ export const StudentDetailsView = ({
                     </div>
                 )}
 
+                <div
+                    className="student-tabs"
+                    role="tablist"
+                    aria-label="Student sections"
+                >
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 'details'}
+                        className={`student-tab${activeTab === 'details' ? ' active' : ''}`}
+                        onClick={() => onSelectTab('details')}
+                    >
+                        Details
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 'diary'}
+                        className={`student-tab${activeTab === 'diary' ? ' active' : ''}`}
+                        onClick={() => onSelectTab('diary')}
+                    >
+                        Diary
+                    </button>
+                </div>
+
+                {activeTab === 'details' && (
                 <div className="student-details student-page-details">
                     <div className="student-side">
                         <div className="student-meta">
@@ -601,10 +638,6 @@ export const StudentDetailsView = ({
                                 <strong>Address:</strong>{' '}
                                 {shown.address || 'Not provided'}
                             </p>
-                            <p className="detail-grid-full">
-                                <strong>Notes:</strong>{' '}
-                                {shown.notes || 'No notes added yet.'}
-                            </p>
                         </div>
 
                         <div className="edit-fields">
@@ -800,24 +833,20 @@ export const StudentDetailsView = ({
                                 fullWidth
                                 disabled={!isEditing}
                             />
-                            <TextField
-                                label="Notes"
-                                size="small"
-                                className="edit-span-2"
-                                multiline
-                                minRows={2}
-                                value={shown.notes}
-                                onChange={(event) =>
-                                    onDraftChange('notes', event.target.value)
-                                }
-                                fullWidth
-                                disabled={!isEditing}
-                            />
                         </div>
-
                     </div>
                 </div>
+                )}
             </div>
+
+            {activeTab === 'diary' && (
+                <div className="card student-notes-card">
+                    <StudentNotesSection
+                        notes={student.datedNotes ?? []}
+                        onChange={onUpdateNotes}
+                    />
+                </div>
+            )}
 
             <Dialog
                 open={Boolean(editTarget)}

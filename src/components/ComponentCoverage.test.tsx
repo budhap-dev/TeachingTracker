@@ -276,47 +276,55 @@ describe('component-level coverage', () => {
         ).toBeInTheDocument()
         expect(screen.getByText(/payments received/i)).toBeInTheDocument()
 
-        // Status is derived by the API, so the row offers "Mark paid" instead
-        // of a dropdown that could contradict what is owed.
-        await user.click(
-            screen.getByRole('button', { name: /mark asha perera as paid/i })
-        )
+        // Status is derived by the API — the row shows it as a read-only pill,
+        // with no control that could contradict what is owed.
+        expect(
+            screen.queryByRole('button', {
+                name: /mark asha perera as paid/i,
+            })
+        ).not.toBeInTheDocument()
+
         // The student's name opens their page, so details can be fixed from here.
         await user.click(screen.getByRole('button', { name: 'Asha Perera' }))
         expect(onOpenStudentPage).toHaveBeenCalledWith(1)
 
-        const markPaidCall = onUpdatePaymentRecord.mock.calls.at(-1)![0]
-        expect(markPaidCall).toMatchObject({ studentId: 1, month: currentMonth })
-        // No amount is sent: the API settles exactly what the classes came to,
-        // rather than a figure typed here in the hope it matches.
-        expect(markPaidCall.amountPaid).toBeUndefined()
-
         // The amount box is free to type in — typing (and any non-Enter key)
         // must NOT hit the API on every keystroke.
-        const amountInput = screen.getByLabelText(
-            /asha perera amount received/i
-        )
+        const amountInput = screen.getByRole('spinbutton', {
+            name: /asha perera amount received/i,
+        })
+        const saveAmount = screen.getByRole('button', {
+            name: /save asha perera amount received/i,
+        })
+        // Nothing typed yet, so there is nothing to save.
+        expect(saveAmount).toBeDisabled()
+
         const beforeTyping = onUpdatePaymentRecord.mock.calls.length
         fireEvent.change(amountInput, { target: { value: '9' } })
         fireEvent.change(amountInput, { target: { value: '90' } })
         fireEvent.keyDown(amountInput, { key: 'a' })
         expect(onUpdatePaymentRecord.mock.calls.length).toBe(beforeTyping)
 
-        // Enter commits the typed amount.
-        fireEvent.keyDown(amountInput, { key: 'Enter' })
+        // Blur must NOT commit — leaving the box is no longer a save.
+        fireEvent.blur(amountInput)
+        expect(onUpdatePaymentRecord.mock.calls.length).toBe(beforeTyping)
+
+        // The Save button commits the typed amount.
+        expect(saveAmount).toBeEnabled()
+        fireEvent.click(saveAmount)
         expect(onUpdatePaymentRecord).toHaveBeenLastCalledWith(
             expect.objectContaining({ amountPaid: 90 })
         )
 
-        // Blur with nothing freshly typed is a no-op; blur after typing commits
-        // (an empty box settles to 0).
-        const afterEnter = onUpdatePaymentRecord.mock.calls.length
-        fireEvent.blur(amountInput)
-        expect(onUpdatePaymentRecord.mock.calls.length).toBe(afterEnter)
+        // Enter is also an explicit commit; an empty box settles to 0.
+        const afterSave = onUpdatePaymentRecord.mock.calls.length
         fireEvent.change(amountInput, { target: { value: '' } })
-        fireEvent.blur(amountInput)
+        fireEvent.keyDown(amountInput, { key: 'Enter' })
         expect(onUpdatePaymentRecord).toHaveBeenLastCalledWith(
             expect.objectContaining({ amountPaid: 0 })
+        )
+        expect(onUpdatePaymentRecord.mock.calls.length).toBeGreaterThan(
+            afterSave
         )
 
         fireEvent.change(screen.getByLabelText(/asha perera payment notes/i), {

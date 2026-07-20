@@ -3,6 +3,8 @@ export const paths = {
     dashboard: '/',
     students: '/students',
     studentDetail: (studentId: number | string) => `/students/${studentId}`,
+    studentDiary: (studentId: number | string) =>
+        `/students/${studentId}/diary`,
     studySnapshot: '/study-snapshot',
     alumni: '/alumni',
     payments: '/payments',

@@ -292,6 +292,37 @@
     border-top: 1px solid var(--border);
 }
 
+/* Tabs across the student page: Details | Diary, an underline on the active
+   one. Buttons (not links) so keyboard/role semantics stay simple. */
+.student-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 4px 0 16px;
+    border-bottom: 1px solid var(--border);
+
+    .student-tab {
+        appearance: none;
+        border: 0;
+        background: none;
+        cursor: pointer;
+        padding: 10px 16px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--muted);
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+
+        &:hover {
+            color: var(--text);
+        }
+
+        &.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+    }
+}
+
 .student-detail-text {
     display: flex;
     flex-direction: column;
@@ -715,6 +746,21 @@
     }
 }
 
+.payment-amount-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .MuiTextField-root {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .payment-amount-save {
+        flex: 0 0 auto;
+    }
+}
+
 .payment-row.paid {
     background: color-mix(in srgb, #dcfce7 45%, transparent);
 }
@@ -909,6 +955,180 @@
     }
 }
 
+/* The dated notes "diary" as a ruled notebook page: warm paper, faint blue
+   rules the text sits on, and a red margin line down the left. Colours are
+   mixed from theme tokens so it reads as paper in light mode and as a dark
+   notebook in dark mode. The rule rhythm ($note-rule) must match the note
+   line-height so text lands on the lines. */
+$note-rule: 32px;
+
+.student-notes-card {
+    --paper: color-mix(in srgb, #fbf6e3 62%, var(--surface));
+    --paper-line: color-mix(in srgb, #5b86c4 40%, transparent);
+    --paper-margin: color-mix(in srgb, #d9524b 70%, transparent);
+    background: var(--paper);
+    padding: 0;
+    overflow: hidden;
+}
+
+.student-notes-log {
+    position: relative;
+    /* Left padding clears the red margin line; everything writes to its right. */
+    padding: 22px 26px 26px 60px;
+
+    /* The red margin rule. */
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 44px;
+        width: 2px;
+        background: var(--paper-margin);
+    }
+
+    .notes-log-head {
+        margin-bottom: 18px;
+
+        h3 {
+            margin: 0;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 1.5rem;
+            letter-spacing: 0.01em;
+            color: var(--text);
+        }
+
+        p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Add-an-entry row, pinned to the top like a fresh line on the page. */
+    .note-add-form {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 14px;
+        border-radius: 10px;
+        border: 1px solid color-mix(in srgb, var(--paper-line) 60%, transparent);
+        background: color-mix(in srgb, var(--surface) 60%, transparent);
+        margin-bottom: 22px;
+
+        .MuiButton-root {
+            flex: 0 0 auto;
+            margin-top: 2px;
+        }
+
+        /* Wide enough that the native calendar icon never overlaps the date. */
+        .note-date-field {
+            flex: 0 0 172px;
+        }
+    }
+
+    .note-empty {
+        margin: 0;
+        color: var(--muted);
+        font-style: italic;
+    }
+
+    .note-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+    }
+
+    /* One diary entry: a dated header line, then the note on ruled lines. */
+    .note-entry {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* The date, written along the top of the entry like a diary header. */
+    .note-date-rail {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 4px;
+        font-family: Georgia, 'Times New Roman', serif;
+
+        .note-weekday {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--paper-margin);
+        }
+
+        .note-day {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .note-monthyear {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+    }
+
+    .note-body {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    /* The written line(s): text sitting on repeating ruled lines. */
+    .note-text {
+        flex: 1;
+        margin: 0;
+        white-space: pre-wrap;
+        line-height: #{$note-rule};
+        min-height: #{$note-rule};
+        background-image: repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent #{$note-rule - 1px},
+            var(--paper-line) #{$note-rule - 1px},
+            var(--paper-line) #{$note-rule}
+        );
+        background-position: 0 0;
+    }
+
+    .note-actions {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .note-edit {
+        flex: 1;
+
+        .note-edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+    }
+}
+
+@media (max-width: 640px) {
+    .student-notes-log {
+        padding-left: 44px;
+
+        .note-add-form {
+            flex-direction: column;
+
+            .MuiButton-root {
+                align-self: flex-end;
+            }
+        }
+    }
+}
+
 .session-summary-meta {
     font-size: 0.9rem;
     margin-bottom: 8px;
@@ -1063,6 +1283,7 @@
 }
 
 .calendar-day {
+    position: relative;
     min-height: 128px;
     border-radius: 14px;
     border: 1px solid var(--border);
@@ -1132,10 +1353,23 @@
     opacity: 0.45;
 }
 
-.calendar-day.today {
-    border-color: var(--accent);
-    box-shadow: inset 0 0 0 1px
-        color-mix(in srgb, var(--accent) 40%, transparent);
+/* Today wears a darkened folded corner in its top-right, rather than a loud
+   full-cell ring — a quiet marker that reads at a glance and matches the
+   cell's rounded corner. */
+.calendar-day.today::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 26px;
+    height: 26px;
+    border-top-right-radius: 14px;
+    background: linear-gradient(
+        to top right,
+        transparent 0 50%,
+        color-mix(in srgb, var(--accent) 72%, #0b1220) 50% 100%
+    );
+    pointer-events: none;
 }
 
 .calendar-day-number {
@@ -1173,10 +1407,6 @@
 .calendar-session-more {
     font-size: 0.8rem;
     color: var(--muted);
-}
-
-.student-page .card {
-    min-height: 320px;
 }
 
 /* Header actions (Archive + Back) sit together, right-aligned. */
@@ -1236,6 +1466,10 @@
 
 .student-page-details {
     margin-top: 8px;
+    /* A floor so the profile reads as substantial. Scoped to the details block,
+       not the whole card, so the Diary tab (which hides these details) doesn't
+       leave a tall empty card behind. */
+    min-height: 320px;
     /* 40 / 60 split — the meta + sessions rail left, the editable fields
        right. minmax(0, …) lets both columns shrink instead of overflowing. */
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
