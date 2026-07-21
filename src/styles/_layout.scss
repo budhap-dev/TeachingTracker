@@ -145,20 +145,19 @@
 }
 
 .topbar-greeting {
-    /* Lets the quote's ellipsis engage instead of stretching the flex row. */
+    /* Lets the quote wrap within the row instead of stretching it wider. */
     min-width: 0;
 }
 
-/* One quiet line under the greeting — decoration, not a card. */
+/* A quiet italic line under the greeting — decoration, not a card. Wraps to
+   as many lines as the quote needs rather than truncating a long one. */
 .welcome-quote {
     margin: 6px 0 0;
     font-style: italic;
     font-size: 0.9rem;
     max-width: 46rem;
     color: var(--sidebar-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    text-wrap: pretty;
 }
 
 .eyebrow {
