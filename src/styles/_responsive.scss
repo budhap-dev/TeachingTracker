@@ -20,8 +20,21 @@
         width: 100%;
     }
 
+    /* Open menu becomes a full-height panel so its rows scroll inside it
+       instead of running off the bottom of the page. Otherwise the last items
+       (and the version footer) sit below the fold and can only be reached by
+       scrolling the content underneath. dvh tracks the mobile browser chrome. */
+    .sidebar.mobile-open {
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
     .sidebar.mobile-open .sidebar-nav {
         display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
     }
 
     .sidebar .sidebar-nav button {

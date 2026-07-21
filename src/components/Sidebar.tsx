@@ -118,6 +118,20 @@ const SidebarContent = ({
         (item) => showTeacherItems || !item.teacherOnly
     )
 
+    // Two menu groups: the teacher's private workspace and the public-facing
+    // site. Each renders under its own heading; an empty group is skipped, so
+    // signed-out visitors see only "External".
+    const groups: { label: string; items: NavItem[] }[] = [
+        {
+            label: 'Teacher',
+            items: visibleItems.filter((item) => item.teacherOnly),
+        },
+        {
+            label: 'External',
+            items: visibleItems.filter((item) => !item.teacherOnly),
+        },
+    ].filter((group) => group.items.length > 0)
+
     const handleNavigate = (path: string) => {
         navigate(path)
         setIsMobileNavOpen(false)
@@ -148,17 +162,24 @@ const SidebarContent = ({
                 </button>
             </div>
             <nav className="sidebar-nav">
-                {visibleItems.map((item) => (
-                    <button
-                        key={item.path}
-                        className={item.isActive(pathname) ? 'active' : ''}
-                        onClick={() => handleNavigate(item.path)}
-                    >
-                        <span className="nav-icon" aria-hidden="true">
-                            {item.icon}
-                        </span>
-                        {item.label}
-                    </button>
+                {groups.map((group) => (
+                    <div key={group.label} className="sidebar-nav-group">
+                        <p className="sidebar-nav-group-label">{group.label}</p>
+                        {group.items.map((item) => (
+                            <button
+                                key={item.path}
+                                className={
+                                    item.isActive(pathname) ? 'active' : ''
+                                }
+                                onClick={() => handleNavigate(item.path)}
+                            >
+                                <span className="nav-icon" aria-hidden="true">
+                                    {item.icon}
+                                </span>
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
                 ))}
             </nav>
             <footer className="sidebar-footer">

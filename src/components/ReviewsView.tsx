@@ -3,6 +3,8 @@ import type { FormEvent } from 'react'
 import {
     Box,
     Button,
+    Checkbox,
+    ListItemText,
     MenuItem,
     Rating,
     TextField,
@@ -10,6 +12,7 @@ import {
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
 import type { Testimonial, TestimonialRole } from '../data/students'
 import type { TestimonialInput } from '../api/reviews'
+import { subjectOptions, yearOptions } from '../utils/constants'
 
 type ReviewsViewProps = {
     testimonials: Testimonial[]
@@ -35,7 +38,7 @@ export const ReviewsView = ({
 }: ReviewsViewProps) => {
     const [authorName, setAuthorName] = useState('')
     const [role, setRole] = useState<TestimonialRole>('Parent')
-    const [subject, setSubject] = useState('')
+    const [subjects, setSubjects] = useState<string[]>([])
     const [year, setYear] = useState('')
     const [rating, setRating] = useState(0)
     const [quote, setQuote] = useState('')
@@ -52,7 +55,8 @@ export const ReviewsView = ({
         onSubmit({
             authorName: authorName.trim(),
             role,
-            subject: subject.trim() || undefined,
+            // Several subjects join into one string, like the class planner.
+            subject: subjects.join(', ') || undefined,
             year: year.trim() || undefined,
             rating,
             quote: quote.trim(),
@@ -60,7 +64,7 @@ export const ReviewsView = ({
         })
         setAuthorName('')
         setRole('Parent')
-        setSubject('')
+        setSubjects([])
         setYear('')
         setRating(0)
         setQuote('')
@@ -93,7 +97,7 @@ export const ReviewsView = ({
                         {testimonials.map((testimonial) => (
                             <figure
                                 key={testimonial.id}
-                                className="testimonial-card"
+                                className="testimonial-card review"
                             >
                                 <Rating
                                     value={testimonial.rating}
@@ -150,19 +154,50 @@ export const ReviewsView = ({
                         <MenuItem value="Student">Student</MenuItem>
                     </TextField>
                     <TextField
+                        select
                         label="Subject (optional)"
                         size="small"
-                        value={subject}
-                        onChange={(event) => setSubject(event.target.value)}
+                        value={subjects}
+                        slotProps={{
+                            select: {
+                                multiple: true,
+                                renderValue: (selected) =>
+                                    (selected as string[]).join(', '),
+                                displayEmpty: true,
+                            },
+                            inputLabel: { shrink: true },
+                        }}
+                        onChange={(event) =>
+                            setSubjects(
+                                event.target.value as unknown as string[]
+                            )
+                        }
                         fullWidth
-                    />
+                    >
+                        {subjectOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                                <Checkbox
+                                    checked={subjects.includes(option)}
+                                />
+                                <ListItemText primary={option} />
+                            </MenuItem>
+                        ))}
+                    </TextField>
                     <TextField
+                        select
                         label="Year (optional)"
                         size="small"
                         value={year}
                         onChange={(event) => setYear(event.target.value)}
                         fullWidth
-                    />
+                    >
+                        <MenuItem value="">Any year</MenuItem>
+                        {yearOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                                Year {option}
+                            </MenuItem>
+                        ))}
+                    </TextField>
                     <div
                         className="review-rating"
                         role="radiogroup"

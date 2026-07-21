@@ -242,7 +242,17 @@ describe('reviews (REQ-027)', () => {
         )
         await screen.findByRole('heading', { name: /review moderation/i })
 
-        await user.click(screen.getByRole('button', { name: /delete/i }))
+        // Both the pending queue and the published list carry Delete buttons;
+        // deleting the first (the pending review) removes it either way.
+        await user.click(
+            screen.getAllByRole('button', { name: 'Delete' })[0]
+        )
+        // Delete now asks for confirmation before it removes anything.
+        await user.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: /delete permanently/i,
+            })
+        )
         expect(
             await screen.findByText(/review deleted/i)
         ).toBeInTheDocument()

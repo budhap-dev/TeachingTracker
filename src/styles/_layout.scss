@@ -60,7 +60,23 @@
     nav {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 18px;
+
+        .sidebar-nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-nav-group-label {
+            margin: 0 0 2px;
+            padding-left: 4px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--sidebar-muted);
+        }
 
         button {
             border: none;

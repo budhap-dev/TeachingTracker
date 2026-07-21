@@ -633,11 +633,15 @@ const ReviewModerationRoute = () => {
     const pending = useAppSelector(
         (state) => state.students.pendingTestimonials
     )
+    // The published (approved) reviews too, so the teacher can take one down
+    // after approval — deleting removes it from the public page as well.
+    const published = useAppSelector((state) => state.students.testimonials)
     const loading = useAppSelector(
         (state) => state.students.pendingTestimonialsLoading
     )
     useEffect(() => {
         dispatch(fetchPendingTestimonialsRequested())
+        dispatch(fetchTestimonialsRequested())
     }, [dispatch])
 
     if (loading) {
@@ -646,6 +650,7 @@ const ReviewModerationRoute = () => {
     return (
         <ReviewModerationView
             pending={pending}
+            published={published}
             onApprove={(id) =>
                 dispatch(
                     moderateTestimonialRequested({ id, status: 'Approved' })
