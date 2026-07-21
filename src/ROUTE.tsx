@@ -24,6 +24,8 @@ import {
     fetchPendingTestimonialsRequested,
     moderateTestimonialRequested,
     deleteTestimonialRequested,
+    fetchContactRequested,
+    updateContactRequested,
 } from './store/store'
 import { activeSessions } from './data/students'
 import { toDateKey } from './utils/calendar'
@@ -49,6 +51,8 @@ import { ReviewModerationView } from './components/ReviewModerationView'
 import { PageLoading } from './components/PageLoading'
 import { RequireTeacher } from './components/RequireTeacher'
 import { siteContent } from './data/siteContent'
+import { useIsAuthenticated } from '@azure/msal-react'
+import { isAuthConfigured } from './auth/msal'
 
 /** How many of each student's next classes the dashboard lists. */
 const upcomingPerStudent = 3
@@ -587,13 +591,47 @@ const OfferingsRoute = () => {
     )
 }
 
-/** Public page — reads site copy, never student data. */
-const ContactRoute = () => (
-    <ContactView
-        email={siteContent.contact.email}
-        phone={siteContent.contact.phone}
-    />
+/**
+ * Public page — reads contact details from the store, never student data.
+ * Loads on mount (like the Reviews routes): the details are public and a
+ * signed-out visitor must still see them. `canEdit` turns on the inline
+ * teacher editor.
+ */
+const ContactRouteInner = ({ canEdit }: { canEdit: boolean }) => {
+    const dispatch = useAppDispatch()
+    const contact = useAppSelector((state) => state.students.contact)
+    const loading = useAppSelector((state) => state.students.contactLoading)
+    const saving = useAppSelector((state) => state.students.savingContact)
+    useEffect(() => {
+        dispatch(fetchContactRequested())
+    }, [dispatch])
+
+    if (loading) {
+        return <PageLoading />
+    }
+    return (
+        <ContactView
+            contact={contact}
+            canEdit={canEdit}
+            saving={saving}
+            onSave={(input) => dispatch(updateContactRequested(input))}
+        />
+    )
+}
+
+// The auth hook only runs beneath an MsalProvider, so it lives in its own
+// component chosen by isAuthConfigured — the same split the Sidebar uses. With
+// auth switched off (local dev), every visitor is treated as the teacher.
+const ContactRouteSignedAware = () => (
+    <ContactRouteInner canEdit={useIsAuthenticated()} />
 )
+
+const ContactRoute = () =>
+    isAuthConfigured() ? (
+        <ContactRouteSignedAware />
+    ) : (
+        <ContactRouteInner canEdit />
+    )
 
 /**
  * Public page — approved reviews plus a submit form. Loads its own data on

@@ -9,8 +9,10 @@ import {
     Student,
     Testimonial,
 } from '../data/students'
+import type { Contact } from '../data/contact'
 import type { StudentInput } from '../api/students'
 import type { TestimonialInput } from '../api/reviews'
+import type { ContactInput } from '../api/contact'
 import { rootSaga } from './sagas'
 
 export type ScheduledSessionInput = Omit<ScheduledSession, 'id' | 'status'>
@@ -67,6 +69,11 @@ type StudentState = {
     pendingTestimonials: Testimonial[]
     pendingTestimonialsLoading: boolean
     savingTestimonial: boolean
+    // Contact details (REQ-006/008). Public, teacher-editable; the Contact
+    // route fetches its own on mount, like the Reviews routes.
+    contact: Contact
+    contactLoading: boolean
+    savingContact: boolean
 }
 
 /**
@@ -125,6 +132,9 @@ const createInitialState = (): StudentState => ({
     pendingTestimonials: [],
     pendingTestimonialsLoading: true,
     savingTestimonial: false,
+    contact: {},
+    contactLoading: true,
+    savingContact: false,
 })
 
 const initialState = createInitialState()
@@ -581,6 +591,38 @@ const studentSlice = createSlice({
         deleteTestimonialFailed: (state, action: PayloadAction<string>) => {
             fail(state, action.payload)
         },
+        // --- Contact: public read ---
+        fetchContactRequested: (state) => {
+            state.contactLoading = true
+        },
+        fetchContactSucceeded: (state, action: PayloadAction<Contact>) => {
+            state.contact = action.payload
+            state.contactLoading = false
+        },
+        fetchContactFailed: (state, action: PayloadAction<string>) => {
+            state.contactLoading = false
+            fail(state, action.payload)
+        },
+        // --- Contact: teacher update ---
+        updateContactRequested: {
+            reducer: (state: StudentState) => {
+                state.savingContact = true
+                state.error = null
+            },
+            prepare: (input: ContactInput) => ({ payload: input }),
+        },
+        updateContactSucceeded: (state, action: PayloadAction<Contact>) => {
+            state.contact = action.payload
+            state.savingContact = false
+            state.notice = {
+                kind: 'success',
+                message: 'Contact details updated.',
+            }
+        },
+        updateContactFailed: (state, action: PayloadAction<string>) => {
+            state.savingContact = false
+            fail(state, action.payload)
+        },
     },
 })
 
@@ -639,6 +681,12 @@ export const {
     deleteTestimonialRequested,
     deleteTestimonialSucceeded,
     deleteTestimonialFailed,
+    fetchContactRequested,
+    fetchContactSucceeded,
+    fetchContactFailed,
+    updateContactRequested,
+    updateContactSucceeded,
+    updateContactFailed,
 } = studentSlice.actions
 
 /** Exported for tests: lets reducers be exercised without the saga middleware. */

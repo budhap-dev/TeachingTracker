@@ -336,4 +336,14 @@ describe('App under MSAL', () => {
         expect(dispatchedTypes(spy)).not.toContain(initialLoadSkipped().type)
         spy.mockRestore()
     })
+
+    // The Contact page is public but gets an inline editor for the signed-in
+    // teacher — the auth-aware branch that only runs beneath an MsalProvider.
+    it('offers the signed-in teacher the contact editor', async () => {
+        window.history.pushState({}, '', '/contact')
+        render(<App />)
+        expect(
+            await screen.findByRole('button', { name: /edit details/i })
+        ).toBeInTheDocument()
+    })
 })

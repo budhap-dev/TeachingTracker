@@ -43,17 +43,10 @@ const navItems: NavItem[] = [
         teacherOnly: true,
     },
     {
-        label: 'Study Snapshot',
-        path: paths.studySnapshot,
-        icon: <InsightsOutlinedIcon fontSize="small" />,
-        isActive: (pathname) => pathname.startsWith(paths.studySnapshot),
-        teacherOnly: true,
-    },
-    {
-        label: 'Alumni',
-        path: paths.alumni,
-        icon: <SchoolOutlinedIcon fontSize="small" />,
-        isActive: (pathname) => pathname.startsWith(paths.alumni),
+        label: 'Class scheduling',
+        path: paths.scheduling,
+        icon: <CalendarMonthOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.scheduling),
         teacherOnly: true,
     },
     {
@@ -64,10 +57,10 @@ const navItems: NavItem[] = [
         teacherOnly: true,
     },
     {
-        label: 'Class scheduling',
-        path: paths.scheduling,
-        icon: <CalendarMonthOutlinedIcon fontSize="small" />,
-        isActive: (pathname) => pathname.startsWith(paths.scheduling),
+        label: 'Study Snapshot',
+        path: paths.studySnapshot,
+        icon: <InsightsOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.studySnapshot),
         teacherOnly: true,
     },
     {
@@ -95,6 +88,13 @@ const navItems: NavItem[] = [
         icon: <RateReviewOutlinedIcon fontSize="small" />,
         // Exact match so it doesn't also light up on /reviews/moderation.
         isActive: (pathname) => pathname === paths.reviews,
+    },
+    {
+        label: 'Alumni',
+        path: paths.alumni,
+        icon: <SchoolOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.alumni),
+        teacherOnly: true,
     },
 ]
 

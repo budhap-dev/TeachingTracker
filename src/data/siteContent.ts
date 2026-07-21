@@ -4,11 +4,12 @@
  * Hardcoded for now. REQ-008 replaces this module with content fetched from
  * `GET /site-content` and edited by the teacher in-app — the shape here
  * deliberately mirrors that future payload, so the swap is a change of source
- * rather than a change of shape.
+ * rather than a change of shape. Contact details already made that move: they
+ * live in the store now (`GET/PUT /contact`), teacher-editable on the page.
  *
- * TODO(REQ-006/007): the copy below is placeholder. Replace `contact` with the
- * real email and phone, and `offerings` with the real hero, subject list and
- * selling points, before the public pages are announced.
+ * TODO(REQ-006/007): the `offerings` copy below is placeholder — replace the
+ * hero, subject list and selling points with the real ones before the public
+ * pages are announced.
  */
 
 /** One selling point: a short claim, plus the detail that backs it up. */
@@ -47,10 +48,6 @@ export type OfferingsHero = {
 }
 
 export type SiteContent = {
-    contact: {
-        email: string
-        phone: string
-    }
     offerings: {
         hero: OfferingsHero
         subjects: SubjectOffering[]
@@ -60,10 +57,6 @@ export type SiteContent = {
 }
 
 export const siteContent: SiteContent = {
-    contact: {
-        email: 'hello@example.com',
-        phone: '+44 7700 900000',
-    },
     offerings: {
         hero: {
             headline: 'Confident tutoring for Years 7 to 13.',

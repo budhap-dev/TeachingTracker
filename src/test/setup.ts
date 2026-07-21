@@ -2,6 +2,7 @@ import '@testing-library/jest-dom'
 import { afterEach, beforeEach, expect, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import {
+    fetchContactSucceeded,
     fetchPaymentsSucceeded,
     fetchPendingTestimonialsSucceeded,
     fetchSessionsSucceeded,
@@ -11,6 +12,7 @@ import {
     store,
 } from '../store/store'
 import {
+    buildFixtureContact,
     buildFixturePaymentsByMonth,
     buildFixtureSessions,
     buildFixtureTestimonials,
@@ -36,6 +38,7 @@ beforeEach(() => {
     store.dispatch(fetchSessionsSucceeded(buildFixtureSessions()))
     store.dispatch(fetchTestimonialsSucceeded(approvedTestimonials()))
     store.dispatch(fetchPendingTestimonialsSucceeded(pendingTestimonials()))
+    store.dispatch(fetchContactSucceeded(buildFixtureContact()))
 
     // Default API mock, routed by path/method. Individual tests may override it.
     vi.stubGlobal(
@@ -113,6 +116,22 @@ beforeEach(() => {
                     body = { id: Number(url.split('/testimonials/')[1]) }
                 } else {
                     body = approvedTestimonials()
+                }
+            } else if (url.includes('/contact')) {
+                if (init.method === 'PUT') {
+                    // Echo the saved record, dropping blanks the way the API
+                    // does — a cleared field is a removal.
+                    const input = JSON.parse(String(init.body))
+                    body = {
+                        ...(input.email?.trim()
+                            ? { email: input.email.trim() }
+                            : {}),
+                        ...(input.phone?.trim()
+                            ? { phone: input.phone.trim() }
+                            : {}),
+                    }
+                } else {
+                    body = buildFixtureContact()
                 }
             } else if (init.method === 'POST' || init.method === 'PUT') {
                 // Upserting a student echoes the saved record back. Spreading
