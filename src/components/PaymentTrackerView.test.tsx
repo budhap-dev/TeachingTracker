@@ -43,6 +43,8 @@ const buildRecord = (overrides: Partial<PaymentRecord> = {}): PaymentRecord => (
     outstanding: overrides.outstanding ?? 120,
     status: overrides.status ?? 'Pending',
     notes: overrides.notes ?? '',
+    sessions: overrides.sessions ?? [],
+    totalDurationMinutes: overrides.totalDurationMinutes ?? 0,
 })
 
 const buildGroup = (record: PaymentRecord): MonthlyPaymentGroup => ({
@@ -282,5 +284,277 @@ describe('PaymentTrackerView fee types', () => {
             screen.getByText('Payment status').closest('.payment-summary-card')!
         ).getAllByRole('cell')
         expect(cells.map((c) => c.textContent)).toEqual(['0', '0', '0'])
+    })
+})
+
+describe('PaymentTrackerView session breakdown', () => {
+    const renderBreakdown = (
+        students: Student[],
+        records: PaymentRecord[]
+    ) => {
+        const group: MonthlyPaymentGroup = {
+            month: records[0].month,
+            totalDue: records.reduce((sum, r) => sum + r.amountDue, 0),
+            totalReceived: records.reduce((sum, r) => sum + r.amountPaid, 0),
+            totalOutstanding: 0,
+            sessionsHeld: records.reduce((sum, r) => sum + r.sessionsHeld, 0),
+            records,
+        }
+        render(
+            <PaymentTrackerView
+                students={students}
+                paymentsByMonth={[group]}
+                onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+            />
+        )
+    }
+
+    const openBreakdown = async (
+        user: ReturnType<typeof userEvent.setup>
+    ) => {
+        await user.click(
+            screen.getByRole('tab', { name: /session breakdown/i })
+        )
+    }
+
+    it('itemises each held class and tallies the total', async () => {
+        const user = userEvent.setup()
+        const student = buildStudent({ id: 1 })
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feePerSession: 55,
+            sessionsHeld: 3,
+            amountDue: 165,
+            sessions: [
+                {
+                    date: '2026-07-03',
+                    subject: 'Mathematics',
+                    durationMinutes: 60,
+                    fee: 55,
+                },
+                {
+                    date: '2026-07-10',
+                    subject: 'Physics',
+                    durationMinutes: 90,
+                    fee: 55,
+                },
+                {
+                    date: '2026-07-17',
+                    subject: 'Mathematics',
+                    durationMinutes: 30,
+                    fee: 55,
+                },
+            ],
+        })
+        renderBreakdown([student], [record])
+
+        // The summary table is showing first; the session table isn't.
+        expect(
+            screen.queryByRole('columnheader', { name: /^duration$/i })
+        ).not.toBeInTheDocument()
+
+        await openBreakdown(user)
+
+        // Two line rows plus the tfoot total.
+        expect(screen.getByText('03 Jul 2026')).toBeInTheDocument()
+        expect(screen.getByText('10 Jul 2026')).toBeInTheDocument()
+        expect(screen.getAllByText('Mathematics').length).toBe(2)
+        // Durations read as hours and minutes: 60 → 1h, 90 → 1h 30m, 30 → 30m.
+        expect(screen.getByText('1h')).toBeInTheDocument()
+        expect(screen.getByText('1h 30m')).toBeInTheDocument()
+        expect(screen.getByText('30m')).toBeInTheDocument()
+        // The total foots to amountDue, plural items.
+        expect(screen.getByText(/total \(3 items\)/i)).toBeInTheDocument()
+        const total = screen
+            .getByText(/total \(3 items\)/i)
+            .closest('tr')!
+        expect(within(total).getByText('£165')).toBeInTheDocument()
+
+        // Switching back to the monthly summary restores that view.
+        await user.click(screen.getByRole('tab', { name: /monthly summary/i }))
+        expect(
+            screen.getByRole('columnheader', { name: /classes taught/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('columnheader', { name: /^duration$/i })
+        ).not.toBeInTheDocument()
+    })
+
+    it('filters to a single student (singular class label)', async () => {
+        const user = userEvent.setup()
+        const asha = buildStudent({ id: 1, firstName: 'Asha', lastName: 'Perera' })
+        const rohan = buildStudent({ id: 2, firstName: 'Rohan', lastName: 'Mehta' })
+        const ashaRecord = buildRecord({
+            id: 10,
+            studentId: 1,
+            studentName: 'Asha Perera',
+            sessionsHeld: 2,
+            amountDue: 110,
+            sessions: [
+                { date: '2026-07-03', subject: 'Maths', durationMinutes: 60, fee: 55 },
+                { date: '2026-07-10', subject: 'Maths', durationMinutes: 60, fee: 55 },
+            ],
+        })
+        const rohanRecord = buildRecord({
+            id: 20,
+            studentId: 2,
+            studentName: 'Rohan Mehta',
+            sessionsHeld: 1,
+            amountDue: 60,
+            sessions: [
+                { date: '2026-07-05', subject: 'Physics', durationMinutes: 60, fee: 60 },
+            ],
+        })
+        renderBreakdown([asha, rohan], [ashaRecord, rohanRecord])
+        await openBreakdown(user)
+
+        // Scope to the table — the names also appear in the filter dropdown.
+        const rows = () => within(screen.getByRole('table'))
+
+        // All students: both appear in the table.
+        expect(rows().getByText('Rohan Mehta')).toBeInTheDocument()
+        expect(rows().getAllByText('Asha Perera').length).toBe(2)
+
+        await user.selectOptions(
+            screen.getByRole('combobox', { name: /student/i }),
+            '2'
+        )
+
+        expect(rows().queryByText('Asha Perera')).not.toBeInTheDocument()
+        expect(rows().getByText('Rohan Mehta')).toBeInTheDocument()
+        // One row → singular label, total £60.
+        expect(screen.getByText(/total \(1 item\)/i)).toBeInTheDocument()
+        const total = screen.getByText(/total \(1 item\)/i).closest('tr')!
+        expect(within(total).getByText('£60')).toBeInTheDocument()
+    })
+
+    it('exports the visible rows as CSV, escaping fields that need it', async () => {
+        const user = userEvent.setup()
+        const createObjectURL = vi.fn(() => 'blob:mock')
+        const revokeObjectURL = vi.fn()
+        Object.defineProperty(URL, 'createObjectURL', {
+            value: createObjectURL,
+            configurable: true,
+        })
+        Object.defineProperty(URL, 'revokeObjectURL', {
+            value: revokeObjectURL,
+            configurable: true,
+        })
+        const clickSpy = vi
+            .spyOn(HTMLAnchorElement.prototype, 'click')
+            .mockImplementation(() => {})
+
+        const asha = buildStudent({ id: 1, firstName: 'Asha', lastName: 'Perera' })
+        const beth = buildStudent({ id: 2, firstName: 'Beth', lastName: 'Owens' })
+        const ashaRecord = buildRecord({
+            id: 10,
+            studentId: 1,
+            studentName: 'Asha Perera',
+            sessionsHeld: 1,
+            amountDue: 55,
+            sessions: [
+                {
+                    // A subject with a comma must be quoted in the CSV.
+                    date: '2026-07-03',
+                    subject: 'Maths, Applied',
+                    durationMinutes: 60,
+                    fee: 55,
+                },
+            ],
+        })
+        // A monthly student exports as a flat-fee line: the month as the date,
+        // blank day, its accumulated minutes, and the flat fee.
+        const bethRecord = buildRecord({
+            id: 20,
+            studentId: 2,
+            studentName: 'Beth Owens',
+            feeType: 'monthly',
+            feePerSession: 400,
+            amountDue: 400,
+            totalDurationMinutes: 150,
+            sessions: [],
+        })
+        renderBreakdown([asha, beth], [ashaRecord, bethRecord])
+        await openBreakdown(user)
+
+        await user.click(screen.getByRole('button', { name: /export csv/i }))
+
+        expect(createObjectURL).toHaveBeenCalledTimes(1)
+        expect(clickSpy).toHaveBeenCalledTimes(1)
+        expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock')
+
+        const blob = createObjectURL.mock.calls[0][0] as Blob
+        const csv = await blob.text()
+        expect(csv).toContain('Student,Date,Day,Subject,Duration (min),Fee')
+        expect(csv).toContain('Asha Perera,03 Jul 2026,')
+        expect(csv).toContain('"Maths, Applied"')
+        // Monthly line: month as date, blank day, accumulated minutes, flat fee.
+        expect(csv).toContain(',Monthly fee,150,400')
+        expect(csv).toContain('Beth Owens,')
+
+        clickSpy.mockRestore()
+    })
+
+    it('shows a monthly student as a single flat-fee row', async () => {
+        const user = userEvent.setup()
+        const student = buildStudent({ id: 1 })
+        // A monthly-fee student has no per-session lines, but still owes their
+        // flat fee — so they appear as a single dateless "Monthly fee" row.
+        // No classes held this month, so its accumulated duration is 0.
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feeType: 'monthly',
+            feePerSession: 400,
+            sessionsHeld: 0,
+            amountDue: 400,
+            totalDurationMinutes: 0,
+            sessions: [],
+        })
+        renderBreakdown([student], [record])
+        await openBreakdown(user)
+
+        const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const now = new Date()
+        const monthLabel = `${monthLabels[now.getMonth()]} ${now.getFullYear()}`
+
+        const row = screen.getByText('Monthly fee').closest('tr')!
+        expect(within(row).getByText('Asha Perera')).toBeInTheDocument()
+        expect(within(row).getByText('£400')).toBeInTheDocument()
+        // Date + Day are merged into the month the fee covers.
+        expect(within(row).getByText(monthLabel)).toBeInTheDocument()
+        // No classes → the accumulated duration shows an em dash.
+        expect(within(row).getAllByText('—').length).toBe(1)
+        // One row → the total foots to the flat fee, and export is enabled.
+        expect(screen.getByText(/total \(1 item\)/i)).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: /export csv/i })
+        ).toBeEnabled()
+    })
+
+    it('shows an empty state and disables export when nothing is billable', async () => {
+        const user = userEvent.setup()
+        const student = buildStudent({ id: 1 })
+        // A no-fee student is never billed, so there's nothing to itemise.
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feeType: 'none',
+            feePerSession: 0,
+            sessionsHeld: 0,
+            amountDue: 0,
+            sessions: [],
+        })
+        renderBreakdown([student], [record])
+        await openBreakdown(user)
+
+        expect(
+            screen.getByText(/no billable classes or fees to itemise/i)
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: /export csv/i })
+        ).toBeDisabled()
     })
 })

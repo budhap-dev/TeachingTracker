@@ -164,6 +164,18 @@ export const buildFixturePayments = (
                       ? 'Partial'
                       : 'Pending'
 
+            // One line item per held class (fixture students are per-session),
+            // so their fees sum to amountDue — mirrors the API's PaymentRecord.
+            const sessions = Array.from(
+                { length: sessionsHeld },
+                (_, sessionIndex) => ({
+                    date: `${month}-${String(sessionIndex + 3).padStart(2, '0')}`,
+                    subject: student.subjects[sessionIndex % student.subjects.length],
+                    durationMinutes: [60, 90, 30, 120][sessionIndex % 4],
+                    fee: student.fees,
+                })
+            )
+
             return {
                 id: student.id * 100 + monthIndex,
                 studentId: student.id,
@@ -171,11 +183,16 @@ export const buildFixturePayments = (
                 month,
                 feePerSession: student.fees,
                 sessionsHeld,
+                totalDurationMinutes: sessions.reduce(
+                    (total, session) => total + session.durationMinutes,
+                    0
+                ),
                 amountDue,
                 amountPaid,
                 outstanding: Math.max(amountDue - amountPaid, 0),
                 status,
                 notes: paymentStatusNotes[status],
+                sessions,
             }
         })
     )
