@@ -10,6 +10,8 @@ import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
+import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import { isAuthConfigured } from '../auth/msal'
 import { appVersion } from '../version'
 import { paths } from '../paths'
@@ -69,6 +71,13 @@ const navItems: NavItem[] = [
         teacherOnly: true,
     },
     {
+        label: 'Review moderation',
+        path: paths.reviewsModeration,
+        icon: <FactCheckOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname === paths.reviewsModeration,
+        teacherOnly: true,
+    },
+    {
         label: 'Offerings',
         path: paths.offerings,
         icon: <LocalOfferOutlinedIcon fontSize="small" />,
@@ -79,6 +88,13 @@ const navItems: NavItem[] = [
         path: paths.contact,
         icon: <MailOutlineRoundedIcon fontSize="small" />,
         isActive: (pathname) => pathname.startsWith(paths.contact),
+    },
+    {
+        label: 'Reviews',
+        path: paths.reviews,
+        icon: <RateReviewOutlinedIcon fontSize="small" />,
+        // Exact match so it doesn't also light up on /reviews/moderation.
+        isActive: (pathname) => pathname === paths.reviews,
     },
 ]
 

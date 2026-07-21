@@ -11,4 +11,6 @@ export const paths = {
     scheduling: '/scheduling',
     offerings: '/offerings',
     contact: '/contact',
+    reviews: '/reviews',
+    reviewsModeration: '/reviews/moderation',
 } as const

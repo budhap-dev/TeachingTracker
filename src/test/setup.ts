@@ -3,16 +3,24 @@ import { afterEach, beforeEach, expect, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import {
     fetchPaymentsSucceeded,
+    fetchPendingTestimonialsSucceeded,
     fetchSessionsSucceeded,
     fetchStudentsSucceeded,
+    fetchTestimonialsSucceeded,
     resetStudentState,
     store,
 } from '../store/store'
 import {
     buildFixturePaymentsByMonth,
     buildFixtureSessions,
+    buildFixtureTestimonials,
     fixtureStudents,
 } from './fixtures'
+
+const approvedTestimonials = () =>
+    buildFixtureTestimonials().filter((t) => t.status === 'Approved')
+const pendingTestimonials = () =>
+    buildFixtureTestimonials().filter((t) => t.status === 'Pending')
 
 beforeEach(() => {
     // Reset the URL before each test so BrowserRouter-based renders always start
@@ -26,6 +34,8 @@ beforeEach(() => {
     store.dispatch(fetchStudentsSucceeded(fixtureStudents))
     store.dispatch(fetchPaymentsSucceeded(buildFixturePaymentsByMonth()))
     store.dispatch(fetchSessionsSucceeded(buildFixtureSessions()))
+    store.dispatch(fetchTestimonialsSucceeded(approvedTestimonials()))
+    store.dispatch(fetchPendingTestimonialsSucceeded(pendingTestimonials()))
 
     // Default API mock, routed by path/method. Individual tests may override it.
     vi.stubGlobal(
@@ -81,6 +91,28 @@ beforeEach(() => {
                     body = { ids }
                 } else {
                     body = buildFixtureSessions()
+                }
+            } else if (url.includes('/testimonials')) {
+                if (url.includes('/pending')) {
+                    body = pendingTestimonials()
+                } else if (init.method === 'POST') {
+                    // Submitting acknowledges without echoing the record back.
+                    body = { ok: true }
+                } else if (init.method === 'PUT') {
+                    // Moderating echoes the review with its new status.
+                    const id = Number(url.split('/testimonials/')[1])
+                    const existing = buildFixtureTestimonials().find(
+                        (item) => item.id === id
+                    )
+                    body = {
+                        ...existing,
+                        ...JSON.parse(String(init.body)),
+                        moderatedOn: '2026-07-21',
+                    }
+                } else if (init.method === 'DELETE') {
+                    body = { id: Number(url.split('/testimonials/')[1]) }
+                } else {
+                    body = approvedTestimonials()
                 }
             } else if (init.method === 'POST' || init.method === 'PUT') {
                 // Upserting a student echoes the saved record back. Spreading

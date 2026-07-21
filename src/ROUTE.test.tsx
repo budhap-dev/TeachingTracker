@@ -98,6 +98,129 @@ describe('public pages', () => {
     })
 })
 
+describe('reviews (REQ-027)', () => {
+    it('shows approved reviews on the public reviews page', async () => {
+        window.history.pushState({}, '', '/reviews')
+        render(<App />)
+
+        expect(
+            await screen.findByRole('heading', { name: /^reviews$/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText(
+                /volunteering answers/i
+            )
+        ).toBeInTheDocument()
+    })
+
+    it('holds the reviews page behind a skeleton until data lands', async () => {
+        store.dispatch(resetStudentState())
+        window.history.pushState({}, '', '/reviews')
+        render(<App />)
+
+        expect(screen.getByLabelText('Loading')).toBeInTheDocument()
+        expect(
+            await screen.findByRole('heading', { name: /^reviews$/i })
+        ).toBeInTheDocument()
+    })
+
+    it('submits a review and confirms it will be reviewed', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/reviews')
+        render(<App />)
+
+        await screen.findByRole('heading', { name: /^reviews$/i })
+        await user.type(screen.getByLabelText('Your name'), 'Casey')
+        await user.click(screen.getByRole('button', { name: '5 Stars' }))
+        await user.type(
+            screen.getByLabelText('Your review'),
+            'A wonderful year of progress.'
+        )
+        await user.click(
+            screen.getByRole('button', { name: /submit review/i })
+        )
+
+        expect(
+            await screen.findByText(/once it has been approved/i)
+        ).toBeInTheDocument()
+    })
+
+    it('reaches the reviews page from the sidebar', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', { name: /^reviews$/i })
+        )
+
+        expect(
+            await screen.findByRole('heading', { name: /^reviews$/i })
+        ).toBeInTheDocument()
+    })
+
+    it('moderates the queue: approving clears the pending review', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/reviews/moderation')
+        render(<App />)
+
+        expect(
+            await screen.findByRole('heading', { name: /review moderation/i })
+        ).toBeInTheDocument()
+        // The seeded pending review is shown.
+        expect(screen.getByText(/reliable, patient/i)).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /approve/i }))
+
+        expect(
+            await screen.findByText(/review approved and published/i)
+        ).toBeInTheDocument()
+    })
+
+    it('holds the moderation page behind a skeleton until data lands', async () => {
+        store.dispatch(resetStudentState())
+        window.history.pushState({}, '', '/reviews/moderation')
+        render(<App />)
+
+        expect(screen.getByLabelText('Loading')).toBeInTheDocument()
+        expect(
+            await screen.findByRole('heading', { name: /review moderation/i })
+        ).toBeInTheDocument()
+    })
+
+    it('rejects and deletes from the moderation queue', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/reviews/moderation')
+        render(<App />)
+
+        await screen.findByRole('heading', { name: /review moderation/i })
+        await user.click(screen.getByRole('button', { name: /reject/i }))
+        expect(
+            await screen.findByText(/review rejected/i)
+        ).toBeInTheDocument()
+    })
+
+    it('reaches moderation from the sidebar and deletes a review', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', {
+                name: /review moderation/i,
+            })
+        )
+        await screen.findByRole('heading', { name: /review moderation/i })
+
+        await user.click(screen.getByRole('button', { name: /delete/i }))
+        expect(
+            await screen.findByText(/review deleted/i)
+        ).toBeInTheDocument()
+    })
+})
+
 describe('loading states', () => {
     it('waits for the fetch instead of redirecting a deep link while loading', async () => {
         // Empty + loading: the deep link must not bounce to the students list.

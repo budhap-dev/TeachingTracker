@@ -19,6 +19,11 @@ import {
     savePaymentRequested,
     saveStudentRequested,
     setSessionStatusRequested,
+    fetchTestimonialsRequested,
+    submitTestimonialRequested,
+    fetchPendingTestimonialsRequested,
+    moderateTestimonialRequested,
+    deleteTestimonialRequested,
 } from './store/store'
 import { activeSessions } from './data/students'
 import { toDateKey } from './utils/calendar'
@@ -39,6 +44,8 @@ import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { ClassSchedulingView } from './components/ClassSchedulingView'
 import { ContactView } from './components/ContactView'
 import { OfferingsView } from './components/OfferingsView'
+import { ReviewsView } from './components/ReviewsView'
+import { ReviewModerationView } from './components/ReviewModerationView'
 import { PageLoading } from './components/PageLoading'
 import { RequireTeacher } from './components/RequireTeacher'
 import { siteContent } from './data/siteContent'
@@ -581,6 +588,72 @@ const ContactRoute = () => (
     />
 )
 
+/**
+ * Public page — approved reviews plus a submit form. Loads its own data on
+ * mount: testimonials aren't part of the app's auth-gated boot fetches, and a
+ * signed-out visitor must still see them.
+ */
+const ReviewsRoute = () => {
+    const dispatch = useAppDispatch()
+    const testimonials = useAppSelector(
+        (state) => state.students.testimonials
+    )
+    const loading = useAppSelector(
+        (state) => state.students.testimonialsLoading
+    )
+    const saving = useAppSelector(
+        (state) => state.students.savingTestimonial
+    )
+    useEffect(() => {
+        dispatch(fetchTestimonialsRequested())
+    }, [dispatch])
+
+    if (loading) {
+        return <PageLoading />
+    }
+    return (
+        <ReviewsView
+            testimonials={testimonials}
+            saving={saving}
+            onSubmit={(input) => dispatch(submitTestimonialRequested(input))}
+        />
+    )
+}
+
+/** Teacher-only moderation queue for submitted reviews. Loads on mount. */
+const ReviewModerationRoute = () => {
+    const dispatch = useAppDispatch()
+    const pending = useAppSelector(
+        (state) => state.students.pendingTestimonials
+    )
+    const loading = useAppSelector(
+        (state) => state.students.pendingTestimonialsLoading
+    )
+    useEffect(() => {
+        dispatch(fetchPendingTestimonialsRequested())
+    }, [dispatch])
+
+    if (loading) {
+        return <PageLoading />
+    }
+    return (
+        <ReviewModerationView
+            pending={pending}
+            onApprove={(id) =>
+                dispatch(
+                    moderateTestimonialRequested({ id, status: 'Approved' })
+                )
+            }
+            onReject={(id) =>
+                dispatch(
+                    moderateTestimonialRequested({ id, status: 'Rejected' })
+                )
+            }
+            onDelete={(id) => dispatch(deleteTestimonialRequested(id))}
+        />
+    )
+}
+
 /** Teacher-only route element: gated by sign-in when auth is configured. */
 const teacher = (page: JSX.Element) => <RequireTeacher>{page}</RequireTeacher>
 
@@ -617,6 +690,12 @@ export const AppRoutes = () => (
             {/* Public by requirement (REQ-006/007): reachable signed out. */}
             <Route path={paths.offerings} element={<OfferingsRoute />} />
             <Route path={paths.contact} element={<ContactRoute />} />
+            {/* Public reviews (REQ-027); moderation is teacher-only. */}
+            <Route path={paths.reviews} element={<ReviewsRoute />} />
+            <Route
+                path={paths.reviewsModeration}
+                element={teacher(<ReviewModerationRoute />)}
+            />
             <Route
                 path="*"
                 element={<Navigate to={paths.dashboard} replace />}

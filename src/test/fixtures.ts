@@ -4,6 +4,7 @@ import type {
     PaymentStatus,
     ScheduledSession,
     Student,
+    Testimonial,
 } from '../data/students'
 
 /**
@@ -178,6 +179,42 @@ export const buildFixturePayments = (
         })
     )
 }
+
+/** Testimonials for the mocked reviews API — two approved, one pending. */
+export const buildFixtureTestimonials = (): Testimonial[] => [
+    {
+        id: 1,
+        authorName: 'Nadia D.',
+        role: 'Parent',
+        subject: 'Mathematics',
+        year: '10',
+        rating: 5,
+        quote: 'My daughter went from dreading maths to volunteering answers.',
+        status: 'Approved',
+        submittedOn: '2026-05-12',
+        moderatedOn: '2026-05-13',
+    },
+    {
+        id: 2,
+        authorName: 'James',
+        role: 'Student',
+        subject: 'Physics',
+        rating: 5,
+        quote: 'Lessons finally made sense and my mock grade jumped two levels.',
+        status: 'Approved',
+        submittedOn: '2026-06-03',
+        moderatedOn: '2026-06-04',
+    },
+    {
+        id: 3,
+        authorName: 'Helen W.',
+        role: 'Parent',
+        rating: 4,
+        quote: 'Reliable, patient and genuinely invested.',
+        status: 'Pending',
+        submittedOn: '2026-07-15',
+    },
+]
 
 /** Groups the fixture payments by month, mirroring GET /payments/by-month. */
 export const buildFixturePaymentsByMonth = (
