@@ -43,6 +43,7 @@ const buildRecord = (overrides: Partial<PaymentRecord> = {}): PaymentRecord => (
     outstanding: overrides.outstanding ?? 120,
     status: overrides.status ?? 'Pending',
     notes: overrides.notes ?? '',
+    sessions: overrides.sessions ?? [],
 })
 
 const buildGroup = (record: PaymentRecord): MonthlyPaymentGroup => ({
@@ -282,5 +283,214 @@ describe('PaymentTrackerView fee types', () => {
             screen.getByText('Payment status').closest('.payment-summary-card')!
         ).getAllByRole('cell')
         expect(cells.map((c) => c.textContent)).toEqual(['0', '0', '0'])
+    })
+})
+
+describe('PaymentTrackerView session breakdown', () => {
+    const renderBreakdown = (
+        students: Student[],
+        records: PaymentRecord[]
+    ) => {
+        const group: MonthlyPaymentGroup = {
+            month: records[0].month,
+            totalDue: records.reduce((sum, r) => sum + r.amountDue, 0),
+            totalReceived: records.reduce((sum, r) => sum + r.amountPaid, 0),
+            totalOutstanding: 0,
+            sessionsHeld: records.reduce((sum, r) => sum + r.sessionsHeld, 0),
+            records,
+        }
+        render(
+            <PaymentTrackerView
+                students={students}
+                paymentsByMonth={[group]}
+                onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+            />
+        )
+    }
+
+    const openBreakdown = async (
+        user: ReturnType<typeof userEvent.setup>
+    ) => {
+        await user.click(
+            screen.getByRole('tab', { name: /session breakdown/i })
+        )
+    }
+
+    it('itemises each held class and tallies the total', async () => {
+        const user = userEvent.setup()
+        const student = buildStudent({ id: 1 })
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feePerSession: 55,
+            sessionsHeld: 2,
+            amountDue: 110,
+            sessions: [
+                {
+                    date: '2026-07-03',
+                    subject: 'Mathematics',
+                    durationMinutes: 60,
+                    fee: 55,
+                },
+                {
+                    date: '2026-07-10',
+                    subject: 'Physics',
+                    durationMinutes: 90,
+                    fee: 55,
+                },
+            ],
+        })
+        renderBreakdown([student], [record])
+
+        // The summary table is showing first; the session table isn't.
+        expect(
+            screen.queryByRole('columnheader', { name: /^duration$/i })
+        ).not.toBeInTheDocument()
+
+        await openBreakdown(user)
+
+        // Two line rows plus the tfoot total.
+        expect(screen.getByText('03 Jul 2026')).toBeInTheDocument()
+        expect(screen.getByText('10 Jul 2026')).toBeInTheDocument()
+        expect(screen.getByText('Mathematics')).toBeInTheDocument()
+        expect(screen.getByText('90 min')).toBeInTheDocument()
+        // The total foots to amountDue, plural classes.
+        expect(screen.getByText(/total \(2 classes\)/i)).toBeInTheDocument()
+        const total = screen
+            .getByText(/total \(2 classes\)/i)
+            .closest('tr')!
+        expect(within(total).getByText('£110')).toBeInTheDocument()
+
+        // Switching back to the monthly summary restores that view.
+        await user.click(screen.getByRole('tab', { name: /monthly summary/i }))
+        expect(
+            screen.getByRole('columnheader', { name: /classes taught/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('columnheader', { name: /^duration$/i })
+        ).not.toBeInTheDocument()
+    })
+
+    it('filters to a single student (singular class label)', async () => {
+        const user = userEvent.setup()
+        const asha = buildStudent({ id: 1, firstName: 'Asha', lastName: 'Perera' })
+        const rohan = buildStudent({ id: 2, firstName: 'Rohan', lastName: 'Mehta' })
+        const ashaRecord = buildRecord({
+            id: 10,
+            studentId: 1,
+            studentName: 'Asha Perera',
+            sessionsHeld: 2,
+            amountDue: 110,
+            sessions: [
+                { date: '2026-07-03', subject: 'Maths', durationMinutes: 60, fee: 55 },
+                { date: '2026-07-10', subject: 'Maths', durationMinutes: 60, fee: 55 },
+            ],
+        })
+        const rohanRecord = buildRecord({
+            id: 20,
+            studentId: 2,
+            studentName: 'Rohan Mehta',
+            sessionsHeld: 1,
+            amountDue: 60,
+            sessions: [
+                { date: '2026-07-05', subject: 'Physics', durationMinutes: 60, fee: 60 },
+            ],
+        })
+        renderBreakdown([asha, rohan], [ashaRecord, rohanRecord])
+        await openBreakdown(user)
+
+        // Scope to the table — the names also appear in the filter dropdown.
+        const rows = () => within(screen.getByRole('table'))
+
+        // All students: both appear in the table.
+        expect(rows().getByText('Rohan Mehta')).toBeInTheDocument()
+        expect(rows().getAllByText('Asha Perera').length).toBe(2)
+
+        await user.selectOptions(
+            screen.getByRole('combobox', { name: /student/i }),
+            '2'
+        )
+
+        expect(rows().queryByText('Asha Perera')).not.toBeInTheDocument()
+        expect(rows().getByText('Rohan Mehta')).toBeInTheDocument()
+        // One row → singular label, total £60.
+        expect(screen.getByText(/total \(1 class\)/i)).toBeInTheDocument()
+        const total = screen.getByText(/total \(1 class\)/i).closest('tr')!
+        expect(within(total).getByText('£60')).toBeInTheDocument()
+    })
+
+    it('exports the visible rows as CSV, escaping fields that need it', async () => {
+        const user = userEvent.setup()
+        const createObjectURL = vi.fn(() => 'blob:mock')
+        const revokeObjectURL = vi.fn()
+        Object.defineProperty(URL, 'createObjectURL', {
+            value: createObjectURL,
+            configurable: true,
+        })
+        Object.defineProperty(URL, 'revokeObjectURL', {
+            value: revokeObjectURL,
+            configurable: true,
+        })
+        const clickSpy = vi
+            .spyOn(HTMLAnchorElement.prototype, 'click')
+            .mockImplementation(() => {})
+
+        const student = buildStudent({ id: 1 })
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            sessionsHeld: 1,
+            amountDue: 55,
+            sessions: [
+                {
+                    // A subject with a comma must be quoted in the CSV.
+                    date: '2026-07-03',
+                    subject: 'Maths, Applied',
+                    durationMinutes: 60,
+                    fee: 55,
+                },
+            ],
+        })
+        renderBreakdown([student], [record])
+        await openBreakdown(user)
+
+        await user.click(screen.getByRole('button', { name: /export csv/i }))
+
+        expect(createObjectURL).toHaveBeenCalledTimes(1)
+        expect(clickSpy).toHaveBeenCalledTimes(1)
+        expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock')
+
+        const blob = createObjectURL.mock.calls[0][0] as Blob
+        const csv = await blob.text()
+        expect(csv).toContain('Student,Date,Day,Subject,Duration (min),Fee')
+        expect(csv).toContain('Asha Perera,03 Jul 2026,')
+        expect(csv).toContain('"Maths, Applied"')
+
+        clickSpy.mockRestore()
+    })
+
+    it('shows an empty state and disables export when nothing is per-session', async () => {
+        const user = userEvent.setup()
+        const student = buildStudent({ id: 1 })
+        // A monthly-fee student has no per-session line items.
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feeType: 'monthly',
+            feePerSession: 400,
+            sessionsHeld: 3,
+            amountDue: 400,
+            sessions: [],
+        })
+        renderBreakdown([student], [record])
+        await openBreakdown(user)
+
+        expect(
+            screen.getByText(/no per-session classes to itemise/i)
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: /export csv/i })
+        ).toBeDisabled()
     })
 })

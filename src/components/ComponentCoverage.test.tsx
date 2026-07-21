@@ -67,6 +67,7 @@ const buildPayment = (
                   ? 'Partial'
                   : 'Pending'),
         notes: overrides.notes ?? '',
+        sessions: overrides.sessions ?? [],
     }
 }
 

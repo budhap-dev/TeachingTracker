@@ -55,6 +55,68 @@ const getCurrentMonth = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
+/** '2026-07-03' → '03 Jul 2026'. Parsed at local midnight so the day is stable. */
+const formatDate = (isoDate: string) =>
+    new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    })
+
+/** '2026-07-03' → 'Thu'. */
+const dayOfWeek = (isoDate: string) =>
+    new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-GB', {
+        weekday: 'short',
+    })
+
+const formatDuration = (minutes: number) => `${minutes} min`
+
+/** One flat line for the Session breakdown table and the CSV export. */
+type SessionBreakdownRow = {
+    studentId: number
+    studentName: string
+    date: string
+    subject: string
+    durationMinutes: number
+    fee: number
+}
+
+/** Wraps a CSV field, quoting and escaping only when it needs it. */
+const csvField = (value: string) =>
+    /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+
+/** Builds the CSV text for the visible session rows — headers then one row each. */
+const buildCsv = (rows: SessionBreakdownRow[]): string => {
+    const header = ['Student', 'Date', 'Day', 'Subject', 'Duration (min)', 'Fee']
+    // The visible table's values, so the export matches what's on screen.
+    const lines = rows.map((row) =>
+        [
+            csvField(row.studentName),
+            formatDate(row.date),
+            dayOfWeek(row.date),
+            csvField(row.subject),
+            String(row.durationMinutes),
+            String(row.fee),
+        ].join(',')
+    )
+    return [header.join(','), ...lines].join('\n')
+}
+
+/** Triggers a browser download of the CSV text as a .csv file. */
+const downloadCsv = (filename: string, csv: string) => {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+}
+
+type PaymentTab = 'summary' | 'sessions'
+
 export const PaymentTrackerView = ({
     students,
     paymentsByMonth,
@@ -64,6 +126,10 @@ export const PaymentTrackerView = ({
     const monthOptions = useMemo(getMonthOptions, [])
     const currentMonth = useMemo(getCurrentMonth, [])
     const [selectedMonth, setSelectedMonth] = useState(currentMonth)
+    // Which tab is showing, and (on the session breakdown) whose sessions —
+    // 'all' or a student id as a string.
+    const [tab, setTab] = useState<PaymentTab>('summary')
+    const [studentFilter, setStudentFilter] = useState('all')
 
     // What's typed in each row's "amount received" box, keyed by student, until
     // it's committed. The box is free to type in; the API is only hit when the
@@ -135,6 +201,55 @@ export const PaymentTrackerView = ({
             outstanding: Math.max(totals.totalDue - totals.totalReceived, 0),
         }
     }, [monthRecords])
+
+    // Session breakdown: the students who actually have per-session line items
+    // this month (monthly/no-fee students have none), for the filter dropdown.
+    const studentsWithSessions = useMemo(
+        () => monthRecords.filter((record) => record.sessions.length > 0),
+        [monthRecords]
+    )
+
+    // Keep the filter valid: if the chosen student has no sessions this month
+    // (e.g. after switching month), fall back to "all" without a stray effect.
+    const effectiveFilter = studentsWithSessions.some(
+        (record) => String(record.studentId) === studentFilter
+    )
+        ? studentFilter
+        : 'all'
+
+    // One flat row per held session, student then date — the shape the table
+    // renders and the CSV exports.
+    const sessionRows = useMemo<SessionBreakdownRow[]>(
+        () =>
+            studentsWithSessions
+                .filter(
+                    (record) =>
+                        effectiveFilter === 'all' ||
+                        String(record.studentId) === effectiveFilter
+                )
+                .flatMap((record) =>
+                    record.sessions.map((session) => ({
+                        studentId: record.studentId,
+                        studentName: record.studentName,
+                        ...session,
+                    }))
+                )
+                .sort(
+                    (left, right) =>
+                        left.studentName.localeCompare(right.studentName) ||
+                        left.date.localeCompare(right.date)
+                ),
+        [studentsWithSessions, effectiveFilter]
+    )
+
+    const sessionTotal = useMemo(
+        () => sessionRows.reduce((total, row) => total + row.fee, 0),
+        [sessionRows]
+    )
+
+    const exportSessionsCsv = () => {
+        downloadCsv(`sessions-${selectedMonth}.csv`, buildCsv(sessionRows))
+    }
 
     /** Commits the typed amount for a row, then drops the draft so the box
      *  tracks the stored figure again. No draft (untouched box) is a no-op. */
@@ -218,6 +333,29 @@ export const PaymentTrackerView = ({
                 </div>
             </div>
 
+            <div className="payment-tabs" role="tablist">
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === 'summary'}
+                    className={`payment-tab ${tab === 'summary' ? 'active' : ''}`}
+                    onClick={() => setTab('summary')}
+                >
+                    Monthly summary
+                </button>
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === 'sessions'}
+                    className={`payment-tab ${tab === 'sessions' ? 'active' : ''}`}
+                    onClick={() => setTab('sessions')}
+                >
+                    Session breakdown
+                </button>
+            </div>
+
+            {tab === 'summary' && (
+            <>
             <div className="payment-summary-grid">
                 <div className="card payment-summary-card received">
                     <span>Payments received</span>
@@ -456,6 +594,116 @@ export const PaymentTrackerView = ({
                     Reset to current month
                 </Button>
             </div>
+            </>
+            )}
+
+            {tab === 'sessions' && (
+            <div className="card">
+                <div className="section-header">
+                    <div>
+                        <h3>{selectedMonthLabel} — session breakdown</h3>
+                        <p>
+                            Every class that took place this month for
+                            per-session students, each at their per-session fee.
+                            Duration is shown for context; it doesn&apos;t change
+                            the fee. The total tallies the Due column of the
+                            monthly summary.
+                        </p>
+                    </div>
+                    <div className="session-breakdown-controls">
+                        <label htmlFor="session-student-filter">Student</label>
+                        <select
+                            id="session-student-filter"
+                            value={effectiveFilter}
+                            onChange={(event) =>
+                                setStudentFilter(event.target.value)
+                            }
+                        >
+                            <option value="all">All students</option>
+                            {studentsWithSessions.map((record) => (
+                                <option
+                                    key={record.studentId}
+                                    value={String(record.studentId)}
+                                >
+                                    {record.studentName}
+                                </option>
+                            ))}
+                        </select>
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            size="small"
+                            className="session-export"
+                            disabled={sessionRows.length === 0}
+                            onClick={exportSessionsCsv}
+                        >
+                            Export CSV
+                        </Button>
+                    </div>
+                </div>
+
+                {sessionRows.length === 0 ? (
+                    <p className="session-breakdown-empty">
+                        No per-session classes to itemise for this month.
+                    </p>
+                ) : (
+                    <div className="table-wrapper">
+                        <table className="snapshot-table session-breakdown-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Date</th>
+                                    <th>Day</th>
+                                    <th>Subject</th>
+                                    <th>Duration</th>
+                                    <th>Fee</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sessionRows.map((row, index) => (
+                                    <tr
+                                        key={`${row.studentId}-${row.date}-${index}`}
+                                    >
+                                        <td data-label="Student">
+                                            {row.studentName}
+                                        </td>
+                                        <td data-label="Date">
+                                            {formatDate(row.date)}
+                                        </td>
+                                        <td data-label="Day">
+                                            {dayOfWeek(row.date)}
+                                        </td>
+                                        <td data-label="Subject">
+                                            {row.subject}
+                                        </td>
+                                        <td data-label="Duration">
+                                            {formatDuration(row.durationMinutes)}
+                                        </td>
+                                        <td data-label="Fee">
+                                            {formatCurrency(row.fee)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot>
+                                <tr className="session-total-row">
+                                    <td colSpan={5}>
+                                        Total ({sessionRows.length}{' '}
+                                        {sessionRows.length === 1
+                                            ? 'class'
+                                            : 'classes'}
+                                        )
+                                    </td>
+                                    <td data-label="Total">
+                                        {formatCurrency(sessionTotal)}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                )}
+            </div>
+            )}
         </section>
     )
 }
