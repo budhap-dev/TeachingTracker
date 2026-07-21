@@ -356,9 +356,9 @@ describe('PaymentTrackerView session breakdown', () => {
         expect(screen.getByText('Mathematics')).toBeInTheDocument()
         expect(screen.getByText('90 min')).toBeInTheDocument()
         // The total foots to amountDue, plural classes.
-        expect(screen.getByText(/total \(2 classes\)/i)).toBeInTheDocument()
+        expect(screen.getByText(/total \(2 items\)/i)).toBeInTheDocument()
         const total = screen
-            .getByText(/total \(2 classes\)/i)
+            .getByText(/total \(2 items\)/i)
             .closest('tr')!
         expect(within(total).getByText('£110')).toBeInTheDocument()
 
@@ -415,8 +415,8 @@ describe('PaymentTrackerView session breakdown', () => {
         expect(rows().queryByText('Asha Perera')).not.toBeInTheDocument()
         expect(rows().getByText('Rohan Mehta')).toBeInTheDocument()
         // One row → singular label, total £60.
-        expect(screen.getByText(/total \(1 class\)/i)).toBeInTheDocument()
-        const total = screen.getByText(/total \(1 class\)/i).closest('tr')!
+        expect(screen.getByText(/total \(1 item\)/i)).toBeInTheDocument()
+        const total = screen.getByText(/total \(1 item\)/i).closest('tr')!
         expect(within(total).getByText('£60')).toBeInTheDocument()
     })
 
@@ -436,8 +436,10 @@ describe('PaymentTrackerView session breakdown', () => {
             .spyOn(HTMLAnchorElement.prototype, 'click')
             .mockImplementation(() => {})
 
-        const student = buildStudent({ id: 1 })
-        const record = buildRecord({
+        const asha = buildStudent({ id: 1, firstName: 'Asha', lastName: 'Perera' })
+        const beth = buildStudent({ id: 2, firstName: 'Beth', lastName: 'Owens' })
+        const ashaRecord = buildRecord({
+            id: 10,
             studentId: 1,
             studentName: 'Asha Perera',
             sessionsHeld: 1,
@@ -452,7 +454,17 @@ describe('PaymentTrackerView session breakdown', () => {
                 },
             ],
         })
-        renderBreakdown([student], [record])
+        // A monthly student exports as a dateless flat-fee line.
+        const bethRecord = buildRecord({
+            id: 20,
+            studentId: 2,
+            studentName: 'Beth Owens',
+            feeType: 'monthly',
+            feePerSession: 400,
+            amountDue: 400,
+            sessions: [],
+        })
+        renderBreakdown([asha, beth], [ashaRecord, bethRecord])
         await openBreakdown(user)
 
         await user.click(screen.getByRole('button', { name: /export csv/i }))
@@ -466,14 +478,17 @@ describe('PaymentTrackerView session breakdown', () => {
         expect(csv).toContain('Student,Date,Day,Subject,Duration (min),Fee')
         expect(csv).toContain('Asha Perera,03 Jul 2026,')
         expect(csv).toContain('"Maths, Applied"')
+        // Monthly line: blank date/day/duration, the flat fee, "Monthly fee".
+        expect(csv).toContain('Beth Owens,,,Monthly fee,,400')
 
         clickSpy.mockRestore()
     })
 
-    it('shows an empty state and disables export when nothing is per-session', async () => {
+    it('shows a monthly student as a single flat-fee row', async () => {
         const user = userEvent.setup()
         const student = buildStudent({ id: 1 })
-        // A monthly-fee student has no per-session line items.
+        // A monthly-fee student has no per-session lines, but still owes their
+        // flat fee — so they appear as a single dateless "Monthly fee" row.
         const record = buildRecord({
             studentId: 1,
             studentName: 'Asha Perera',
@@ -486,8 +501,36 @@ describe('PaymentTrackerView session breakdown', () => {
         renderBreakdown([student], [record])
         await openBreakdown(user)
 
+        const row = screen.getByText('Monthly fee').closest('tr')!
+        expect(within(row).getByText('Asha Perera')).toBeInTheDocument()
+        expect(within(row).getByText('£400')).toBeInTheDocument()
+        // No date/day/duration for a flat fee — em dashes.
+        expect(within(row).getAllByText('—').length).toBe(3)
+        // One row → the total foots to the flat fee, and export is enabled.
+        expect(screen.getByText(/total \(1 item\)/i)).toBeInTheDocument()
         expect(
-            screen.getByText(/no per-session classes to itemise/i)
+            screen.getByRole('button', { name: /export csv/i })
+        ).toBeEnabled()
+    })
+
+    it('shows an empty state and disables export when nothing is billable', async () => {
+        const user = userEvent.setup()
+        const student = buildStudent({ id: 1 })
+        // A no-fee student is never billed, so there's nothing to itemise.
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feeType: 'none',
+            feePerSession: 0,
+            sessionsHeld: 0,
+            amountDue: 0,
+            sessions: [],
+        })
+        renderBreakdown([student], [record])
+        await openBreakdown(user)
+
+        expect(
+            screen.getByText(/no billable classes or fees to itemise/i)
         ).toBeInTheDocument()
         expect(
             screen.getByRole('button', { name: /export csv/i })
