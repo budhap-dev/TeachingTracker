@@ -137,6 +137,10 @@ export function* createSessionSaga(
             action.payload
         )
         yield put(createSessionSucceeded(sessions))
+        // Bills are derived from the classes held, and the Payment Tracker
+        // shows the server's figures — refresh them so a newly scheduled class
+        // updates the tracker without a page reload.
+        yield put(fetchPaymentsRequested())
     } catch (error) {
         yield put(createSessionFailed(toMessage(error)))
     }
@@ -153,6 +157,8 @@ export function* addSessionMemberSaga(
             action.payload.studentId
         )
         yield put(addSessionMemberSucceeded(rows))
+        // The joined student now has another held class — re-derive the bills.
+        yield put(fetchPaymentsRequested())
     } catch (error) {
         yield put(
             addSessionMemberFailed(
@@ -242,6 +248,9 @@ export function* setSessionStatusSaga(
             action.payload.applyToGroup ?? false
         )
         yield put(setSessionStatusSucceeded(sessions))
+        // Cancelling/un-cancelling changes whether a class counts as held, so
+        // the amount due moves — refresh the tracker.
+        yield put(fetchPaymentsRequested())
     } catch (error) {
         yield put(
             setSessionStatusFailed(
@@ -260,6 +269,8 @@ export function* deleteSessionSaga(
     try {
         const ids: number[] = yield call(deleteSession, action.payload)
         yield put(deleteSessionSucceeded(ids))
+        // A deleted class leaves the held count, so the bill drops — refresh.
+        yield put(fetchPaymentsRequested())
     } catch (error) {
         yield put(
             deleteSessionFailed(
@@ -283,6 +294,9 @@ export function* editSessionSaga(
             action.payload.applyToGroup ?? false
         )
         yield put(editSessionSucceeded(sessions))
+        // Editing a class (its date especially) can change which month it
+        // falls in or whether it's held — re-derive the bills.
+        yield put(fetchPaymentsRequested())
     } catch (error) {
         yield put(
             editSessionFailed(
