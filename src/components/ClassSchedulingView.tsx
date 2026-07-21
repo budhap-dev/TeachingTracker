@@ -914,7 +914,7 @@ export const ClassSchedulingView = ({
                                                         <span className="tooltip-time">
                                                             {entry.lead.time}
                                                         </span>
-                                                        <span>
+                                                        <span className="tooltip-entry">
                                                             {entryTitle(entry)}{' '}
                                                             ·{' '}
                                                             {entry.lead.subject}

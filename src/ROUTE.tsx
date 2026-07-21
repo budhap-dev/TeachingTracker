@@ -572,13 +572,20 @@ const SchedulingRoute = () => {
 
 /** All application routes. Rendered inside the router by {@link App}. */
 /** Public page — reads site copy, never student data. */
-const OfferingsRoute = () => (
-    <OfferingsView
-        intro={siteContent.offerings.intro}
-        subjects={siteContent.offerings.subjects}
-        approach={siteContent.offerings.approach}
-    />
-)
+const OfferingsRoute = () => {
+    const navigate = useNavigate()
+    return (
+        <OfferingsView
+            hero={siteContent.offerings.hero}
+            subjects={siteContent.offerings.subjects}
+            journey={siteContent.offerings.journey}
+            approach={siteContent.offerings.approach}
+            // No enquiry flow yet (REQ-018) — the assessment CTA sends a
+            // visitor to Contact us for now.
+            onBookAssessment={() => navigate(paths.contact)}
+        />
+    )
+}
 
 /** Public page — reads site copy, never student data. */
 const ContactRoute = () => (

@@ -46,7 +46,14 @@ describe('public pages', () => {
             screen.getByRole('link', { name: siteContent.contact.email })
         ).toHaveAttribute('href', `mailto:${siteContent.contact.email}`)
         expect(
-            screen.getByRole('link', { name: siteContent.contact.phone })
+            screen.getByRole('link', {
+                name: `Call ${siteContent.contact.phone}`,
+            })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('link', {
+                name: `WhatsApp ${siteContent.contact.phone}`,
+            })
         ).toBeInTheDocument()
     })
 
@@ -58,12 +65,33 @@ describe('public pages', () => {
             screen.getByRole('heading', { name: /offerings/i })
         ).toBeInTheDocument()
         expect(
-            screen.getByText(siteContent.offerings.subjects[0])
+            screen.getByText(siteContent.offerings.hero.headline)
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('heading', {
+                name: siteContent.offerings.subjects[0].name,
+            })
         ).toBeInTheDocument()
         expect(
             screen.getByRole('heading', {
                 name: siteContent.offerings.approach[0].title,
             })
+        ).toBeInTheDocument()
+    })
+
+    it('sends a visitor from the offerings CTA to contact us', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/offerings')
+        render(<App />)
+
+        await user.click(
+            screen.getAllByRole('button', {
+                name: /book a free assessment/i,
+            })[0]
+        )
+
+        expect(
+            screen.getByRole('heading', { name: /contact us/i })
         ).toBeInTheDocument()
     })
 

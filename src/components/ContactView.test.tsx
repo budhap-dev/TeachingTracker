@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ContactView } from './ContactView'
-import { toTelHref } from '../data/siteContent'
+import { toTelHref, toWhatsAppHref } from '../data/siteContent'
 
 describe('ContactView', () => {
-    it('shows the contact details as actionable links', () => {
+    it('shows email plus call and WhatsApp actions for the phone', () => {
         render(<ContactView email="tutor@example.com" phone="+44 7700 900123" />)
 
         expect(
@@ -14,8 +14,14 @@ describe('ContactView', () => {
         const email = screen.getByRole('link', { name: 'tutor@example.com' })
         expect(email).toHaveAttribute('href', 'mailto:tutor@example.com')
 
-        const phone = screen.getByRole('link', { name: '+44 7700 900123' })
-        expect(phone).toHaveAttribute('href', 'tel:+447700900123')
+        // The number is shown as text, with a call and a WhatsApp icon link.
+        expect(screen.getByText('+44 7700 900123')).toBeInTheDocument()
+        expect(
+            screen.getByRole('link', { name: 'Call +44 7700 900123' })
+        ).toHaveAttribute('href', 'tel:+447700900123')
+        expect(
+            screen.getByRole('link', { name: 'WhatsApp +44 7700 900123' })
+        ).toHaveAttribute('href', 'https://wa.me/447700900123')
     })
 
     it('renders whatever details it is given', () => {
@@ -25,8 +31,11 @@ describe('ContactView', () => {
             screen.getByRole('link', { name: 'other@school.org' })
         ).toHaveAttribute('href', 'mailto:other@school.org')
         expect(
-            screen.getByRole('link', { name: '020 7946 0000' })
+            screen.getByRole('link', { name: 'Call 020 7946 0000' })
         ).toHaveAttribute('href', 'tel:02079460000')
+        expect(
+            screen.getByRole('link', { name: 'WhatsApp 020 7946 0000' })
+        ).toHaveAttribute('href', 'https://wa.me/02079460000')
     })
 })
 
@@ -35,5 +44,16 @@ describe('toTelHref', () => {
         expect(toTelHref('+44 7700 900123')).toBe('tel:+447700900123')
         expect(toTelHref('(020) 7946-0000')).toBe('tel:02079460000')
         expect(toTelHref('07700 900123')).toBe('tel:07700900123')
+    })
+})
+
+describe('toWhatsAppHref', () => {
+    it('keeps only digits, dropping the plus and spacing', () => {
+        expect(toWhatsAppHref('+44 7700 900123')).toBe(
+            'https://wa.me/447700900123'
+        )
+        expect(toWhatsAppHref('(020) 7946-0000')).toBe(
+            'https://wa.me/02079460000'
+        )
     })
 })

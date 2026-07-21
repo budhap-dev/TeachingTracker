@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import { Button, TextField } from '@mui/material'
 import type {
     MonthlyPaymentGroup,
@@ -197,7 +198,10 @@ export const PaymentTrackerView = ({
                     </p>
                 </div>
                 <div className="payment-month-filter">
-                    <label htmlFor="payment-month">Month</label>
+                    <label htmlFor="payment-month">
+                        <CalendarMonthOutlinedIcon fontSize="small" />
+                        Month
+                    </label>
                     <select
                         id="payment-month"
                         value={selectedMonth}
