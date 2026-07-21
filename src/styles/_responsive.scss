@@ -105,13 +105,14 @@
     .student-form {
         grid-template-columns: 1fr;
 
-        .subjects-control {
-            grid-column: span 1;
-        }
-
+        /* With one column, nothing spans two — otherwise a span-2 field
+           (Subjects, Address) forces an implicit second column back and the
+           whole form squishes into two cramped columns. */
+        .span-2,
+        .subjects-control,
         textarea,
         button {
-            grid-column: span 1;
+            grid-column: 1 / -1;
         }
     }
 
@@ -122,6 +123,26 @@
         button {
             flex: 1;
         }
+    }
+
+    /* Stack the modal header on phones: ✕ pinned top-right, title on its own
+       line, then Save — side by side there isn't room and both wrap awkwardly. */
+    .modal-header {
+        position: relative;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding-right: 44px;
+    }
+
+    .modal-header-actions {
+        align-self: flex-end;
+    }
+
+    .modal-header-actions .MuiIconButton-root {
+        position: absolute;
+        top: 8px;
+        right: 12px;
     }
 
     .table-footer {
@@ -162,6 +183,13 @@
         align-items: flex-start;
     }
 
+    /* Stack the calendar header so the "Booked days are shaded…" text gets the
+       full width instead of being squeezed beside Previous/Next. */
+    .scheduling-calendar-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
     .calendar-actions {
         width: 100%;
         justify-content: space-between;
@@ -174,9 +202,11 @@
 
     .scheduling-hero-stats {
         width: 100%;
-        flex-direction: column;
 
+        /* Side by side, each filling half the width, rather than stacked —
+           keeps the info block compact so the calendar isn't pushed down. */
         div {
+            flex: 1;
             min-width: 0;
         }
     }
