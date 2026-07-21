@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-027`**
+**Next id: `REQ-028`**
 
 ## Legend
 
@@ -96,6 +96,7 @@ XS is an afternoon, XL is a project.
 | 22 | 🔲 | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
 | 23 | 🔲 | [REQ-025 — FAQ](#req-025--faq) | S | both | REQ-008 |
 | 24 | 🔲 | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | REQ-009 |
+| 25 | 🔲 | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
 
 **Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–5 are done; REQ-003/REQ-004 are in flight (prod enforcement after the dev soak). The growth epics (REQ-015→026) are new: REQ-015/016/017/023 are shippable now against the current copy; the enquiry/leads/testimonials path (REQ-018/019/020) waits on **REQ-009** durable storage, and the content-driven pieces (REQ-020/021/022/025) land through **REQ-008**'s in-app editor.
 
@@ -830,6 +831,11 @@ tutor with my child.
 
 - ⚠️ **Testimonials must be real and used with permission** — publishing invented
   reviews would mislead prospective families (same caveat noted on REQ-008).
+- **Split:** the *testimonial* half of this story is superseded by **REQ-027**,
+  which lets families submit their own reviews for teacher moderation (a stronger
+  source of real, permissioned testimonials than teacher-typed copy). What remains
+  here is the **outcomes strip** (students taught / sessions / average progress
+  from live data). Keep this story for that; REQ-027 owns the testimonial cards.
 
 ## REQ-021 — Tutor bio and safeguarding
 
@@ -945,3 +951,104 @@ recommending Springboard is effortless.
 
 - Word of mouth is the strongest channel in tutoring; this makes it a one-tap
   action instead of a favour a parent has to remember to do.
+
+## REQ-027 — Families submit testimonials; teacher moderates; approved show as cards
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** L · **Blocked by:** REQ-009 (durable store) · **Relates to:** REQ-003 (moderation gating), REQ-020 (supersedes its testimonial half)
+
+**Story**
+As a past or ongoing parent or student, I want to share my experience for the
+teacher to review, so that prospective families can read real, permissioned
+reviews. And as the teacher, I want to approve or reject each submission before
+anything is shown publicly, so that only genuine, appropriate reviews appear on
+the portal.
+
+**Decisions** _(made 2026-07-21)_
+
+- **A review carries a 1–5 star rating and a written quote.** Cards show both.
+- **Attribution:** name + role (**Parent** / **Student**), with **optional**
+  subject and year — e.g. "Sarah — Parent of a Year 10 Maths student", degrading
+  gracefully to "Sarah — Parent" when the optional detail is left blank.
+- **One dedicated public `/reviews` page** holds *both* the approved cards and
+  the submit form — no separate entry on Offerings.
+- **Moderation is the gate:** every submission starts `Pending` and is invisible
+  publicly until the teacher sets it `Approved`; `Rejected` never shows.
+- **User-generated, so not part of REQ-008.** These live in their own store and
+  moderation flow, separate from the teacher-authored site content.
+
+**Model** — new `Testimonial`
+
+- `id`, `authorName` (required), `role` (`Parent` | `Student`, required),
+  `subject?`, `year?`, `rating` (integer 1–5, required), `quote` (required,
+  length-capped, **plain text only**), `status` (`Pending` | `Approved` |
+  `Rejected`, default `Pending`), `submittedOn`, `moderatedOn?`.
+- No link to a real student record — attribution is only what the submitter types.
+
+**Endpoints**
+
+- `POST /testimonials` — **public**; creates a `Pending` review (honeypot +
+  validation + rate limit). Responds with a thank-you, not the stored record.
+- `GET /testimonials` — **public**; returns **`Approved` only**.
+- `GET /testimonials?status=pending` — **teacher-only**; moderation queue.
+- `PUT /testimonials/{id}` — **teacher-only**; set `Approved` / `Rejected`
+  (stamps `moderatedOn`).
+- `DELETE /testimonials/{id}` — **teacher-only**; remove spam/abuse entirely.
+
+**Acceptance criteria**
+
+_Submission (public)_
+
+- [ ] A public `/reviews` page shows approved reviews as cards **and** holds a
+      "Share your experience" form.
+- [ ] Form fields: name (required), role Parent/Student (required), subject
+      (optional), year (optional), 1–5 star rating (required), quote (required,
+      max length) — validated with clear inline errors.
+- [ ] Submitting `POST`s to `/testimonials`, stores `Pending`, and shows a
+      thank-you explaining it appears once the teacher approves it.
+- [ ] Honeypot field + basic rate limiting; a consent-to-publish line in the copy.
+
+_Display (public)_
+
+- [ ] Approved reviews render as cards: quote, star rating, and attribution that
+      composes from role + optional subject/year, degrading gracefully.
+- [ ] `GET /testimonials` returns approved only; pending/rejected are never
+      publicly retrievable.
+- [ ] A friendly empty state before any review is approved.
+
+_Moderation (teacher)_
+
+- [ ] Teacher-only Reviews queue (rides REQ-003 gating), newest first, showing
+      each pending submission in full with **Approve** / **Reject** / **Delete**.
+- [ ] Approving publishes it (stamps `moderatedOn`); rejecting/deleting keeps it
+      off the public page.
+- [ ] A pending-count badge (dashboard or nav) so new submissions get noticed.
+- [ ] The pending queue and all approve/reject/delete calls are teacher-only and
+      rejected by the **API** when unauthenticated — not merely hidden in the UI.
+
+_Cross-cutting_
+
+- [ ] Persisted durably (survives restart/scale-out), per environment; seed
+      carries a couple of approved reviews + one pending so the state is visible.
+- [ ] OpenAPI updated; backend lint/tsc clean; **API deploys before the frontend**.
+- [ ] Frontend coverage stays 100%.
+
+**Notes**
+
+- ⚠️ **Needs durable storage (REQ-009).** Pending/approved reviews must not vanish
+  on restart. The backend's `TableStore` already exists, so this can land on Table
+  Storage now (a new `testimonials` table) without waiting on a wider DB migration
+  — build against `MemoryStore` for dev, `TableStore` for prod, same as today.
+- ⚠️ **Public write is an abuse surface.** Moderation is the primary control
+  (nothing shows unapproved); back it with a honeypot, a rate limit, a quote
+  length cap, and **plain-text-only** storage/rendering (no HTML) to rule out
+  stored XSS on a public page.
+- **GDPR:** a review is personal data the submitter volunteered; the `DELETE`
+  endpoint is the erasure path, and the form must state that submitting grants
+  permission to publish. No PII beyond the quote text is collected.
+- Supersedes the *testimonial* half of **REQ-020** (teacher-typed) with real,
+  user-submitted, moderated reviews; REQ-020 retains only the outcomes strip.
+- Nav: a public **Reviews** item, and a teacher-only **Reviews** moderation view
+  (or fold moderation into a shared "inbox" alongside REQ-019 leads).
+- ❓ Open: may the teacher lightly edit an approved review (fix a typo) before it
+  publishes, or is it approve-as-submitted? Assumed **approve-as-submitted** for a
+  first cut — deletion handles anything not publishable.
