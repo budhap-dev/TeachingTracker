@@ -42,6 +42,32 @@ describe('ReviewModerationView', () => {
         ).toBeInTheDocument()
     })
 
+    it('badges a flagged review and leaves a clean one unbadged', () => {
+        const { rerender } = render(
+            <ReviewModerationView
+                pending={[{ ...pending, flagged: true }]}
+                onApprove={vi.fn()}
+                onReject={vi.fn()}
+                onDelete={vi.fn()}
+            />
+        )
+        expect(
+            screen.getByText(/check for offensive language/i)
+        ).toBeInTheDocument()
+
+        rerender(
+            <ReviewModerationView
+                pending={[pending]}
+                onApprove={vi.fn()}
+                onReject={vi.fn()}
+                onDelete={vi.fn()}
+            />
+        )
+        expect(
+            screen.queryByText(/check for offensive language/i)
+        ).not.toBeInTheDocument()
+    })
+
     it('lists a pending review and wires each action to its id', async () => {
         const onApprove = vi.fn()
         const onReject = vi.fn()

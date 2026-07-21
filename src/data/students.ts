@@ -137,6 +137,9 @@ export type Testimonial = {
     /** The written experience — plain text. */
     quote: string
     status: TestimonialStatus
+    /** Set when a profanity screen matched the name/quote (REQ-028) — the
+        moderation queue highlights it. It does not change visibility. */
+    flagged?: boolean
     /** ISO date, YYYY-MM-DD, when it was submitted. */
     submittedOn: string
     /** ISO date the teacher approved/rejected it; absent while Pending. */

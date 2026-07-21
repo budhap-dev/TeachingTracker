@@ -66,6 +66,27 @@
     margin-top: 4px;
 }
 
+/* A flagged review (REQ-028): an amber warning strip and a warm-tinted card, so
+   a possibly-offensive submission stands out in the queue. It's a hint only —
+   nothing publishes without the teacher approving it. */
+.testimonial-card.flagged {
+    border-color: color-mix(in srgb, #d97706 55%, var(--border));
+    background: color-mix(in srgb, #d97706 8%, var(--surface));
+}
+
+.testimonial-flag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: color-mix(in srgb, #d97706 16%, var(--surface));
+    color: #b45309;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
 /* Public submit form: fields stack, the review box and consent line run full
    width. Kept simple — one column reads fine on a public page. */
 .review-form {

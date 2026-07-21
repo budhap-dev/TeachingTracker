@@ -1,5 +1,6 @@
 import { Button, Rating } from '@mui/material'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import type { Testimonial } from '../data/students'
 
 type ReviewModerationViewProps = {
@@ -55,8 +56,14 @@ export const ReviewModerationView = ({
                     {pending.map((testimonial) => (
                         <figure
                             key={testimonial.id}
-                            className="testimonial-card moderation"
+                            className={`testimonial-card moderation${testimonial.flagged ? ' flagged' : ''}`}
                         >
+                            {testimonial.flagged && (
+                                <p className="testimonial-flag" role="note">
+                                    <WarningAmberRoundedIcon fontSize="small" />
+                                    Flagged — check for offensive language
+                                </p>
+                            )}
                             <Rating
                                 value={testimonial.rating}
                                 readOnly
