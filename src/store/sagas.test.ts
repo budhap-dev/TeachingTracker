@@ -181,6 +181,8 @@ describe('createSessionSaga', () => {
         expect(gen.next(created).value).toEqual(
             put(createSessionSucceeded(created))
         )
+        // The bill is derived from held classes, so payments are refreshed too.
+        expect(gen.next().value).toEqual(put(fetchPaymentsRequested()))
         expect(gen.next().done).toBe(true)
     })
 
@@ -205,6 +207,7 @@ describe('addSessionMemberSaga', () => {
         expect(gen.next(rows).value).toEqual(
             put(addSessionMemberSucceeded(rows))
         )
+        expect(gen.next().value).toEqual(put(fetchPaymentsRequested()))
         expect(gen.next().done).toBe(true)
     })
 
@@ -358,6 +361,7 @@ describe('setSessionStatusSaga', () => {
         expect(gen.next(cancelled).value).toEqual(
             put(setSessionStatusSucceeded(cancelled))
         )
+        expect(gen.next().value).toEqual(put(fetchPaymentsRequested()))
         expect(gen.next().done).toBe(true)
     })
 
@@ -399,6 +403,7 @@ describe('deleteSessionSaga', () => {
         expect(gen.next([101, 102]).value).toEqual(
             put(deleteSessionSucceeded([101, 102]))
         )
+        expect(gen.next().value).toEqual(put(fetchPaymentsRequested()))
         expect(gen.next().done).toBe(true)
     })
 
@@ -432,6 +437,7 @@ describe('editSessionSaga', () => {
 
         const edited = [{ ...session, ...changes }] as ScheduledSession[]
         expect(gen.next(edited).value).toEqual(put(editSessionSucceeded(edited)))
+        expect(gen.next().value).toEqual(put(fetchPaymentsRequested()))
         expect(gen.next().done).toBe(true)
     })
 
