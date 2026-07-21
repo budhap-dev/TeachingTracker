@@ -189,12 +189,12 @@ export const StudySnapshotView = ({
 
                                 return (
                                     <tr key={student.id}>
-                                        <td>
+                                        <td className="cell-index">
                                             {(page - 1) * rowsPerPage +
                                                 index +
                                                 1}
                                         </td>
-                                        <td>
+                                        <td className="cell-title">
                                             {/* Same link idiom as the students
                                                 list: every student name in the
                                                 app opens their page. */}
@@ -212,13 +212,19 @@ export const StudySnapshotView = ({
                                                 {student.lastName}
                                             </a>
                                         </td>
-                                        <td>{student.year}</td>
-                                        <td>{student.subjects.join(', ')}</td>
-                                        <td>{student.school}</td>
-                                        <td style={modeStyle}>
+                                        <td data-label="Year">
+                                            {student.year}
+                                        </td>
+                                        <td data-label="Subject">
+                                            {student.subjects.join(', ')}
+                                        </td>
+                                        <td data-label="School">
+                                            {student.school}
+                                        </td>
+                                        <td data-label="Study mode" style={modeStyle}>
                                             {studyModeLabel(student.mode)}
                                         </td>
-                                        <td>
+                                        <td data-label="Format">
                                             {formatLabel(
                                                 formatByStudent[student.id]
                                             )}
