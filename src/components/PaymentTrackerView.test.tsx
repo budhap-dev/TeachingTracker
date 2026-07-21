@@ -44,6 +44,7 @@ const buildRecord = (overrides: Partial<PaymentRecord> = {}): PaymentRecord => (
     status: overrides.status ?? 'Pending',
     notes: overrides.notes ?? '',
     sessions: overrides.sessions ?? [],
+    totalDurationMinutes: overrides.totalDurationMinutes ?? 0,
 })
 
 const buildGroup = (record: PaymentRecord): MonthlyPaymentGroup => ({
@@ -324,8 +325,8 @@ describe('PaymentTrackerView session breakdown', () => {
             studentId: 1,
             studentName: 'Asha Perera',
             feePerSession: 55,
-            sessionsHeld: 2,
-            amountDue: 110,
+            sessionsHeld: 3,
+            amountDue: 165,
             sessions: [
                 {
                     date: '2026-07-03',
@@ -337,6 +338,12 @@ describe('PaymentTrackerView session breakdown', () => {
                     date: '2026-07-10',
                     subject: 'Physics',
                     durationMinutes: 90,
+                    fee: 55,
+                },
+                {
+                    date: '2026-07-17',
+                    subject: 'Mathematics',
+                    durationMinutes: 30,
                     fee: 55,
                 },
             ],
@@ -353,14 +360,17 @@ describe('PaymentTrackerView session breakdown', () => {
         // Two line rows plus the tfoot total.
         expect(screen.getByText('03 Jul 2026')).toBeInTheDocument()
         expect(screen.getByText('10 Jul 2026')).toBeInTheDocument()
-        expect(screen.getByText('Mathematics')).toBeInTheDocument()
-        expect(screen.getByText('90 min')).toBeInTheDocument()
-        // The total foots to amountDue, plural classes.
-        expect(screen.getByText(/total \(2 items\)/i)).toBeInTheDocument()
+        expect(screen.getAllByText('Mathematics').length).toBe(2)
+        // Durations read as hours and minutes: 60 → 1h, 90 → 1h 30m, 30 → 30m.
+        expect(screen.getByText('1h')).toBeInTheDocument()
+        expect(screen.getByText('1h 30m')).toBeInTheDocument()
+        expect(screen.getByText('30m')).toBeInTheDocument()
+        // The total foots to amountDue, plural items.
+        expect(screen.getByText(/total \(3 items\)/i)).toBeInTheDocument()
         const total = screen
-            .getByText(/total \(2 items\)/i)
+            .getByText(/total \(3 items\)/i)
             .closest('tr')!
-        expect(within(total).getByText('£110')).toBeInTheDocument()
+        expect(within(total).getByText('£165')).toBeInTheDocument()
 
         // Switching back to the monthly summary restores that view.
         await user.click(screen.getByRole('tab', { name: /monthly summary/i }))
@@ -454,7 +464,8 @@ describe('PaymentTrackerView session breakdown', () => {
                 },
             ],
         })
-        // A monthly student exports as a dateless flat-fee line.
+        // A monthly student exports as a flat-fee line: the month as the date,
+        // blank day, its accumulated minutes, and the flat fee.
         const bethRecord = buildRecord({
             id: 20,
             studentId: 2,
@@ -462,6 +473,7 @@ describe('PaymentTrackerView session breakdown', () => {
             feeType: 'monthly',
             feePerSession: 400,
             amountDue: 400,
+            totalDurationMinutes: 150,
             sessions: [],
         })
         renderBreakdown([asha, beth], [ashaRecord, bethRecord])
@@ -478,8 +490,9 @@ describe('PaymentTrackerView session breakdown', () => {
         expect(csv).toContain('Student,Date,Day,Subject,Duration (min),Fee')
         expect(csv).toContain('Asha Perera,03 Jul 2026,')
         expect(csv).toContain('"Maths, Applied"')
-        // Monthly line: blank date/day/duration, the flat fee, "Monthly fee".
-        expect(csv).toContain('Beth Owens,,,Monthly fee,,400')
+        // Monthly line: month as date, blank day, accumulated minutes, flat fee.
+        expect(csv).toContain(',Monthly fee,150,400')
+        expect(csv).toContain('Beth Owens,')
 
         clickSpy.mockRestore()
     })
@@ -489,23 +502,31 @@ describe('PaymentTrackerView session breakdown', () => {
         const student = buildStudent({ id: 1 })
         // A monthly-fee student has no per-session lines, but still owes their
         // flat fee — so they appear as a single dateless "Monthly fee" row.
+        // No classes held this month, so its accumulated duration is 0.
         const record = buildRecord({
             studentId: 1,
             studentName: 'Asha Perera',
             feeType: 'monthly',
             feePerSession: 400,
-            sessionsHeld: 3,
+            sessionsHeld: 0,
             amountDue: 400,
+            totalDurationMinutes: 0,
             sessions: [],
         })
         renderBreakdown([student], [record])
         await openBreakdown(user)
 
+        const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const now = new Date()
+        const monthLabel = `${monthLabels[now.getMonth()]} ${now.getFullYear()}`
+
         const row = screen.getByText('Monthly fee').closest('tr')!
         expect(within(row).getByText('Asha Perera')).toBeInTheDocument()
         expect(within(row).getByText('£400')).toBeInTheDocument()
-        // No date/day/duration for a flat fee — em dashes.
-        expect(within(row).getAllByText('—').length).toBe(3)
+        // Date + Day are merged into the month the fee covers.
+        expect(within(row).getByText(monthLabel)).toBeInTheDocument()
+        // No classes → the accumulated duration shows an em dash.
+        expect(within(row).getAllByText('—').length).toBe(1)
         // One row → the total foots to the flat fee, and export is enabled.
         expect(screen.getByText(/total \(1 item\)/i)).toBeInTheDocument()
         expect(

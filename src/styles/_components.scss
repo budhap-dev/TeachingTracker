@@ -994,11 +994,21 @@
 }
 
 /* The Student filter + Export CSV, sitting to the right of the section title. */
-.session-breakdown-controls {
+/* A toolbar under the heading: the student filter on the left, Export CSV on
+   the right — so the button lines up cleanly instead of floating in the header. */
+.session-breakdown-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 4px 0 12px;
+}
+
+.session-student-filter {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
 
     label {
         color: var(--muted);

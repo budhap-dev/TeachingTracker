@@ -183,6 +183,10 @@ export const buildFixturePayments = (
                 month,
                 feePerSession: student.fees,
                 sessionsHeld,
+                totalDurationMinutes: sessions.reduce(
+                    (total, session) => total + session.durationMinutes,
+                    0
+                ),
                 amountDue,
                 amountPaid,
                 outstanding: Math.max(amountDue - amountPaid, 0),

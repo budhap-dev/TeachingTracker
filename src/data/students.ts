@@ -117,6 +117,8 @@ export type PaymentRecord = {
     feeType?: FeeType
     /** How many classes actually took place this month. */
     sessionsHeld: number
+    /** Total minutes of the classes held this month — accumulated teaching time. */
+    totalDurationMinutes: number
     /** Per-session: `feePerSession × sessionsHeld`. Monthly: the flat fee. */
     amountDue: number
     amountPaid: number
