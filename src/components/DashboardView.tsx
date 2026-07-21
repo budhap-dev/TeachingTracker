@@ -92,6 +92,10 @@ export const DashboardView = ({
     const activeBandData = attentionBands.find(
         (band) => band.key === activeBand
     )
+    // The band whose students are listed: the hovered/pinned one, else the
+    // neediest by default. The detail area is always in the layout with a fixed
+    // height, so revealing/swapping a band never resizes the card.
+    const shownBand = activeBandData ?? attentionBands[0]
     const toggleBand = (key: string) =>
         setPinnedBand((current) => (current === key ? null : key))
 
@@ -307,34 +311,38 @@ export const DashboardView = ({
                             ))}
                         </ul>
 
-                        {/* The revealed band's students — links to their pages.
-                            Falls back to the neediest band so there's always a
-                            useful list, and a tap/hover swaps it. */}
-                        {(activeBandData ?? attentionBands[0]).students.length >
-                            0 && (
-                            <div className="attention-detail">
-                                <span className="attention-detail-title">
-                                    {(activeBandData ?? attentionBands[0]).label}
-                                </span>
-                                <div className="attention-detail-names">
-                                    {(
-                                        activeBandData ?? attentionBands[0]
-                                    ).students.map((student) => (
-                                        <a
-                                            key={student.id}
-                                            href={`#student-${student.id}`}
-                                            className="student-link"
-                                            onClick={(event) => {
-                                                event.preventDefault()
-                                                onOpenStudentPage(student.id)
-                                            }}
-                                        >
-                                            {student.name}
-                                        </a>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Always in the layout with a fixed height, so revealing
+                            or swapping a band's students never resizes the card.
+                            The neediest band leads; when it's empty a hint stands
+                            in until a band is hovered/tapped. */}
+                        <div className="attention-detail">
+                            {shownBand.students.length > 0 ? (
+                                <>
+                                    <span className="attention-detail-title">
+                                        {shownBand.label}
+                                    </span>
+                                    <div className="attention-detail-names">
+                                        {shownBand.students.map((student) => (
+                                            <a
+                                                key={student.id}
+                                                href={`#student-${student.id}`}
+                                                className="student-link"
+                                                onClick={(event) => {
+                                                    event.preventDefault()
+                                                    onOpenStudentPage(student.id)
+                                                }}
+                                            >
+                                                {student.name}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="attention-detail-hint">
+                                    Hover a band to list its students.
+                                </p>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

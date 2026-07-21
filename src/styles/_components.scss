@@ -683,6 +683,14 @@
     gap: 6px;
     padding-top: 12px;
     border-top: 1px solid var(--border);
+    // Reserve the space so the list (or its hint) never grows/shrinks the card.
+    min-height: 8rem;
+}
+
+.attention-detail-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
 }
 
 .attention-detail-title {
@@ -695,7 +703,12 @@
 .attention-detail-names {
     display: flex;
     flex-wrap: wrap;
+    align-content: flex-start;
     gap: 6px 12px;
+    // A stable, scrolling box: switching bands swaps the names without ever
+    // growing or shrinking the card (which read as a sudden height jump).
+    height: 5.5rem;
+    overflow-y: auto;
 }
 
 .payment-tracker-view {
@@ -706,25 +719,39 @@
     display: flex;
     justify-content: space-between;
     gap: 16px;
-    align-items: flex-end;
+    align-items: center;
 }
 
+/* A self-contained control rather than a bare select floating in the corner:
+   a bordered pill with a calendar icon, so it reads as a deliberate filter. */
 .payment-month-filter {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: 8px 8px 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-alt) 70%, var(--surface));
 
     label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         color: var(--muted);
-        font-size: 0.85rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        white-space: nowrap;
     }
 
     select {
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: 8px;
         background: var(--surface);
         color: var(--text);
+        font-weight: 600;
         padding: 8px 10px;
+        cursor: pointer;
     }
 }
 
@@ -1567,6 +1594,40 @@ $note-rule: 32px;
     text-decoration: underline;
 }
 
+/* Phone row: the number as text, with a call and a WhatsApp icon beside it. */
+.contact-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.contact-number {
+    color: var(--text);
+}
+
+.contact-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    color: var(--accent);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    }
+
+    &.whatsapp {
+        color: #25d366;
+        border-color: color-mix(in srgb, #25d366 45%, var(--border));
+    }
+}
+
 .contact-note {
     margin: 16px 0 0;
     font-size: 0.85rem;
@@ -1580,23 +1641,387 @@ $note-rule: 32px;
     color: var(--text);
 }
 
-.offerings-subjects {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+/* Offerings hero (REQ-015): the promise, an availability nudge, and one CTA. */
+.offerings-hero-headline {
+    margin: 10px 0 8px;
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--text);
 }
 
-.offerings-subject {
+.offerings-hero-subhead {
+    margin: 0;
+    max-width: 60ch;
+    font-size: 1.02rem;
+    line-height: 1.55;
+    color: var(--muted);
+}
+
+.offerings-availability {
+    display: inline-block;
+    margin: 14px 0 0;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+    color: var(--accent);
     font-size: 0.85rem;
     font-weight: 600;
-    padding: 7px 14px;
-    border-radius: 999px;
-    background: var(--surface-alt);
-    border: 1px solid var(--border);
+}
+
+.offerings-cta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.offerings-cta-secondary {
     color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+    }
+}
+
+/* Subjects as rich cards (REQ-016). */
+.offerings-subject-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    // Equal rows so every card is the same height, whatever its content.
+    grid-auto-rows: 1fr;
+    gap: 14px;
+    margin-top: 4px;
+}
+
+// Each card's hue (--subject-accent) is derived from the active theme's accents,
+// so the whole grid recolours when the theme changes. Six variations cycle
+// across the cards, spanning accent → accent-alt with a couple of toned shifts.
+.offerings-subject-card:nth-child(6n + 1) {
+    --subject-accent: var(--accent);
+}
+.offerings-subject-card:nth-child(6n + 2) {
+    --subject-accent: var(--accent-alt);
+}
+.offerings-subject-card:nth-child(6n + 3) {
+    --subject-accent: color-mix(in srgb, var(--accent) 50%, var(--accent-alt));
+}
+.offerings-subject-card:nth-child(6n + 4) {
+    --subject-accent: color-mix(in srgb, var(--accent) 72%, var(--text));
+}
+.offerings-subject-card:nth-child(6n + 5) {
+    --subject-accent: color-mix(in srgb, var(--accent-alt) 72%, var(--text));
+}
+.offerings-subject-card:nth-child(6n + 6) {
+    --subject-accent: color-mix(in srgb, var(--accent-alt) 45%, var(--accent));
+}
+
+// The card is a 3D flip: the front is the spec, the back a big playful emoji —
+// a little fun for students. Hover flips it; tapping toggles .flipped for touch.
+.offerings-subject-card {
+    // Grid so the inner fills the (equal-height) card; perspective for the flip.
+    display: grid;
+    perspective: 1000px;
+    cursor: pointer;
+    border-radius: 12px;
+}
+
+.subject-card-inner {
+    // Grid-stack the two faces in one cell; fill the card so every card is the
+    // same height whatever its content.
+    display: grid;
+    height: 100%;
+    border-radius: 12px;
+}
+
+.subject-card-front,
+.subject-card-back {
+    grid-area: 1 / 1;
+    height: 100%;
+    border-radius: 12px;
+}
+
+.subject-card-front {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 16px 16px;
+    // Prominent themed frame: a bold accent border, a thicker accent top rule,
+    // and a clear tint — so each subject reads as its own colour block.
+    border: 1.5px solid color-mix(in srgb, var(--subject-accent) 55%, var(--border));
+    border-top: 4px solid var(--subject-accent);
+    overflow: hidden;
+    background: color-mix(in srgb, var(--subject-accent) 9%, var(--surface));
+}
+
+.subject-card-back {
+    // Hidden unless the flip is enabled (see the reduced-motion gate below), so
+    // reduced-motion / no-3D users simply keep the readable front.
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    min-height: 170px;
+    padding: 16px;
+    color: #fff;
+    // Glossy: a diagonal highlight sheen over the subject-hue gradient, plus a
+    // soft inner top-light — reads like a glass tile.
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.42) 0%,
+            rgba(255, 255, 255, 0.12) 26%,
+            rgba(255, 255, 255, 0) 52%
+        ),
+        radial-gradient(
+            120% 80% at 50% 0%,
+            rgba(255, 255, 255, 0.3),
+            rgba(255, 255, 255, 0) 60%
+        ),
+        linear-gradient(
+            150deg,
+            var(--subject-accent),
+            color-mix(in srgb, var(--subject-accent) 62%, #000)
+        );
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -18px 32px rgba(0, 0, 0, 0.18);
+    transform: rotateY(180deg);
+}
+
+/* A stack of five subject images, cross-faded in turn while the card is
+   flipped — a little slideshow. The five emoji share one cell (grid-stack). */
+.subject-card-stage {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 92px;
+}
+
+.subject-card-emoji {
+    grid-area: 1 / 1;
+    font-size: 5rem;
+    line-height: 1;
+    opacity: 0;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.28));
+}
+
+.subject-card-back-label {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    /* Each image gets a 1/5 slot of the 6s loop; its animation-delay (set
+       inline per index) staggers them into a sequence. Paused until the card
+       is flipped, so it only runs when the back is actually on show. */
+    .subject-card-emoji {
+        animation: subject-image-cycle 6s infinite;
+        animation-play-state: paused;
+    }
+
+    .offerings-subject-card.flipped .subject-card-emoji {
+        animation-play-state: running;
+    }
+
+    /* Hover only on true pointing devices — on touch the :hover state sticks
+       after a tap and would block tapping to flip back. */
+    @media (hover: hover) {
+        .offerings-subject-card:hover .subject-card-emoji {
+            animation-play-state: running;
+        }
+    }
+}
+
+@keyframes subject-image-cycle {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    3% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    17% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    20% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .subject-card-inner {
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+    }
+
+    .subject-card-front,
+    .subject-card-back {
+        backface-visibility: hidden;
+    }
+
+    .subject-card-back {
+        display: flex;
+    }
+
+    .offerings-subject-card.flipped .subject-card-inner {
+        transform: rotateY(180deg);
+    }
+
+    /* Hover-flip only where hover is real; touch relies on the tap toggle so it
+       reliably flips back on the second tap. */
+    @media (hover: hover) {
+        .offerings-subject-card:hover .subject-card-inner {
+            transform: rotateY(180deg);
+        }
+    }
+}
+
+.subject-card-front .offerings-subject-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 -16px 6px;
+    padding: 12px 16px;
+    background: color-mix(in srgb, var(--subject-accent) 24%, var(--surface));
+    border-bottom: 2px solid
+        color-mix(in srgb, var(--subject-accent) 60%, var(--border));
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: color-mix(in srgb, var(--subject-accent) 82%, var(--text));
+}
+
+.offerings-subject-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    color: #fff;
+    background: var(--subject-accent);
+}
+
+/* A tidy spec table inside each subject card: aligned label column, values as
+   chips — reads like a small datasheet rather than stacked tags. */
+.subject-specs {
+    margin: 0;
+    display: grid;
+}
+
+.subject-spec {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 10px;
+    align-items: baseline;
+    padding: 8px 0;
+
+    & + & {
+        // Themed separator lines, so the rows read as part of the subject's block.
+        border-top: 1px solid
+            color-mix(in srgb, var(--subject-accent) 30%, transparent);
+    }
+
+    dt {
+        margin: 0;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+    }
+
+    dd {
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+}
+
+.subject-chip {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--subject-accent) 14%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--subject-accent) 50%, transparent);
+    color: color-mix(in srgb, var(--subject-accent) 82%, var(--text));
+}
+
+/* "How it works" numbered journey (REQ-017). */
+.offerings-journey {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    display: grid;
+}
+
+/* Icon vertically centred against the whole two-line step (title + detail),
+   with a light divider between steps. */
+.offerings-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.offerings-step:first-child {
+    padding-top: 4px;
+}
+
+.offerings-step:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.offerings-step-icon {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.offerings-step-title {
+    margin: 0 0 4px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.offerings-step-detail {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--muted);
+}
+
+.offerings-closing {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
 }
 
 .offerings-approach {
@@ -1609,10 +2034,19 @@ $note-rule: 32px;
 }
 
 .offerings-point {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
     padding: 16px;
-    border: 1px solid var(--border);
+    border: 1px solid color-mix(in srgb, #16a34a 22%, var(--border));
     border-radius: 12px;
-    background: var(--surface-alt);
+    background: color-mix(in srgb, #16a34a 5%, var(--surface));
+}
+
+.offerings-point-tick {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: #16a34a;
 }
 
 .offerings-point-title {
@@ -1669,12 +2103,25 @@ $note-rule: 32px;
     gap: 4px;
 }
 
+.calendar-tooltip {
+    max-width: 220px;
+}
+
 .calendar-tooltip li {
     display: flex;
-    align-items: center;
-    gap: 7px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 3px 7px;
     font-size: 0.75rem;
-    white-space: nowrap;
+}
+
+/* The name · subject text takes the remaining width and wraps instead of
+   pushing the tooltip off-screen. */
+.tooltip-entry {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 /* Matches the number on the day's chip, so hover and click line up. */
