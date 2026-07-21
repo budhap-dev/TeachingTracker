@@ -170,6 +170,10 @@ export function* saveStudentSaga(
         // student's classes; pull them back so the planner and student page
         // show the new name at once, not only after a reload.
         yield put(fetchSessionsRequested())
+        // A change to the fee or fee type re-derives the student's bills, so
+        // refresh payments too — otherwise the tracker shows the old basis
+        // (e.g. a now-monthly student still reading "× £X a session").
+        yield put(fetchPaymentsRequested())
     } catch (error) {
         yield put(saveStudentFailed(toSaveMessage(error)))
     }
