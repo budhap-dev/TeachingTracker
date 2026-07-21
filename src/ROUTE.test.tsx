@@ -35,26 +35,44 @@ describe('routing fallbacks', () => {
 })
 
 describe('public pages', () => {
-    it('opens the contact page from its URL with the configured details', () => {
+    it('opens the contact page from its URL with the stored details', async () => {
         window.history.pushState({}, '', '/contact')
         render(<App />)
 
         expect(
-            screen.getByRole('heading', { name: /contact us/i })
+            await screen.findByRole('heading', { name: /contact us/i })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('link', { name: siteContent.contact.email })
-        ).toHaveAttribute('href', `mailto:${siteContent.contact.email}`)
+            screen.getByRole('link', { name: 'hello@example.com' })
+        ).toHaveAttribute('href', 'mailto:hello@example.com')
         expect(
-            screen.getByRole('link', {
-                name: `Call ${siteContent.contact.phone}`,
-            })
+            screen.getByRole('link', { name: 'Call +44 7700 900000' })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('link', {
-                name: `WhatsApp ${siteContent.contact.phone}`,
-            })
+            screen.getByRole('link', { name: 'WhatsApp +44 7700 900000' })
         ).toBeInTheDocument()
+    })
+
+    it('lets the teacher edit the contact details from the page', async () => {
+        window.history.pushState({}, '', '/contact')
+        const user = userEvent.setup()
+        render(<App />)
+
+        // Auth is off in tests, so the visitor is treated as the teacher.
+        await user.click(
+            await screen.findByRole('button', { name: /edit details/i })
+        )
+        const email = screen.getByLabelText('Email')
+        await user.clear(email)
+        await user.type(email, 'new@springboard.test')
+        await user.click(screen.getByRole('button', { name: /save details/i }))
+
+        expect(
+            await screen.findByText(/contact details updated/i)
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('link', { name: 'new@springboard.test' })
+        ).toHaveAttribute('href', 'mailto:new@springboard.test')
     })
 
     it('opens the offerings page from its URL with the configured copy', () => {

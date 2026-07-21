@@ -6,6 +6,7 @@ import type {
     Student,
     Testimonial,
 } from '../data/students'
+import type { Contact } from '../data/contact'
 import {
     archiveStudent,
     fetchStudents,
@@ -13,6 +14,7 @@ import {
     upsertStudent,
 } from '../api/students'
 import { fetchPaymentsByMonth, savePayments } from '../api/payments'
+import { fetchContact, updateContact } from '../api/contact'
 import {
     deleteTestimonial as deleteTestimonialApi,
     fetchApprovedTestimonials,
@@ -79,6 +81,12 @@ import {
     deleteTestimonialRequested,
     deleteTestimonialSucceeded,
     deleteTestimonialFailed,
+    fetchContactRequested,
+    fetchContactSucceeded,
+    fetchContactFailed,
+    updateContactRequested,
+    updateContactSucceeded,
+    updateContactFailed,
 } from './store'
 
 const toMessage = (error: unknown): string =>
@@ -387,6 +395,34 @@ export function* deleteTestimonialSaga(
     }
 }
 
+/** Fetches the public contact details for the Contact page. */
+export function* loadContactSaga() {
+    try {
+        const contact: Contact = yield call(fetchContact)
+        yield put(fetchContactSucceeded(contact))
+    } catch (error) {
+        yield put(fetchContactFailed(toMessage(error)))
+    }
+}
+
+/** Saves the teacher's edits; the stored record comes back to refresh state. */
+export function* updateContactSaga(
+    action: ReturnType<typeof updateContactRequested>
+) {
+    try {
+        const contact: Contact = yield call(updateContact, action.payload)
+        yield put(updateContactSucceeded(contact))
+    } catch (error) {
+        yield put(
+            updateContactFailed(
+                error instanceof Error
+                    ? `Could not update contact details: ${error.message}`
+                    : 'Could not update contact details.'
+            )
+        )
+    }
+}
+
 /** Root saga: watches the request actions dispatched by the app. */
 export function* rootSaga() {
     yield all([
@@ -410,5 +446,7 @@ export function* rootSaga() {
         takeEvery(submitTestimonialRequested.type, submitTestimonialSaga),
         takeEvery(moderateTestimonialRequested.type, moderateTestimonialSaga),
         takeEvery(deleteTestimonialRequested.type, deleteTestimonialSaga),
+        takeLatest(fetchContactRequested.type, loadContactSaga),
+        takeEvery(updateContactRequested.type, updateContactSaga),
     ])
 }

@@ -39,6 +39,8 @@ import {
     submitTestimonialSaga,
     moderateTestimonialSaga,
     deleteTestimonialSaga,
+    loadContactSaga,
+    updateContactSaga,
 } from './sagas'
 import {
     addSessionMemberFailed,
@@ -81,6 +83,8 @@ import {
     submitTestimonialRequested,
     moderateTestimonialRequested,
     deleteTestimonialRequested,
+    fetchContactRequested,
+    updateContactRequested,
 } from './store'
 
 const students = [{ id: 1, firstName: 'Asha' }] as unknown as Student[]
@@ -523,6 +527,8 @@ describe('rootSaga', () => {
                     deleteTestimonialRequested.type,
                     deleteTestimonialSaga
                 ),
+                takeLatest(fetchContactRequested.type, loadContactSaga),
+                takeEvery(updateContactRequested.type, updateContactSaga),
             ])
         )
         expect(gen.next().done).toBe(true)

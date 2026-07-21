@@ -6,6 +6,7 @@ import type {
     Student,
     Testimonial,
 } from '../data/students'
+import type { Contact } from '../data/contact'
 
 /**
  * Test-only data. The app ships no static data — it loads students, payments
@@ -215,6 +216,12 @@ export const buildFixtureTestimonials = (): Testimonial[] => [
         submittedOn: '2026-07-15',
     },
 ]
+
+/** The public contact details, mirroring GET /contact. */
+export const buildFixtureContact = (): Contact => ({
+    email: 'hello@example.com',
+    phone: '+44 7700 900000',
+})
 
 /** Groups the fixture payments by month, mirroring GET /payments/by-month. */
 export const buildFixturePaymentsByMonth = (
