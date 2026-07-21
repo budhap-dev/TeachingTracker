@@ -38,6 +38,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # A fresh version every deploy: package.json's major.minor with the run
+      # number as the patch, so the sidebar shows it tick up on each release.
+      - name: Compute build version
+        run: |
+          base=$(node -p "require('./package.json').version.split('.').slice(0,2).join('.')")
+          echo "APP_VERSION=$base.${{ github.run_number }}" >> "$GITHUB_ENV"
+
       - name: Build (bakes in this environment's API URL + Entra config)
         run: npm run build
         env:
@@ -45,6 +52,7 @@ jobs:
           VITE_ENTRA_TENANT_ID: ${{ vars.VITE_ENTRA_TENANT_ID }}
           VITE_ENTRA_SPA_CLIENT_ID: ${{ vars.VITE_ENTRA_SPA_CLIENT_ID }}
           VITE_ENTRA_API_SCOPE: ${{ vars.VITE_ENTRA_API_SCOPE }}
+          VITE_APP_VERSION: ${{ env.APP_VERSION }}
 
       - name: Deploy to Azure Static Web Apps (${{ inputs.environment }})
         uses: Azure/static-web-apps-deploy@v1
