@@ -241,6 +241,8 @@ describe('saveStudentSaga', () => {
         // A rename refreshes denormalised session names server-side, so the
         // sagas pulls the classes back afterwards.
         expect(gen.next().value).toEqual(put(fetchSessionsRequested()))
+        // A fee/fee-type change re-derives the bills, so payments refresh too.
+        expect(gen.next().value).toEqual(put(fetchPaymentsRequested()))
         expect(gen.next().done).toBe(true)
     })
 
