@@ -113,6 +113,36 @@ export type PaymentRecord = {
     notes: string
 }
 
+/**
+ * A testimonial submitted by a family (REQ-027). Anyone can submit one from the
+ * public site; it lands as `Pending` and is only shown once the teacher moderates
+ * it to `Approved`. The public API only ever returns Approved reviews.
+ */
+export type TestimonialStatus = 'Pending' | 'Approved' | 'Rejected'
+
+/** Who left the review. */
+export type TestimonialRole = 'Parent' | 'Student'
+
+export type Testimonial = {
+    id: number
+    /** The display name the submitter gave — a first name or initials are fine. */
+    authorName: string
+    role: TestimonialRole
+    /** Optional subject the tutoring covered, e.g. "Mathematics". */
+    subject?: string
+    /** Optional school year, e.g. "10". */
+    year?: string
+    /** Star rating, 1–5. */
+    rating: number
+    /** The written experience — plain text. */
+    quote: string
+    status: TestimonialStatus
+    /** ISO date, YYYY-MM-DD, when it was submitted. */
+    submittedOn: string
+    /** ISO date the teacher approved/rejected it; absent while Pending. */
+    moderatedOn?: string
+}
+
 /** Payment records for one month with server-computed totals (/payments/by-month). */
 export type MonthlyPaymentGroup = {
     month: string

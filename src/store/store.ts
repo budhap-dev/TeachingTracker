@@ -7,8 +7,10 @@ import {
     ScheduledSession,
     SessionStatus,
     Student,
+    Testimonial,
 } from '../data/students'
 import type { StudentInput } from '../api/students'
+import type { TestimonialInput } from '../api/reviews'
 import { rootSaga } from './sagas'
 
 export type ScheduledSessionInput = Omit<ScheduledSession, 'id' | 'status'>
@@ -57,6 +59,14 @@ type StudentState = {
     scheduledSessions: ScheduledSession[]
     paymentsByMonth: MonthlyPaymentGroup[]
     hasLocalStudentChanges: boolean
+    // Testimonials (REQ-027). Approved ones back the public Reviews page;
+    // pending ones the teacher's moderation queue. Neither is part of the
+    // app's boot-time loads — each Reviews route fetches its own on mount.
+    testimonials: Testimonial[]
+    testimonialsLoading: boolean
+    pendingTestimonials: Testimonial[]
+    pendingTestimonialsLoading: boolean
+    savingTestimonial: boolean
 }
 
 /**
@@ -110,6 +120,11 @@ const createInitialState = (): StudentState => ({
     scheduledSessions: [],
     paymentsByMonth: [],
     hasLocalStudentChanges: false,
+    testimonials: [],
+    testimonialsLoading: true,
+    pendingTestimonials: [],
+    pendingTestimonialsLoading: true,
+    savingTestimonial: false,
 })
 
 const initialState = createInitialState()
@@ -456,6 +471,116 @@ const studentSlice = createSlice({
             state.savingPayment = false
             fail(state, action.payload)
         },
+        // --- Testimonials: public list (approved) ---
+        fetchTestimonialsRequested: (state) => {
+            state.testimonialsLoading = true
+        },
+        fetchTestimonialsSucceeded: (
+            state,
+            action: PayloadAction<Testimonial[]>
+        ) => {
+            state.testimonials = action.payload
+            state.testimonialsLoading = false
+        },
+        fetchTestimonialsFailed: (state, action: PayloadAction<string>) => {
+            state.testimonialsLoading = false
+            fail(state, action.payload)
+        },
+        // --- Testimonials: moderation queue (pending) ---
+        fetchPendingTestimonialsRequested: (state) => {
+            state.pendingTestimonialsLoading = true
+        },
+        fetchPendingTestimonialsSucceeded: (
+            state,
+            action: PayloadAction<Testimonial[]>
+        ) => {
+            state.pendingTestimonials = action.payload
+            state.pendingTestimonialsLoading = false
+        },
+        fetchPendingTestimonialsFailed: (
+            state,
+            action: PayloadAction<string>
+        ) => {
+            state.pendingTestimonialsLoading = false
+            fail(state, action.payload)
+        },
+        // --- Public submission ---
+        submitTestimonialRequested: {
+            reducer: (state: StudentState) => {
+                state.savingTestimonial = true
+                state.error = null
+            },
+            prepare: (input: TestimonialInput) => ({ payload: input }),
+        },
+        submitTestimonialSucceeded: (state) => {
+            state.savingTestimonial = false
+            state.notice = {
+                kind: 'success',
+                message:
+                    'Thank you — your review will appear once it has been approved.',
+            }
+        },
+        submitTestimonialFailed: (state, action: PayloadAction<string>) => {
+            state.savingTestimonial = false
+            fail(state, action.payload)
+        },
+        // --- Moderation: approve / reject ---
+        moderateTestimonialRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (input: {
+                id: number
+                status: 'Approved' | 'Rejected'
+            }) => ({ payload: input }),
+        },
+        moderateTestimonialSucceeded: (
+            state,
+            action: PayloadAction<Testimonial>
+        ) => {
+            const moderated = action.payload
+            // It leaves the queue either way; an approved one joins the public
+            // list at the front so it shows without a re-fetch.
+            state.pendingTestimonials = state.pendingTestimonials.filter(
+                (item) => item.id !== moderated.id
+            )
+            if (moderated.status === 'Approved') {
+                state.testimonials.unshift(moderated)
+            }
+            state.notice = {
+                kind: 'success',
+                message:
+                    moderated.status === 'Approved'
+                        ? 'Review approved and published.'
+                        : 'Review rejected.',
+            }
+        },
+        moderateTestimonialFailed: (state, action: PayloadAction<string>) => {
+            fail(state, action.payload)
+        },
+        // --- Moderation: delete outright ---
+        deleteTestimonialRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (id: number) => ({ payload: id }),
+        },
+        deleteTestimonialSucceeded: (
+            state,
+            action: PayloadAction<number>
+        ) => {
+            const id = action.payload
+            state.pendingTestimonials = state.pendingTestimonials.filter(
+                (item) => item.id !== id
+            )
+            state.testimonials = state.testimonials.filter(
+                (item) => item.id !== id
+            )
+            state.notice = { kind: 'success', message: 'Review deleted.' }
+        },
+        deleteTestimonialFailed: (state, action: PayloadAction<string>) => {
+            fail(state, action.payload)
+        },
     },
 })
 
@@ -499,6 +624,21 @@ export const {
     savePaymentRequested,
     savePaymentSucceeded,
     savePaymentFailed,
+    fetchTestimonialsRequested,
+    fetchTestimonialsSucceeded,
+    fetchTestimonialsFailed,
+    fetchPendingTestimonialsRequested,
+    fetchPendingTestimonialsSucceeded,
+    fetchPendingTestimonialsFailed,
+    submitTestimonialRequested,
+    submitTestimonialSucceeded,
+    submitTestimonialFailed,
+    moderateTestimonialRequested,
+    moderateTestimonialSucceeded,
+    moderateTestimonialFailed,
+    deleteTestimonialRequested,
+    deleteTestimonialSucceeded,
+    deleteTestimonialFailed,
 } = studentSlice.actions
 
 /** Exported for tests: lets reducers be exercised without the saga middleware. */

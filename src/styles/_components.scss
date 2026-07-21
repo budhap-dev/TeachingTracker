@@ -4,6 +4,142 @@
     -webkit-overflow-scrolling: touch;
 }
 
+/* Testimonials (REQ-027): approved reviews as cards on the public page, and the
+   same card shape with actions in the teacher's moderation queue. */
+.testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.testimonial-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+
+    blockquote {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: var(--text);
+    }
+
+    blockquote::before {
+        content: '\201C';
+        margin-right: 2px;
+        color: var(--muted);
+    }
+
+    blockquote::after {
+        content: '\201D';
+        margin-left: 2px;
+        color: var(--muted);
+    }
+
+    figcaption {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        strong {
+            font-size: 0.95rem;
+        }
+
+        span,
+        small {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+    }
+}
+
+.moderation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* Public submit form: fields stack, the review box and consent line run full
+   width. Kept simple — one column reads fine on a public page. */
+.review-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+    max-width: 640px;
+
+    .review-quote,
+    .review-rating,
+    .review-submit,
+    .review-consent,
+    .review-error {
+        grid-column: 1 / -1;
+    }
+}
+
+.review-rating {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    span {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+}
+
+.star-buttons {
+    display: inline-flex;
+    gap: 4px;
+
+    .star {
+        border: none;
+        background: none;
+        padding: 0 2px;
+        font-size: 1.6rem;
+        line-height: 1;
+        cursor: pointer;
+        color: var(--border);
+
+        &.on {
+            color: #f59e0b;
+        }
+    }
+}
+
+.review-consent {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.review-error {
+    margin: 0;
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.review-submit {
+    justify-self: start;
+}
+
+/* The honeypot is for bots only — kept in the DOM but out of sight and out of
+   the tab order. */
+.review-website {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
 .snapshot-table {
     width: 100%;
     min-width: 720px;

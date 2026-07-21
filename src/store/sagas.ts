@@ -4,6 +4,7 @@ import type {
     PaymentRecord,
     ScheduledSession,
     Student,
+    Testimonial,
 } from '../data/students'
 import {
     archiveStudent,
@@ -12,6 +13,13 @@ import {
     upsertStudent,
 } from '../api/students'
 import { fetchPaymentsByMonth, savePayments } from '../api/payments'
+import {
+    deleteTestimonial as deleteTestimonialApi,
+    fetchApprovedTestimonials,
+    fetchPendingTestimonials,
+    setTestimonialStatus,
+    submitTestimonial,
+} from '../api/reviews'
 import {
     addSessionMember,
     createSession,
@@ -56,6 +64,21 @@ import {
     editSessionFailed,
     editSessionRequested,
     editSessionSucceeded,
+    fetchTestimonialsRequested,
+    fetchTestimonialsSucceeded,
+    fetchTestimonialsFailed,
+    fetchPendingTestimonialsRequested,
+    fetchPendingTestimonialsSucceeded,
+    fetchPendingTestimonialsFailed,
+    submitTestimonialRequested,
+    submitTestimonialSucceeded,
+    submitTestimonialFailed,
+    moderateTestimonialRequested,
+    moderateTestimonialSucceeded,
+    moderateTestimonialFailed,
+    deleteTestimonialRequested,
+    deleteTestimonialSucceeded,
+    deleteTestimonialFailed,
 } from './store'
 
 const toMessage = (error: unknown): string =>
@@ -280,6 +303,86 @@ export function* savePaymentSaga(
     }
 }
 
+/** Fetches approved reviews for the public Reviews page. */
+export function* loadTestimonialsSaga() {
+    try {
+        const testimonials: Testimonial[] = yield call(
+            fetchApprovedTestimonials
+        )
+        yield put(fetchTestimonialsSucceeded(testimonials))
+    } catch (error) {
+        yield put(fetchTestimonialsFailed(toMessage(error)))
+    }
+}
+
+/** Fetches pending reviews for the teacher's moderation queue. */
+export function* loadPendingTestimonialsSaga() {
+    try {
+        const testimonials: Testimonial[] = yield call(fetchPendingTestimonials)
+        yield put(fetchPendingTestimonialsSucceeded(testimonials))
+    } catch (error) {
+        yield put(fetchPendingTestimonialsFailed(toMessage(error)))
+    }
+}
+
+/** Submits a public review; it lands as Pending for the teacher to moderate. */
+export function* submitTestimonialSaga(
+    action: ReturnType<typeof submitTestimonialRequested>
+) {
+    try {
+        yield call(submitTestimonial, action.payload)
+        yield put(submitTestimonialSucceeded())
+    } catch (error) {
+        yield put(
+            submitTestimonialFailed(
+                error instanceof Error
+                    ? `Could not submit your review: ${error.message}`
+                    : 'Could not submit your review.'
+            )
+        )
+    }
+}
+
+/** Approves or rejects a review; the moderated record comes back. */
+export function* moderateTestimonialSaga(
+    action: ReturnType<typeof moderateTestimonialRequested>
+) {
+    try {
+        const testimonial: Testimonial = yield call(
+            setTestimonialStatus,
+            action.payload.id,
+            action.payload.status
+        )
+        yield put(moderateTestimonialSucceeded(testimonial))
+    } catch (error) {
+        yield put(
+            moderateTestimonialFailed(
+                error instanceof Error
+                    ? `Could not update the review: ${error.message}`
+                    : 'Could not update the review.'
+            )
+        )
+    }
+}
+
+/** Deletes a review outright; the removed id comes back to drop from state. */
+export function* deleteTestimonialSaga(
+    action: ReturnType<typeof deleteTestimonialRequested>
+) {
+    try {
+        const id: number = yield call(deleteTestimonialApi, action.payload)
+        yield put(deleteTestimonialSucceeded(id))
+    } catch (error) {
+        yield put(
+            deleteTestimonialFailed(
+                error instanceof Error
+                    ? `Could not delete the review: ${error.message}`
+                    : 'Could not delete the review.'
+            )
+        )
+    }
+}
+
 /** Root saga: watches the request actions dispatched by the app. */
 export function* rootSaga() {
     yield all([
@@ -295,5 +398,13 @@ export function* rootSaga() {
         takeEvery(deleteSessionRequested.type, deleteSessionSaga),
         takeEvery(editSessionRequested.type, editSessionSaga),
         takeEvery(savePaymentRequested.type, savePaymentSaga),
+        takeLatest(fetchTestimonialsRequested.type, loadTestimonialsSaga),
+        takeLatest(
+            fetchPendingTestimonialsRequested.type,
+            loadPendingTestimonialsSaga
+        ),
+        takeEvery(submitTestimonialRequested.type, submitTestimonialSaga),
+        takeEvery(moderateTestimonialRequested.type, moderateTestimonialSaga),
+        takeEvery(deleteTestimonialRequested.type, deleteTestimonialSaga),
     ])
 }

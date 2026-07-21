@@ -34,6 +34,11 @@ import {
     restoreStudentSaga,
     saveStudentSaga,
     setSessionStatusSaga,
+    loadTestimonialsSaga,
+    loadPendingTestimonialsSaga,
+    submitTestimonialSaga,
+    moderateTestimonialSaga,
+    deleteTestimonialSaga,
 } from './sagas'
 import {
     addSessionMemberFailed,
@@ -71,6 +76,11 @@ import {
     deleteSessionRequested,
     deleteSessionSucceeded,
     deleteSessionFailed,
+    fetchTestimonialsRequested,
+    fetchPendingTestimonialsRequested,
+    submitTestimonialRequested,
+    moderateTestimonialRequested,
+    deleteTestimonialRequested,
 } from './store'
 
 const students = [{ id: 1, firstName: 'Asha' }] as unknown as Student[]
@@ -491,6 +501,26 @@ describe('rootSaga', () => {
                 takeEvery(deleteSessionRequested.type, deleteSessionSaga),
                 takeEvery(editSessionRequested.type, editSessionSaga),
                 takeEvery(savePaymentRequested.type, savePaymentSaga),
+                takeLatest(
+                    fetchTestimonialsRequested.type,
+                    loadTestimonialsSaga
+                ),
+                takeLatest(
+                    fetchPendingTestimonialsRequested.type,
+                    loadPendingTestimonialsSaga
+                ),
+                takeEvery(
+                    submitTestimonialRequested.type,
+                    submitTestimonialSaga
+                ),
+                takeEvery(
+                    moderateTestimonialRequested.type,
+                    moderateTestimonialSaga
+                ),
+                takeEvery(
+                    deleteTestimonialRequested.type,
+                    deleteTestimonialSaga
+                ),
             ])
         )
         expect(gen.next().done).toBe(true)
