@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-015`**
+**Next id: `REQ-028`**
 
 ## Legend
 
@@ -83,8 +83,22 @@ XS is an afternoon, XL is a project.
 | 10 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
 | 11 | 🚧 | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | — (built 2026-07-19) |
 | 12 | 🚧 | [REQ-014 — Progress per subject](#req-014--progress-is-tracked-per-subject) | M | both | — (built 2026-07-17) |
+| — | | **Growth epics — turn the public pages into a way to win students** (added 2026-07-21) | | | |
+| 13 | 🔲 | [REQ-015 — Offerings hero and a single call-to-action](#req-015--offerings-hero-and-a-single-call-to-action) | S | frontend | — |
+| 14 | 🔲 | [REQ-016 — Subjects as rich cards](#req-016--subjects-as-rich-cards) | M | both | — |
+| 15 | 🔲 | [REQ-017 — How it works, as a numbered journey](#req-017--how-it-works-as-a-numbered-journey) | XS | frontend | — |
+| 16 | 🔲 | [REQ-018 — Public enquiry form](#req-018--public-enquiry-form) | M | both | REQ-009 |
+| 17 | 🔲 | [REQ-019 — Leads inbox](#req-019--leads-inbox) | M | both | REQ-018 |
+| 18 | 🔲 | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | REQ-008, REQ-009 |
+| 19 | 🔲 | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | REQ-008 |
+| 20 | 🔲 | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | REQ-008 |
+| 21 | 🔲 | [REQ-023 — Public pages are discoverable (SEO / OG)](#req-023--public-pages-are-discoverable-seo--og) | M | frontend | — |
+| 22 | 🔲 | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
+| 23 | 🔲 | [REQ-025 — FAQ](#req-025--faq) | S | both | REQ-008 |
+| 24 | 🔲 | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | REQ-009 |
+| 25 | 🔲 | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
 
-**Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–5 are done; REQ-003/REQ-004 are in flight (prod enforcement after the dev soak).
+**Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–5 are done; REQ-003/REQ-004 are in flight (prod enforcement after the dev soak). The growth epics (REQ-015→026) are new: REQ-015/016/017/023 are shippable now against the current copy; the enquiry/leads/testimonials path (REQ-018/019/020) waits on **REQ-009** durable storage, and the content-driven pieces (REQ-020/021/022/025) land through **REQ-008**'s in-app editor.
 
 **Three things this order is trying to respect:**
 
@@ -684,3 +698,357 @@ reflects where they actually are, not one blended number.
 - Same day: "Mode" renamed to **"Study mode"** everywhere user-facing, and
   the 'Both' value displays as **"Online + F2F"** (stored API value stays
   'Both' — display only).
+
+<!-- ── Growth epics (added 2026-07-21) ────────────────────────────────────────
+     Turn the two thin public pages (Offerings, Contact) into a way to win new
+     students: a conversion-shaped Offerings page, lead capture, proof, pricing
+     and discoverability. Companion brief (promotion playbook + section map +
+     wireframe): https://claude.ai/code/artifact/c4340d52-d54b-4ca2-8693-28f5ed2faa41
+     Reuses REQ-008 (in-app content editor) and REQ-009 (durable store) as deps. -->
+
+## REQ-015 — Offerings hero and a single call-to-action
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S · **Depends on:** REQ-006 (done)
+
+**Story**
+As a visiting parent, I want the Offerings page to open with a clear value
+proposition and one obvious call-to-action, so that I understand the offer and
+know exactly how to start.
+
+**Acceptance criteria**
+
+- [ ] Hero at the top of Offerings: headline value proposition, one-line
+      sub-head, primary CTA "Book a free assessment", secondary "See subjects".
+- [ ] The primary CTA is above the fold on mobile and routes to the enquiry
+      flow (REQ-018); until that exists, it links to Contact us (REQ-007).
+- [ ] The CTA repeats as a sticky/again-at-the-bottom action so the page never
+      dead-ends.
+- [ ] Responsive and themed, consistent with the rest of the app.
+- [ ] Frontend coverage stays 100%.
+
+**Notes**
+
+- Hero copy is content, so it belongs in the site-content payload (REQ-008
+  shape), not hardcoded markup — but a placeholder string is fine to ship first.
+
+## REQ-016 — Subjects as rich cards
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+
+**Story**
+As a parent, I want each subject shown as a card with the level and exam boards
+covered, so that I can see my child's specific needs are catered for.
+
+**Acceptance criteria**
+
+- [ ] Each subject renders as a card: subject, key stage(s) (KS3 / GCSE), exam
+      boards, and delivery mode(s) — replacing the flat pill list.
+- [ ] The extra per-subject metadata is served by the API (model + seed), not
+      hardcoded — a subject with no metadata still renders cleanly.
+- [ ] The empty / "coming soon" state is preserved.
+- [ ] Frontend coverage stays 100%; API deploys before the frontend.
+
+**Notes**
+
+- Adds fields to the offerings content shape; folds naturally into REQ-008's
+  "subjects: add / rename / remove / reorder" editor when that lands.
+
+## REQ-017 — How it works, as a numbered journey
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** XS
+
+**Story**
+As a parent, I want a clear "how it works" journey, so that I know what happens
+after I get in touch.
+
+**Acceptance criteria**
+
+- [ ] The existing four "approach" points are reframed as a numbered path:
+      Enquire → Free assessment → Matched plan → Weekly sessions with notes.
+- [ ] Reuses the current approach-point content; no new data needed.
+- [ ] Responsive and themed.
+- [ ] Frontend coverage stays 100%.
+
+## REQ-018 — Public enquiry form
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M · **Blocked by:** REQ-009 (durable store)
+
+**Story**
+As a parent, I want to submit an enquiry from the site, so that I can start
+without having to compose a cold email.
+
+**Acceptance criteria**
+
+- [ ] Form fields: name, child's year, subject(s), goal, preferred mode, and a
+      contact (email or phone) — with validation and clear errors.
+- [ ] Lives at a public `/enquire` route; every CTA on the public pages targets it.
+- [ ] Submitting creates a lead via `POST /leads` and shows a success confirmation.
+- [ ] Basic spam protection (honeypot field and/or rate limit).
+- [ ] `POST /leads` is **public**; reading leads is teacher-only (REQ-019).
+- [ ] Frontend coverage stays 100%; API deploys before the frontend.
+
+**Notes**
+
+- ⚠️ **Needs durable storage** (REQ-009) or leads vanish on restart/scale-out.
+  Interim option: have the endpoint **email** the enquiry to the teacher instead
+  of persisting it, so the form is useful before REQ-009 lands.
+- A lead is not a student — it's a prospect. Converting one is REQ-019.
+
+## REQ-019 — Leads inbox
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M · **Blocked by:** REQ-018
+
+**Story**
+As the teacher, I want new enquiries to appear in a Leads inbox, so that I can
+follow them up and convert the good ones into students.
+
+**Acceptance criteria**
+
+- [ ] Teacher-only `/leads` route (rides REQ-003 gating), newest first.
+- [ ] Each lead shows what was submitted and a status: New · Contacted · Converted.
+- [ ] "Convert to student" pre-fills the add-student form from the lead's details.
+- [ ] The open-enquiry count surfaces on the dashboard.
+- [ ] `GET /leads` and status updates are teacher-only and rejected when unauthenticated.
+- [ ] Frontend coverage stays 100%; API deploys before the frontend.
+
+## REQ-020 — Testimonials and outcomes
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M · **Depends on:** REQ-008 (content), REQ-009 (store)
+
+**Story**
+As a parent, I want to see testimonials and real outcomes, so that I trust this
+tutor with my child.
+
+**Acceptance criteria**
+
+- [ ] Testimonials section: quote, attribution (name / relation), optional result.
+- [ ] An outcomes strip: e.g. students taught, sessions delivered, average
+      progress — sourced from real app data where possible, not invented.
+- [ ] Testimonial content is teacher-editable via REQ-008; nothing hardcoded.
+- [ ] Frontend coverage stays 100%.
+
+**Notes**
+
+- ⚠️ **Testimonials must be real and used with permission** — publishing invented
+  reviews would mislead prospective families (same caveat noted on REQ-008).
+- **Split:** the *testimonial* half of this story is superseded by **REQ-027**,
+  which lets families submit their own reviews for teacher moderation (a stronger
+  source of real, permissioned testimonials than teacher-typed copy). What remains
+  here is the **outcomes strip** (students taught / sessions / average progress
+  from live data). Keep this story for that; REQ-027 owns the testimonial cards.
+
+## REQ-021 — Tutor bio and safeguarding
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content)
+
+**Story**
+As a parent, I want a tutor bio with credentials and safeguarding information,
+so that I feel safe choosing this service.
+
+**Acceptance criteria**
+
+- [ ] Bio section: who the tutor is, qualifications, experience, optional photo.
+- [ ] A DBS-checked indicator and a short safeguarding statement.
+- [ ] Content is teacher-editable via REQ-008.
+- [ ] Frontend coverage stays 100%.
+
+## REQ-022 — Transparent pricing
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content)
+
+**Story**
+As a parent, I want to see pricing up front, so that I can decide whether to
+enquire without having to ask.
+
+**Acceptance criteria**
+
+- [ ] A pricing section showing the per-session and monthly-retainer options —
+      mirroring the app's existing fee types — with from-prices and what's included.
+- [ ] Optional bursary / concession note.
+- [ ] Pricing is teacher-editable via REQ-008.
+- [ ] Frontend coverage stays 100%.
+
+**Notes**
+
+- The fee types (per-session / monthly / none) already exist in the model, so the
+  public pricing language and the billing behaviour stay consistent.
+
+## REQ-023 — Public pages are discoverable (SEO / OG)
+
+**Status:** 🔲 Not started · **Impact:** frontend (+ infra if prerendered) · **Effort:** M
+
+**Story**
+As a family searching online, I want the public pages to have proper titles,
+descriptions and share previews, so that they rank locally and links look good
+when shared.
+
+**Acceptance criteria**
+
+- [ ] Per-page `<title>`, meta description, and Open Graph / Twitter card tags
+      on every public route (Home, Offerings, Pricing, Contact, Enquire).
+- [ ] `sitemap.xml` and `robots.txt` present.
+- [ ] Local, intent-led keywords in public headings and copy.
+- [ ] Public routes are crawlable — SSR/prerender, or static meta injection at
+      build, so the tags aren't only set after the SPA hydrates.
+
+**Notes**
+
+- The app is a client-rendered SPA; crawlers and link unfurlers may not run JS,
+  so meta injected only at runtime can be missed — hence the prerender note.
+
+## REQ-024 — Public Home landing page
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M · **Relates to:** REQ-003
+
+**Story**
+As a visitor, I want a public Home landing page, so that arriving at the site
+root shows the pitch, not the teacher dashboard behind a sign-in.
+
+**Acceptance criteria**
+
+- [ ] The unauthenticated root renders a marketing home (hero, proof, CTA); the
+      teacher dashboard moves behind auth (e.g. `/app`).
+- [ ] Home links onward to Offerings, Pricing, Testimonials and Enquire.
+- [ ] A signed-in teacher still lands on their dashboard.
+- [ ] Frontend coverage stays 100%.
+
+**Notes**
+
+- Fits REQ-003's public/teacher split — this is the public front door that split
+  currently lacks (today `*` redirects to the teacher dashboard).
+
+## REQ-025 — FAQ
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content)
+
+**Story**
+As a parent, I want an FAQ, so that the usual questions are answered before I
+have to ask them.
+
+**Acceptance criteria**
+
+- [ ] An accordion FAQ on the public pages, content-driven (teacher-editable via
+      REQ-008).
+- [ ] Each answer can link to the enquiry CTA.
+- [ ] Frontend coverage stays 100%.
+
+## REQ-026 — Refer a family
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** S · **Blocked by:** REQ-009 (store)
+
+**Story**
+As a current parent, I want to refer another family in one tap, so that
+recommending Springboard is effortless.
+
+**Acceptance criteria**
+
+- [ ] A shareable referral link, and a gentle "know another family?" prompt after
+      a positive touchpoint.
+- [ ] Referred enquiries are attributable back to the referrer (feeds REQ-019).
+- [ ] Frontend coverage stays 100%; API deploys before the frontend.
+
+**Notes**
+
+- Word of mouth is the strongest channel in tutoring; this makes it a one-tap
+  action instead of a favour a parent has to remember to do.
+
+## REQ-027 — Families submit testimonials; teacher moderates; approved show as cards
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** L · **Blocked by:** REQ-009 (durable store) · **Relates to:** REQ-003 (moderation gating), REQ-020 (supersedes its testimonial half)
+
+**Story**
+As a past or ongoing parent or student, I want to share my experience for the
+teacher to review, so that prospective families can read real, permissioned
+reviews. And as the teacher, I want to approve or reject each submission before
+anything is shown publicly, so that only genuine, appropriate reviews appear on
+the portal.
+
+**Decisions** _(made 2026-07-21)_
+
+- **A review carries a 1–5 star rating and a written quote.** Cards show both.
+- **Attribution:** name + role (**Parent** / **Student**), with **optional**
+  subject and year — e.g. "Sarah — Parent of a Year 10 Maths student", degrading
+  gracefully to "Sarah — Parent" when the optional detail is left blank.
+- **One dedicated public `/reviews` page** holds *both* the approved cards and
+  the submit form — no separate entry on Offerings.
+- **Moderation is the gate:** every submission starts `Pending` and is invisible
+  publicly until the teacher sets it `Approved`; `Rejected` never shows.
+- **User-generated, so not part of REQ-008.** These live in their own store and
+  moderation flow, separate from the teacher-authored site content.
+
+**Model** — new `Testimonial`
+
+- `id`, `authorName` (required), `role` (`Parent` | `Student`, required),
+  `subject?`, `year?`, `rating` (integer 1–5, required), `quote` (required,
+  length-capped, **plain text only**), `status` (`Pending` | `Approved` |
+  `Rejected`, default `Pending`), `submittedOn`, `moderatedOn?`.
+- No link to a real student record — attribution is only what the submitter types.
+
+**Endpoints**
+
+- `POST /testimonials` — **public**; creates a `Pending` review (honeypot +
+  validation + rate limit). Responds with a thank-you, not the stored record.
+- `GET /testimonials` — **public**; returns **`Approved` only**.
+- `GET /testimonials?status=pending` — **teacher-only**; moderation queue.
+- `PUT /testimonials/{id}` — **teacher-only**; set `Approved` / `Rejected`
+  (stamps `moderatedOn`).
+- `DELETE /testimonials/{id}` — **teacher-only**; remove spam/abuse entirely.
+
+**Acceptance criteria**
+
+_Submission (public)_
+
+- [ ] A public `/reviews` page shows approved reviews as cards **and** holds a
+      "Share your experience" form.
+- [ ] Form fields: name (required), role Parent/Student (required), subject
+      (optional), year (optional), 1–5 star rating (required), quote (required,
+      max length) — validated with clear inline errors.
+- [ ] Submitting `POST`s to `/testimonials`, stores `Pending`, and shows a
+      thank-you explaining it appears once the teacher approves it.
+- [ ] Honeypot field + basic rate limiting; a consent-to-publish line in the copy.
+
+_Display (public)_
+
+- [ ] Approved reviews render as cards: quote, star rating, and attribution that
+      composes from role + optional subject/year, degrading gracefully.
+- [ ] `GET /testimonials` returns approved only; pending/rejected are never
+      publicly retrievable.
+- [ ] A friendly empty state before any review is approved.
+
+_Moderation (teacher)_
+
+- [ ] Teacher-only Reviews queue (rides REQ-003 gating), newest first, showing
+      each pending submission in full with **Approve** / **Reject** / **Delete**.
+- [ ] Approving publishes it (stamps `moderatedOn`); rejecting/deleting keeps it
+      off the public page.
+- [ ] A pending-count badge (dashboard or nav) so new submissions get noticed.
+- [ ] The pending queue and all approve/reject/delete calls are teacher-only and
+      rejected by the **API** when unauthenticated — not merely hidden in the UI.
+
+_Cross-cutting_
+
+- [ ] Persisted durably (survives restart/scale-out), per environment; seed
+      carries a couple of approved reviews + one pending so the state is visible.
+- [ ] OpenAPI updated; backend lint/tsc clean; **API deploys before the frontend**.
+- [ ] Frontend coverage stays 100%.
+
+**Notes**
+
+- ⚠️ **Needs durable storage (REQ-009).** Pending/approved reviews must not vanish
+  on restart. The backend's `TableStore` already exists, so this can land on Table
+  Storage now (a new `testimonials` table) without waiting on a wider DB migration
+  — build against `MemoryStore` for dev, `TableStore` for prod, same as today.
+- ⚠️ **Public write is an abuse surface.** Moderation is the primary control
+  (nothing shows unapproved); back it with a honeypot, a rate limit, a quote
+  length cap, and **plain-text-only** storage/rendering (no HTML) to rule out
+  stored XSS on a public page.
+- **GDPR:** a review is personal data the submitter volunteered; the `DELETE`
+  endpoint is the erasure path, and the form must state that submitting grants
+  permission to publish. No PII beyond the quote text is collected.
+- Supersedes the *testimonial* half of **REQ-020** (teacher-typed) with real,
+  user-submitted, moderated reviews; REQ-020 retains only the outcomes strip.
+- Nav: a public **Reviews** item, and a teacher-only **Reviews** moderation view
+  (or fold moderation into a shared "inbox" alongside REQ-019 leads).
+- ❓ Open: may the teacher lightly edit an approved review (fix a typo) before it
+  publishes, or is it approve-as-submitted? Assumed **approve-as-submitted** for a
+  first cut — deletion handles anything not publishable.
