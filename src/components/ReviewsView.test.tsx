@@ -60,8 +60,12 @@ describe('ReviewsView', () => {
         await user.type(screen.getByLabelText('Your name'), 'Jo')
         await user.click(screen.getByRole('combobox', { name: /you are a/i }))
         await user.click(screen.getByRole('option', { name: 'Student' }))
-        await user.type(screen.getByLabelText(/subject/i), 'Physics')
-        await user.type(screen.getByLabelText(/year/i), '11')
+        await user.click(screen.getByRole('combobox', { name: /subject/i }))
+        await user.click(screen.getByRole('option', { name: 'Physics' }))
+        // Multi-select keeps the menu open — close it before the next field.
+        await user.keyboard('{Escape}')
+        await user.click(screen.getByRole('combobox', { name: /year/i }))
+        await user.click(screen.getByRole('option', { name: 'Year 11' }))
         await user.click(screen.getByRole('button', { name: '5 Stars' }))
         await user.type(screen.getByLabelText('Your review'), 'Superb lessons.')
         // Fill the honeypot to exercise its handler; the API drops these.

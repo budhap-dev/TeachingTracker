@@ -59,11 +59,84 @@
     }
 }
 
+/* Public review cards get per-card variety: a rotating hue drives the spine,
+   the quotation marks, the name and the stars, and alternate cards lift the
+   accent to a top bar and italicise — so a wall of reviews reads lively, not
+   uniform. (The moderation queue keeps the plain card.) */
+.testimonial-card.review {
+    background: color-mix(in srgb, var(--card-accent) 8%, var(--surface));
+    border-color: color-mix(in srgb, var(--card-accent) 30%, var(--border));
+    border-left: 5px solid var(--card-accent);
+
+    blockquote::before,
+    blockquote::after {
+        color: var(--card-accent);
+    }
+
+    figcaption strong {
+        color: var(--card-accent);
+    }
+
+    .MuiRating-iconFilled {
+        color: var(--card-accent);
+    }
+}
+
+.testimonial-card.review:nth-child(even) {
+    border-left: 1px solid
+        color-mix(in srgb, var(--card-accent) 30%, var(--border));
+    border-top: 5px solid var(--card-accent);
+
+    blockquote {
+        font-style: italic;
+    }
+}
+
+.testimonial-card.review:nth-child(6n + 1) {
+    --card-accent: #2563eb;
+}
+.testimonial-card.review:nth-child(6n + 2) {
+    --card-accent: #0d9488;
+}
+.testimonial-card.review:nth-child(6n + 3) {
+    --card-accent: #7c3aed;
+}
+.testimonial-card.review:nth-child(6n + 4) {
+    --card-accent: #16a34a;
+}
+.testimonial-card.review:nth-child(6n + 5) {
+    --card-accent: #d97706;
+}
+.testimonial-card.review:nth-child(6n + 6) {
+    --card-accent: #db2777;
+}
+
 .moderation-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 4px;
+}
+
+/* A flagged review (REQ-028): an amber warning strip and a warm-tinted card, so
+   a possibly-offensive submission stands out in the queue. It's a hint only —
+   nothing publishes without the teacher approving it. */
+.testimonial-card.flagged {
+    border-color: color-mix(in srgb, #d97706 55%, var(--border));
+    background: color-mix(in srgb, #d97706 8%, var(--surface));
+}
+
+.testimonial-flag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: color-mix(in srgb, #d97706 16%, var(--surface));
+    color: #b45309;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 /* Public submit form: fields stack, the review box and consent line run full

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ReviewModerationView } from './ReviewModerationView'
@@ -15,31 +15,74 @@ const pending: Testimonial = {
     submittedOn: '2026-07-15',
 }
 
+const published: Testimonial = {
+    id: 1,
+    authorName: 'Nadia D.',
+    role: 'Parent',
+    subject: 'Mathematics',
+    rating: 5,
+    quote: 'Wonderful tutor.',
+    status: 'Approved',
+    submittedOn: '2026-05-12',
+    moderatedOn: '2026-05-13',
+}
+
+const renderView = (
+    overrides: Partial<Parameters<typeof ReviewModerationView>[0]> = {}
+) =>
+    render(
+        <ReviewModerationView
+            pending={[]}
+            published={[]}
+            onApprove={vi.fn()}
+            onReject={vi.fn()}
+            onDelete={vi.fn()}
+            {...overrides}
+        />
+    )
+
 describe('ReviewModerationView', () => {
-    it('shows an empty state when nothing is waiting', () => {
-        render(
-            <ReviewModerationView
-                pending={[]}
-                onApprove={vi.fn()}
-                onReject={vi.fn()}
-                onDelete={vi.fn()}
-            />
-        )
+    it('shows empty states when nothing is waiting or published', () => {
+        renderView()
         expect(screen.getByText(/no reviews waiting/i)).toBeInTheDocument()
+        expect(
+            screen.getByText(/no published reviews yet/i)
+        ).toBeInTheDocument()
     })
 
     it('includes the year in the attribution when present', () => {
-        render(
+        renderView({ pending: [{ ...pending, year: '9' }] })
+        expect(
+            screen.getByText('Parent · Chemistry · Year 9')
+        ).toBeInTheDocument()
+    })
+
+    it('badges a flagged review and leaves a clean one unbadged', () => {
+        const { rerender } = render(
             <ReviewModerationView
-                pending={[{ ...pending, year: '9' }]}
+                pending={[{ ...pending, flagged: true }]}
+                published={[]}
                 onApprove={vi.fn()}
                 onReject={vi.fn()}
                 onDelete={vi.fn()}
             />
         )
         expect(
-            screen.getByText('Parent · Chemistry · Year 9')
+            screen.getByText(/check for offensive language/i)
         ).toBeInTheDocument()
+
+        rerender(
+            <ReviewModerationView
+                pending={[pending]}
+                published={[]}
+                onApprove={vi.fn()}
+                onReject={vi.fn()}
+                onDelete={vi.fn()}
+            />
+        )
+        expect(
+            screen.queryByText(/check for offensive language/i)
+        ).not.toBeInTheDocument()
     })
 
     it('lists a pending review and wires each action to its id', async () => {
@@ -48,14 +91,7 @@ describe('ReviewModerationView', () => {
         const onDelete = vi.fn()
         const user = userEvent.setup()
 
-        render(
-            <ReviewModerationView
-                pending={[pending]}
-                onApprove={onApprove}
-                onReject={onReject}
-                onDelete={onDelete}
-            />
-        )
+        renderView({ pending: [pending], onApprove, onReject, onDelete })
 
         expect(screen.getByText('Reliable and patient.')).toBeInTheDocument()
         expect(screen.getByText('Parent · Chemistry')).toBeInTheDocument()
@@ -63,10 +99,65 @@ describe('ReviewModerationView', () => {
 
         await user.click(screen.getByRole('button', { name: /approve/i }))
         await user.click(screen.getByRole('button', { name: /reject/i }))
-        await user.click(screen.getByRole('button', { name: /delete/i }))
+        // Delete asks first; confirming in the dialog removes it.
+        await user.click(screen.getByRole('button', { name: 'Delete' }))
+        await user.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: /delete permanently/i,
+            })
+        )
 
         expect(onApprove).toHaveBeenCalledWith(3)
         expect(onReject).toHaveBeenCalledWith(3)
         expect(onDelete).toHaveBeenCalledWith(3)
+    })
+
+    it('lets the teacher delete a published review after confirming', async () => {
+        const onDelete = vi.fn()
+        const user = userEvent.setup()
+
+        renderView({ published: [published], onDelete })
+
+        expect(screen.getByText('Wonderful tutor.')).toBeInTheDocument()
+        // Only the published card has actions here (pending is empty).
+        await user.click(screen.getByRole('button', { name: 'Delete' }))
+        await user.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: /delete permanently/i,
+            })
+        )
+        expect(onDelete).toHaveBeenCalledWith(1)
+    })
+
+    it('cancelling the delete dialog keeps the review to approve later', async () => {
+        const onDelete = vi.fn()
+        const user = userEvent.setup()
+
+        renderView({ pending: [pending], onDelete })
+
+        await user.click(screen.getByRole('button', { name: 'Delete' }))
+        await user.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: /cancel/i,
+            })
+        )
+
+        expect(onDelete).not.toHaveBeenCalled()
+        // The review is still there, ready to approve.
+        expect(screen.getByText('Reliable and patient.')).toBeInTheDocument()
+    })
+
+    it('keeps the two lists separate', () => {
+        renderView({ pending: [pending], published: [published] })
+        // One Approve (pending only) and two Deletes (pending + published).
+        expect(
+            screen.getAllByRole('button', { name: /approve/i })
+        ).toHaveLength(1)
+        expect(
+            screen.getAllByRole('button', { name: /delete/i })
+        ).toHaveLength(2)
+        // Sanity: the published quote sits under the Published heading's card.
+        expect(screen.getByText('Wonderful tutor.')).toBeInTheDocument()
+        expect(within(document.body).getByText(/published reviews/i)).toBeInTheDocument()
     })
 })
