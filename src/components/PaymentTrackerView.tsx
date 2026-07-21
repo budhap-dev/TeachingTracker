@@ -190,9 +190,10 @@ export const PaymentTrackerView = ({
                         Monthly payment tracking
                     </h3>
                     <p>
-                        Each student owes for the classes that actually took
-                        place. A month builds up as lessons are taught — mark it
-                        paid once it&apos;s settled.
+                        How much is owed depends on the student: per-session
+                        fees build up as classes are taught, monthly students
+                        pay a flat fee, and no-fee students aren&apos;t billed.
+                        Record what&apos;s received and the balance updates.
                     </p>
                 </div>
                 <div className="payment-month-filter">
@@ -262,9 +263,10 @@ export const PaymentTrackerView = ({
                     <div>
                         <h3>{selectedMonthLabel}</h3>
                         <p>
-                            Only classes that already happened are billed —
-                            cancelled and future ones are not. Open a student to
-                            change their details.
+                            Per-session students are billed only for classes
+                            that already happened; monthly students pay a flat
+                            fee and no-fee students aren&apos;t billed. Open a
+                            student to change their details.
                         </p>
                     </div>
                 </div>
@@ -295,7 +297,7 @@ export const PaymentTrackerView = ({
                                         key={record.id}
                                         className={`payment-row ${isNoFee ? 'nofee' : getStatusClass(record.status)}`}
                                     >
-                                        <td>
+                                        <td className="cell-title">
                                             <button
                                                 type="button"
                                                 className="payment-student-link"
@@ -310,7 +312,10 @@ export const PaymentTrackerView = ({
                                             </button>
                                             <small>{student.school}</small>
                                         </td>
-                                        <td className="payment-basis">
+                                        <td
+                                            className="payment-basis"
+                                            data-label="Classes taught"
+                                        >
                                             <strong>
                                                 {record.sessionsHeld}
                                             </strong>
@@ -323,14 +328,17 @@ export const PaymentTrackerView = ({
                                                       : `× ${formatCurrency(record.feePerSession)} a session`}
                                             </small>
                                         </td>
-                                        <td>
+                                        <td data-label="Due">
                                             {isNoFee
                                                 ? '—'
                                                 : formatCurrency(
                                                       record.amountDue
                                                   )}
                                         </td>
-                                        <td>
+                                        <td
+                                            className="cell-input"
+                                            data-label="Amount received"
+                                        >
                                             {isNoFee ? (
                                                 <span className="payment-nofee">
                                                     No fee
@@ -387,7 +395,10 @@ export const PaymentTrackerView = ({
                                             </div>
                                             )}
                                         </td>
-                                        <td>
+                                        <td
+                                            className="cell-input"
+                                            data-label="Notes"
+                                        >
                                             <TextField
                                                 size="small"
                                                 slotProps={{
@@ -406,14 +417,14 @@ export const PaymentTrackerView = ({
                                                 fullWidth
                                             />
                                         </td>
-                                        <td>
+                                        <td data-label="Outstanding">
                                             {isNoFee
                                                 ? '—'
                                                 : formatCurrency(
                                                       record.outstanding
                                                   )}
                                         </td>
-                                        <td>
+                                        <td data-label="Status">
                                             <span
                                                 className={`payment-status-pill ${isNoFee ? 'nofee' : getStatusClass(record.status)}`}
                                             >
