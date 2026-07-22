@@ -417,6 +417,14 @@ describe('PaymentTrackerView session breakdown', () => {
         expect(rows().getByText('Rohan Mehta')).toBeInTheDocument()
         expect(rows().getAllByText('Asha Perera').length).toBe(2)
 
+        // Each student's rows carry their own tint class (name order).
+        expect(
+            rows().getAllByText('Asha Perera')[0].closest('tr')!.className
+        ).toContain('student-group-0')
+        expect(
+            rows().getByText('Rohan Mehta').closest('tr')!.className
+        ).toContain('student-group-1')
+
         await user.selectOptions(
             screen.getByRole('combobox', { name: /student/i }),
             '2'
@@ -424,6 +432,11 @@ describe('PaymentTrackerView session breakdown', () => {
 
         expect(rows().queryByText('Asha Perera')).not.toBeInTheDocument()
         expect(rows().getByText('Rohan Mehta')).toBeInTheDocument()
+        // Filtering doesn't reassign colours: the tint indexes over every
+        // billable student, so Rohan keeps his even when shown alone.
+        expect(
+            rows().getByText('Rohan Mehta').closest('tr')!.className
+        ).toContain('student-group-1')
         // One row → singular label, total £60.
         expect(screen.getByText(/total \(1 item\)/i)).toBeInTheDocument()
         const total = screen.getByText(/total \(1 item\)/i).closest('tr')!
@@ -568,6 +581,13 @@ describe('PaymentTrackerView session breakdown', () => {
         ).toBeInTheDocument()
         const total = screen.getByText(/total \(3 items\)/i).closest('tr')!
         expect(within(total).getByText('£400')).toBeInTheDocument()
+
+        // The student's rows share one tint class so they read as a block,
+        // and only the charge line carries the bold monthly-row class.
+        expect(bodyRows[0].className).toContain('student-group-0')
+        expect(bodyRows[2].className).toContain('student-group-0')
+        expect(bodyRows[2].className).toContain('session-monthly-row')
+        expect(bodyRows[0].className).not.toContain('session-monthly-row')
     })
 
     it('shows a monthly student with no classes as a single flat-fee row', async () => {

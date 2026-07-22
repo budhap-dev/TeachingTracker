@@ -82,6 +82,9 @@ const formatDuration = (minutes: number) => {
 const durationCell = (minutes: number) =>
     minutes > 0 ? formatDuration(minutes) : '—'
 
+/** How many student tints the breakdown cycles through (see _components.scss). */
+const studentGroupCount = 5
+
 /**
  * One line for the Session breakdown table and the CSV export. A held class
  * carries a date/subject/duration; a monthly student's flat fee is a single
@@ -306,6 +309,25 @@ export const PaymentTrackerView = ({
                     sortKey(left).localeCompare(sortKey(right))
                 ),
         [billableRecords, effectiveFilter]
+    )
+
+    // Each student keeps one tint so their rows read as a block. Indexed over
+    // every billable student in name order (the table's order), not just the
+    // filtered ones, so a student's colour survives filtering and doesn't
+    // depend on who else is visible.
+    const studentGroupById = useMemo(
+        () =>
+            new Map(
+                [...billableRecords]
+                    .sort((left, right) =>
+                        left.studentName.localeCompare(right.studentName)
+                    )
+                    .map((record, index) => [
+                        record.studentId,
+                        index % studentGroupCount,
+                    ])
+            ),
+        [billableRecords]
     )
 
     // A monthly student's class rows are covered by their monthly-fee row, so
@@ -745,6 +767,11 @@ export const PaymentTrackerView = ({
                                 {sessionRows.map((row, index) => (
                                     <tr
                                         key={`${row.studentName}-${index}`}
+                                        className={`student-group-${studentGroupById.get(row.studentId)!}${
+                                            row.kind === 'monthly'
+                                                ? ' session-monthly-row'
+                                                : ''
+                                        }`}
                                     >
                                         <td data-label="Student">
                                             {row.studentName}
