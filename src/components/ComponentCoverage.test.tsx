@@ -2,7 +2,7 @@ import {
     fireEvent,
     render,
     screen,
-    waitForElementToBeRemoved,
+    waitFor,
     within,
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -797,7 +797,9 @@ describe('component-level coverage', () => {
 
         // Saving closes the day. Awaited: the dialog lingers in the DOM while
         // its exit transition runs.
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
     })
 
     it('books with a chosen duration, and the ✕ dismisses the day', async () => {
@@ -833,12 +835,16 @@ describe('component-level coverage', () => {
         expect(onScheduleClass).toHaveBeenCalledWith(
             expect.objectContaining({ durationMinutes: 90 })
         )
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
 
         // Reopen; the ✕ dismisses without saving anything further.
         await user.click(openDayCell(day))
         await user.click(screen.getByRole('button', { name: /^close$/i }))
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
         expect(onScheduleClass).toHaveBeenCalledTimes(1)
     })
 
@@ -910,7 +916,9 @@ describe('component-level coverage', () => {
 
         // A day with nothing booked presets nothing at all.
         await user.keyboard('{Escape}')
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
         await user.click(openDayCell(empty))
         expect(screen.getByLabelText(/students/i)).toHaveValue('')
         expect(screen.getByLabelText(/subject/i)).toHaveValue('')
@@ -940,7 +948,9 @@ describe('component-level coverage', () => {
 
         await user.keyboard('{Escape}')
 
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
         expect(onScheduleClass).not.toHaveBeenCalled()
     })
 
@@ -1233,8 +1243,8 @@ describe('component-level coverage', () => {
 
             // Reopen and drop a member by removing their chip from the field;
             // Save cancels just that row.
-            await waitForElementToBeRemoved(() =>
-                screen.queryByRole('dialog')
+            await waitFor(() =>
+                expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
             )
             await user.click(classChip(day, 1))
             const studentsRoot = screen
@@ -1251,7 +1261,9 @@ describe('component-level coverage', () => {
 
             // Cancel for everyone, behind its own confirmation. (findBy: the
             // closing confirm briefly aria-hides the day modal beneath it.)
-            await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+            await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
             await user.click(classChip(day, 1))
             await user.click(
                 await screen.findByRole('button', {
