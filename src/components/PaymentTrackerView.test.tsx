@@ -464,8 +464,9 @@ describe('PaymentTrackerView session breakdown', () => {
                 },
             ],
         })
-        // A monthly student exports as a flat-fee line: the month as the date,
-        // blank day, its accumulated minutes, and the flat fee.
+        // A monthly student exports each attended date with a blank fee, then
+        // one flat-fee line: the month as the date, blank day, accumulated
+        // minutes, and the flat fee — the payment on a single line.
         const bethRecord = buildRecord({
             id: 20,
             studentId: 2,
@@ -473,8 +474,22 @@ describe('PaymentTrackerView session breakdown', () => {
             feeType: 'monthly',
             feePerSession: 400,
             amountDue: 400,
+            sessionsHeld: 2,
             totalDurationMinutes: 150,
-            sessions: [],
+            sessions: [
+                {
+                    date: '2026-07-04',
+                    subject: 'English',
+                    durationMinutes: 60,
+                    fee: 0,
+                },
+                {
+                    date: '2026-07-11',
+                    subject: 'English',
+                    durationMinutes: 90,
+                    fee: 0,
+                },
+            ],
         })
         renderBreakdown([asha, beth], [ashaRecord, bethRecord])
         await openBreakdown(user)
@@ -490,19 +505,76 @@ describe('PaymentTrackerView session breakdown', () => {
         expect(csv).toContain('Student,Date,Day,Subject,Duration (min),Fee')
         expect(csv).toContain('Asha Perera,03 Jul 2026,')
         expect(csv).toContain('"Maths, Applied"')
+        // A monthly student's attended dates export with a blank fee — the
+        // flat fee is charged on the monthly line, not per class.
+        expect(csv).toContain('Beth Owens,04 Jul 2026,Sat,English,60,\n')
+        expect(csv).toContain('Beth Owens,11 Jul 2026,Sat,English,90,')
         // Monthly line: month as date, blank day, accumulated minutes, flat fee.
         expect(csv).toContain(',Monthly fee,150,400')
-        expect(csv).toContain('Beth Owens,')
 
         clickSpy.mockRestore()
     })
 
-    it('shows a monthly student as a single flat-fee row', async () => {
+    it('lists a monthly student\'s attended dates with the fee on one line', async () => {
         const user = userEvent.setup()
         const student = buildStudent({ id: 1 })
-        // A monthly-fee student has no per-session lines, but still owes their
-        // flat fee — so they appear as a single dateless "Monthly fee" row.
-        // No classes held this month, so its accumulated duration is 0.
+        // A monthly student's held classes are itemised (fee 0 per line from
+        // the API), so their dates show like anyone else's — but the flat fee
+        // is charged once, on a single "Monthly fee" row after them.
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feeType: 'monthly',
+            feePerSession: 400,
+            sessionsHeld: 2,
+            amountDue: 400,
+            totalDurationMinutes: 150,
+            sessions: [
+                {
+                    date: '2026-07-03',
+                    subject: 'Mathematics',
+                    durationMinutes: 60,
+                    fee: 0,
+                },
+                {
+                    date: '2026-07-10',
+                    subject: 'Mathematics',
+                    durationMinutes: 90,
+                    fee: 0,
+                },
+            ],
+        })
+        renderBreakdown([student], [record])
+        await openBreakdown(user)
+
+        // Both attended dates are listed, fee column dashed — the flat fee
+        // covers them, so no per-class charge appears.
+        const mathsRow = screen.getByText('03 Jul 2026').closest('tr')!
+        expect(within(mathsRow).getByText('Mathematics')).toBeInTheDocument()
+        expect(within(mathsRow).getByText('—')).toBeInTheDocument()
+        expect(screen.getByText('10 Jul 2026')).toBeInTheDocument()
+
+        // The fee appears exactly once, on the Monthly fee row (which follows
+        // the dates), and the total foots to the flat fee alone.
+        expect(screen.getAllByText('£400').length).toBe(2) // row + total
+        const feeRow = screen.getByText('Monthly fee').closest('tr')!
+        expect(within(feeRow).getByText('£400')).toBeInTheDocument()
+        const bodyRows = screen
+            .getAllByRole('row')
+            .filter((row) => within(row).queryByText('Asha Perera'))
+        expect(bodyRows.length).toBe(3)
+        expect(
+            within(bodyRows[2]).getByText('Monthly fee')
+        ).toBeInTheDocument()
+        const total = screen.getByText(/total \(3 items\)/i).closest('tr')!
+        expect(within(total).getByText('£400')).toBeInTheDocument()
+    })
+
+    it('shows a monthly student with no classes as a single flat-fee row', async () => {
+        const user = userEvent.setup()
+        const student = buildStudent({ id: 1 })
+        // A monthly-fee student with no held classes still owes their flat
+        // fee — so they appear as a single dateless "Monthly fee" row.
         const record = buildRecord({
             studentId: 1,
             studentName: 'Asha Perera',
