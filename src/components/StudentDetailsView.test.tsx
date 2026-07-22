@@ -2,7 +2,7 @@ import {
     fireEvent,
     render,
     screen,
-    waitForElementToBeRemoved,
+    waitFor,
     within,
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -439,11 +439,15 @@ describe('StudentDetailsView', () => {
         // Dismiss via Escape (the dialog's onClose)…
         await user.click(editBtn)
         await user.keyboard('{Escape}')
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
         // …and via the Cancel button.
         await user.click(editBtn)
         await user.click(screen.getByRole('button', { name: /^cancel$/i }))
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
         expect(onEditSession).not.toHaveBeenCalled()
     })
 
@@ -477,11 +481,15 @@ describe('StudentDetailsView', () => {
         // Dismiss via the Keep button…
         await user.click(removeBtn)
         await user.click(screen.getByRole('button', { name: /^keep$/i }))
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
         // …and via Escape (the dialog's own onClose).
         await user.click(removeBtn)
         await user.keyboard('{Escape}')
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
         expect(onCancelSession).not.toHaveBeenCalled()
     })
 
@@ -559,12 +567,16 @@ describe('StudentDetailsView', () => {
                 name: /^cancel$/i,
             })
         )
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
 
         // …and via Escape (the dialog's own onClose).
         await user.click(screen.getByRole('button', { name: /^archive$/i }))
         await user.keyboard('{Escape}')
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
         expect(onArchive).not.toHaveBeenCalled()
     })
 

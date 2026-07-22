@@ -94,9 +94,10 @@ export type PaymentStatus = 'Paid' | 'Partial' | 'Pending'
  * student it is the flat monthly fee, charged regardless of class count.
  */
 /**
- * One held class as a bill line item — the itemised detail behind a
- * per-session bill. The fee is the flat per-session price; `durationMinutes`
- * is shown for context and doesn't change it.
+ * One held class as a bill line item — the itemised detail behind a bill.
+ * On a per-session bill the fee is the flat per-session price; on a monthly
+ * bill each line's fee is 0, the flat retainer covering the classes.
+ * `durationMinutes` is shown for context and doesn't change the fee.
  */
 export type SessionLine = {
     date: string
@@ -125,8 +126,9 @@ export type PaymentRecord = {
     outstanding: number
     status: PaymentStatus
     notes: string
-    /** The held classes behind this bill (per-session students only); their
-        fees sum to `amountDue`. Empty for monthly/no-fee students. */
+    /** The held classes behind this bill. Per-session fees sum to
+        `amountDue`; a monthly student's lines carry fee 0, their flat
+        retainer covering the classes. Empty for no-fee students. */
     sessions: SessionLine[]
 }
 

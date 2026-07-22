@@ -5,7 +5,6 @@ import {
     render,
     screen,
     waitFor,
-    waitForElementToBeRemoved,
     within,
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -382,7 +381,9 @@ describe('Teaching Tracker app', () => {
             '{Backspace}Astrophysics{Enter}'
         )
         await user.click(screen.getByRole('button', { name: /save changes/i }))
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
 
         // Reopen the day: the edit came back from the API and stuck.
         await user.click(openFixtureDayCell(1))
@@ -600,7 +601,9 @@ describe('Teaching Tracker app', () => {
 
         // Wait out the modal's exit transition: while it is open it marks the
         // rest of the app aria-hidden, so the nav is unreachable.
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
 
         await user.click(
             within(navigation).getByRole('button', { name: /^dashboard$/i })
