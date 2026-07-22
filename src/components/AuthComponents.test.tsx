@@ -176,12 +176,19 @@ describe('Sidebar', () => {
         expect(
             screen.getByRole('button', { name: /contact us/i })
         ).toBeInTheDocument()
+        // With only the public group left there's no split to label, so the
+        // "External" heading is dropped rather than captioning everything.
+        expect(screen.queryByText('External')).not.toBeInTheDocument()
+        expect(screen.queryByText('Teacher')).not.toBeInTheDocument()
     })
 
     it('shows the whole menu once signed in', () => {
         renderSidebar()
         expect(teacherItem()).toBeInTheDocument()
         expect(publicItem()).toBeInTheDocument()
+        // Both groups render, so both headings label the split.
+        expect(screen.getByText('Teacher')).toBeInTheDocument()
+        expect(screen.getByText('External')).toBeInTheDocument()
     })
 })
 

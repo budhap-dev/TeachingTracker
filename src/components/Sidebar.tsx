@@ -119,8 +119,9 @@ const SidebarContent = ({
     )
 
     // Two menu groups: the teacher's private workspace and the public-facing
-    // site. Each renders under its own heading; an empty group is skipped, so
-    // signed-out visitors see only "External".
+    // site. An empty group is skipped, so signed-out visitors get just the
+    // public items — and with only one group left there is no split to label,
+    // so the "External" heading is dropped too.
     const groups: { label: string; items: NavItem[] }[] = [
         {
             label: 'Teacher',
@@ -164,7 +165,11 @@ const SidebarContent = ({
             <nav className="sidebar-nav">
                 {groups.map((group) => (
                     <div key={group.label} className="sidebar-nav-group">
-                        <p className="sidebar-nav-group-label">{group.label}</p>
+                        {groups.length > 1 && (
+                            <p className="sidebar-nav-group-label">
+                                {group.label}
+                            </p>
+                        )}
                         {group.items.map((item) => (
                             <button
                                 key={item.path}
