@@ -8,6 +8,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import type { Contact } from '../data/contact'
 import type { ContactInput } from '../api/contact'
 import { toTelHref, toWhatsAppHref } from '../data/siteContent'
+import { isValidEmail, isValidPhone } from '../utils/formValidation'
 
 type ContactViewProps = {
     contact: Contact
@@ -32,15 +33,27 @@ export const ContactView = ({
     const [editing, setEditing] = useState(false)
     const [email, setEmail] = useState('')
     const [phone, setPhone] = useState('')
+    // Errors appear only once a save has been attempted — the shared REQ-029
+    // convention (see formValidation.ts). Both fields are optional (blank
+    // removes the row), so only a *malformed* value blocks the save.
+    const [submitted, setSubmitted] = useState(false)
+
+    const emailInvalid = email.trim() !== '' && !isValidEmail(email.trim())
+    const phoneInvalid = phone.trim() !== '' && !isValidPhone(phone.trim())
 
     const startEditing = () => {
         setEmail(contact.email ?? '')
         setPhone(contact.phone ?? '')
+        setSubmitted(false)
         setEditing(true)
     }
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
+        setSubmitted(true)
+        if (emailInvalid || phoneInvalid) {
+            return
+        }
         onSave({ email: email.trim(), phone: phone.trim() })
         setEditing(false)
     }
@@ -87,7 +100,12 @@ export const ContactView = ({
                             size="small"
                             value={email}
                             onChange={(event) => setEmail(event.target.value)}
-                            helperText="Leave blank to remove it from the page."
+                            error={submitted && emailInvalid}
+                            helperText={
+                                submitted && emailInvalid
+                                    ? 'Enter a valid email address, like name@example.com.'
+                                    : 'Leave blank to remove it from the page.'
+                            }
                             fullWidth
                         />
                         <TextField
@@ -95,7 +113,12 @@ export const ContactView = ({
                             size="small"
                             value={phone}
                             onChange={(event) => setPhone(event.target.value)}
-                            helperText="Used for the call and WhatsApp links. Leave blank to remove."
+                            error={submitted && phoneInvalid}
+                            helperText={
+                                submitted && phoneInvalid
+                                    ? 'Enter a valid phone number with at least 7 digits.'
+                                    : 'Used for the call and WhatsApp links. Leave blank to remove.'
+                            }
                             fullWidth
                         />
                         <div className="contact-form-actions">

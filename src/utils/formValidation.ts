@@ -22,3 +22,15 @@ export const requiredFieldProps = (
     error: showError,
     helperText: showError ? message : undefined,
 })
+
+/**
+ * Format checks for the optional contact fields (REQ-029). Blank is always
+ * fine — these fields are removable by design — but a value that's present
+ * must look right before it's saved onto the public page.
+ */
+export const isValidEmail = (value: string): boolean =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+
+/** Digits with optional +, spaces, dashes or brackets; at least 7 digits. */
+export const isValidPhone = (value: string): boolean =>
+    /^\+?[\d\s()-]*$/.test(value) && (value.match(/\d/g) ?? []).length >= 7

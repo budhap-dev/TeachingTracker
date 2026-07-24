@@ -114,6 +114,63 @@ describe('ContactView', () => {
         })
     })
 
+    it('blocks saving a malformed email with an inline error (REQ-029)', async () => {
+        const onSave = vi.fn()
+        const user = userEvent.setup()
+        renderView({ canEdit: true, onSave })
+
+        await user.click(screen.getByRole('button', { name: /edit details/i }))
+        const email = screen.getByLabelText('Email')
+        await user.clear(email)
+        await user.type(email, 'not-an-email')
+        await user.click(screen.getByRole('button', { name: /save details/i }))
+
+        // The save is refused; the field carries the red border + message.
+        expect(onSave).not.toHaveBeenCalled()
+        expect(email).toHaveAccessibleDescription(/valid email address/i)
+        expect(email).toHaveAttribute('aria-invalid', 'true')
+        // The form stays open for the fix.
+        expect(
+            screen.getByRole('button', { name: /save details/i })
+        ).toBeInTheDocument()
+
+        // Fixing the field clears the error and lets the save through.
+        await user.clear(email)
+        await user.type(email, 'fixed@example.com')
+        await user.click(screen.getByRole('button', { name: /save details/i }))
+        expect(onSave).toHaveBeenCalledWith({
+            email: 'fixed@example.com',
+            phone: '+44 7700 900123',
+        })
+    })
+
+    it('blocks saving a malformed phone with an inline error (REQ-029)', async () => {
+        const onSave = vi.fn()
+        const user = userEvent.setup()
+        renderView({ canEdit: true, onSave })
+
+        await user.click(screen.getByRole('button', { name: /edit details/i }))
+        const phone = screen.getByLabelText('Phone')
+        await user.clear(phone)
+        await user.type(phone, '12ab34')
+        await user.click(screen.getByRole('button', { name: /save details/i }))
+
+        expect(onSave).not.toHaveBeenCalled()
+        expect(phone).toHaveAttribute('aria-invalid', 'true')
+        expect(phone).toHaveAccessibleDescription(/at least 7 digits/i)
+
+        // Too few digits is also refused, even when the characters are legal.
+        await user.clear(phone)
+        await user.type(phone, '+44 123')
+        await user.click(screen.getByRole('button', { name: /save details/i }))
+        expect(onSave).not.toHaveBeenCalled()
+
+        await user.clear(phone)
+        await user.type(phone, '+44 7700 900123')
+        await user.click(screen.getByRole('button', { name: /save details/i }))
+        expect(onSave).toHaveBeenCalledTimes(1)
+    })
+
     it('starts the editor empty when there are no details yet', async () => {
         const onSave = vi.fn()
         const user = userEvent.setup()
