@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-028`**
+**Next id: `REQ-030`**
 
 ## Legend
 
@@ -78,27 +78,29 @@ XS is an afternoon, XL is a project.
 | 5 | ✅ | [REQ-001 — Fees per session, billed on classes taught](#req-001--fees-are-per-session-and-a-month-bills-for-classes-actually-taught) | L | both | REQ-010 |
 | 6 | ✅ | [REQ-003 — Public / teacher split](#req-003--public-portal-with-no-login-the-teachers-area-is-private) | L | both | REQ-004 to enforce |
 | 7 | ✅ | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — |
-| 8 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
-| 9 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
-| 10 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
-| 11 | 🚧 | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | — (built 2026-07-19) |
-| 12 | 🚧 | [REQ-014 — Progress per subject](#req-014--progress-is-tracked-per-subject) | M | both | — (built 2026-07-17) |
+| 8 | 🔲 | [REQ-029 — Forms mark required fields and show inline validation](#req-029--forms-mark-required-fields-and-show-inline-validation) | M | frontend | — (prioritised 2026-07-24) |
+| 9 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
+| 10 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
+| 11 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
+| 12 | ✅ | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | — (shipped) |
+| 13 | ✅ | [REQ-014 — Progress per subject](#req-014--progress-is-tracked-per-subject) | M | both | — (shipped) |
 | — | | **Growth epics — turn the public pages into a way to win students** (added 2026-07-21) | | | |
-| 13 | 🔲 | [REQ-015 — Offerings hero and a single call-to-action](#req-015--offerings-hero-and-a-single-call-to-action) | S | frontend | — |
-| 14 | 🔲 | [REQ-016 — Subjects as rich cards](#req-016--subjects-as-rich-cards) | M | both | — |
-| 15 | 🔲 | [REQ-017 — How it works, as a numbered journey](#req-017--how-it-works-as-a-numbered-journey) | XS | frontend | — |
-| 16 | 🔲 | [REQ-018 — Public enquiry form](#req-018--public-enquiry-form) | M | both | REQ-009 |
-| 17 | 🔲 | [REQ-019 — Leads inbox](#req-019--leads-inbox) | M | both | REQ-018 |
-| 18 | 🔲 | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | REQ-008, REQ-009 |
-| 19 | 🔲 | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | REQ-008 |
-| 20 | 🔲 | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | REQ-008 |
-| 21 | 🔲 | [REQ-023 — Public pages are discoverable (SEO / OG)](#req-023--public-pages-are-discoverable-seo--og) | M | frontend | — |
-| 22 | 🔲 | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
-| 23 | 🔲 | [REQ-025 — FAQ](#req-025--faq) | S | both | REQ-008 |
-| 24 | 🔲 | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | REQ-009 |
-| 25 | 🔲 | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
+| 14 | ✅ | [REQ-015 — Offerings hero and a single call-to-action](#req-015--offerings-hero-and-a-single-call-to-action) | S | frontend | — |
+| 15 | ✅ | [REQ-016 — Subjects as rich cards](#req-016--subjects-as-rich-cards) | M | both | — |
+| 16 | ✅ | [REQ-017 — How it works, as a numbered journey](#req-017--how-it-works-as-a-numbered-journey) | XS | frontend | — |
+| 17 | 🔲 | [REQ-018 — Public enquiry form](#req-018--public-enquiry-form) | M | both | REQ-009 |
+| 18 | 🔲 | [REQ-019 — Leads inbox](#req-019--leads-inbox) | M | both | REQ-018 |
+| 19 | 🔲 | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | REQ-008, REQ-009 |
+| 20 | 🔲 | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | REQ-008 |
+| 21 | 🔲 | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | REQ-008 |
+| 22 | 🔲 | [REQ-023 — Public pages are discoverable (SEO / OG)](#req-023--public-pages-are-discoverable-seo--og) | M | frontend | — |
+| 23 | 🔲 | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
+| 24 | 🔲 | [REQ-025 — FAQ](#req-025--faq) | S | both | REQ-008 |
+| 25 | 🔲 | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | REQ-009 |
+| 26 | ✅ | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
+| 27 | 🚧 | [REQ-028 — Profanity screen flags reviews for moderation](#req-028--profanity-screen-flags-reviews-for-moderation) | S | both | REQ-027 |
 
-**Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–7 are done; **REQ-003/REQ-004 completed 2026-07-24** (prod API now enforces sign-in). The growth epics (REQ-015→026) are new: REQ-015/016/017/023 are shippable now against the current copy; the enquiry/leads/testimonials path (REQ-018/019/020) waits on **REQ-009** durable storage, and the content-driven pieces (REQ-020/021/022/025) land through **REQ-008**'s in-app editor.
+**Next up: [REQ-029](#req-029--forms-mark-required-fields-and-show-inline-validation) — required-field markers + inline validation** (prioritised by the owner 2026-07-24; frontend-only, no deps, so it can ship immediately). Then finish [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database) — prod cutover only. Reconciled 2026-07-24 against the code: REQ-003/REQ-004 completed (prod enforces sign-in), and REQ-013/014/015/016/017/027 are all **shipped** — the backlog had them as 🚧/🔲. REQ-028 is **half-built** (frontend flag display shipped; the backend profanity screen was never written — small, unblocked backend work). REQ-009 is *nearly* done: its plan (`func-teaching-tracker/docs/PLAN-req-009-database.md`) shows dev fully on durable Table Storage (Phases 0–5); only **Phase 6, the prod data cutover** (UK South move + seed prod tables empty + verify), remains — operational infra work. ⚠️ Prod's live `DATA_STORE` app setting is already `tables` (as is `variables.tf`), so this needs reconciling like the REQ-004 flag drift did. What's genuinely unbuilt from here: REQ-023 (SEO/OG) and REQ-024 (public Home) — frontend, no deps; the enquiry/leads path (REQ-018/019/026) waits on REQ-009; the content-driven pieces (REQ-008/020/021/022/025) land through **REQ-008**'s in-app editor.
 
 **Three things this order is trying to respect:**
 
@@ -110,9 +112,20 @@ XS is an afternoon, XL is a project.
    the mechanism. Gating routes without identity produces a fake lock — and the
    API stays open regardless, which is the part that matters. Prod enforcement
    landed 2026-07-24, closing both.
-3. **REQ-009 is the real gate for the last two.** It was parked as "not needed
+3. **REQ-009 is the real gate for the rest.** It was parked as "not needed
    now"; REQ-008 and REQ-005 both quietly depend on it. Doing them first would mean
-   building on storage that forgets.
+   building on storage that forgets. It is now all-but-done — dev runs on durable
+   Table Storage; only the prod cutover is left.
+
+> **Reconciliation note (2026-07-24).** Several stories had shipped without the
+> backlog being ticked. Verified in code and marked ✅ here: REQ-013 (`AlumniView`),
+> REQ-014 (`progressBySubject`), REQ-015/016/017 (`OfferingsView` hero + CTA, rich
+> subject cards, numbered journey — all in `siteContent`, 8 tests), REQ-027
+> (`ReviewsView` + `ReviewModerationView` + testimonial API). REQ-028 is newly
+> written up below as **🚧 half-built**: its frontend flag display shipped with
+> REQ-027, but the backend profanity screen was never written, so the flag is
+> dead code today. Keep the backlog ticked as work merges — a stale 🔲 sends the
+> next session to rebuild what exists, and a mis-ticked ✅ hides a real gap.
 
 <!-- Stories go below, in order. Newest at the bottom; work proceeds top-down. -->
 
@@ -605,7 +618,7 @@ so that the class record reflects what was actually covered.
 
 ## REQ-013 — Archive a student with a closing note; Alumni section
 
-**Status:** 🚧 Built (awaiting review; API merges/deploys before frontend) · **Impact:** both · **Effort:** M
+**Status:** ✅ Done (shipped) · **Impact:** both · **Effort:** M
 
 **Story**
 As a teacher, I want to archive a student who has finished tutoring — with a
@@ -653,7 +666,7 @@ intact, and I can find past students in a teacher-only **Alumni** section.
 
 ## REQ-014 — Progress is tracked per subject
 
-**Status:** 🚧 Built (awaiting review; API merges/deploys before frontend) · **Impact:** both · **Effort:** M
+**Status:** ✅ Done (shipped) · **Impact:** both · **Effort:** M
 
 **Story**
 As a teacher, I want to record progress for each subject a student studies —
@@ -710,7 +723,7 @@ reflects where they actually are, not one blended number.
 
 ## REQ-015 — Offerings hero and a single call-to-action
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S · **Depends on:** REQ-006 (done)
+**Status:** ✅ Done (shipped) · **Impact:** frontend · **Effort:** S · **Depends on:** REQ-006 (done)
 
 **Story**
 As a visiting parent, I want the Offerings page to open with a clear value
@@ -735,7 +748,7 @@ know exactly how to start.
 
 ## REQ-016 — Subjects as rich cards
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+**Status:** ✅ Done (shipped) · **Impact:** both · **Effort:** M
 
 **Story**
 As a parent, I want each subject shown as a card with the level and exam boards
@@ -757,7 +770,7 @@ covered, so that I can see my child's specific needs are catered for.
 
 ## REQ-017 — How it works, as a numbered journey
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** XS
+**Status:** ✅ Done (shipped) · **Impact:** frontend · **Effort:** XS
 
 **Story**
 As a parent, I want a clear "how it works" journey, so that I know what happens
@@ -956,7 +969,7 @@ recommending Springboard is effortless.
 
 ## REQ-027 — Families submit testimonials; teacher moderates; approved show as cards
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** L · **Blocked by:** REQ-009 (durable store) · **Relates to:** REQ-003 (moderation gating), REQ-020 (supersedes its testimonial half)
+**Status:** ✅ Done (shipped) · **Impact:** both · **Effort:** L · **Blocked by:** REQ-009 (durable store) · **Relates to:** REQ-003 (moderation gating), REQ-020 (supersedes its testimonial half)
 
 **Story**
 As a past or ongoing parent or student, I want to share my experience for the
@@ -1054,3 +1067,95 @@ _Cross-cutting_
 - ❓ Open: may the teacher lightly edit an approved review (fix a typo) before it
   publishes, or is it approve-as-submitted? Assumed **approve-as-submitted** for a
   first cut — deletion handles anything not publishable.
+
+## REQ-028 — Profanity screen flags reviews for moderation
+
+**Status:** 🚧 In progress (frontend display built; **backend screen not built**) · **Impact:** both · **Effort:** S · **Blocked by:** REQ-027
+
+**Story**
+As the teacher, I want a submitted review that trips a profanity screen to be
+flagged in my moderation queue, so that a possibly-offensive submission stands
+out and I can reject or delete it before it ever publishes.
+
+**Acceptance criteria**
+
+- [x] The frontend `Testimonial` type carries `flagged?: boolean`, and the
+      moderation queue highlights a flagged submission (amber warning strip and
+      a warm-tinted card, `.testimonial-card.flagged` / `.testimonial-flag`).
+- [ ] **The backend `Testimonial` model carries `flagged`** — currently absent
+      (`func-teaching-tracker/src/models/testimonial.ts`), so the API never
+      returns it and the frontend highlight never fires against real data.
+- [ ] **`POST /testimonials` runs the name and quote through a profanity screen**;
+      a match sets `flagged: true` on the stored (still `Pending`) review — not
+      built; no screen exists in the API.
+- [ ] Flagging does **not** change visibility — a hint only; nothing publishes
+      unapproved either way.
+- [ ] Seed carries one flagged pending review so the queue state is visible.
+- [ ] Frontend coverage stays 100%; API deploys before the frontend.
+
+**Notes**
+
+- ⚠️ **Half-built, discovered 2026-07-24.** The *display* side shipped with
+  REQ-027 — the `flagged` field on the frontend type and the moderation card
+  styling — but the API side (model field + profanity screen on write) was never
+  written, so the flag is dead code today: nothing ever sets it. This story
+  captures the remaining backend work to make the feature real.
+- Suggested screen: a simple word-list match — cheap, no external service, and
+  false positives are harmless because the teacher makes the final call. Backend
+  is the source of truth (a public write surface must screen server-side; a
+  browser check would be bypassable), matching REQ-027's plain-text-only stance.
+
+## REQ-029 — Forms mark required fields and show inline validation
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M · **Priority:** raised by the owner 2026-07-24 — moved ahead of REQ-009 as the next pickup
+
+**Story**
+As anyone filling in a form — the teacher adding a student or booking a class,
+a visitor leaving a review or the teacher editing contact details — I want
+required fields marked with a `*`, and a clear inline error (red border + a
+short message) on any field I miss, so that I know what's needed up front and,
+when a save is refused, exactly which field to fix and why.
+
+**Acceptance criteria**
+
+- [ ] Every required field across the app's forms shows a `*` on its label:
+      **Add / Edit student** (`StudentFormModal` / `StudentDetailsView`),
+      **Schedule / edit class** (`ClassSchedulingView`), **Leave a review**
+      (`ReviewsView`), and **Edit contact details** (`ContactView`).
+- [ ] Submitting (or blurring) a field that fails validation gives it a **red
+      border and a short message beneath it** naming the problem ("First name is
+      required", "Rating is required"), not just a disabled Save button.
+- [ ] The message clears as soon as the field becomes valid.
+- [ ] Errors are announced accessibly: the field is `aria-invalid` and tied to
+      its message via `aria-describedby` (MUI `TextField` `error` + `helperText`
+      already do this; the custom controls — subject chips, star rating,
+      honeypot-adjacent inputs — must match).
+- [ ] Optional fields are never marked or errored — only genuinely required ones.
+- [ ] The review form keeps its single top-level error as a summary, but each
+      failing field now also shows its own inline error (today only the one
+      `.review-error` line exists, so a user can't tell which field it means).
+- [ ] Consistent look: one required-marker and one error treatment, themed and
+      working in light/dark, reused across every form (a shared field wrapper or
+      a small `requiredMark` / error convention rather than per-form CSS).
+- [ ] Frontend coverage stays 100%.
+
+**Notes**
+
+- **Current state (2026-07-24):** no form marks required fields — there is no
+  `required`/`*` anywhere in `src/components` — and validation is mostly a
+  *disabled Save button* with no per-field feedback. Only `ReviewsView` shows an
+  error at all, and it's a single top-level `.review-error` line, not per-field.
+  So this is additive polish over existing gating, not a rewrite of it.
+- Decision needed: **when do errors appear** — on submit only, or on blur once a
+  field has been touched? Recommend **on blur after touch, plus on submit** — it
+  avoids screaming at a half-typed form while still catching a straight-to-Save.
+- MUI `TextField` gives `*` for free with the `required` prop and `error` +
+  `helperText` for the red border/message, so the standard fields are cheap; the
+  work is the **custom controls** (Autocomplete subject chips, the star-rating
+  buttons) and doing it **once, consistently** rather than five slightly different
+  ways.
+- Keep it frontend-only: the API already validates on write (REQ-002/027) and
+  returns messages; this story is about surfacing problems *before* submit, not
+  changing server validation.
+- ❓ Open: should the `*` carry a legend ("* required") on longer forms, or is the
+  marker self-evident? Assumed self-evident for a first cut.
