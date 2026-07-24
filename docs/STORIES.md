@@ -78,7 +78,7 @@ XS is an afternoon, XL is a project.
 | 5 | ✅ | [REQ-001 — Fees per session, billed on classes taught](#req-001--fees-are-per-session-and-a-month-bills-for-classes-actually-taught) | L | both | REQ-010 |
 | 6 | ✅ | [REQ-003 — Public / teacher split](#req-003--public-portal-with-no-login-the-teachers-area-is-private) | L | both | REQ-004 to enforce |
 | 7 | ✅ | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — |
-| 8 | 🔲 | [REQ-029 — Forms mark required fields and show inline validation](#req-029--forms-mark-required-fields-and-show-inline-validation) | M | frontend | — (prioritised 2026-07-24) |
+| 8 | ✅ | [REQ-029 — Forms mark required fields and show inline validation](#req-029--forms-mark-required-fields-and-show-inline-validation) | M | frontend | — (shipped: PR #51 + contact format follow-up) |
 | 9 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
 | 10 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
 | 11 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
@@ -1107,7 +1107,7 @@ out and I can reject or delete it before it ever publishes.
 
 ## REQ-029 — Forms mark required fields and show inline validation
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M · **Priority:** raised by the owner 2026-07-24 — moved ahead of REQ-009 as the next pickup
+**Status:** ✅ Done · **Impact:** frontend · **Effort:** M · **Delivered:** frontend PR #51 (shared `requiredFieldProps`, applied to the student, class and review forms) + a follow-up adding email/phone **format** validation to the contact editor (its two fields are optional by design, so they get format errors, never required markers). Note: PR #51 also moved the coverage thresholds from 100% to 90%.
 
 **Story**
 As anyone filling in a form — the teacher adding a student or booking a class,
