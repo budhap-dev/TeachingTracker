@@ -184,6 +184,38 @@ describe('StudentDetailsView', () => {
         expect(onCancelEdit).toHaveBeenCalledTimes(1)
     })
 
+    it('blocks saving edits with required fields cleared, marking each (REQ-029)', async () => {
+        const user = userEvent.setup()
+        const onSaveDetails = vi.fn()
+        renderView({
+            editingStudentId: 10,
+            // A draft with every required field blanked out.
+            draftStudent: buildStudent({
+                firstName: '',
+                lastName: '',
+                subjects: [],
+                school: '',
+                year: '',
+            }),
+            hasUnsavedChanges: true,
+            onSaveDetails,
+        })
+
+        await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+        // The blank save is refused and each empty field names its problem.
+        expect(onSaveDetails).not.toHaveBeenCalled()
+        expect(
+            screen.getByText('First name is required')
+        ).toBeInTheDocument()
+        expect(screen.getByText('Last name is required')).toBeInTheDocument()
+        expect(
+            screen.getByText('Pick at least one subject')
+        ).toBeInTheDocument()
+        expect(screen.getByText('School is required')).toBeInTheDocument()
+        expect(screen.getByText('Year is required')).toBeInTheDocument()
+    })
+
     it('shows the monthly fee basis and edits the fee type', async () => {
         const user = userEvent.setup()
         const onDraftChange = vi.fn()
@@ -781,7 +813,8 @@ describe('StudentDetailsView', () => {
         )
         await user.keyboard('{Escape}')
 
-        await user.click(screen.getByLabelText(/^year$/i))
+        // The label now carries a required * (REQ-029), so match its start.
+        await user.click(screen.getByLabelText(/^year\b/i))
         await user.click(screen.getByRole('option', { name: '11' }))
         expect(onDraftChange).toHaveBeenCalledWith('year', '11')
 

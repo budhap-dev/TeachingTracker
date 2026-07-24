@@ -675,6 +675,33 @@ describe('component-level coverage', () => {
         expect(onScheduleClass).not.toHaveBeenCalled()
     })
 
+    it('marks the required class fields on an empty Add attempt (REQ-029)', async () => {
+        const user = userEvent.setup()
+        const onScheduleClass = vi.fn()
+
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[]}
+                onOpenStudentPage={vi.fn()}
+                onScheduleClass={onScheduleClass}
+            />
+        )
+
+        await user.click(openDayCell(today))
+        // Add with nothing chosen — no student, no subject, no time.
+        fireEvent.click(screen.getByRole('button', { name: /add class/i }))
+
+        expect(onScheduleClass).not.toHaveBeenCalled()
+        expect(
+            screen.getByText('Pick at least one student')
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText('Pick at least one subject')
+        ).toBeInTheDocument()
+        expect(screen.getByText('Time is required')).toBeInTheDocument()
+    })
+
     it('switches the scheduler selection from autocomplete options', async () => {
         const user = userEvent.setup()
         const onOpenStudentPage = vi.fn()
@@ -707,16 +734,35 @@ describe('component-level coverage', () => {
             screen.getByRole('option', { name: /maya fernandoyear 10/i })
         )
 
-        // Picked students wear chips; the first pick brings her subject in as
-        // a chip of its own.
         expect(
             screen.getByRole('button', { name: /maya fernando • year 10/i })
         ).toBeInTheDocument()
+
+        // The Subject dropdown offers only Maya's registered subjects —
+        // Physics and Chemistry — not every subject taught (no Mathematics).
+        const subjectSearch = screen.getByRole('combobox', {
+            name: /subject/i,
+        })
+        await user.click(subjectSearch)
+        expect(
+            screen.getByRole('option', { name: 'Physics' })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('option', { name: 'Chemistry' })
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('option', { name: 'Mathematics' })
+        ).not.toBeInTheDocument()
+
+        // Teacher picks one of the offered subjects.
+        await user.click(screen.getByRole('option', { name: 'Physics' }))
         expect(
             screen.getByRole('button', { name: 'Physics' })
         ).toBeInTheDocument()
 
-        // A second student joins the same class — a group booking.
+        // A second student joins — the options widen to the union of both
+        // students' subjects, so Mathematics (Asha's) becomes selectable, while
+        // the already-picked Physics stays.
         await user.type(studentSearch, 'Asha')
         await user.click(
             screen.getByRole('option', { name: /asha pererayear 10/i })
@@ -724,13 +770,13 @@ describe('component-level coverage', () => {
         expect(
             screen.getByRole('button', { name: /asha perera • year 10/i })
         ).toBeInTheDocument()
-        // The subject stays the first pick's — no silent overwrite.
+        await user.click(subjectSearch)
+        expect(
+            screen.getByRole('option', { name: 'Mathematics' })
+        ).toBeInTheDocument()
         expect(
             screen.getByRole('button', { name: 'Physics' })
         ).toBeInTheDocument()
-        expect(
-            screen.queryByRole('button', { name: 'Mathematics' })
-        ).not.toBeInTheDocument()
 
         expect(onOpenStudentPage).not.toHaveBeenCalled()
         expect(onScheduleClass).not.toHaveBeenCalled()
@@ -779,7 +825,9 @@ describe('component-level coverage', () => {
         // An empty day presets nothing, so the whole class is entered by hand.
         await user.type(screen.getByLabelText(/students/i), 'Asha')
         await user.click(await screen.findByRole('option', { name: /asha/i }))
-        await user.type(screen.getByLabelText(/subject/i), 'Physics{Enter}')
+        // Subject is limited to the student's registered subjects — pick it.
+        await user.click(screen.getByRole('combobox', { name: /subject/i }))
+        await user.click(screen.getByRole('option', { name: 'Mathematics' }))
         fireEvent.change(screen.getByLabelText(/time/i), {
             target: { value: '16:00' },
         })
@@ -820,7 +868,9 @@ describe('component-level coverage', () => {
 
         await user.type(screen.getByLabelText(/students/i), 'Asha')
         await user.click(await screen.findByRole('option', { name: /asha/i }))
-        await user.type(screen.getByLabelText(/subject/i), 'Physics{Enter}')
+        // Subject is limited to the student's registered subjects — pick it.
+        await user.click(screen.getByRole('combobox', { name: /subject/i }))
+        await user.click(screen.getByRole('option', { name: 'Mathematics' }))
         fireEvent.change(screen.getByLabelText(/time/i), {
             target: { value: '10:00' },
         })
@@ -978,11 +1028,12 @@ describe('component-level coverage', () => {
                 onSetSessionStatus: ReturnType<typeof vi.fn>
                 onDeleteClass: ReturnType<typeof vi.fn>
             }>,
-            session: ScheduledSession = bookedClass()
+            session: ScheduledSession = bookedClass(),
+            student: Student = buildStudent()
         ) =>
             render(
                 <ClassSchedulingView
-                    students={[buildStudent()]}
+                    students={[student]}
                     sessions={[session]}
                     onScheduleClass={handlers.onScheduleClass ?? vi.fn()}
                     onEditClass={handlers.onEditClass ?? vi.fn()}
@@ -1103,10 +1154,12 @@ describe('component-level coverage', () => {
             const onEditClass = vi.fn()
             const onScheduleClass = vi.fn()
             // A class booked without notes: Save must still start disabled
-            // (nothing changed) and the empty notes baseline is honoured.
+            // (nothing changed) and the empty notes baseline is honoured. The
+            // student teaches both subjects, so both are selectable here.
             renderBooked(
                 { onEditClass, onScheduleClass },
-                bookedClass({ notes: undefined })
+                bookedClass({ notes: undefined }),
+                buildStudent({ subjects: ['Mathematics', 'Physics'] })
             )
 
             await user.click(openDayCell(day))
@@ -1118,11 +1171,10 @@ describe('component-level coverage', () => {
             ).toBeDisabled()
 
             // A second subject joins the first — the class covers both, and
-            // the wire format is the joined string.
-            await user.type(
-                screen.getByLabelText(/subject/i),
-                'Physics{Enter}'
-            )
+            // the wire format is the joined string. Subject is limited to the
+            // student's registered subjects, so Physics is picked from those.
+            await user.click(screen.getByRole('combobox', { name: /subject/i }))
+            await user.click(screen.getByRole('option', { name: 'Physics' }))
             await user.click(
                 screen.getByRole('button', { name: /save changes/i })
             )
@@ -1166,6 +1218,9 @@ describe('component-level coverage', () => {
             await user.click(
                 await screen.findByRole('option', { name: /asha/i })
             )
+            // Pick the student's subject from the (now student-limited) list.
+            await user.click(screen.getByRole('combobox', { name: /subject/i }))
+            await user.click(screen.getByRole('option', { name: 'Mathematics' }))
             fireEvent.change(screen.getByLabelText(/time/i), {
                 target: { value: '13:00' },
             })

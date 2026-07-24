@@ -350,7 +350,6 @@ export const subjectOptions = [
     'Chemistry',
     'Biology',
     'English',
-    'History',
 ]
 
 /** School years 6–13. */

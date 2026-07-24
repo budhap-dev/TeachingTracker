@@ -13,6 +13,7 @@ import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
 import type { Testimonial, TestimonialRole } from '../data/students'
 import type { TestimonialInput } from '../api/reviews'
 import { subjectOptions, yearOptions } from '../utils/constants'
+import { requiredFieldProps } from '../utils/formValidation'
 
 type ReviewsViewProps = {
     testimonials: Testimonial[]
@@ -45,10 +46,18 @@ export const ReviewsView = ({
     // Honeypot: hidden from people, tempting to bots. Left blank normally.
     const [website, setWebsite] = useState('')
     const [error, setError] = useState<string | null>(null)
+    // Errors show only after a submit is attempted (REQ-029). Each required
+    // field then marks itself inline; `error` stays as the one-line summary.
+    const [submitted, setSubmitted] = useState(false)
+
+    const nameMissing = !authorName.trim()
+    const ratingMissing = rating < 1
+    const quoteMissing = !quote.trim()
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
-        if (!authorName.trim() || !quote.trim() || rating < 1) {
+        setSubmitted(true)
+        if (nameMissing || quoteMissing || ratingMissing) {
             setError('Please add your name, a rating, and a few words.')
             return
         }
@@ -70,6 +79,7 @@ export const ReviewsView = ({
         setQuote('')
         setWebsite('')
         setError(null)
+        setSubmitted(false)
     }
 
     return (
@@ -138,6 +148,10 @@ export const ReviewsView = ({
                         size="small"
                         value={authorName}
                         onChange={(event) => setAuthorName(event.target.value)}
+                        {...requiredFieldProps(
+                            submitted && nameMissing,
+                            'Your name is required'
+                        )}
                         fullWidth
                     />
                     <TextField
@@ -199,11 +213,25 @@ export const ReviewsView = ({
                         ))}
                     </TextField>
                     <div
-                        className="review-rating"
+                        className={`review-rating ${
+                            submitted && ratingMissing ? 'has-error' : ''
+                        }`}
                         role="radiogroup"
                         aria-labelledby="review-rating-label"
+                        aria-required="true"
+                        aria-invalid={submitted && ratingMissing}
+                        aria-describedby={
+                            submitted && ratingMissing
+                                ? 'review-rating-error'
+                                : undefined
+                        }
                     >
-                        <span id="review-rating-label">Your rating</span>
+                        <span id="review-rating-label">
+                            Your rating{' '}
+                            <span aria-hidden="true" className="required-mark">
+                                *
+                            </span>
+                        </span>
                         <div className="star-buttons">
                             {[1, 2, 3, 4, 5].map((value) => (
                                 <button
@@ -218,6 +246,14 @@ export const ReviewsView = ({
                                 </button>
                             ))}
                         </div>
+                        {submitted && ratingMissing && (
+                            <span
+                                id="review-rating-error"
+                                className="review-field-error"
+                            >
+                                A rating is required
+                            </span>
+                        )}
                     </div>
                     <TextField
                         label="Your review"
@@ -225,6 +261,10 @@ export const ReviewsView = ({
                         className="review-quote"
                         value={quote}
                         onChange={(event) => setQuote(event.target.value)}
+                        {...requiredFieldProps(
+                            submitted && quoteMissing,
+                            'Please add a few words'
+                        )}
                         multiline
                         minRows={3}
                         fullWidth

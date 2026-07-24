@@ -11,9 +11,11 @@ import {
     TextField,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Student } from '../data/students'
 import { subjectOptions, yearOptions } from '../utils/constants'
+import { requiredFieldProps } from '../utils/formValidation'
 
 type StudentFormModalProps = {
     open: boolean
@@ -32,7 +34,22 @@ export const StudentFormModal = ({
     onClose,
     onChange,
     onSubmit,
-}: StudentFormModalProps) => (
+}: StudentFormModalProps) => {
+    // Errors show only after a save is attempted (REQ-029, on-submit). Cleared
+    // whenever the modal reopens, so a fresh Add starts without red fields.
+    const [submitted, setSubmitted] = useState(false)
+    useEffect(() => {
+        if (open) setSubmitted(false)
+    }, [open])
+
+    const handleSubmit = (event: FormEvent) => {
+        setSubmitted(true)
+        // The parent validates the same required set and only closes on success,
+        // so an invalid submit leaves the modal open with its errors showing.
+        onSubmit(event)
+    }
+
+    return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         {/* Primary action lives in the header: save top-right, ✕ to dismiss —
             no Cancel button. The scheduling modal follows the same shape. */}
@@ -56,8 +73,9 @@ export const StudentFormModal = ({
             <Box
                 component="form"
                 id="student-form"
-                onSubmit={onSubmit}
+                onSubmit={handleSubmit}
                 className="student-form modal-form"
+                noValidate
             >
                 <TextField
                     label="First Name"
@@ -66,6 +84,10 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('firstName', event.target.value)
                     }
+                    {...requiredFieldProps(
+                        submitted && !form.firstName,
+                        'First name is required'
+                    )}
                     fullWidth
                 />
                 <TextField
@@ -75,6 +97,10 @@ export const StudentFormModal = ({
                     onChange={(event) =>
                         onChange('lastName', event.target.value)
                     }
+                    {...requiredFieldProps(
+                        submitted && !form.lastName,
+                        'Last name is required'
+                    )}
                     fullWidth
                 />
                 <TextField
@@ -94,6 +120,10 @@ export const StudentFormModal = ({
                     size="small"
                     value={form.year}
                     onChange={(event) => onChange('year', event.target.value)}
+                    {...requiredFieldProps(
+                        submitted && !form.year,
+                        'Year is required'
+                    )}
                     fullWidth
                 >
                     {yearOptions.map((year) => (
@@ -122,6 +152,10 @@ export const StudentFormModal = ({
                             event.target.value as unknown as string[]
                         )
                     }
+                    {...requiredFieldProps(
+                        submitted && form.subjects.length === 0,
+                        'Pick at least one subject'
+                    )}
                     fullWidth
                 >
                     {subjectOptions.map((subject) => (
@@ -138,6 +172,10 @@ export const StudentFormModal = ({
                     size="small"
                     value={form.school}
                     onChange={(event) => onChange('school', event.target.value)}
+                    {...requiredFieldProps(
+                        submitted && !form.school,
+                        'School is required'
+                    )}
                     fullWidth
                 />
                 <TextField
@@ -225,4 +263,5 @@ export const StudentFormModal = ({
             </Box>
         </DialogContent>
     </Dialog>
-)
+    )
+}

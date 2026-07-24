@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
     Autocomplete,
     Button,
@@ -34,6 +34,7 @@ import {
     toDateKey,
 } from '../utils/calendar'
 import { parseSubjects } from '../utils/forms'
+import { requiredFieldProps } from '../utils/formValidation'
 import type { EditClassChanges } from '../store/store'
 
 type StudentDetailsViewProps = {
@@ -110,6 +111,30 @@ export const StudentDetailsView = ({
     // While editing, every control reads from the draft; otherwise from the
     // stored student. One source at a time, so the two can't disagree.
     const shown = isEditing && draftStudent ? draftStudent : student
+
+    // Required-field errors show only after a Save is attempted (REQ-029),
+    // and clear whenever we leave edit mode so re-editing starts clean.
+    const [submitted, setSubmitted] = useState(false)
+    useEffect(() => {
+        if (!isEditing) setSubmitted(false)
+    }, [isEditing])
+
+    // The same required set as Add student: a saved record must keep a name,
+    // at least one subject, a school and a year. Save is blocked (with the
+    // fields marked) rather than persisting a blank.
+    const missing = {
+        firstName: !shown.firstName,
+        lastName: !shown.lastName,
+        subjects: shown.subjects.length === 0,
+        school: !shown.school,
+        year: !shown.year,
+    }
+    const detailsInvalid = Object.values(missing).some(Boolean)
+    const handleSave = () => {
+        setSubmitted(true)
+        if (detailsInvalid) return
+        onSaveDetails()
+    }
 
     // Per-subject progress (REQ-014). The blended figure shown up top is
     // derived from the map when one exists; the API maintains the stored
@@ -269,7 +294,7 @@ export const StudentDetailsView = ({
                                 <Button
                                     variant="contained"
                                     disabled={!hasUnsavedChanges || saving}
-                                    onClick={onSaveDetails}
+                                    onClick={handleSave}
                                 >
                                     {saving ? 'Saving…' : 'Save'}
                                 </Button>
@@ -652,6 +677,12 @@ export const StudentDetailsView = ({
                                 }
                                 fullWidth
                                 disabled={!isEditing}
+                                {...(isEditing
+                                    ? requiredFieldProps(
+                                          submitted && missing.firstName,
+                                          'First name is required'
+                                      )
+                                    : {})}
                             />
                             <TextField
                                 label="Last Name"
@@ -662,6 +693,12 @@ export const StudentDetailsView = ({
                                 }
                                 fullWidth
                                 disabled={!isEditing}
+                                {...(isEditing
+                                    ? requiredFieldProps(
+                                          submitted && missing.lastName,
+                                          'Last name is required'
+                                      )
+                                    : {})}
                             />
                             <TextField
                                 label="Date of Birth"
@@ -692,6 +729,12 @@ export const StudentDetailsView = ({
                                 }
                                 fullWidth
                                 disabled={!isEditing}
+                                {...(isEditing
+                                    ? requiredFieldProps(
+                                          submitted && missing.subjects,
+                                          'Pick at least one subject'
+                                      )
+                                    : {})}
                                 slotProps={{
                                     select: {
                                         multiple: true,
@@ -749,6 +792,12 @@ export const StudentDetailsView = ({
                                 }
                                 fullWidth
                                 disabled={!isEditing}
+                                {...(isEditing
+                                    ? requiredFieldProps(
+                                          submitted && missing.school,
+                                          'School is required'
+                                      )
+                                    : {})}
                             />
                             <TextField
                                 label="Year"
@@ -761,6 +810,12 @@ export const StudentDetailsView = ({
                                 }
                                 fullWidth
                                 disabled={!isEditing}
+                                {...(isEditing
+                                    ? requiredFieldProps(
+                                          submitted && missing.year,
+                                          'Year is required'
+                                      )
+                                    : {})}
                             >
                                 {yearOptions.map((year) => (
                                     <MenuItem key={year} value={year}>
