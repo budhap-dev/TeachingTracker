@@ -57,7 +57,7 @@ describe('ReviewsView', () => {
             <ReviewsView testimonials={[]} saving={false} onSubmit={onSubmit} />
         )
 
-        await user.type(screen.getByLabelText('Your name'), 'Jo')
+        await user.type(screen.getByLabelText(/your name/i), 'Jo')
         await user.click(screen.getByRole('combobox', { name: /you are a/i }))
         await user.click(screen.getByRole('option', { name: 'Student' }))
         await user.click(screen.getByRole('combobox', { name: /subject/i }))
@@ -67,7 +67,7 @@ describe('ReviewsView', () => {
         await user.click(screen.getByRole('combobox', { name: /year/i }))
         await user.click(screen.getByRole('option', { name: 'Year 11' }))
         await user.click(screen.getByRole('button', { name: '5 Stars' }))
-        await user.type(screen.getByLabelText('Your review'), 'Superb lessons.')
+        await user.type(screen.getByLabelText(/your review/i), 'Superb lessons.')
         // Fill the honeypot to exercise its handler; the API drops these.
         fireEvent.change(container.querySelector('.review-website')!, {
             target: { value: 'http://bot.example' },
@@ -93,9 +93,9 @@ describe('ReviewsView', () => {
             <ReviewsView testimonials={[]} saving={false} onSubmit={onSubmit} />
         )
 
-        await user.type(screen.getByLabelText('Your name'), 'Pat')
+        await user.type(screen.getByLabelText(/your name/i), 'Pat')
         await user.click(screen.getByRole('button', { name: '3 Stars' }))
-        await user.type(screen.getByLabelText('Your review'), 'Good.')
+        await user.type(screen.getByLabelText(/your review/i), 'Good.')
         await user.click(screen.getByRole('button', { name: /submit review/i }))
 
         expect(onSubmit).toHaveBeenCalledWith(
@@ -114,15 +114,15 @@ describe('ReviewsView', () => {
         [
             'a name but no words',
             async (user: ReturnType<typeof userEvent.setup>) => {
-                await user.type(screen.getByLabelText('Your name'), 'Jo')
+                await user.type(screen.getByLabelText(/your name/i), 'Jo')
             },
         ],
         [
             'name and words but no rating',
             async (user: ReturnType<typeof userEvent.setup>) => {
-                await user.type(screen.getByLabelText('Your name'), 'Jo')
+                await user.type(screen.getByLabelText(/your name/i), 'Jo')
                 await user.type(
-                    screen.getByLabelText('Your review'),
+                    screen.getByLabelText(/your review/i),
                     'Some words.'
                 )
             },
@@ -139,6 +139,36 @@ describe('ReviewsView', () => {
 
         expect(onSubmit).not.toHaveBeenCalled()
         expect(screen.getByRole('alert')).toBeInTheDocument()
+    })
+
+    it('marks each missing required field inline on submit (REQ-029)', async () => {
+        const user = userEvent.setup()
+        render(
+            <ReviewsView testimonials={[]} saving={false} onSubmit={vi.fn()} />
+        )
+
+        // Nothing shows before a submit is attempted.
+        expect(
+            screen.queryByText('Your name is required')
+        ).not.toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /submit review/i }))
+
+        // Each required field names its own problem, and the rating (a custom
+        // control) carries its message too.
+        expect(
+            screen.getByText('Your name is required')
+        ).toBeInTheDocument()
+        expect(screen.getByText('Please add a few words')).toBeInTheDocument()
+        expect(screen.getByText('A rating is required')).toBeInTheDocument()
+
+        // Filling a field clears its inline error on the next submit.
+        await user.type(screen.getByLabelText(/your name/i), 'Jo')
+        await user.click(screen.getByRole('button', { name: /submit review/i }))
+        expect(
+            screen.queryByText('Your name is required')
+        ).not.toBeInTheDocument()
+        expect(screen.getByText('A rating is required')).toBeInTheDocument()
     })
 
     it('disables the button while a submission is in flight', () => {

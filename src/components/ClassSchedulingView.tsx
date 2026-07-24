@@ -27,6 +27,7 @@ import {
     groupDaySessions,
     type DayEntry,
 } from '../utils/sessionGroups'
+import { requiredFieldProps } from '../utils/formValidation'
 import type { ScheduledSession, SessionStatus, Student } from '../data/students'
 
 type ClassSchedulingViewProps = {
@@ -77,10 +78,6 @@ const displayMembers = (entry: DayEntry) => {
     return active.length ? active : entry.sessions
 }
 
-/** A student's first subject seeds the form — nothing if they have none. */
-const defaultSubjects = (option?: StudentOption) =>
-    option?.subjects.slice(0, 1) ?? []
-
 /** The API keeps one subject string; the form edits it as chips. */
 const splitSubjects = (subject?: string) => (subject ? subject.split(', ') : [])
 
@@ -123,16 +120,6 @@ export const ClassSchedulingView = ({
         [students]
     )
 
-    // Every subject taught across the roster, once each — the dropdown's
-    // options. freeSolo on the field still lets a new one be typed in.
-    const subjectOptions = useMemo(
-        () =>
-            [...new Set(students.flatMap((student) => student.subjects))].sort(
-                (a, b) => a.localeCompare(b)
-            ),
-        [students]
-    )
-
     // The form starts empty and is filled from whichever class the modal is
     // showing. Several students make the booking a group class.
     const [selectedStudents, setSelectedStudents] = useState<StudentOption[]>(
@@ -142,6 +129,25 @@ export const ClassSchedulingView = ({
     const [time, setTime] = useState('')
     const [durationMinutes, setDurationMinutes] = useState(60)
     const [notes, setNotes] = useState('')
+
+    // A class can only be one of the subjects its students are registered for
+    // (set when the student was added), so the Subject dropdown offers just
+    // those — the union across everyone picked for a group class. Current
+    // picks are folded in so an edited class keeps its stored subject as a
+    // valid option even if the student's registration has since changed.
+    const subjectChoices = useMemo(
+        () =>
+            Array.from(
+                new Set([
+                    ...selectedStudents.flatMap((option) => option.subjects),
+                    ...subjects,
+                ])
+            ).sort(),
+        [selectedStudents, subjects]
+    )
+    // Required-field errors show only after an add/save is attempted (REQ-029);
+    // reset whenever a day or entry is opened so a fresh form starts clean.
+    const [submitted, setSubmitted] = useState(false)
     const [monthReference, setMonthReference] = useState(() => new Date())
     // The day whose modal is open. The calendar owns the date now, so there is
     // no date field to keep in sync — null means no modal.
@@ -209,6 +215,7 @@ export const ClassSchedulingView = ({
         setTime(entry?.lead.time ?? '')
         setDurationMinutes(entry?.lead.durationMinutes ?? 60)
         setNotes(entry?.lead.notes ?? '')
+        setSubmitted(false)
     }
 
     /** Opens a day to edit `entryKey`, or its earliest entry, or to add one. */
@@ -323,6 +330,7 @@ export const ClassSchedulingView = ({
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
+        setSubmitted(true)
         if (!formValid || !openDate) {
             return
         }
@@ -493,6 +501,7 @@ export const ClassSchedulingView = ({
                         id="scheduling-form"
                         className="scheduling-form"
                         onSubmit={handleSubmit}
+                        noValidate
                     >
                         <Autocomplete
                             multiple
@@ -501,9 +510,17 @@ export const ClassSchedulingView = ({
                             disablePortal
                             onChange={(_event, value) => {
                                 setSelectedStudents(value)
-                                if (!subjects.length) {
-                                    setSubjects(defaultSubjects(value[0]))
-                                }
+                                // Keep only subjects the remaining students
+                                // actually teach, so a picked subject can never
+                                // be one they aren't registered for.
+                                const allowed = new Set(
+                                    value.flatMap((option) => option.subjects)
+                                )
+                                setSubjects((current) =>
+                                    current.filter((subject) =>
+                                        allowed.has(subject)
+                                    )
+                                )
                             }}
                             isOptionEqualToValue={(option, value) =>
                                 option.id === value.id
@@ -514,7 +531,7 @@ export const ClassSchedulingView = ({
 
                                 return (
                                     <li key={key} {...optionProps}>
-                                        <span>
+                                        <span className="scheduling-student-option">
                                             <strong>
                                                 {option.firstName}{' '}
                                                 {option.lastName}
@@ -536,25 +553,36 @@ export const ClassSchedulingView = ({
                                             ? 'Pick one student — or several for a group class'
                                             : ''
                                     }
+                                    {...requiredFieldProps(
+                                        submitted &&
+                                            selectedStudents.length === 0,
+                                        'Pick at least one student'
+                                    )}
                                 />
                             )}
                         />
                         <Autocomplete
                             multiple
-                            freeSolo
-                            options={subjectOptions}
+                            options={subjectChoices}
                             value={subjects}
                             disablePortal
+                            disabled={selectedStudents.length === 0}
                             onChange={(_event, value) => setSubjects(value)}
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
                                     label="Subject"
                                     placeholder={
-                                        subjects.length === 0
-                                            ? 'Pick subjects — or type your own'
-                                            : ''
+                                        selectedStudents.length === 0
+                                            ? 'Pick a student first'
+                                            : subjects.length === 0
+                                              ? "Pick from the student's subjects"
+                                              : ''
                                     }
+                                    {...requiredFieldProps(
+                                        submitted && subjects.length === 0,
+                                        'Pick at least one subject'
+                                    )}
                                 />
                             )}
                         />
@@ -566,6 +594,10 @@ export const ClassSchedulingView = ({
                             // A time input always draws its own control, so an
                             // unshrunk label sits on top of it when empty.
                             slotProps={{ inputLabel: { shrink: true } }}
+                            {...requiredFieldProps(
+                                submitted && !time,
+                                'Time is required'
+                            )}
                         />
                         <TextField
                             select

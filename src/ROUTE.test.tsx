@@ -176,10 +176,10 @@ describe('reviews (REQ-027)', () => {
         render(<App />)
 
         await screen.findByRole('heading', { name: /^reviews$/i })
-        await user.type(screen.getByLabelText('Your name'), 'Casey')
+        await user.type(screen.getByLabelText(/your name/i), 'Casey')
         await user.click(screen.getByRole('button', { name: '5 Stars' }))
         await user.type(
-            screen.getByLabelText('Your review'),
+            screen.getByLabelText(/your review/i),
             'A wonderful year of progress.'
         )
         await user.click(
