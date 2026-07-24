@@ -5,7 +5,6 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { RequireTeacher } from './RequireTeacher'
 import { Sidebar } from './Sidebar'
-import { SignInView } from './SignInView'
 import {
     TeacherName,
     TopbarAuth,
@@ -14,7 +13,6 @@ import {
 } from './TopbarAuth'
 import {
     isAuthConfigured,
-    signIn,
     signOut,
     getMsalInstance,
 } from '../auth/msal'
@@ -25,6 +23,12 @@ import {
     initialLoadSkipped,
 } from '../store/store'
 import App from '../App'
+
+// The Home landing is its own connected page with its own tests; the gate
+// tests only care that a signed-out visitor lands on it.
+vi.mock('./HomeView', () => ({
+    HomeLanding: () => <div>home landing</div>,
+}))
 
 // The auth module is fully unit-tested on its own; components see a mock.
 vi.mock('../auth/msal', () => ({
@@ -103,46 +107,13 @@ describe('RequireTeacher', () => {
             screen.queryByText('students content')
         ).not.toBeInTheDocument()
         expect(screen.queryByText('dash content')).not.toBeInTheDocument()
-        expect(
-            screen.getByRole('heading', { name: /welcome to springboard/i })
-        ).toBeInTheDocument()
+        expect(screen.getByText('home landing')).toBeInTheDocument()
     })
 
-    it('asks for sign-in on the dashboard itself when signed out', () => {
+    it('shows the Home landing at the root when signed out', () => {
         mockAccount = null
         render(<MemoryRouter initialEntries={['/']}>{gatedRoutes}</MemoryRouter>)
-        expect(
-            screen.getByRole('heading', { name: /welcome to springboard/i })
-        ).toBeInTheDocument()
-    })
-})
-
-describe('SignInView', () => {
-    it('starts the Microsoft sign-in', async () => {
-        const user = userEvent.setup()
-        render(
-            <MemoryRouter>
-                <SignInView />
-            </MemoryRouter>
-        )
-        await user.click(
-            screen.getByRole('button', { name: /sign in with microsoft/i })
-        )
-        expect(signIn).toHaveBeenCalled()
-    })
-
-    it('points visitors at the public pages', () => {
-        render(
-            <MemoryRouter>
-                <SignInView />
-            </MemoryRouter>
-        )
-        expect(
-            screen.getByRole('link', { name: /what we offer/i })
-        ).toHaveAttribute('href', '/offerings')
-        expect(
-            screen.getByRole('link', { name: /get in touch/i })
-        ).toHaveAttribute('href', '/contact')
+        expect(screen.getByText('home landing')).toBeInTheDocument()
     })
 })
 

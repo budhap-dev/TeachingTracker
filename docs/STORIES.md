@@ -79,7 +79,7 @@ XS is an afternoon, XL is a project.
 | 6 | ✅ | [REQ-003 — Public / teacher split](#req-003--public-portal-with-no-login-the-teachers-area-is-private) | L | both | REQ-004 to enforce |
 | 7 | ✅ | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — |
 | 8 | ✅ | [REQ-029 — Forms mark required fields and show inline validation](#req-029--forms-mark-required-fields-and-show-inline-validation) | M | frontend | — (shipped: PR #51 + contact format follow-up) |
-| 9 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
+| 9 | ✅ | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — (verified 2026-07-24: prod on UK South tables; dump tool added) |
 | 10 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
 | 11 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
 | 12 | ✅ | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | — (shipped) |
@@ -93,12 +93,12 @@ XS is an afternoon, XL is a project.
 | 19 | 🔲 | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | REQ-008, REQ-009 |
 | 20 | 🔲 | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | REQ-008 |
 | 21 | 🔲 | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | REQ-008 |
-| 22 | 🔲 | [REQ-023 — Public pages are discoverable (SEO / OG)](#req-023--public-pages-are-discoverable-seo--og) | M | frontend | — |
-| 23 | 🔲 | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
+| 22 | ✅ | [REQ-023 — Public pages are discoverable (SEO / OG)](#req-023--public-pages-are-discoverable-seo--og) | M | frontend | — (static meta + per-route titles + sitemap/robots; prerender deferred) |
+| 23 | ✅ | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
 | 24 | 🔲 | [REQ-025 — FAQ](#req-025--faq) | S | both | REQ-008 |
 | 25 | 🔲 | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | REQ-009 |
 | 26 | ✅ | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
-| 27 | 🚧 | [REQ-028 — Profanity screen flags reviews for moderation](#req-028--profanity-screen-flags-reviews-for-moderation) | S | both | REQ-027 |
+| 27 | ✅ | [REQ-028 — Profanity screen flags reviews for moderation](#req-028--profanity-screen-flags-reviews-for-moderation) | S | both | REQ-027 (backend screen merged 2026-07-24) |
 
 **Next up: [REQ-029](#req-029--forms-mark-required-fields-and-show-inline-validation) — required-field markers + inline validation** (prioritised by the owner 2026-07-24; frontend-only, no deps, so it can ship immediately). Then finish [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database) — prod cutover only. Reconciled 2026-07-24 against the code: REQ-003/REQ-004 completed (prod enforces sign-in), and REQ-013/014/015/016/017/027 are all **shipped** — the backlog had them as 🚧/🔲. REQ-028 is **half-built** (frontend flag display shipped; the backend profanity screen was never written — small, unblocked backend work). REQ-009 is *nearly* done: its plan (`func-teaching-tracker/docs/PLAN-req-009-database.md`) shows dev fully on durable Table Storage (Phases 0–5); only **Phase 6, the prod data cutover** (UK South move + seed prod tables empty + verify), remains — operational infra work. ⚠️ Prod's live `DATA_STORE` app setting is already `tables` (as is `variables.tf`), so this needs reconciling like the REQ-004 flag drift did. What's genuinely unbuilt from here: REQ-023 (SEO/OG) and REQ-024 (public Home) — frontend, no deps; the enquiry/leads path (REQ-018/019/026) waits on REQ-009; the content-driven pieces (REQ-008/020/021/022/025) land through **REQ-008**'s in-app editor.
 
@@ -890,7 +890,7 @@ enquire without having to ask.
 
 ## REQ-023 — Public pages are discoverable (SEO / OG)
 
-**Status:** 🔲 Not started · **Impact:** frontend (+ infra if prerendered) · **Effort:** M
+**Status:** ✅ Done (first cut, 2026-07-24) · **Impact:** frontend (+ infra if prerendered) · **Effort:** M · **Delivered:** static title/description/OG/Twitter tags in index.html (seen by crawlers that skip JS), per-route titles + descriptions via `useDocumentMeta` on Home/Offerings/Reviews/Contact, `sitemap.xml` + `robots.txt` (teacher routes disallowed). **Deferred:** build-time prerender of per-route tags — an SWA/infra job; today non-JS crawlers see the site-wide defaults on every route.
 
 **Story**
 As a family searching online, I want the public pages to have proper titles,
@@ -913,7 +913,7 @@ when shared.
 
 ## REQ-024 — Public Home landing page
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M · **Relates to:** REQ-003
+**Status:** ✅ Done (2026-07-24) · **Impact:** frontend · **Effort:** M · **Relates to:** REQ-003 · **Delivered:** `HomeView`/`HomeLanding` — a signed-out visitor at the root gets the marketing landing (hero + availability, proof strip of approved reviews, how-it-works journey, CTAs to Contact/Offerings/Reviews) with teacher sign-in as a quiet afterline; it replaced the thinner `SignInView`. A signed-in teacher (and auth-less local dev) still lands on the dashboard at the same path — no `/app` move was needed, since `RequireTeacher` already splits the root by auth.
 
 **Story**
 As a visitor, I want a public Home landing page, so that arriving at the site

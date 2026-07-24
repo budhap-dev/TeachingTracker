@@ -6,19 +6,19 @@ import {
 } from '@azure/msal-react'
 import { isAuthConfigured } from '../auth/msal'
 import { paths } from '../paths'
-import { SignInView } from './SignInView'
+import { HomeLanding } from './HomeView'
 
 /**
- * Signed out, every teacher route bounces to the dashboard, which is where
- * the sign-in ask lives — one predictable landing place, deliberately not
- * preserving the requested deep link.
+ * Signed out, every teacher route bounces to the site root, which now shows
+ * the marketing Home (REQ-024) with its quiet sign-in afterline — one
+ * predictable landing place, deliberately not preserving the deep link.
  */
 const SignedOut = () => {
     const { pathname } = useLocation()
     if (pathname !== paths.dashboard) {
         return <Navigate to={paths.dashboard} replace />
     }
-    return <SignInView />
+    return <HomeLanding />
 }
 
 /**

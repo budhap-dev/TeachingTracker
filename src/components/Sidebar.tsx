@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useIsAuthenticated } from '@azure/msal-react'
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined'
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined'
@@ -25,9 +26,19 @@ type NavItem = {
     isActive: (pathname: string) => boolean
     /** Teacher-only items leave the menu for signed-out visitors (REQ-003). */
     teacherOnly?: boolean
+    /** Visitor-only items leave the menu for the signed-in teacher — Home
+        shares the root path with the Dashboard (REQ-024). */
+    visitorOnly?: boolean
 }
 
 const navItems: NavItem[] = [
+    {
+        label: 'Home',
+        path: paths.dashboard,
+        icon: <HomeOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname === paths.dashboard,
+        visitorOnly: true,
+    },
     {
         label: 'Dashboard',
         path: paths.dashboard,
@@ -114,8 +125,10 @@ const SidebarContent = ({
     const { pathname } = useLocation()
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
 
-    const visibleItems = navItems.filter(
-        (item) => showTeacherItems || !item.teacherOnly
+    const visibleItems = navItems.filter((item) =>
+        showTeacherItems
+            ? !item.visitorOnly
+            : !item.teacherOnly
     )
 
     // Two menu groups: the teacher's private workspace and the public-facing
