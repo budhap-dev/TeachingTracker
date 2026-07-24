@@ -179,7 +179,12 @@ Backend-first, per the repo DoD. Roughly a week of evenings; each step ships.
 - [x] **T3 · frontend**: MSAL setup, sign-in/out UI, bearer header in
       `apiRequest`, 401/403 handling, env vars in GitHub Environments, tests to
       100 %. Deploy. (L)
-- [ ] **T4 · flip**: `AUTH_ENFORCED=true` dev → verify with `/verify` skill +
-      a raw `curl` (expect 401) → prod. Update README/DEPLOYMENT docs. (S)
-- [ ] **T5 · follow-up**: STORIES.md tick, REQ-003 unblocked (route split can
-      now build on `useIsAuthenticated`). (XS)
+- [x] **T4 · flip**: `AUTH_ENFORCED=true` dev (2026-07-17) → prod (2026-07-24),
+      verified by raw `curl` (prod teacher endpoints 401 `Missing bearer token`,
+      public `/contact` + `/testimonials` 200, CORS preflight 204). ⚠️ Prod had
+      drifted: `variables.tf` committed `auth_enforced = true`, but the live app
+      setting was still `false` — the Terraform was never applied (or the setting
+      was flipped back out-of-band). Reconciled directly with `az functionapp
+      config appsettings set`; a `terraform apply` on prod is now a no-op. (S)
+- [x] **T5 · follow-up**: STORIES.md tick, REQ-003 unblocked (route split builds
+      on `useIsAuthenticated`). (XS)

@@ -76,8 +76,8 @@ XS is an afternoon, XL is a project.
 | 3 | ✅ | [REQ-002 — Student fields editable + saved](#req-002--every-student-field-except-the-id-is-editable-and-persists-via-the-api) | M | both | — |
 | 4 | ✅ | [REQ-010 — Cancel a class](#req-010--a-class-can-be-cancelled-and-a-cancelled-class-is-never-billed) | M | both | — |
 | 5 | ✅ | [REQ-001 — Fees per session, billed on classes taught](#req-001--fees-are-per-session-and-a-month-bills-for-classes-actually-taught) | L | both | REQ-010 |
-| 6 | 🚧 | [REQ-003 — Public / teacher split](#req-003--public-portal-with-no-login-the-teachers-area-is-private) | L | both | REQ-004 to enforce |
-| 7 | 🚧 | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — (planned) |
+| 6 | ✅ | [REQ-003 — Public / teacher split](#req-003--public-portal-with-no-login-the-teachers-area-is-private) | L | both | REQ-004 to enforce |
+| 7 | ✅ | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — |
 | 8 | 🔲 | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — |
 | 9 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
 | 10 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
@@ -98,17 +98,18 @@ XS is an afternoon, XL is a project.
 | 24 | 🔲 | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | REQ-009 |
 | 25 | 🔲 | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
 
-**Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–5 are done; REQ-003/REQ-004 are in flight (prod enforcement after the dev soak). The growth epics (REQ-015→026) are new: REQ-015/016/017/023 are shippable now against the current copy; the enquiry/leads/testimonials path (REQ-018/019/020) waits on **REQ-009** durable storage, and the content-driven pieces (REQ-020/021/022/025) land through **REQ-008**'s in-app editor.
+**Next up: [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database)** — rows 1–7 are done; **REQ-003/REQ-004 completed 2026-07-24** (prod API now enforces sign-in). The growth epics (REQ-015→026) are new: REQ-015/016/017/023 are shippable now against the current copy; the enquiry/leads/testimonials path (REQ-018/019/020) waits on **REQ-009** durable storage, and the content-driven pieces (REQ-020/021/022/025) land through **REQ-008**'s in-app editor.
 
 **Three things this order is trying to respect:**
 
-1. **The first five are ✅ done.** REQ-007 → REQ-006 → REQ-002 → REQ-010 → REQ-001
-   shipped in that order; the next unblocked story is **REQ-003**. REQ-001 followed
-   REQ-010 because billing for classes taught is only correct once a cancelled class
-   can be told apart from a taught one.
-2. **REQ-003 and REQ-004 ship together.** The split is the requirement; sign-in is
+1. **The first seven are ✅ done.** REQ-007 → REQ-006 → REQ-002 → REQ-010 → REQ-001,
+   then REQ-003 + REQ-004 together; the next unblocked story is **REQ-009**. REQ-001
+   followed REQ-010 because billing for classes taught is only correct once a
+   cancelled class can be told apart from a taught one.
+2. **REQ-003 and REQ-004 shipped together.** The split is the requirement; sign-in is
    the mechanism. Gating routes without identity produces a fake lock — and the
-   API stays open regardless, which is the part that matters.
+   API stays open regardless, which is the part that matters. Prod enforcement
+   landed 2026-07-24, closing both.
 3. **REQ-009 is the real gate for the last two.** It was parked as "not needed
    now"; REQ-008 and REQ-005 both quietly depend on it. Doing them first would mean
    building on storage that forgets.
@@ -306,7 +307,7 @@ mark a student as paid once the month is done.
 
 ## REQ-003 — Public portal with no login; the teacher's area is private
 
-**Status:** 🚧 In progress (built; prod enforcement pending REQ-004 T4 soak) · **Impact:** both · **Effort:** L
+**Status:** ✅ Done (prod enforcement flipped 2026-07-24) · **Impact:** both · **Effort:** L
 
 **Story**
 As a visitor, I want to browse the portal without signing in, so that I can learn
@@ -327,8 +328,9 @@ visible only to me, so that families' details stay private.
 - [x] Navigation only shows teacher menu items when signed in — the sidebar is
       auth-aware; visitors see Offerings and Contact us only.
 - [x] **The API rejects unauthenticated requests** for teacher data — hiding it in
-      the UI is not sufficient. _(dev enforced 2026-07-17; prod flips after the
-      dev soak — REQ-004 T4)_
+      the UI is not sufficient. _(dev enforced 2026-07-17; prod enforced 2026-07-24
+      — REQ-004 T4. Verified: prod `/students`, `/payments`, `/sessions` return 401
+      `Missing bearer token`; public `/contact`, `/testimonials` stay 200.)_
 - [x] Public and teacher areas share the same hosted URL per environment.
 
 **Notes**
@@ -344,7 +346,7 @@ visible only to me, so that families' details stay private.
 
 ## REQ-004 — Teacher signs in with Microsoft Entra ID
 
-**Status:** 🚧 In progress (T1–T3 done; T4: dev enforced 2026-07-17, prod after soak) · **Impact:** both + infra · **Effort:** L
+**Status:** ✅ Done (T1–T4 complete; dev enforced 2026-07-17, prod 2026-07-24) · **Impact:** both + infra · **Effort:** L
 · **Plan:** [docs/PLAN-req-004-entra-signin.md](PLAN-req-004-entra-signin.md)
 
 **Story**
@@ -354,19 +356,19 @@ another password, and without paying for an auth tier.
 
 **Acceptance criteria**
 
-- [ ] Teacher signs in via Microsoft Entra ID (single-tenant; MSAL in the SPA).
-- [ ] **Only allow-listed emails get in** — authenticating with *any* other
+- [x] Teacher signs in via Microsoft Entra ID (single-tenant; MSAL in the SPA).
+- [x] **Only allow-listed emails get in** — authenticating with *any* other
       account in the tenant must not grant access.
-- [ ] The allow-list holds **multiple emails**, lives in **Key Vault**
+- [x] The allow-list holds **multiple emails**, lives in **Key Vault**
       (`teacher-emails`), and is editable without a code deploy.
-- [ ] The Function App reads the secret via **managed identity** — no connection
+- [x] The Function App reads the secret via **managed identity** — no connection
       string or key in app settings.
-- [ ] The session persists across reloads, and there is a clear way to sign out.
-- [ ] The API validates the JWT (signature / issuer / audience / expiry) on every
+- [x] The session persists across reloads, and there is a clear way to sign out.
+- [x] The API validates the JWT (signature / issuer / audience / expiry) on every
       teacher request and rejects anything unsigned, expired, or not allow-listed
       — auth lives in Function code, not in the platform.
-- [ ] Works identically across dev/prod, with per-environment client config.
-- [ ] Total added cost ≈ £0 (SWA stays Free; Key Vault pennies).
+- [x] Works identically across dev/prod, with per-environment client config.
+- [x] Total added cost ≈ £0 (SWA stays Free; Key Vault pennies).
 
 **Notes**
 
