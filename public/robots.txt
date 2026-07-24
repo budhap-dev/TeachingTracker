@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+# Teacher-only areas carry no content for crawlers (they render a sign-in ask).
+Disallow: /students
+Disallow: /study-snapshot
+Disallow: /alumni
+Disallow: /payments
+Disallow: /scheduling
+Disallow: /reviews/moderation
+
+Sitemap: https://nice-sea-095463c0f.7.azurestaticapps.net/sitemap.xml

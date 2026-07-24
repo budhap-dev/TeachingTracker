@@ -9,6 +9,7 @@ import {
     useSearchParams,
 } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from './hooks'
+import { useDocumentMeta } from './hooks/useDocumentMeta'
 import {
     archiveStudentRequested,
     addSessionMemberRequested,
@@ -578,6 +579,10 @@ const SchedulingRoute = () => {
 /** Public page — reads site copy, never student data. */
 const OfferingsRoute = () => {
     const navigate = useNavigate()
+    useDocumentMeta(
+        'Subjects & how lessons run — Springboard Tutoring',
+        'Maths, physics, chemistry and biology for KS3 and GCSE, matched to your exam board — online or in person. See how lessons run, from enquiry to weekly sessions.'
+    )
     return (
         <OfferingsView
             hero={siteContent.offerings.hero}
@@ -599,6 +604,10 @@ const OfferingsRoute = () => {
  */
 const ContactRouteInner = ({ canEdit }: { canEdit: boolean }) => {
     const dispatch = useAppDispatch()
+    useDocumentMeta(
+        'Contact us — Springboard Tutoring',
+        'Ask about tutoring availability, subjects or a free first assessment — by email, phone or WhatsApp. We usually reply within a day.'
+    )
     const contact = useAppSelector((state) => state.students.contact)
     const loading = useAppSelector((state) => state.students.contactLoading)
     const saving = useAppSelector((state) => state.students.savingContact)
@@ -640,6 +649,10 @@ const ContactRoute = () =>
  */
 const ReviewsRoute = () => {
     const dispatch = useAppDispatch()
+    useDocumentMeta(
+        'Reviews from families — Springboard Tutoring',
+        'What parents and students say about tutoring with Springboard — real reviews, checked before they appear. Share your own experience too.'
+    )
     const testimonials = useAppSelector(
         (state) => state.students.testimonials
     )

@@ -2761,3 +2761,19 @@ $note-rule: 32px;
     margin-left: 2px;
     opacity: 0.85;
 }
+
+/* Public Home landing (REQ-024). Reuses the offerings hero/journey/testimonial
+   styles; only the CTA row and the quiet teacher afterline are its own. */
+.home-hero-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.home-teacher-line {
+    margin: 4px 0 12px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
