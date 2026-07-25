@@ -32,6 +32,14 @@ import {
     fetchSessionsRequested,
     fetchSessionsSucceeded,
     fetchStudentsFailed,
+    fetchLeadsRequested,
+    fetchLeadsSucceeded,
+    fetchLeadsFailed,
+    submitLeadRequested,
+    submitLeadSucceeded,
+    submitLeadFailed,
+    updateLeadStatusSucceeded,
+    updateLeadStatusFailed,
     fetchStudentsRequested,
     fetchStudentsSucceeded,
     resetStudentState,
@@ -782,5 +790,69 @@ describe('student reducer', () => {
             )
             expect(cleared.error).toBeNull()
         })
+    })
+})
+
+describe('lead lifecycle (REQ-018/019)', () => {
+    it('tracks the inbox fetch, including failure', () => {
+        const failed = studentReducer(initial(), fetchLeadsFailed('inbox down'))
+        expect(failed.leadsLoading).toBe(false)
+        expect(failed.error).toBe('inbox down')
+
+        const requested = studentReducer(failed, fetchLeadsRequested())
+        expect(requested.leadsLoading).toBe(true)
+    })
+
+    it('tracks an enquiry submit through failure and success', () => {
+        const sending = studentReducer(
+            initial(),
+            submitLeadRequested({
+                parentName: 'Jo',
+                year: '9',
+                subjects: ['Maths'],
+                goal: 'help',
+                mode: 'Either',
+            })
+        )
+        expect(sending.savingLead).toBe(true)
+
+        const failed = studentReducer(sending, submitLeadFailed('offline'))
+        expect(failed.savingLead).toBe(false)
+        expect(failed.error).toBe('offline')
+
+        const sent = studentReducer(sending, submitLeadSucceeded())
+        expect(sent.savingLead).toBe(false)
+        expect(sent.leadSubmitted).toBe(true)
+        expect(sent.notice?.kind).toBe('success')
+    })
+
+    it('swaps the updated lead into the inbox, and reports failures', () => {
+        const lead = {
+            id: 1,
+            parentName: 'Priya',
+            email: 'p@example.com',
+            year: '10',
+            subjects: ['Maths'],
+            goal: 'Confidence.',
+            mode: 'Online',
+            status: 'New',
+            submittedOn: '2026-07-20',
+        } as const
+        const seeded = studentReducer(
+            initial(),
+            fetchLeadsSucceeded([{ ...lead }])
+        )
+
+        const updated = studentReducer(
+            seeded,
+            updateLeadStatusSucceeded({ ...lead, status: 'Contacted' })
+        )
+        expect(updated.leads[0].status).toBe('Contacted')
+
+        const failed = studentReducer(
+            updated,
+            updateLeadStatusFailed('conflict')
+        )
+        expect(failed.error).toBe('conflict')
     })
 })

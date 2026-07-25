@@ -97,7 +97,7 @@ describe('public pages', () => {
         ).toBeInTheDocument()
     })
 
-    it('sends a visitor from the offerings CTA to contact us', async () => {
+    it('sends a visitor from the offerings CTA to the enquiry form', async () => {
         const user = userEvent.setup()
         window.history.pushState({}, '', '/offerings')
         render(<App />)
@@ -109,7 +109,7 @@ describe('public pages', () => {
         )
 
         expect(
-            screen.getByRole('heading', { name: /contact us/i })
+            screen.getByRole('heading', { name: /enquire about tutoring/i })
         ).toBeInTheDocument()
     })
 
@@ -326,5 +326,110 @@ describe('loading states', () => {
         expect(
             await screen.findAllByRole('link', { name: /asha perera/i })
         ).not.toHaveLength(0)
+    })
+})
+
+describe('enquiries and leads (REQ-018/019)', () => {
+    it('submits an enquiry from the public form and shows the thanks', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/enquire')
+        render(<App />)
+
+        expect(
+            screen.getByRole('heading', { name: /enquire about tutoring/i })
+        ).toBeInTheDocument()
+
+        await user.type(screen.getByLabelText(/your name/i), 'Priya Sharma')
+        await user.type(
+            screen.getByLabelText(/email/i),
+            'priya@example.com'
+        )
+        await user.click(
+            screen.getByRole('combobox', { name: /child's year/i })
+        )
+        await user.click(screen.getByRole('option', { name: 'Year 10' }))
+        await user.click(screen.getByRole('combobox', { name: /subject/i }))
+        await user.click(screen.getByRole('option', { name: 'Mathematics' }))
+        await user.keyboard('{Escape}')
+        await user.type(
+            screen.getByLabelText(/what would you like tutoring to achieve/i),
+            'Confidence before mocks.'
+        )
+        await user.click(
+            screen.getByRole('button', { name: /send enquiry/i })
+        )
+
+        // Both the thanks card and the success toast carry the message; the
+        // heading is the card.
+        expect(
+            await screen.findByRole('heading', {
+                name: /thank you — your enquiry is in/i,
+            })
+        ).toBeInTheDocument()
+    })
+
+    it('reaches the leads inbox from the sidebar and works a lead', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', { name: /^leads$/i })
+        )
+
+        expect(
+            await screen.findByRole('heading', { name: /^leads$/i })
+        ).toBeInTheDocument()
+        // The fixture inbox: Priya (New) then Tom (Contacted).
+        expect(screen.getByText('Priya Sharma')).toBeInTheDocument()
+        expect(screen.getByText('Tom Riley')).toBeInTheDocument()
+
+        await user.click(
+            screen.getByRole('button', { name: /mark contacted/i })
+        )
+        // The saga round-trips through the mocked API and updates the card.
+        const priyaCard = screen.getByText('Priya Sharma').closest('li')!
+        expect(
+            await within(priyaCard).findByText('Contacted')
+        ).toBeInTheDocument()
+    })
+
+    it('converts a lead into a pre-filled add-student form', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/leads')
+        render(<App />)
+
+        await screen.findByRole('heading', { name: /^leads$/i })
+        // Both unconverted leads offer Convert; the first card is Priya
+        // (newest first). Converting opens the student form.
+        await user.click(
+            screen.getAllByRole('button', { name: /convert to student/i })[0]
+        )
+
+        expect(
+            await screen.findByRole('heading', { name: /add a new student/i })
+        ).toBeInTheDocument()
+        // Pre-filled from the enquiry — the parent's name and year arrive
+        // ready; the goal and email travel in the notes field of the payload.
+        expect(screen.getByLabelText(/parent name/i)).toHaveValue(
+            'Priya Sharma'
+        )
+    })
+
+    it('surfaces the open-enquiry count on the dashboard and opens the inbox', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        // One fixture lead is New.
+        const pill = await screen.findByRole('button', {
+            name: /1 new enquiry/i,
+        })
+        await user.click(pill)
+
+        expect(
+            await screen.findByRole('heading', { name: /^leads$/i })
+        ).toBeInTheDocument()
     })
 })

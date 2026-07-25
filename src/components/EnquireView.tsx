@@ -1,0 +1,286 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import {
+    Box,
+    Button,
+    Checkbox,
+    ListItemText,
+    MenuItem,
+    TextField,
+} from '@mui/material'
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
+import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded'
+import type { Lead } from '../data/students'
+import type { LeadInput } from '../api/leads'
+import { subjectOptions, yearOptions } from '../utils/constants'
+import {
+    isValidEmail,
+    isValidPhone,
+    requiredFieldProps,
+} from '../utils/formValidation'
+import { useDocumentMeta } from '../hooks/useDocumentMeta'
+
+type EnquireViewProps = {
+    /** An enquiry is on its way to the API. */
+    saving: boolean
+    /** True once this visit's enquiry has been accepted — shows the thanks. */
+    submitted: boolean
+    onSubmit: (input: LeadInput) => void
+}
+
+const modeOptions: Lead['mode'][] = ['Online', 'Face to Face', 'Either']
+
+/**
+ * Public enquiry form (REQ-018): how a family starts, without composing a
+ * cold email. Submissions land as New in the teacher's Leads inbox
+ * (REQ-019). Validation follows the REQ-029 conventions — required markers
+ * up front, red border + message on a missed field after a submit attempt.
+ */
+export const EnquireView = ({
+    saving,
+    submitted,
+    onSubmit,
+}: EnquireViewProps) => {
+    useDocumentMeta(
+        'Enquire about tutoring — Springboard Tutoring',
+        'Tell us the subject, year and what your child wants from tutoring, and we will come back to you — usually within a day.'
+    )
+    const [parentName, setParentName] = useState('')
+    const [email, setEmail] = useState('')
+    const [phone, setPhone] = useState('')
+    const [year, setYear] = useState('')
+    const [subjects, setSubjects] = useState<string[]>([])
+    const [goal, setGoal] = useState('')
+    const [mode, setMode] = useState<Lead['mode']>('Either')
+    // Honeypot: hidden from people, tempting to bots. Left blank normally.
+    const [website, setWebsite] = useState('')
+    const [attempted, setAttempted] = useState(false)
+
+    const nameMissing = !parentName.trim()
+    // One contact method is enough, but a typed one must be well-formed.
+    const emailTyped = email.trim() !== ''
+    const phoneTyped = phone.trim() !== ''
+    const contactMissing = !emailTyped && !phoneTyped
+    const emailInvalid = emailTyped && !isValidEmail(email.trim())
+    const phoneInvalid = phoneTyped && !isValidPhone(phone.trim())
+    const yearMissing = !year
+    const subjectsMissing = subjects.length === 0
+    const goalMissing = !goal.trim()
+
+    const blocked =
+        nameMissing ||
+        contactMissing ||
+        emailInvalid ||
+        phoneInvalid ||
+        yearMissing ||
+        subjectsMissing ||
+        goalMissing
+
+    const handleSubmit = (event: FormEvent) => {
+        event.preventDefault()
+        setAttempted(true)
+        if (blocked) {
+            return
+        }
+        onSubmit({
+            parentName: parentName.trim(),
+            email: email.trim() || undefined,
+            phone: phone.trim() || undefined,
+            year,
+            subjects,
+            goal: goal.trim(),
+            mode,
+            website,
+        })
+    }
+
+    if (submitted) {
+        return (
+            <section className="content-stack">
+                <div className="card enquire-thanks">
+                    <CheckCircleOutlineRoundedIcon
+                        className="enquire-thanks-icon"
+                        fontSize="large"
+                    />
+                    <h3>Thank you — your enquiry is in.</h3>
+                    <p>
+                        We usually reply within a day, and the first step is a
+                        free, no-obligation assessment session.
+                    </p>
+                </div>
+            </section>
+        )
+    }
+
+    return (
+        <section className="content-stack">
+            <div className="card">
+                <div className="section-header">
+                    <div>
+                        <h3 className="page-heading">
+                            <SendOutlinedIcon fontSize="small" />
+                            Enquire about tutoring
+                        </h3>
+                        <p className="section-subtitle">
+                            Tell us a little about your child and what you are
+                            looking for — we usually reply within a day.
+                        </p>
+                    </div>
+                </div>
+
+                <Box
+                    component="form"
+                    onSubmit={handleSubmit}
+                    className="enquire-form"
+                    noValidate
+                >
+                    <TextField
+                        label="Your name"
+                        size="small"
+                        value={parentName}
+                        onChange={(event) => setParentName(event.target.value)}
+                        {...requiredFieldProps(
+                            attempted && nameMissing,
+                            'Your name is required'
+                        )}
+                        fullWidth
+                    />
+                    <TextField
+                        select
+                        label="Preferred lessons"
+                        size="small"
+                        value={mode}
+                        onChange={(event) =>
+                            setMode(event.target.value as Lead['mode'])
+                        }
+                        fullWidth
+                    >
+                        {modeOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                                {option}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                    <TextField
+                        label="Email"
+                        type="email"
+                        size="small"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        error={
+                            attempted && (contactMissing || Boolean(emailInvalid))
+                        }
+                        helperText={
+                            attempted && contactMissing
+                                ? 'Give us an email or a phone number.'
+                                : attempted && emailInvalid
+                                  ? 'Enter a valid email address, like name@example.com.'
+                                  : 'Either email or phone is fine.'
+                        }
+                        fullWidth
+                    />
+                    <TextField
+                        label="Phone"
+                        size="small"
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        error={
+                            attempted && (contactMissing || Boolean(phoneInvalid))
+                        }
+                        helperText={
+                            attempted && phoneInvalid
+                                ? 'Enter a valid phone number with at least 7 digits.'
+                                : undefined
+                        }
+                        fullWidth
+                    />
+                    <TextField
+                        select
+                        label="Child's year"
+                        size="small"
+                        value={year}
+                        onChange={(event) => setYear(event.target.value)}
+                        {...requiredFieldProps(
+                            attempted && yearMissing,
+                            "The child's year is required"
+                        )}
+                        fullWidth
+                    >
+                        {yearOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                                Year {option}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                    <TextField
+                        select
+                        label="Subject(s)"
+                        size="small"
+                        value={subjects}
+                        slotProps={{
+                            select: {
+                                multiple: true,
+                                renderValue: (selected) =>
+                                    (selected as string[]).join(', '),
+                            },
+                        }}
+                        onChange={(event) =>
+                            setSubjects(
+                                event.target.value as unknown as string[]
+                            )
+                        }
+                        {...requiredFieldProps(
+                            attempted && subjectsMissing,
+                            'Pick at least one subject'
+                        )}
+                        fullWidth
+                    >
+                        {subjectOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                                <Checkbox checked={subjects.includes(option)} />
+                                <ListItemText primary={option} />
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                    <TextField
+                        label="What would you like tutoring to achieve?"
+                        size="small"
+                        className="enquire-goal"
+                        value={goal}
+                        onChange={(event) => setGoal(event.target.value)}
+                        multiline
+                        minRows={3}
+                        {...requiredFieldProps(
+                            attempted && goalMissing,
+                            'A sentence or two about the goal is required'
+                        )}
+                        fullWidth
+                    />
+                    {/* Honeypot: off-screen, not announced. Bots fill it; the
+                        API silently drops anything that arrives with it set. */}
+                    <input
+                        type="text"
+                        className="enquire-website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        aria-hidden="true"
+                        value={website}
+                        onChange={(event) => setWebsite(event.target.value)}
+                    />
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={saving}
+                        className="enquire-submit"
+                    >
+                        {saving ? 'Sending…' : 'Send enquiry'}
+                    </Button>
+                    <p className="enquire-consent">
+                        We only use these details to reply about tutoring —
+                        nothing else, and never shared.
+                    </p>
+                </Box>
+            </div>
+        </section>
+    )
+}

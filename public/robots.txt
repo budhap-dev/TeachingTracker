@@ -7,5 +7,6 @@ Disallow: /alumni
 Disallow: /payments
 Disallow: /scheduling
 Disallow: /reviews/moderation
+Disallow: /leads
 
 Sitemap: https://nice-sea-095463c0f.7.azurestaticapps.net/sitemap.xml

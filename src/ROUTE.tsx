@@ -27,12 +27,16 @@ import {
     deleteTestimonialRequested,
     fetchContactRequested,
     updateContactRequested,
+    fetchLeadsRequested,
+    submitLeadRequested,
+    updateLeadStatusRequested,
 } from './store/store'
 import { activeSessions } from './data/students'
 import { toDateKey } from './utils/calendar'
 import { getProgressBands, getWeekLoad } from './utils/dashboard'
 import type {
     EditableStudentField,
+    Lead,
     ScheduledSession,
     Student,
 } from './data/students'
@@ -46,6 +50,8 @@ import { StudySnapshotView } from './components/StudySnapshotView'
 import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { ClassSchedulingView } from './components/ClassSchedulingView'
 import { ContactView } from './components/ContactView'
+import { EnquireView } from './components/EnquireView'
+import { LeadsView } from './components/LeadsView'
 import { OfferingsView } from './components/OfferingsView'
 import { ReviewsView } from './components/ReviewsView'
 import { ReviewModerationView } from './components/ReviewModerationView'
@@ -84,8 +90,19 @@ const useOpenStudentPage = () => {
 
 const DashboardRoute = () => {
     const navigate = useNavigate()
+    const dispatch = useAppDispatch()
     const openStudentPage = useOpenStudentPage()
     const allStudents = useAppSelector((state) => state.students.students)
+    // The open-enquiry count rides the dashboard (REQ-019): load the inbox
+    // alongside the boot data so the pill is fresh on arrival.
+    const leads = useAppSelector((state) => state.students.leads)
+    useEffect(() => {
+        dispatch(fetchLeadsRequested())
+    }, [dispatch])
+    const newEnquiries = useMemo(
+        () => leads.filter((lead) => lead.status === 'New').length,
+        [leads]
+    )
     // Archived students (REQ-013) leave every active surface — the dashboard,
     // the roster, snapshot and the planner — for the Alumni section.
     const students = useMemo(
@@ -254,6 +271,8 @@ const DashboardRoute = () => {
             onOpenDay={(dateKey) =>
                 navigate(`${paths.scheduling}?day=${dateKey}`)
             }
+            newEnquiries={newEnquiries}
+            onOpenLeads={() => navigate(paths.leads)}
         />
     )
 }
@@ -261,14 +280,34 @@ const DashboardRoute = () => {
 const StudentsRoute = () => {
     const openStudentPage = useOpenStudentPage()
     const dispatch = useAppDispatch()
+    const location = useLocation()
     const allStudents = useAppSelector((state) => state.students.students)
     const students = useMemo(
         () => allStudents.filter((student) => !student.isArchived),
         [allStudents]
     )
     const loading = useAppSelector((state) => state.students.loading)
-    const { form, setField, resetForm } = useStudentForm()
+    const { form, setField, resetForm, prefill } = useStudentForm()
     const [isModalOpen, setIsModalOpen] = useState(false)
+
+    // Converting a lead (REQ-019): arriving with the enquiry in router state
+    // opens the add form pre-filled, so nothing needs retyping. The lead's
+    // email and goal travel in the notes — a student record has no email field.
+    useEffect(() => {
+        const lead = (location.state as { prefillLead?: Lead } | null)
+            ?.prefillLead
+        if (lead) {
+            prefill({
+                parentName: lead.parentName,
+                contactNumber: lead.phone ?? '',
+                year: lead.year,
+                subjects: lead.subjects,
+                mode: lead.mode === 'Either' ? 'Both' : lead.mode,
+                notes: `From enquiry${lead.email ? ` (${lead.email})` : ''}: ${lead.goal}`,
+            })
+            setIsModalOpen(true)
+        }
+    }, [location.state, prefill])
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault()
@@ -589,9 +628,8 @@ const OfferingsRoute = () => {
             subjects={siteContent.offerings.subjects}
             journey={siteContent.offerings.journey}
             approach={siteContent.offerings.approach}
-            // No enquiry flow yet (REQ-018) — the assessment CTA sends a
-            // visitor to Contact us for now.
-            onBookAssessment={() => navigate(paths.contact)}
+            // The assessment CTA starts a real enquiry (REQ-018).
+            onBookAssessment={() => navigate(paths.enquire)}
         />
     )
 }
@@ -717,6 +755,56 @@ const ReviewModerationRoute = () => {
     )
 }
 
+/** Public enquiry form (REQ-018) — no auth, mirrors the Reviews submit. */
+const EnquireRoute = () => {
+    const dispatch = useAppDispatch()
+    const saving = useAppSelector((state) => state.students.savingLead)
+    const submitted = useAppSelector((state) => state.students.leadSubmitted)
+    return (
+        <EnquireView
+            saving={saving}
+            submitted={submitted}
+            onSubmit={(input) => dispatch(submitLeadRequested(input))}
+        />
+    )
+}
+
+/**
+ * Teacher's enquiries inbox (REQ-019). Loads on mount; converting a lead
+ * marks it Converted and opens the add-student form pre-filled via router
+ * state, so the details never need retyping.
+ */
+const LeadsRoute = () => {
+    const dispatch = useAppDispatch()
+    const navigate = useNavigate()
+    const leads = useAppSelector((state) => state.students.leads)
+    const loading = useAppSelector((state) => state.students.leadsLoading)
+    useEffect(() => {
+        dispatch(fetchLeadsRequested())
+    }, [dispatch])
+
+    if (loading) {
+        return <PageLoading />
+    }
+    return (
+        <LeadsView
+            leads={leads}
+            onSetStatus={(id, status) =>
+                dispatch(updateLeadStatusRequested({ id, status }))
+            }
+            onConvert={(lead) => {
+                dispatch(
+                    updateLeadStatusRequested({
+                        id: lead.id,
+                        status: 'Converted',
+                    })
+                )
+                navigate(paths.students, { state: { prefillLead: lead } })
+            }}
+        />
+    )
+}
+
 /** Teacher-only route element: gated by sign-in when auth is configured. */
 const teacher = (page: JSX.Element) => <RequireTeacher>{page}</RequireTeacher>
 
@@ -752,6 +840,8 @@ export const AppRoutes = () => (
             />
             {/* Public by requirement (REQ-006/007): reachable signed out. */}
             <Route path={paths.offerings} element={<OfferingsRoute />} />
+            <Route path={paths.enquire} element={<EnquireRoute />} />
+            <Route path={paths.leads} element={teacher(<LeadsRoute />)} />
             <Route path={paths.contact} element={<ContactRoute />} />
             {/* Public reviews (REQ-027); moderation is teacher-only. */}
             <Route path={paths.reviews} element={<ReviewsRoute />} />

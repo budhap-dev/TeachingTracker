@@ -1,5 +1,7 @@
 import { all, call, put, takeEvery, takeLatest } from 'redux-saga/effects'
+import { fetchLeads, submitLead, updateLeadStatus } from '../api/leads'
 import type {
+    Lead,
     MonthlyPaymentGroup,
     PaymentRecord,
     ScheduledSession,
@@ -66,6 +68,15 @@ import {
     editSessionFailed,
     editSessionRequested,
     editSessionSucceeded,
+    fetchLeadsRequested,
+    fetchLeadsSucceeded,
+    fetchLeadsFailed,
+    submitLeadRequested,
+    submitLeadSucceeded,
+    submitLeadFailed,
+    updateLeadStatusRequested,
+    updateLeadStatusSucceeded,
+    updateLeadStatusFailed,
     fetchTestimonialsRequested,
     fetchTestimonialsSucceeded,
     fetchTestimonialsFailed,
@@ -329,6 +340,56 @@ export function* savePaymentSaga(
     }
 }
 
+/** Fetches the teacher's enquiries inbox (REQ-019). */
+export function* loadLeadsSaga() {
+    try {
+        const leads: Lead[] = yield call(fetchLeads)
+        yield put(fetchLeadsSucceeded(leads))
+    } catch (error) {
+        yield put(fetchLeadsFailed(toMessage(error)))
+    }
+}
+
+/** Submits a public enquiry; it lands as New in the teacher's inbox. */
+export function* submitLeadSaga(
+    action: ReturnType<typeof submitLeadRequested>
+) {
+    try {
+        yield call(submitLead, action.payload)
+        yield put(submitLeadSucceeded())
+    } catch (error) {
+        yield put(
+            submitLeadFailed(
+                error instanceof Error
+                    ? `Could not send your enquiry: ${error.message}`
+                    : 'Could not send your enquiry.'
+            )
+        )
+    }
+}
+
+/** Moves an enquiry through the inbox; the updated record comes back. */
+export function* updateLeadStatusSaga(
+    action: ReturnType<typeof updateLeadStatusRequested>
+) {
+    try {
+        const lead: Lead = yield call(
+            updateLeadStatus,
+            action.payload.id,
+            action.payload.status
+        )
+        yield put(updateLeadStatusSucceeded(lead))
+    } catch (error) {
+        yield put(
+            updateLeadStatusFailed(
+                error instanceof Error
+                    ? `Could not update the enquiry: ${error.message}`
+                    : 'Could not update the enquiry.'
+            )
+        )
+    }
+}
+
 /** Fetches approved reviews for the public Reviews page. */
 export function* loadTestimonialsSaga() {
     try {
@@ -452,6 +513,9 @@ export function* rootSaga() {
         takeEvery(deleteSessionRequested.type, deleteSessionSaga),
         takeEvery(editSessionRequested.type, editSessionSaga),
         takeEvery(savePaymentRequested.type, savePaymentSaga),
+        takeLatest(fetchLeadsRequested.type, loadLeadsSaga),
+        takeEvery(submitLeadRequested.type, submitLeadSaga),
+        takeEvery(updateLeadStatusRequested.type, updateLeadStatusSaga),
         takeLatest(fetchTestimonialsRequested.type, loadTestimonialsSaga),
         takeLatest(
             fetchPendingTestimonialsRequested.type,

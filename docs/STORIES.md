@@ -88,8 +88,8 @@ XS is an afternoon, XL is a project.
 | 14 | ✅ | [REQ-015 — Offerings hero and a single call-to-action](#req-015--offerings-hero-and-a-single-call-to-action) | S | frontend | — |
 | 15 | ✅ | [REQ-016 — Subjects as rich cards](#req-016--subjects-as-rich-cards) | M | both | — |
 | 16 | ✅ | [REQ-017 — How it works, as a numbered journey](#req-017--how-it-works-as-a-numbered-journey) | XS | frontend | — |
-| 17 | 🔲 | [REQ-018 — Public enquiry form](#req-018--public-enquiry-form) | M | both | REQ-009 |
-| 18 | 🔲 | [REQ-019 — Leads inbox](#req-019--leads-inbox) | M | both | REQ-018 |
+| 17 | ✅ | [REQ-018 — Public enquiry form](#req-018--public-enquiry-form) | M | both | REQ-009 (shipped 2026-07-25) |
+| 18 | ✅ | [REQ-019 — Leads inbox](#req-019--leads-inbox) | M | both | REQ-018 (shipped 2026-07-25) |
 | 19 | 🔲 | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | REQ-008, REQ-009 |
 | 20 | 🔲 | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | REQ-008 |
 | 21 | 🔲 | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | REQ-008 |
@@ -786,7 +786,7 @@ after I get in touch.
 
 ## REQ-018 — Public enquiry form
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M · **Blocked by:** REQ-009 (durable store)
+**Status:** ✅ Done (2026-07-25) · **Impact:** both · **Effort:** M · **Blocked by:** REQ-009 (durable store — landed first) · **Delivered:** public `/enquire` route (`EnquireView`) with name, contact (email or phone — at least one, format-checked), child's year, subject multi-select, goal and preferred mode; REQ-029 validation conventions; honeypot; a thanks card on success. `POST /leads` public, validated server-side; the Offerings/Home "Book a free assessment" CTAs now target it.
 
 **Story**
 As a parent, I want to submit an enquiry from the site, so that I can start
@@ -811,7 +811,7 @@ without having to compose a cold email.
 
 ## REQ-019 — Leads inbox
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M · **Blocked by:** REQ-018
+**Status:** ✅ Done (2026-07-25) · **Impact:** both · **Effort:** M · **Blocked by:** REQ-018 · **Delivered:** teacher-only `/leads` (`LeadsView`) — newest first, status pills New · Contacted · Converted with working transitions; "Convert to student" marks the lead Converted and opens the add-student form pre-filled via router state (goal + email fold into notes); the dashboard hero shows an open-enquiries pill linking to the inbox. `GET/PUT /leads` teacher-gated.
 
 **Story**
 As the teacher, I want new enquiries to appear in a Leads inbox, so that I can
