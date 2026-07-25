@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { Student } from '../data/students'
 
 export type StudentFormValues = Omit<Student, 'id'>
@@ -34,5 +34,13 @@ export const useStudentForm = () => {
 
     const resetForm = () => setForm(emptyStudentForm)
 
-    return { form, setField, resetForm }
+    /** Seeds several fields at once — converting a lead pre-fills the form
+     *  from the enquiry (REQ-019) instead of retyping it. */
+    const prefill = useCallback(
+        (values: Partial<StudentFormValues>) =>
+            setForm((current) => ({ ...current, ...values })),
+        []
+    )
+
+    return { form, setField, resetForm, prefill }
 }

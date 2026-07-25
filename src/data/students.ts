@@ -165,6 +165,31 @@ export type Testimonial = {
     moderatedOn?: string
 }
 
+/**
+ * A public enquiry (REQ-018) — a prospect, not a student. Lands as `New` in
+ * the teacher's Leads inbox (REQ-019); converting one pre-fills the
+ * add-student form rather than linking records.
+ */
+export type LeadStatus = 'New' | 'Contacted' | 'Converted'
+
+export type Lead = {
+    id: number
+    /** The parent or guardian enquiring. */
+    parentName: string
+    /** At least one of email / phone is present (the API validates). */
+    email?: string
+    phone?: string
+    /** The child's school year, e.g. "10". */
+    year: string
+    subjects: string[]
+    /** What they want out of tutoring, in their own words. */
+    goal: string
+    mode: 'Online' | 'Face to Face' | 'Either'
+    status: LeadStatus
+    /** ISO date, YYYY-MM-DD, when the enquiry arrived. */
+    submittedOn: string
+}
+
 /** Payment records for one month with server-computed totals (/payments/by-month). */
 export type MonthlyPaymentGroup = {
     month: string

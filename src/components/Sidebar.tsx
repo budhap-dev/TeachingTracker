@@ -12,6 +12,8 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
+import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import { isAuthConfigured } from '../auth/msal'
 import { appVersion } from '../version'
@@ -75,6 +77,13 @@ const navItems: NavItem[] = [
         teacherOnly: true,
     },
     {
+        label: 'Leads',
+        path: paths.leads,
+        icon: <InboxOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.leads),
+        teacherOnly: true,
+    },
+    {
         label: 'Review moderation',
         path: paths.reviewsModeration,
         icon: <FactCheckOutlinedIcon fontSize="small" />,
@@ -86,6 +95,12 @@ const navItems: NavItem[] = [
         path: paths.offerings,
         icon: <LocalOfferOutlinedIcon fontSize="small" />,
         isActive: (pathname) => pathname.startsWith(paths.offerings),
+    },
+    {
+        label: 'Enquire',
+        path: paths.enquire,
+        icon: <SendOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.enquire),
     },
     {
         label: 'Contact us',

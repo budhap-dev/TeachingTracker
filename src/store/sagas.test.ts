@@ -34,6 +34,9 @@ import {
     restoreStudentSaga,
     saveStudentSaga,
     setSessionStatusSaga,
+    loadLeadsSaga,
+    submitLeadSaga,
+    updateLeadStatusSaga,
     loadTestimonialsSaga,
     loadPendingTestimonialsSaga,
     submitTestimonialSaga,
@@ -78,6 +81,12 @@ import {
     deleteSessionRequested,
     deleteSessionSucceeded,
     deleteSessionFailed,
+    fetchLeadsRequested,
+    fetchLeadsFailed,
+    submitLeadRequested,
+    submitLeadFailed,
+    updateLeadStatusRequested,
+    updateLeadStatusFailed,
     fetchTestimonialsRequested,
     fetchPendingTestimonialsRequested,
     submitTestimonialRequested,
@@ -513,6 +522,12 @@ describe('rootSaga', () => {
                 takeEvery(deleteSessionRequested.type, deleteSessionSaga),
                 takeEvery(editSessionRequested.type, editSessionSaga),
                 takeEvery(savePaymentRequested.type, savePaymentSaga),
+                takeLatest(fetchLeadsRequested.type, loadLeadsSaga),
+                takeEvery(submitLeadRequested.type, submitLeadSaga),
+                takeEvery(
+                    updateLeadStatusRequested.type,
+                    updateLeadStatusSaga
+                ),
                 takeLatest(
                     fetchTestimonialsRequested.type,
                     loadTestimonialsSaga
@@ -538,5 +553,51 @@ describe('rootSaga', () => {
             ])
         )
         expect(gen.next().done).toBe(true)
+    })
+})
+
+describe('lead sagas (REQ-018/019)', () => {
+    it('loads the inbox and reports a failure', () => {
+        const gen = loadLeadsSaga()
+        gen.next()
+        expect(gen.throw(new Error('inbox offline')).value).toEqual(
+            put(fetchLeadsFailed('inbox offline'))
+        )
+    })
+
+    it('reports enquiry submit failures, Error and not', () => {
+        const enquiry = submitLeadRequested({
+            parentName: 'Jo',
+            year: '9',
+            subjects: ['Maths'],
+            goal: 'help',
+            mode: 'Either',
+        })
+        let gen = submitLeadSaga(enquiry)
+        gen.next()
+        expect(gen.throw(new Error('500')).value).toEqual(
+            put(submitLeadFailed('Could not send your enquiry: 500'))
+        )
+
+        gen = submitLeadSaga(enquiry)
+        gen.next()
+        expect(gen.throw('boom').value).toEqual(
+            put(submitLeadFailed('Could not send your enquiry.'))
+        )
+    })
+
+    it('reports status update failures, Error and not', () => {
+        const action = updateLeadStatusRequested({ id: 1, status: 'Contacted' })
+        let gen = updateLeadStatusSaga(action)
+        gen.next()
+        expect(gen.throw(new Error('409')).value).toEqual(
+            put(updateLeadStatusFailed('Could not update the enquiry: 409'))
+        )
+
+        gen = updateLeadStatusSaga(action)
+        gen.next()
+        expect(gen.throw('boom').value).toEqual(
+            put(updateLeadStatusFailed('Could not update the enquiry.'))
+        )
     })
 })

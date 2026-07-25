@@ -7,6 +7,7 @@ import type {
     Testimonial,
 } from '../data/students'
 import type { Contact } from '../data/contact'
+import type { Lead } from '../data/students'
 
 /**
  * Test-only data. The app ships no static data — it loads students, payments
@@ -231,6 +232,32 @@ export const buildFixtureTestimonials = (): Testimonial[] => [
         quote: 'Reliable, patient and genuinely invested.',
         status: 'Pending',
         submittedOn: '2026-07-15',
+    },
+]
+
+/** Enquiries for the mocked leads API — one New, one Contacted (REQ-018/019). */
+export const buildFixtureLeads = (): Lead[] => [
+    {
+        id: 2,
+        parentName: 'Priya Sharma',
+        email: 'priya@example.com',
+        year: '10',
+        subjects: ['Mathematics', 'Physics'],
+        goal: 'Confidence before GCSE mocks.',
+        mode: 'Online',
+        status: 'New',
+        submittedOn: '2026-07-20',
+    },
+    {
+        id: 1,
+        parentName: 'Tom Riley',
+        phone: '+44 7700 900456',
+        year: '8',
+        subjects: ['English'],
+        goal: 'Structure for essay writing.',
+        mode: 'Either',
+        status: 'Contacted',
+        submittedOn: '2026-07-12',
     },
 ]
 

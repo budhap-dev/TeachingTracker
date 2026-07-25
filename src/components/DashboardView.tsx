@@ -35,6 +35,9 @@ type DashboardViewProps = {
     }[]
     weekLoad: DayLoad[]
     onManageStudents: () => void
+    /** Open enquiries (status New) awaiting the teacher — REQ-019. */
+    newEnquiries: number
+    onOpenLeads: () => void
     onOpenStudentPage: (studentId: number) => void
     onOpenDay: (dateKey: string) => void
 }
@@ -47,6 +50,8 @@ export const DashboardView = ({
     onManageStudents,
     onOpenStudentPage,
     onOpenDay,
+    newEnquiries,
+    onOpenLeads,
 }: DashboardViewProps) => {
     // Collapsed, the sessions list is a glance; expanded, the full horizon.
     const [showAllSessions, setShowAllSessions] = useState(false)
@@ -114,7 +119,20 @@ export const DashboardView = ({
                         Keep student progress, contact notes, and learning
                         modes in one calm workspace.
                     </p>
-                    <button onClick={onManageStudents}>Manage students</button>
+                    <div className="dashboard-hero-actions">
+                        <button onClick={onManageStudents}>
+                            Manage students
+                        </button>
+                        {newEnquiries > 0 && (
+                            <button
+                                className="dashboard-enquiries-pill"
+                                onClick={onOpenLeads}
+                            >
+                                {newEnquiries} new{' '}
+                                {newEnquiries === 1 ? 'enquiry' : 'enquiries'}
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <table className="dashboard-hero-stats">
                     <thead>

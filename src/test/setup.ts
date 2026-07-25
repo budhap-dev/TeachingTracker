@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import {
     fetchContactSucceeded,
+    fetchLeadsSucceeded,
     fetchPaymentsSucceeded,
     fetchPendingTestimonialsSucceeded,
     fetchSessionsSucceeded,
@@ -13,6 +14,7 @@ import {
 } from '../store/store'
 import {
     buildFixtureContact,
+    buildFixtureLeads,
     buildFixturePaymentsByMonth,
     buildFixtureSessions,
     buildFixtureTestimonials,
@@ -39,6 +41,7 @@ beforeEach(() => {
     store.dispatch(fetchTestimonialsSucceeded(approvedTestimonials()))
     store.dispatch(fetchPendingTestimonialsSucceeded(pendingTestimonials()))
     store.dispatch(fetchContactSucceeded(buildFixtureContact()))
+    store.dispatch(fetchLeadsSucceeded(buildFixtureLeads()))
 
     // Default API mock, routed by path/method. Individual tests may override it.
     vi.stubGlobal(
@@ -116,6 +119,20 @@ beforeEach(() => {
                     body = { id: Number(url.split('/testimonials/')[1]) }
                 } else {
                     body = approvedTestimonials()
+                }
+            } else if (url.includes('/leads')) {
+                if (init.method === 'POST') {
+                    // Submitting an enquiry acknowledges without echoing it.
+                    body = { ok: true }
+                } else if (init.method === 'PUT') {
+                    // A status update echoes the lead with its new status.
+                    const id = Number(url.split('/leads/')[1])
+                    const existing = buildFixtureLeads().find(
+                        (lead) => lead.id === id
+                    )
+                    body = { ...existing, ...JSON.parse(String(init.body)) }
+                } else {
+                    body = buildFixtureLeads()
                 }
             } else if (url.includes('/contact')) {
                 if (init.method === 'PUT') {

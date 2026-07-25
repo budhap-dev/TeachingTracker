@@ -7,11 +7,14 @@ import {
     ScheduledSession,
     SessionStatus,
     Student,
+    Lead,
+    LeadStatus,
     Testimonial,
 } from '../data/students'
 import type { Contact } from '../data/contact'
 import type { StudentInput } from '../api/students'
 import type { TestimonialInput } from '../api/reviews'
+import type { LeadInput } from '../api/leads'
 import type { ContactInput } from '../api/contact'
 import { rootSaga } from './sagas'
 
@@ -64,6 +67,13 @@ type StudentState = {
     // Testimonials (REQ-027). Approved ones back the public Reviews page;
     // pending ones the teacher's moderation queue. Neither is part of the
     // app's boot-time loads — each Reviews route fetches its own on mount.
+    // Leads (REQ-018/019): the teacher's enquiries inbox, plus the public
+    // form's in-flight flag.
+    leads: Lead[]
+    leadsLoading: boolean
+    savingLead: boolean
+    /** True once this visit's enquiry was accepted — the form shows thanks. */
+    leadSubmitted: boolean
     testimonials: Testimonial[]
     testimonialsLoading: boolean
     pendingTestimonials: Testimonial[]
@@ -127,6 +137,10 @@ const createInitialState = (): StudentState => ({
     scheduledSessions: [],
     paymentsByMonth: [],
     hasLocalStudentChanges: false,
+    leads: [],
+    leadsLoading: true,
+    savingLead: false,
+    leadSubmitted: false,
     testimonials: [],
     testimonialsLoading: true,
     pendingTestimonials: [],
@@ -481,6 +495,57 @@ const studentSlice = createSlice({
             state.savingPayment = false
             fail(state, action.payload)
         },
+        // --- Leads: teacher inbox (REQ-019) ---
+        fetchLeadsRequested: (state) => {
+            state.leadsLoading = true
+        },
+        fetchLeadsSucceeded: (state, action: PayloadAction<Lead[]>) => {
+            state.leads = action.payload
+            state.leadsLoading = false
+        },
+        fetchLeadsFailed: (state, action: PayloadAction<string>) => {
+            state.leadsLoading = false
+            fail(state, action.payload)
+        },
+        // --- Leads: public enquiry (REQ-018) ---
+        submitLeadRequested: {
+            reducer: (state: StudentState) => {
+                state.savingLead = true
+                state.error = null
+            },
+            prepare: (input: LeadInput) => ({ payload: input }),
+        },
+        submitLeadSucceeded: (state) => {
+            state.savingLead = false
+            state.leadSubmitted = true
+            state.notice = {
+                kind: 'success',
+                message:
+                    'Thank you — your enquiry is in. We usually reply within a day.',
+            }
+        },
+        submitLeadFailed: (state, action: PayloadAction<string>) => {
+            state.savingLead = false
+            fail(state, action.payload)
+        },
+        // --- Leads: status updates ---
+        updateLeadStatusRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (input: { id: number; status: LeadStatus }) => ({
+                payload: input,
+            }),
+        },
+        updateLeadStatusSucceeded: (state, action: PayloadAction<Lead>) => {
+            const updated = action.payload
+            state.leads = state.leads.map((lead) =>
+                lead.id === updated.id ? updated : lead
+            )
+        },
+        updateLeadStatusFailed: (state, action: PayloadAction<string>) => {
+            fail(state, action.payload)
+        },
         // --- Testimonials: public list (approved) ---
         fetchTestimonialsRequested: (state) => {
             state.testimonialsLoading = true
@@ -666,6 +731,15 @@ export const {
     savePaymentRequested,
     savePaymentSucceeded,
     savePaymentFailed,
+    fetchLeadsRequested,
+    fetchLeadsSucceeded,
+    fetchLeadsFailed,
+    submitLeadRequested,
+    submitLeadSucceeded,
+    submitLeadFailed,
+    updateLeadStatusRequested,
+    updateLeadStatusSucceeded,
+    updateLeadStatusFailed,
     fetchTestimonialsRequested,
     fetchTestimonialsSucceeded,
     fetchTestimonialsFailed,
