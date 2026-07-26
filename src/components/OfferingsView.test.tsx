@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { OfferingsView } from './OfferingsView'
@@ -6,6 +6,7 @@ import type {
     ApproachPoint,
     JourneyStep,
     OfferingsHero,
+    SiteContent,
     SubjectOffering,
 } from '../data/siteContent'
 
@@ -36,17 +37,30 @@ const approach: ApproachPoint[] = [
     { title: 'Progress recorded', detail: 'A written note every session.' },
 ]
 
-const renderView = (overrides: Partial<Parameters<typeof OfferingsView>[0]> = {}) =>
+/** A document from the test fixtures above, with per-test overrides. */
+const buildContent = (overrides: Partial<SiteContent> = {}): SiteContent => ({
+    siteName: 'Springboard Tutoring',
+    hero,
+    subjects,
+    journey,
+    approach,
+    freeform: { heading: '', markdown: '' },
+    sectionOrder: ['hero', 'subjects', 'journey', 'approach', 'freeform'],
+    ...overrides,
+})
+
+const renderView = (
+    overrides: Partial<SiteContent> = {},
+    onBookAssessment = vi.fn()
+) => {
     render(
         <OfferingsView
-            hero={hero}
-            subjects={subjects}
-            journey={journey}
-            approach={approach}
-            onBookAssessment={vi.fn()}
-            {...overrides}
+            content={buildContent(overrides)}
+            onBookAssessment={onBookAssessment}
         />
     )
+    return { onBookAssessment }
+}
 
 describe('OfferingsView', () => {
     it('leads with a hero, its headline and an availability nudge', () => {
@@ -133,10 +147,58 @@ describe('OfferingsView', () => {
         expect(card).not.toHaveClass('flipped')
     })
 
+    it('names the approach card after the published site name', () => {
+        renderView({ siteName: 'Harbour Tuition' })
+        expect(
+            screen.getByRole('heading', {
+                name: /why families choose harbour tuition/i,
+            })
+        ).toBeInTheDocument()
+    })
+
+    it('renders the free-form section from Markdown when one is written', () => {
+        renderView({
+            freeform: {
+                heading: 'Term dates',
+                markdown: 'Starts **7 September**.\n\n- Mocks in December',
+            },
+        })
+        expect(
+            screen.getByRole('heading', { name: 'Term dates' })
+        ).toBeInTheDocument()
+        expect(screen.getByText('7 September').tagName).toBe('STRONG')
+        // Scoped: the journey renders list items of its own.
+        const card = screen
+            .getByRole('heading', { name: 'Term dates' })
+            .closest('.offerings-freeform') as HTMLElement
+        expect(within(card).getByRole('listitem')).toHaveTextContent(
+            'Mocks in December'
+        )
+    })
+
+    it('renders sections in the teacher-chosen order', () => {
+        renderView({
+            sectionOrder: [
+                'journey',
+                'hero',
+                'subjects',
+                'approach',
+                'freeform',
+            ],
+        })
+        const headings = screen
+            .getAllByRole('heading')
+            .map((heading) => heading.textContent)
+        // The journey's heading now precedes the hero's page heading.
+        expect(
+            headings.indexOf('How it works')
+        ).toBeLessThan(headings.indexOf('Offerings'))
+    })
+
     it('starts the assessment from either call-to-action', async () => {
         const onBookAssessment = vi.fn()
         const user = userEvent.setup()
-        renderView({ onBookAssessment })
+        renderView({}, onBookAssessment)
 
         const buttons = screen.getAllByRole('button', {
             name: /book a free assessment/i,

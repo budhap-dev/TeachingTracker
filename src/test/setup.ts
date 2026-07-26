@@ -12,6 +12,7 @@ import {
     resetStudentState,
     store,
 } from '../store/store'
+import { defaultSiteContent } from '../data/siteContent'
 import {
     buildFixtureContact,
     buildFixtureLeads,
@@ -133,6 +134,13 @@ beforeEach(() => {
                     body = { ...existing, ...JSON.parse(String(init.body)) }
                 } else {
                     body = buildFixtureLeads()
+                }
+            } else if (url.includes('/site-content')) {
+                if (init.method === 'PUT') {
+                    // Publishing echoes the document back, as the API does.
+                    body = JSON.parse(String(init.body))
+                } else {
+                    body = defaultSiteContent
                 }
             } else if (url.includes('/contact')) {
                 if (init.method === 'PUT') {

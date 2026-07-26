@@ -32,6 +32,11 @@ import {
     fetchSessionsRequested,
     fetchSessionsSucceeded,
     fetchStudentsFailed,
+    fetchSiteContentSucceeded,
+    fetchSiteContentFailed,
+    publishSiteContentRequested,
+    publishSiteContentSucceeded,
+    publishSiteContentFailed,
     fetchLeadsRequested,
     fetchLeadsSucceeded,
     fetchLeadsFailed,
@@ -854,5 +859,53 @@ describe('lead lifecycle (REQ-018/019)', () => {
             updateLeadStatusFailed('conflict')
         )
         expect(failed.error).toBe('conflict')
+    })
+})
+
+describe('site content (REQ-008)', () => {
+    it('starts on the bundled fallback and swaps in the fetched document', () => {
+        const state = initial()
+        expect(state.siteContent.siteName).toBe('Springboard Tutoring')
+
+        const fetched = {
+            ...state.siteContent,
+            siteName: 'Harbour Tuition',
+        }
+        const loaded = studentReducer(state, fetchSiteContentSucceeded(fetched))
+        expect(loaded.siteContent.siteName).toBe('Harbour Tuition')
+    })
+
+    it('keeps the fallback silently when the fetch fails', () => {
+        const failed = studentReducer(initial(), fetchSiteContentFailed())
+        expect(failed.siteContent.siteName).toBe('Springboard Tutoring')
+        // Graceful degradation: no visitor-facing error.
+        expect(failed.error).toBeNull()
+    })
+
+    it('tracks publishing through failure and success', () => {
+        const draft = {
+            ...initial().siteContent,
+            siteName: 'Harbour Tuition',
+        }
+        const publishing = studentReducer(
+            initial(),
+            publishSiteContentRequested(draft)
+        )
+        expect(publishing.publishingSiteContent).toBe(true)
+
+        const failed = studentReducer(
+            publishing,
+            publishSiteContentFailed('offline')
+        )
+        expect(failed.publishingSiteContent).toBe(false)
+        expect(failed.error).toBe('offline')
+
+        const published = studentReducer(
+            publishing,
+            publishSiteContentSucceeded(draft)
+        )
+        expect(published.publishingSiteContent).toBe(false)
+        expect(published.siteContent.siteName).toBe('Harbour Tuition')
+        expect(published.notice?.kind).toBe('success')
     })
 })

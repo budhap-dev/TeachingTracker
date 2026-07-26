@@ -1,5 +1,7 @@
 import { all, call, put, takeEvery, takeLatest } from 'redux-saga/effects'
 import { fetchLeads, submitLead, updateLeadStatus } from '../api/leads'
+import { fetchSiteContent, updateSiteContent as putSiteContent } from '../api/siteContent'
+import type { SiteContent } from '../data/siteContent'
 import type {
     Lead,
     MonthlyPaymentGroup,
@@ -68,6 +70,12 @@ import {
     editSessionFailed,
     editSessionRequested,
     editSessionSucceeded,
+    fetchSiteContentRequested,
+    fetchSiteContentSucceeded,
+    fetchSiteContentFailed,
+    publishSiteContentRequested,
+    publishSiteContentSucceeded,
+    publishSiteContentFailed,
     fetchLeadsRequested,
     fetchLeadsSucceeded,
     fetchLeadsFailed,
@@ -340,6 +348,39 @@ export function* savePaymentSaga(
     }
 }
 
+/** Fetches the public site's content; failure keeps the bundled fallback. */
+export function* loadSiteContentSaga() {
+    try {
+        const content: SiteContent = yield call(fetchSiteContent)
+        yield put(fetchSiteContentSucceeded(content))
+    } catch {
+        // Silent by design (REQ-008 graceful degradation): the fallback copy
+        // is already rendering; a visitor gets no error toast.
+        yield put(fetchSiteContentFailed())
+    }
+}
+
+/** Publishes the site content; the sanitised document comes back. */
+export function* publishSiteContentSaga(
+    action: ReturnType<typeof publishSiteContentRequested>
+) {
+    try {
+        const published: SiteContent = yield call(
+            putSiteContent,
+            action.payload
+        )
+        yield put(publishSiteContentSucceeded(published))
+    } catch (error) {
+        yield put(
+            publishSiteContentFailed(
+                error instanceof Error
+                    ? `Could not publish: ${error.message}`
+                    : 'Could not publish the site content.'
+            )
+        )
+    }
+}
+
 /** Fetches the teacher's enquiries inbox (REQ-019). */
 export function* loadLeadsSaga() {
     try {
@@ -513,6 +554,8 @@ export function* rootSaga() {
         takeEvery(deleteSessionRequested.type, deleteSessionSaga),
         takeEvery(editSessionRequested.type, editSessionSaga),
         takeEvery(savePaymentRequested.type, savePaymentSaga),
+        takeLatest(fetchSiteContentRequested.type, loadSiteContentSaga),
+        takeEvery(publishSiteContentRequested.type, publishSiteContentSaga),
         takeLatest(fetchLeadsRequested.type, loadLeadsSaga),
         takeEvery(submitLeadRequested.type, submitLeadSaga),
         takeEvery(updateLeadStatusRequested.type, updateLeadStatusSaga),

@@ -9,12 +9,15 @@ import {
     Student,
     Lead,
     LeadStatus,
+
     Testimonial,
 } from '../data/students'
 import type { Contact } from '../data/contact'
 import type { StudentInput } from '../api/students'
 import type { TestimonialInput } from '../api/reviews'
 import type { LeadInput } from '../api/leads'
+import type { SiteContent } from '../data/siteContent'
+import { defaultSiteContent } from '../data/siteContent'
 import type { ContactInput } from '../api/contact'
 import { rootSaga } from './sagas'
 
@@ -67,6 +70,12 @@ type StudentState = {
     // Testimonials (REQ-027). Approved ones back the public Reviews page;
     // pending ones the teacher's moderation queue. Neither is part of the
     // app's boot-time loads — each Reviews route fetches its own on mount.
+    // The public site's content (REQ-008). Seeded with the bundled fallback
+    // so pages render at once and degrade gracefully; the API's document
+    // replaces it when the fetch lands. `publishingSiteContent` is the
+    // editor's in-flight flag.
+    siteContent: SiteContent
+    publishingSiteContent: boolean
     // Leads (REQ-018/019): the teacher's enquiries inbox, plus the public
     // form's in-flight flag.
     leads: Lead[]
@@ -137,6 +146,8 @@ const createInitialState = (): StudentState => ({
     scheduledSessions: [],
     paymentsByMonth: [],
     hasLocalStudentChanges: false,
+    siteContent: defaultSiteContent,
+    publishingSiteContent: false,
     leads: [],
     leadsLoading: true,
     savingLead: false,
@@ -495,6 +506,44 @@ const studentSlice = createSlice({
             state.savingPayment = false
             fail(state, action.payload)
         },
+        // --- Site content (REQ-008) ---
+        fetchSiteContentRequested: () => {
+            // No loading flag: the fallback renders immediately and the
+            // fetched document swaps in when it lands.
+        },
+        fetchSiteContentSucceeded: (
+            state,
+            action: PayloadAction<SiteContent>
+        ) => {
+            state.siteContent = action.payload
+        },
+        fetchSiteContentFailed: () => {
+            // Deliberately silent: a visitor should never see an error toast
+            // because content fell back to the bundled copy.
+        },
+        publishSiteContentRequested: {
+            reducer: (state: StudentState) => {
+                state.publishingSiteContent = true
+                state.error = null
+            },
+            prepare: (content: SiteContent) => ({ payload: content }),
+        },
+        publishSiteContentSucceeded: (
+            state,
+            action: PayloadAction<SiteContent>
+        ) => {
+            state.publishingSiteContent = false
+            // The API's sanitised copy is the truth the public site serves.
+            state.siteContent = action.payload
+            state.notice = {
+                kind: 'success',
+                message: 'Published — live on the public site.',
+            }
+        },
+        publishSiteContentFailed: (state, action: PayloadAction<string>) => {
+            state.publishingSiteContent = false
+            fail(state, action.payload)
+        },
         // --- Leads: teacher inbox (REQ-019) ---
         fetchLeadsRequested: (state) => {
             state.leadsLoading = true
@@ -731,6 +780,12 @@ export const {
     savePaymentRequested,
     savePaymentSucceeded,
     savePaymentFailed,
+    fetchSiteContentRequested,
+    fetchSiteContentSucceeded,
+    fetchSiteContentFailed,
+    publishSiteContentRequested,
+    publishSiteContentSucceeded,
+    publishSiteContentFailed,
     fetchLeadsRequested,
     fetchLeadsSucceeded,
     fetchLeadsFailed,

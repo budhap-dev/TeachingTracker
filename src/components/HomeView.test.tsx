@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { HomeLanding, HomeView } from './HomeView'
 import { signIn } from '../auth/msal'
-import { siteContent } from '../data/siteContent'
+import { defaultSiteContent } from '../data/siteContent'
 import { store } from '../store/store'
 import type { Testimonial } from '../data/students'
 
@@ -27,7 +27,10 @@ const reviews: Testimonial[] = [1, 2, 3, 4].map((id) => ({
 const renderHome = (testimonials: Testimonial[] = reviews) =>
     render(
         <MemoryRouter>
-            <HomeView testimonials={testimonials} />
+            <HomeView
+                testimonials={testimonials}
+                content={defaultSiteContent}
+            />
         </MemoryRouter>
     )
 
@@ -36,10 +39,10 @@ describe('HomeView', () => {
         renderHome()
 
         expect(
-            screen.getByText(siteContent.offerings.hero.headline)
+            screen.getByText(defaultSiteContent.hero.headline)
         ).toBeInTheDocument()
         expect(
-            screen.getByText(siteContent.offerings.hero.availability)
+            screen.getByText(defaultSiteContent.hero.availability)
         ).toBeInTheDocument()
         expect(
             screen.getByRole('link', { name: /book a free assessment/i })
@@ -67,7 +70,7 @@ describe('HomeView', () => {
         // The journey still shows.
         expect(screen.getByText(/how it works/i)).toBeInTheDocument()
         expect(
-            screen.getByText(siteContent.offerings.journey[0].title)
+            screen.getByText(defaultSiteContent.journey[0].title)
         ).toBeInTheDocument()
     })
 
@@ -110,7 +113,7 @@ describe('HomeLanding', () => {
 
         // Hero renders immediately, without waiting on the fetch.
         expect(
-            screen.getByText(siteContent.offerings.hero.headline)
+            screen.getByText(defaultSiteContent.hero.headline)
         ).toBeInTheDocument()
         // The mocked API's approved reviews arrive as proof.
         expect(
