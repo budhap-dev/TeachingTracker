@@ -10,12 +10,8 @@ import BiotechRoundedIcon from '@mui/icons-material/BiotechRounded'
 import BoltRoundedIcon from '@mui/icons-material/BoltRounded'
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded'
 import type { SvgIconComponent } from '@mui/icons-material'
-import type {
-    ApproachPoint,
-    JourneyStep,
-    OfferingsHero,
-    SubjectOffering,
-} from '../data/siteContent'
+import type { SiteContent } from '../data/siteContent'
+import { renderMarkdown } from '../utils/markdown'
 
 /** A subject-appropriate glyph; a book stands in for anything unrecognised. */
 const subjectIcon = (name: string): SvgIconComponent =>
@@ -36,11 +32,10 @@ const subjectImages = (name: string): string[] =>
     })[name] ?? ['📚', '✏️', '🎓', '🗺️', '🔎']
 
 type OfferingsViewProps = {
-    hero: OfferingsHero
-    subjects: SubjectOffering[]
-    journey: JourneyStep[]
-    approach: ApproachPoint[]
-    /** Starts the enquiry (REQ-018 once it exists; Contact us until then). */
+    /** The whole teacher-published document (REQ-008); sections render in
+        its `sectionOrder`. */
+    content: SiteContent
+    /** Starts the enquiry (REQ-018). */
     onBookAssessment: () => void
 }
 
@@ -62,20 +57,21 @@ const SpecRow = ({ label, values }: { label: string; values?: string[] }) =>
         </div>
     ) : null
 
-/** Public page: what is taught, how it works, and one clear way to start. */
+/**
+ * Public page: what is taught, how it works, and one clear way to start.
+ * Renders the teacher-published document (REQ-008) section by section, in the
+ * order the teacher arranged them in the site editor.
+ */
 export const OfferingsView = ({
-    hero,
-    subjects,
-    journey,
-    approach,
+    content,
     onBookAssessment,
 }: OfferingsViewProps) => {
+    const { hero, subjects, journey, approach, freeform } = content
     // Which subject card is flipped (tapped). Hover flips on its own via CSS;
     // this makes the flip work on touch too, just for fun.
     const [flipped, setFlipped] = useState<string | null>(null)
 
-    return (
-        <section className="content-stack">
+    const heroSection = (
             <div className="card offerings-hero">
                 <h3 className="page-heading">
                     <LocalOfferOutlinedIcon fontSize="small" />
@@ -104,7 +100,9 @@ export const OfferingsView = ({
                     </a>
                 </div>
             </div>
+    )
 
+    const subjectsSection = (
             <div className="card" id="offerings-subjects">
                 <h4 className="offerings-heading">Subjects taught</h4>
                 {subjects.length > 0 ? (
@@ -183,7 +181,9 @@ export const OfferingsView = ({
                     </p>
                 )}
             </div>
+    )
 
+    const journeySection = (
             <div className="card">
                 <h4 className="offerings-heading">How it works</h4>
                 <ol className="offerings-journey">
@@ -207,10 +207,12 @@ export const OfferingsView = ({
                     ))}
                 </ol>
             </div>
+    )
 
+    const approachSection = (
             <div className="card">
                 <h4 className="offerings-heading">
-                    Why families choose Springboard
+                    Why families choose {content.siteName}
                 </h4>
                 <ul className="offerings-approach">
                     {approach.map((point) => (
@@ -231,6 +233,36 @@ export const OfferingsView = ({
                     ))}
                 </ul>
             </div>
+    )
+
+    // The free-form section (REQ-008): rendered from Markdown to React nodes
+    // — never raw HTML — and skipped entirely while the teacher hasn't
+    // written one.
+    const freeformSection =
+        freeform.heading || freeform.markdown ? (
+            <div className="card offerings-freeform">
+                {freeform.heading && (
+                    <h4 className="offerings-heading">{freeform.heading}</h4>
+                )}
+                {renderMarkdown(freeform.markdown)}
+            </div>
+        ) : null
+
+    const sections = {
+        hero: heroSection,
+        subjects: subjectsSection,
+        journey: journeySection,
+        approach: approachSection,
+        freeform: freeformSection,
+    }
+
+    return (
+        <section className="content-stack">
+            {content.sectionOrder.map((key) => (
+                <div key={key} className="offerings-section">
+                    {sections[key]}
+                </div>
+            ))}
 
             <div className="card offerings-closing">
                 <div>

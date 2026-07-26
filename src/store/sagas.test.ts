@@ -34,6 +34,8 @@ import {
     restoreStudentSaga,
     saveStudentSaga,
     setSessionStatusSaga,
+    loadSiteContentSaga,
+    publishSiteContentSaga,
     loadLeadsSaga,
     submitLeadSaga,
     updateLeadStatusSaga,
@@ -81,6 +83,10 @@ import {
     deleteSessionRequested,
     deleteSessionSucceeded,
     deleteSessionFailed,
+    fetchSiteContentRequested,
+    fetchSiteContentFailed,
+    publishSiteContentRequested,
+    publishSiteContentFailed,
     fetchLeadsRequested,
     fetchLeadsFailed,
     submitLeadRequested,
@@ -522,6 +528,14 @@ describe('rootSaga', () => {
                 takeEvery(deleteSessionRequested.type, deleteSessionSaga),
                 takeEvery(editSessionRequested.type, editSessionSaga),
                 takeEvery(savePaymentRequested.type, savePaymentSaga),
+                takeLatest(
+                    fetchSiteContentRequested.type,
+                    loadSiteContentSaga
+                ),
+                takeEvery(
+                    publishSiteContentRequested.type,
+                    publishSiteContentSaga
+                ),
                 takeLatest(fetchLeadsRequested.type, loadLeadsSaga),
                 takeEvery(submitLeadRequested.type, submitLeadSaga),
                 takeEvery(
@@ -553,6 +567,32 @@ describe('rootSaga', () => {
             ])
         )
         expect(gen.next().done).toBe(true)
+    })
+})
+
+describe('site-content sagas (REQ-008)', () => {
+    it('loads the document and swallows failures silently', () => {
+        const gen = loadSiteContentSaga()
+        gen.next()
+        // Failure puts the silent action — no message, no toast.
+        expect(gen.throw(new Error('offline')).value).toEqual(
+            put(fetchSiteContentFailed())
+        )
+    })
+
+    it('reports publish failures, Error and not', () => {
+        const content = { siteName: 'x' } as never
+        let gen = publishSiteContentSaga(publishSiteContentRequested(content))
+        gen.next()
+        expect(gen.throw(new Error('403')).value).toEqual(
+            put(publishSiteContentFailed('Could not publish: 403'))
+        )
+
+        gen = publishSiteContentSaga(publishSiteContentRequested(content))
+        gen.next()
+        expect(gen.throw('boom').value).toEqual(
+            put(publishSiteContentFailed('Could not publish the site content.'))
+        )
     })
 })
 

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 import { resetStudentState, store } from './store/store'
-import { siteContent } from './data/siteContent'
+import { defaultSiteContent } from './data/siteContent'
 
 describe('routing fallbacks', () => {
     it('redirects unknown routes to the dashboard', async () => {
@@ -83,16 +83,16 @@ describe('public pages', () => {
             screen.getByRole('heading', { name: /offerings/i })
         ).toBeInTheDocument()
         expect(
-            screen.getByText(siteContent.offerings.hero.headline)
+            screen.getByText(defaultSiteContent.hero.headline)
         ).toBeInTheDocument()
         expect(
             screen.getByRole('heading', {
-                name: siteContent.offerings.subjects[0].name,
+                name: defaultSiteContent.subjects[0].name,
             })
         ).toBeInTheDocument()
         expect(
             screen.getByRole('heading', {
-                name: siteContent.offerings.approach[0].title,
+                name: defaultSiteContent.approach[0].title,
             })
         ).toBeInTheDocument()
     })

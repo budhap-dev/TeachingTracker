@@ -2,16 +2,20 @@ import { useEffect } from 'react'
 import { Button, Rating } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { fetchTestimonialsRequested } from '../store/store'
+import { fetchSiteContentRequested, fetchTestimonialsRequested } from '../store/store'
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { signIn } from '../auth/msal'
-import { siteContent } from '../data/siteContent'
+
 import { paths } from '../paths'
 import type { Testimonial } from '../data/students'
+
+import type { SiteContent } from '../data/siteContent'
 
 type HomeViewProps = {
     /** Approved reviews for the proof strip; the view shows up to three. */
     testimonials: Testimonial[]
+    /** The teacher-published document (REQ-008) feeding the hero + journey. */
+    content: SiteContent
 }
 
 /** A friendly glyph for each journey step, in order (mirrors Offerings). */
@@ -23,18 +27,18 @@ const journeyIcons = ['💬', '📝', '🎯', '📅']
  * sign-in wall. The teacher's dashboard stays behind sign-in at the same
  * path; teacher sign-in is a quiet afterline here, not the headline.
  */
-export const HomeView = ({ testimonials }: HomeViewProps) => {
+export const HomeView = ({ testimonials, content }: HomeViewProps) => {
     useDocumentMeta(
         'Springboard Tutoring — one-to-one tutoring that builds confidence',
         'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
     )
-    const { hero, journey } = siteContent.offerings
+    const { hero, journey } = content
     const proof = testimonials.slice(0, 3)
 
     return (
         <section className="content-stack home-view">
             <div className="card offerings-hero home-hero">
-                <p className="eyebrow">Springboard Tutoring</p>
+                <p className="eyebrow">{content.siteName}</p>
                 <h3 className="offerings-hero-headline">{hero.headline}</h3>
                 <p className="offerings-hero-subhead">{hero.subhead}</p>
                 <p className="offerings-availability">{hero.availability}</p>
@@ -139,8 +143,10 @@ export const HomeLanding = () => {
     const testimonials = useAppSelector(
         (state) => state.students.testimonials
     )
+    const content = useAppSelector((state) => state.students.siteContent)
     useEffect(() => {
         dispatch(fetchTestimonialsRequested())
+        dispatch(fetchSiteContentRequested())
     }, [dispatch])
-    return <HomeView testimonials={testimonials} />
+    return <HomeView testimonials={testimonials} content={content} />
 }

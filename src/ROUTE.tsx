@@ -30,6 +30,7 @@ import {
     fetchLeadsRequested,
     submitLeadRequested,
     updateLeadStatusRequested,
+    fetchSiteContentRequested,
 } from './store/store'
 import { activeSessions } from './data/students'
 import { toDateKey } from './utils/calendar'
@@ -57,7 +58,7 @@ import { ReviewsView } from './components/ReviewsView'
 import { ReviewModerationView } from './components/ReviewModerationView'
 import { PageLoading } from './components/PageLoading'
 import { RequireTeacher } from './components/RequireTeacher'
-import { siteContent } from './data/siteContent'
+
 import { useIsAuthenticated } from '@azure/msal-react'
 import { isAuthConfigured } from './auth/msal'
 
@@ -618,16 +619,20 @@ const SchedulingRoute = () => {
 /** Public page — reads site copy, never student data. */
 const OfferingsRoute = () => {
     const navigate = useNavigate()
+    const dispatch = useAppDispatch()
+    // The teacher-published document (REQ-008): the bundled fallback renders
+    // immediately; the fetched copy swaps in when it lands.
+    const content = useAppSelector((state) => state.students.siteContent)
+    useEffect(() => {
+        dispatch(fetchSiteContentRequested())
+    }, [dispatch])
     useDocumentMeta(
         'Subjects & how lessons run — Springboard Tutoring',
         'Maths, physics, chemistry and biology for KS3 and GCSE, matched to your exam board — online or in person. See how lessons run, from enquiry to weekly sessions.'
     )
     return (
         <OfferingsView
-            hero={siteContent.offerings.hero}
-            subjects={siteContent.offerings.subjects}
-            journey={siteContent.offerings.journey}
-            approach={siteContent.offerings.approach}
+            content={content}
             // The assessment CTA starts a real enquiry (REQ-018).
             onBookAssessment={() => navigate(paths.enquire)}
         />
