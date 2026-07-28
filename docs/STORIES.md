@@ -1299,6 +1299,14 @@ GDPR question has a written answer to point at.
       approved), each linking to `/privacy`.
 - [ ] The enquiry goal field gains helper text steering families away from
       sensitive details (health, SEN) — the cheap half of data minimisation.
+- [ ] **Enrolment practice — reaching the parents who never browse the
+      site:** most student data (roster, DOB, address, notes) is given to the
+      teacher offline and typed in by them, so the notice must travel with
+      onboarding, not wait to be found. The teacher's welcome message to a
+      new family includes the `/privacy` link as standard practice
+      (documented in REQ-034's records), and the leads inbox's **Convert
+      flow shows a one-line reminder** of it — a nudge in the UI at exactly
+      the enrolment moment, never a blocker.
 - [ ] Policy text ships **bundled** (a content module like
       `data/privacyPolicy.ts`), not through the site editor — legal text
       changes deliberately, via review.
@@ -1306,6 +1314,12 @@ GDPR question has a written answer to point at.
 
 **Notes**
 
+- Two collection routes, two duties: details a parent types into the public
+  forms are covered by the on-page notices at the moment of collection;
+  details the teacher records *about* a family (the larger share) still
+  require the parent to be informed — that is what the enrolment-practice
+  criterion exists for. A public policy page nobody is pointed at would not
+  discharge it.
 - Keep the page walkable in one screen-read: headings per section, short
   paragraphs, the data table, no legalese padding.
 - The policy must not claim anything untrue about the build (e.g. don't claim
