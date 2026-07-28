@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defaultSiteContent } from '../data/siteContent'
@@ -69,9 +69,12 @@ describe('SiteEditorView', () => {
             screen.queryByRole('button', { name: /discard changes/i })
         ).not.toBeInTheDocument()
 
-        const headline = screen.getByLabelText(/^headline/i)
-        await user.clear(headline)
-        await user.type(headline, 'Tutoring that clicks.')
+        // Long text lands as one change event — per-keystroke typing here
+        // re-renders the whole editor per key and pushes CI past the test
+        // timeout. Two short-string tests below keep the typing path covered.
+        fireEvent.change(screen.getByLabelText(/^headline/i), {
+            target: { value: 'Tutoring that clicks.' },
+        })
 
         expect(publishButton()).toBeEnabled()
         await user.click(publishButton())
@@ -141,7 +144,9 @@ describe('SiteEditorView', () => {
 
         await user.click(screen.getByRole('button', { name: /add step/i }))
         const titles = screen.getAllByLabelText(/^title$/i)
-        await user.type(titles[3 + 1], 'Exam-week boosters')
+        fireEvent.change(titles[3 + 1], {
+            target: { value: 'Exam-week boosters' },
+        })
 
         await user.click(
             screen.getByRole('button', {
@@ -165,26 +170,29 @@ describe('SiteEditorView', () => {
         const user = userEvent.setup()
         const { onPublish } = renderEditor()
 
-        await user.type(screen.getByLabelText(/sub-headline/i), ' Online too.')
-        const availability = screen.getByLabelText(/availability line/i)
-        await user.clear(availability)
-        await user.type(availability, 'Two places left this term.')
-
-        const boards = screen.getAllByLabelText(/exam boards/i)[0]
-        await user.clear(boards)
-        await user.type(boards, 'WJEC')
-        const delivery = screen.getAllByLabelText(/delivery/i)[0]
-        await user.clear(delivery)
-
-        const details = screen.getAllByLabelText(/^detail$/i)
-        await user.clear(details[0])
-        await user.type(details[0], 'Tell us what your child needs.')
-
-        await user.type(screen.getByLabelText(/^heading/i), 'Term dates')
-        await user.type(
-            screen.getByLabelText(/body \(markdown\)/i),
-            '- Autumn: 1 Sep'
-        )
+        fireEvent.change(screen.getByLabelText(/sub-headline/i), {
+            target: {
+                value: `${defaultSiteContent.hero.subhead} Online too.`,
+            },
+        })
+        fireEvent.change(screen.getByLabelText(/availability line/i), {
+            target: { value: 'Two places left this term.' },
+        })
+        fireEvent.change(screen.getAllByLabelText(/exam boards/i)[0], {
+            target: { value: 'WJEC' },
+        })
+        fireEvent.change(screen.getAllByLabelText(/delivery/i)[0], {
+            target: { value: '' },
+        })
+        fireEvent.change(screen.getAllByLabelText(/^detail$/i)[0], {
+            target: { value: 'Tell us what your child needs.' },
+        })
+        fireEvent.change(screen.getByLabelText(/^heading/i), {
+            target: { value: 'Term dates' },
+        })
+        fireEvent.change(screen.getByLabelText(/body \(markdown\)/i), {
+            target: { value: '- Autumn: 1 Sep' },
+        })
         await user.click(publishButton())
 
         const published = onPublish.mock.calls[0][0] as SiteContent
@@ -204,11 +212,12 @@ describe('SiteEditorView', () => {
         })
     })
 
-    it('blocks publishing without a site name or headline', async () => {
-        const user = userEvent.setup()
+    it('blocks publishing without a site name or headline', () => {
         renderEditor()
 
-        await user.clear(screen.getByLabelText(/site name/i))
+        fireEvent.change(screen.getByLabelText(/site name/i), {
+            target: { value: '' },
+        })
         expect(
             screen.getByText(/required — headings like/i)
         ).toBeInTheDocument()
@@ -220,9 +229,9 @@ describe('SiteEditorView', () => {
         const user = userEvent.setup()
         renderEditor()
 
-        const headline = screen.getByLabelText(/^headline/i)
-        await user.clear(headline)
-        await user.type(headline, 'Something else entirely')
+        fireEvent.change(screen.getByLabelText(/^headline/i), {
+            target: { value: 'Something else entirely' },
+        })
         await user.click(
             screen.getByRole('button', { name: /discard changes/i })
         )
@@ -237,9 +246,9 @@ describe('SiteEditorView', () => {
         const user = userEvent.setup()
         renderEditor()
 
-        const headline = screen.getByLabelText(/^headline/i)
-        await user.clear(headline)
-        await user.type(headline, 'Preview me before anyone else.')
+        fireEvent.change(screen.getByLabelText(/^headline/i), {
+            target: { value: 'Preview me before anyone else.' },
+        })
         await user.click(screen.getByRole('tab', { name: /preview/i }))
 
         // The public page's rendering, fed the draft — unsaved edit included.
@@ -259,8 +268,7 @@ describe('SiteEditorView', () => {
         )
     })
 
-    it('adopts a document landing from the API until the first edit', async () => {
-        const user = userEvent.setup()
+    it('adopts a document landing from the API until the first edit', () => {
         const fetched: SiteContent = {
             ...defaultSiteContent,
             siteName: 'Harbour Tuition',
@@ -280,9 +288,9 @@ describe('SiteEditorView', () => {
         )
 
         // Touched: a later background copy must not clobber the edit.
-        const headline = screen.getByLabelText(/^headline/i)
-        await user.clear(headline)
-        await user.type(headline, 'Hands off my draft')
+        fireEvent.change(screen.getByLabelText(/^headline/i), {
+            target: { value: 'Hands off my draft' },
+        })
         rerender(
             <SiteEditorView
                 content={{ ...fetched, siteName: 'Late Arrival' }}
