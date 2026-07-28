@@ -595,6 +595,22 @@ const studentSlice = createSlice({
         updateLeadStatusFailed: (state, action: PayloadAction<string>) => {
             fail(state, action.payload)
         },
+        // --- Leads: erasure (REQ-032) — distinct from a status change ---
+        deleteLeadRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (id: number) => ({ payload: id }),
+        },
+        deleteLeadSucceeded: (state, action: PayloadAction<number>) => {
+            state.leads = state.leads.filter(
+                (lead) => lead.id !== action.payload
+            )
+            state.notice = { kind: 'success', message: 'Enquiry deleted.' }
+        },
+        deleteLeadFailed: (state, action: PayloadAction<string>) => {
+            fail(state, action.payload)
+        },
         // --- Testimonials: public list (approved) ---
         fetchTestimonialsRequested: (state) => {
             state.testimonialsLoading = true
@@ -795,6 +811,9 @@ export const {
     updateLeadStatusRequested,
     updateLeadStatusSucceeded,
     updateLeadStatusFailed,
+    deleteLeadRequested,
+    deleteLeadSucceeded,
+    deleteLeadFailed,
     fetchTestimonialsRequested,
     fetchTestimonialsSucceeded,
     fetchTestimonialsFailed,

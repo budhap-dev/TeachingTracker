@@ -19,6 +19,7 @@ import {
     requiredFieldProps,
 } from '../utils/formValidation'
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
+import { paths } from '../paths'
 
 type EnquireViewProps = {
     /** An enquiry is on its way to the API. */
@@ -242,6 +243,9 @@ export const EnquireView = ({
                             </MenuItem>
                         ))}
                     </TextField>
+                    {/* The helper steers sensitive detail (health, SEN) away
+                        from the stored free text — data minimisation
+                        (REQ-031). The required error, when shown, wins. */}
                     <TextField
                         label="What would you like tutoring to achieve?"
                         size="small"
@@ -254,6 +258,11 @@ export const EnquireView = ({
                             attempted && goalMissing,
                             'A sentence or two about the goal is required'
                         )}
+                        helperText={
+                            attempted && goalMissing
+                                ? 'A sentence or two about the goal is required'
+                                : 'No need for health or special-educational-needs details here — anything sensitive is better discussed directly.'
+                        }
                         fullWidth
                     />
                     {/* Honeypot: off-screen, not announced. Bots fill it; the
@@ -277,7 +286,9 @@ export const EnquireView = ({
                     </Button>
                     <p className="enquire-consent">
                         We only use these details to reply about tutoring —
-                        nothing else, and never shared.
+                        nothing else, and never shared. See our{' '}
+                        <a href={paths.privacy}>privacy policy</a> for what we
+                        keep and for how long.
                     </p>
                 </Box>
             </div>

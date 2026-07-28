@@ -14,6 +14,7 @@ export const paths = {
     leads: '/leads',
     siteEditor: '/site-editor',
     contact: '/contact',
+    privacy: '/privacy',
     reviews: '/reviews',
     reviewsModeration: '/reviews/moderation',
 } as const

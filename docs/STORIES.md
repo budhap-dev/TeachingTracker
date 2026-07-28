@@ -101,8 +101,8 @@ XS is an afternoon, XL is a project.
 | 27 | ✅ | [REQ-028 — Profanity screen flags reviews for moderation](#req-028--profanity-screen-flags-reviews-for-moderation) | S | both | REQ-027 (backend screen merged 2026-07-24) |
 | — | | **Privacy & GDPR — make the app defensibly hostable** (REQ-030 epic, split 2026-07-28) | | | |
 | 28 | 🔲 | [REQ-030 — Privacy policy and GDPR compliance (epic)](#req-030--privacy-policy-and-gdpr-compliance) | M | both + docs/ops | — (split into REQ-031…034 below) |
-| 29 | 🔲 | [REQ-031 — Public privacy page + collection notices](#req-031--public-privacy-policy-page-and-point-of-collection-notices) | S | frontend | — (unblocked; first of the split) |
-| 30 | 🔲 | [REQ-032 — Erasure end-to-end: delete an enquiry](#req-032--erasure-works-end-to-end-delete-an-enquiry) | S | both | — (unblocked) |
+| 29 | 🚧 | [REQ-031 — Public privacy page + collection notices](#req-031--public-privacy-policy-page-and-point-of-collection-notices) | S | frontend | — (built on feature/req-031-032-privacy, in review) |
+| 30 | 🚧 | [REQ-032 — Erasure end-to-end: delete an enquiry](#req-032--erasure-works-end-to-end-delete-an-enquiry) | S | both | — (built on feature/req-031-032-privacy + func branch, in review) |
 | 31 | 🔲 | [REQ-033 — Retention schedule and purge routine](#req-033--retention-schedule-and-purge-routine) | S | docs/ops (+ small backend if automated) | REQ-032 (erasure paths exist first) |
 | 32 | 🔲 | [REQ-034 — Privacy operations records: ROPA, breach plan, ICO fee](#req-034--privacy-operations-records-ropa-breach-plan-ico-fee) | S | docs/ops | REQ-031 (policy states what the records must match) |
 
@@ -1270,7 +1270,7 @@ actually read).
 
 ## REQ-031 — Public privacy policy page and point-of-collection notices
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S ·
+**Status:** 🚧 Built (2026-07-28, in review) · **Impact:** frontend · **Effort:** S ·
 **Depends on:** — (first slice of the REQ-030 epic)
 
 **Story**
@@ -1327,7 +1327,7 @@ GDPR question has a written answer to point at.
 
 ## REQ-032 — Erasure works end-to-end: delete an enquiry
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** S ·
+**Status:** 🚧 Built (2026-07-28, in review) · **Impact:** both · **Effort:** S ·
 **Depends on:** — (unblocked)
 
 **Story**

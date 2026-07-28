@@ -36,3 +36,12 @@ export const updateLeadStatus = (
         method: 'PUT',
         body: { status },
     })
+
+/**
+ * DELETE /leads/{id} — teacher: erase an enquiry entirely (REQ-032) — a
+ * parent asks to be forgotten, or it was spam. The removed id comes back.
+ */
+export const deleteLead = (id: number): Promise<number> =>
+    apiRequest<{ id: number }>(`/leads/${id}`, { method: 'DELETE' }).then(
+        (result) => result.id
+    )

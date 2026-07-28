@@ -277,6 +277,67 @@ describe('reviews (REQ-027)', () => {
     })
 })
 
+describe('privacy (REQ-031/032)', () => {
+    it('serves the privacy policy publicly from its URL', () => {
+        window.history.pushState({}, '', '/privacy')
+        render(<App />)
+
+        expect(
+            screen.getByRole('heading', { name: /privacy policy/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('heading', { name: /your rights/i })
+        ).toBeInTheDocument()
+    })
+
+    it('reaches the privacy page from the sidebar', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', { name: /^privacy$/i })
+        )
+
+        expect(
+            screen.getByRole('heading', { name: /privacy policy/i })
+        ).toBeInTheDocument()
+    })
+
+    it('links the enquiry form to the policy at the point of collection', () => {
+        window.history.pushState({}, '', '/enquire')
+        render(<App />)
+
+        expect(
+            screen.getByRole('link', { name: /privacy policy/i })
+        ).toHaveAttribute('href', '/privacy')
+    })
+
+    it('erases an enquiry from the inbox through the API round trip', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/leads')
+        render(<App />)
+
+        await screen.findByRole('heading', { name: /^leads$/i })
+        expect(screen.getByText('Priya Sharma')).toBeInTheDocument()
+
+        await user.click(
+            screen.getByRole('button', {
+                name: /delete enquiry from priya sharma/i,
+            })
+        )
+        await user.click(
+            screen.getByRole('button', { name: /delete permanently/i })
+        )
+
+        expect(
+            await screen.findByText(/enquiry deleted/i)
+        ).toBeInTheDocument()
+        expect(screen.queryByText('Priya Sharma')).not.toBeInTheDocument()
+    })
+})
+
 describe('site editor (REQ-008)', () => {
     it('reaches the editor from the sidebar', async () => {
         const user = userEvent.setup()

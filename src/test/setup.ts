@@ -125,6 +125,9 @@ beforeEach(() => {
                 if (init.method === 'POST') {
                     // Submitting an enquiry acknowledges without echoing it.
                     body = { ok: true }
+                } else if (init.method === 'DELETE') {
+                    // Erasing echoes the removed id (REQ-032).
+                    body = { id: Number(url.split('/leads/')[1]) }
                 } else if (init.method === 'PUT') {
                     // A status update echoes the lead with its new status.
                     const id = Number(url.split('/leads/')[1])

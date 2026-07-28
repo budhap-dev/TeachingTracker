@@ -3143,3 +3143,73 @@ $note-rule: 32px;
         animation: none;
     }
 }
+
+/* The privacy policy page (REQ-031) and its collection notices. */
+.privacy-page p {
+    margin: 8px 0 0;
+    color: var(--text);
+    line-height: 1.55;
+
+    a {
+        color: var(--accent);
+        font-weight: 600;
+    }
+}
+
+.privacy-updated {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.privacy-table-scroll {
+    overflow-x: auto;
+    margin-top: 10px;
+}
+
+.privacy-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+
+    th,
+    td {
+        text-align: left;
+        vertical-align: top;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    th {
+        color: var(--muted);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+}
+
+.privacy-list {
+    margin: 10px 0 0;
+    padding-left: 20px;
+    line-height: 1.6;
+}
+
+/* The onboarding privacy nudge on the leads inbox (REQ-031). */
+.lead-privacy-reminder {
+    margin: 8px 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+
+    a {
+        color: var(--accent);
+        font-weight: 600;
+    }
+}
+
+/* Destructive inbox action (REQ-032): visually apart from the workflow buttons. */
+.lead-delete {
+    margin-left: auto;
+    color: var(--muted);
+
+    &:hover {
+        color: #dc2626;
+    }
+}
