@@ -39,6 +39,7 @@ import {
     loadLeadsSaga,
     submitLeadSaga,
     updateLeadStatusSaga,
+    deleteLeadSaga,
     loadTestimonialsSaga,
     loadPendingTestimonialsSaga,
     submitTestimonialSaga,
@@ -93,6 +94,7 @@ import {
     submitLeadFailed,
     updateLeadStatusRequested,
     updateLeadStatusFailed,
+    deleteLeadRequested,
     fetchTestimonialsRequested,
     fetchPendingTestimonialsRequested,
     submitTestimonialRequested,
@@ -542,6 +544,7 @@ describe('rootSaga', () => {
                     updateLeadStatusRequested.type,
                     updateLeadStatusSaga
                 ),
+                takeEvery(deleteLeadRequested.type, deleteLeadSaga),
                 takeLatest(
                     fetchTestimonialsRequested.type,
                     loadTestimonialsSaga

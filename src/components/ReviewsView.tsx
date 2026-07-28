@@ -14,6 +14,7 @@ import type { Testimonial, TestimonialRole } from '../data/students'
 import type { TestimonialInput } from '../api/reviews'
 import { subjectOptions, yearOptions } from '../utils/constants'
 import { requiredFieldProps } from '../utils/formValidation'
+import { paths } from '../paths'
 
 type ReviewsViewProps = {
     testimonials: Testimonial[]
@@ -294,8 +295,10 @@ export const ReviewsView = ({
                         {saving ? 'Sending…' : 'Submit review'}
                     </Button>
                     <p className="review-consent">
-                        By submitting, you agree your words may be shown on this
-                        site once approved.
+                        By submitting, you agree your words and name may be
+                        shown on this site once approved. You can ask for a
+                        published review to be removed at any time — see our{' '}
+                        <a href={paths.privacy}>privacy policy</a>.
                     </p>
                 </Box>
             </div>

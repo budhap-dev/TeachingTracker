@@ -32,6 +32,7 @@ import {
     updateLeadStatusRequested,
     fetchSiteContentRequested,
     publishSiteContentRequested,
+    deleteLeadRequested,
 } from './store/store'
 import { activeSessions } from './data/students'
 import { toDateKey } from './utils/calendar'
@@ -56,6 +57,7 @@ import { EnquireView } from './components/EnquireView'
 import { LeadsView } from './components/LeadsView'
 import { OfferingsView } from './components/OfferingsView'
 import { SiteEditorView } from './components/SiteEditorView'
+import { PrivacyView } from './components/PrivacyView'
 import { ReviewsView } from './components/ReviewsView'
 import { ReviewModerationView } from './components/ReviewModerationView'
 import { PageLoading } from './components/PageLoading'
@@ -822,6 +824,7 @@ const LeadsRoute = () => {
             onSetStatus={(id, status) =>
                 dispatch(updateLeadStatusRequested({ id, status }))
             }
+            onDelete={(id) => dispatch(deleteLeadRequested(id))}
             onConvert={(lead) => {
                 dispatch(
                     updateLeadStatusRequested({
@@ -877,6 +880,9 @@ export const AppRoutes = () => (
                 element={teacher(<SiteEditorRoute />)}
             />
             <Route path={paths.contact} element={<ContactRoute />} />
+            {/* Public by requirement (REQ-031): the privacy notice must be
+                readable by families who never sign in. */}
+            <Route path={paths.privacy} element={<PrivacyView />} />
             {/* Public reviews (REQ-027); moderation is teacher-only. */}
             <Route path={paths.reviews} element={<ReviewsRoute />} />
             <Route

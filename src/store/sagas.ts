@@ -1,5 +1,10 @@
 import { all, call, put, takeEvery, takeLatest } from 'redux-saga/effects'
-import { fetchLeads, submitLead, updateLeadStatus } from '../api/leads'
+import {
+    deleteLead as deleteLeadApi,
+    fetchLeads,
+    submitLead,
+    updateLeadStatus,
+} from '../api/leads'
 import { fetchSiteContent, updateSiteContent as putSiteContent } from '../api/siteContent'
 import type { SiteContent } from '../data/siteContent'
 import type {
@@ -85,6 +90,9 @@ import {
     updateLeadStatusRequested,
     updateLeadStatusSucceeded,
     updateLeadStatusFailed,
+    deleteLeadRequested,
+    deleteLeadSucceeded,
+    deleteLeadFailed,
     fetchTestimonialsRequested,
     fetchTestimonialsSucceeded,
     fetchTestimonialsFailed,
@@ -431,6 +439,24 @@ export function* updateLeadStatusSaga(
     }
 }
 
+/** Erases an enquiry outright (REQ-032); the removed id drops from state. */
+export function* deleteLeadSaga(
+    action: ReturnType<typeof deleteLeadRequested>
+) {
+    try {
+        const id: number = yield call(deleteLeadApi, action.payload)
+        yield put(deleteLeadSucceeded(id))
+    } catch (error) {
+        yield put(
+            deleteLeadFailed(
+                error instanceof Error
+                    ? `Could not delete the enquiry: ${error.message}`
+                    : 'Could not delete the enquiry.'
+            )
+        )
+    }
+}
+
 /** Fetches approved reviews for the public Reviews page. */
 export function* loadTestimonialsSaga() {
     try {
@@ -559,6 +585,7 @@ export function* rootSaga() {
         takeLatest(fetchLeadsRequested.type, loadLeadsSaga),
         takeEvery(submitLeadRequested.type, submitLeadSaga),
         takeEvery(updateLeadStatusRequested.type, updateLeadStatusSaga),
+        takeEvery(deleteLeadRequested.type, deleteLeadSaga),
         takeLatest(fetchTestimonialsRequested.type, loadTestimonialsSaga),
         takeLatest(
             fetchPendingTestimonialsRequested.type,

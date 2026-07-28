@@ -14,6 +14,7 @@ import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
+import PrivacyTipOutlinedIcon from '@mui/icons-material/PrivacyTipOutlined'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import { isAuthConfigured } from '../auth/msal'
@@ -122,6 +123,12 @@ const navItems: NavItem[] = [
         icon: <RateReviewOutlinedIcon fontSize="small" />,
         // Exact match so it doesn't also light up on /reviews/moderation.
         isActive: (pathname) => pathname === paths.reviews,
+    },
+    {
+        label: 'Privacy',
+        path: paths.privacy,
+        icon: <PrivacyTipOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.privacy),
     },
     {
         label: 'Alumni',

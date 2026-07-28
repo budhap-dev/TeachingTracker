@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { LeadsView } from './LeadsView'
@@ -23,15 +23,17 @@ const renderView = (
 ) => {
     const onSetStatus = vi.fn()
     const onConvert = vi.fn()
+    const onDelete = vi.fn()
     render(
         <LeadsView
             leads={leads}
             onSetStatus={onSetStatus}
             onConvert={onConvert}
+            onDelete={onDelete}
             {...props}
         />
     )
-    return { onSetStatus, onConvert }
+    return { onSetStatus, onConvert, onDelete }
 }
 
 describe('LeadsView', () => {
@@ -90,9 +92,55 @@ describe('LeadsView', () => {
         expect(onConvert).toHaveBeenCalledWith(
             expect.objectContaining({ id: 1 })
         )
-        // The converted card keeps its status pill but no actions.
+        // The converted card keeps its status pill and only the delete
+        // action (REQ-032) — no workflow buttons.
         const card = screen.getByText('Ana Costa').closest('li')!
-        expect(within(card).queryByRole('button')).not.toBeInTheDocument()
+        expect(within(card).getAllByRole('button')).toHaveLength(1)
+        expect(
+            within(card).getByRole('button', {
+                name: /delete enquiry from ana costa/i,
+            })
+        ).toBeInTheDocument()
+    })
+
+    it('deletes an enquiry only after the confirm', async () => {
+        const user = userEvent.setup()
+        const { onDelete } = renderView([lead({ id: 4 })])
+
+        await user.click(
+            screen.getByRole('button', {
+                name: /delete enquiry from priya sharma/i,
+            })
+        )
+        // Backing out keeps the enquiry.
+        expect(
+            screen.getByRole('heading', { name: /delete this enquiry\?/i })
+        ).toBeInTheDocument()
+        await user.click(screen.getByRole('button', { name: /^cancel$/i }))
+        expect(onDelete).not.toHaveBeenCalled()
+        // The closing dialog aria-hides the page until its exit transition
+        // ends — wait it out before reaching for the card again.
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
+
+        // Confirming erases it.
+        await user.click(
+            screen.getByRole('button', {
+                name: /delete enquiry from priya sharma/i,
+            })
+        )
+        await user.click(
+            screen.getByRole('button', { name: /delete permanently/i })
+        )
+        expect(onDelete).toHaveBeenCalledWith(4)
+    })
+
+    it('reminds the teacher to share the privacy policy when converting', () => {
+        renderView([])
+        expect(
+            screen.getByRole('link', { name: /privacy policy/i })
+        ).toHaveAttribute('href', '/privacy')
     })
 
     it('invites patience when the inbox is empty', () => {
