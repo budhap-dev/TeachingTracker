@@ -12,6 +12,7 @@ export const paths = {
     offerings: '/offerings',
     enquire: '/enquire',
     leads: '/leads',
+    siteEditor: '/site-editor',
     contact: '/contact',
     reviews: '/reviews',
     reviewsModeration: '/reviews/moderation',
