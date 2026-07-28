@@ -241,10 +241,16 @@ export const OfferingsView = ({
     const freeformSection =
         freeform.heading || freeform.markdown ? (
             <div className="card offerings-freeform">
-                {freeform.heading && (
-                    <h4 className="offerings-heading">{freeform.heading}</h4>
-                )}
-                {renderMarkdown(freeform.markdown)}
+                {/* The pinned note on the corkboard — the wrapper is what
+                    sways, carries the pin and wears the paper. */}
+                <div className="freeform-note">
+                    {freeform.heading && (
+                        <h4 className="offerings-heading">
+                            {freeform.heading}
+                        </h4>
+                    )}
+                    {renderMarkdown(freeform.markdown)}
+                </div>
             </div>
         ) : null
 

@@ -277,6 +277,47 @@ describe('reviews (REQ-027)', () => {
     })
 })
 
+describe('site editor (REQ-008)', () => {
+    it('reaches the editor from the sidebar', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        const navigation = screen.getByRole('navigation')
+        await user.click(
+            within(navigation).getByRole('button', { name: /public site/i })
+        )
+
+        expect(
+            screen.getByRole('heading', { name: /public site/i })
+        ).toBeInTheDocument()
+        // The published document fills the form.
+        expect(screen.getByLabelText(/^headline/i)).toHaveValue(
+            defaultSiteContent.hero.headline
+        )
+    })
+
+    it('publishes an edited headline through the API round trip', async () => {
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/site-editor')
+        render(<App />)
+
+        const headline = await screen.findByLabelText(/^headline/i)
+        await user.clear(headline)
+        await user.type(headline, 'Published straight from the test.')
+        await user.click(screen.getByRole('button', { name: /^publish$/i }))
+
+        // The saga PUTs, the mock echoes, and the success toast confirms.
+        expect(
+            await screen.findByText(/published — live on the public site/i)
+        ).toBeInTheDocument()
+        // The server's copy is now the baseline: nothing left to publish.
+        expect(
+            screen.getByRole('button', { name: /^publish$/i })
+        ).toBeDisabled()
+    })
+})
+
 describe('loading states', () => {
     it('waits for the fetch instead of redirecting a deep link while loading', async () => {
         // Empty + loading: the deep link must not bounce to the students list.

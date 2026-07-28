@@ -31,6 +31,7 @@ import {
     submitLeadRequested,
     updateLeadStatusRequested,
     fetchSiteContentRequested,
+    publishSiteContentRequested,
 } from './store/store'
 import { activeSessions } from './data/students'
 import { toDateKey } from './utils/calendar'
@@ -54,6 +55,7 @@ import { ContactView } from './components/ContactView'
 import { EnquireView } from './components/EnquireView'
 import { LeadsView } from './components/LeadsView'
 import { OfferingsView } from './components/OfferingsView'
+import { SiteEditorView } from './components/SiteEditorView'
 import { ReviewsView } from './components/ReviewsView'
 import { ReviewModerationView } from './components/ReviewModerationView'
 import { PageLoading } from './components/PageLoading'
@@ -640,6 +642,29 @@ const OfferingsRoute = () => {
 }
 
 /**
+ * The teacher's site editor (REQ-008). Edits run against the published
+ * document, so it is fetched on mount like the other self-loading routes;
+ * the bundled fallback renders until it lands.
+ */
+const SiteEditorRoute = () => {
+    const dispatch = useAppDispatch()
+    const content = useAppSelector((state) => state.students.siteContent)
+    const publishing = useAppSelector(
+        (state) => state.students.publishingSiteContent
+    )
+    useEffect(() => {
+        dispatch(fetchSiteContentRequested())
+    }, [dispatch])
+    return (
+        <SiteEditorView
+            content={content}
+            publishing={publishing}
+            onPublish={(next) => dispatch(publishSiteContentRequested(next))}
+        />
+    )
+}
+
+/**
  * Public page — reads contact details from the store, never student data.
  * Loads on mount (like the Reviews routes): the details are public and a
  * signed-out visitor must still see them. `canEdit` turns on the inline
@@ -847,6 +872,10 @@ export const AppRoutes = () => (
             <Route path={paths.offerings} element={<OfferingsRoute />} />
             <Route path={paths.enquire} element={<EnquireRoute />} />
             <Route path={paths.leads} element={teacher(<LeadsRoute />)} />
+            <Route
+                path={paths.siteEditor}
+                element={teacher(<SiteEditorRoute />)}
+            />
             <Route path={paths.contact} element={<ContactRoute />} />
             {/* Public reviews (REQ-027); moderation is teacher-only. */}
             <Route path={paths.reviews} element={<ReviewsRoute />} />

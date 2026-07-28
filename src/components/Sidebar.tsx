@@ -13,6 +13,7 @@ import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
+import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import { isAuthConfigured } from '../auth/msal'
@@ -88,6 +89,13 @@ const navItems: NavItem[] = [
         path: paths.reviewsModeration,
         icon: <FactCheckOutlinedIcon fontSize="small" />,
         isActive: (pathname) => pathname === paths.reviewsModeration,
+        teacherOnly: true,
+    },
+    {
+        label: 'Public site',
+        path: paths.siteEditor,
+        icon: <LanguageOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.siteEditor),
         teacherOnly: true,
     },
     {
