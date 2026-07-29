@@ -1913,79 +1913,94 @@ $note-rule: 32px;
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
 }
 
-.contact-list {
+/* Contact channels as cards (REQ-006/008): the whole card is the action —
+   email, call or WhatsApp — with its availability note and, when set, the
+   Preferred state designed in rather than bolted on. */
+.contact-channel-grid {
     list-style: none;
     margin: 18px 0 0;
     padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+}
+
+.contact-channel-card {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-}
-
-.contact-item {
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    padding: 14px 16px;
+    gap: 10px;
+    height: 100%;
+    padding: 18px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--surface-alt);
+    text-decoration: none;
+    color: var(--text);
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgb(15 23 42 / 0.1);
+        border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+    }
+
+    &.preferred {
+        border-color: color-mix(in srgb, #16a34a 45%, var(--border));
+        background: color-mix(in srgb, #16a34a 5%, var(--surface-alt));
+    }
 }
 
-.contact-label {
+.contact-channel-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .contact-preferred-pill {
+        margin-left: auto;
+    }
+}
+
+.contact-channel-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+
+    .call & {
+        color: var(--accent-alt);
+        background: color-mix(in srgb, var(--accent-alt) 12%, var(--surface));
+    }
+
+    .whatsapp & {
+        color: #1faf53;
+        background: color-mix(in srgb, #25d366 14%, var(--surface));
+    }
+}
+
+.contact-channel-name {
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
-    min-width: 62px;
 }
 
-.contact-value {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--accent);
-    text-decoration: none;
+.contact-channel-value {
+    font-size: 1.05rem;
+    font-weight: 700;
     word-break: break-word;
 }
 
-.contact-value:hover,
-.contact-value:focus-visible {
-    text-decoration: underline;
-}
-
-/* Phone row: the number as text, with a call and a WhatsApp icon beside it. */
-.contact-phone {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.contact-number {
-    color: var(--text);
-}
-
-.contact-icon {
-    display: inline-grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
+.contact-channel-card:hover .contact-channel-value,
+.contact-channel-card:focus-visible .contact-channel-value {
     color: var(--accent);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    text-decoration: none;
-
-    &:hover,
-    &:focus-visible {
-        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-    }
-
-    &.whatsapp {
-        color: #25d366;
-        border-color: color-mix(in srgb, #25d366 45%, var(--border));
-    }
 }
 
 .contact-note {
@@ -1996,14 +2011,19 @@ $note-rule: 32px;
 
 /* Teacher's inline editor for the contact details (REQ-006/008). */
 .contact-form {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 16px;
     margin-top: 18px;
-    max-width: 32rem;
+    max-width: 46rem;
+
+    @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .contact-form-actions {
+    grid-column: 1 / -1;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
@@ -3215,12 +3235,6 @@ $note-rule: 32px;
 }
 
 /* Per-channel availability on the Contact page (contact availability). */
-.contact-item-body {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
 .contact-availability {
     font-size: 0.85rem;
     color: var(--muted);

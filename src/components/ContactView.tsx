@@ -86,57 +86,45 @@ export const ContactView = ({
 
     const hasAnyDetail = Boolean(contact.email || contact.phone)
 
-    /** The rows on offer, preferred first. */
+    /** One card per channel on offer, preferred first. The whole card is the
+        action — a big target beats a 34px icon — with an aria-label naming
+        it, so the visible copy inside stays decorative. */
     const rows: {
         channel: ContactChannel
         label: string
-        value: ReactNode
+        value: string
+        href: string
+        ariaLabel: string
+        external?: boolean
+        icon: ReactNode
     }[] = []
     if (contact.email) {
         rows.push({
             channel: 'email',
             label: 'Email',
-            value: (
-                <a className="contact-value" href={`mailto:${contact.email}`}>
-                    {contact.email}
-                </a>
-            ),
+            value: contact.email,
+            href: `mailto:${contact.email}`,
+            ariaLabel: contact.email,
+            icon: <MailOutlineRoundedIcon fontSize="small" />,
         })
     }
     if (contact.phone) {
         rows.push({
             channel: 'call',
             label: 'Call',
-            value: (
-                <span className="contact-value contact-phone">
-                    <span className="contact-number">{contact.phone}</span>
-                    <a
-                        className="contact-icon"
-                        href={toTelHref(contact.phone)}
-                        aria-label={`Call ${contact.phone}`}
-                    >
-                        <PhoneRoundedIcon fontSize="small" />
-                    </a>
-                </span>
-            ),
+            value: contact.phone,
+            href: toTelHref(contact.phone),
+            ariaLabel: `Call ${contact.phone}`,
+            icon: <PhoneRoundedIcon fontSize="small" />,
         })
         rows.push({
             channel: 'whatsapp',
             label: 'WhatsApp',
-            value: (
-                <span className="contact-value contact-phone">
-                    <span className="contact-number">{contact.phone}</span>
-                    <a
-                        className="contact-icon whatsapp"
-                        href={toWhatsAppHref(contact.phone)}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`WhatsApp ${contact.phone}`}
-                    >
-                        <WhatsAppIcon fontSize="small" />
-                    </a>
-                </span>
-            ),
+            value: contact.phone,
+            href: toWhatsAppHref(contact.phone),
+            ariaLabel: `WhatsApp ${contact.phone}`,
+            external: true,
+            icon: <WhatsAppIcon fontSize="small" />,
         })
     }
     rows.sort(
@@ -298,19 +286,41 @@ export const ContactView = ({
                         </div>
                     </Box>
                 ) : hasAnyDetail ? (
-                    <ul className="contact-list">
+                    <ul className="contact-channel-grid">
                         {rows.map((row) => (
-                            <li key={row.channel} className="contact-item">
-                                <span className="contact-label">
-                                    {row.label}
-                                    {contact.preferred === row.channel && (
-                                        <span className="contact-preferred-pill">
-                                            Preferred
+                            <li key={row.channel}>
+                                <a
+                                    className={`contact-channel-card ${row.channel}${
+                                        contact.preferred === row.channel
+                                            ? ' preferred'
+                                            : ''
+                                    }`}
+                                    href={row.href}
+                                    aria-label={row.ariaLabel}
+                                    {...(row.external
+                                        ? {
+                                              target: '_blank',
+                                              rel: 'noreferrer',
+                                          }
+                                        : {})}
+                                >
+                                    <span className="contact-channel-head">
+                                        <span className="contact-channel-icon">
+                                            {row.icon}
                                         </span>
-                                    )}
-                                </span>
-                                <span className="contact-item-body">
-                                    {row.value}
+                                        <span className="contact-channel-name">
+                                            {row.label}
+                                        </span>
+                                        {contact.preferred ===
+                                            row.channel && (
+                                            <span className="contact-preferred-pill">
+                                                Preferred
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className="contact-channel-value">
+                                        {row.value}
+                                    </span>
                                     {contact.availability?.[row.channel] && (
                                         <span className="contact-availability">
                                             {
@@ -320,7 +330,7 @@ export const ContactView = ({
                                             }
                                         </span>
                                     )}
-                                </span>
+                                </a>
                             </li>
                         ))}
                     </ul>
