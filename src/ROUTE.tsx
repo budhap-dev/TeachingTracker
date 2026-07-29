@@ -632,7 +632,7 @@ const OfferingsRoute = () => {
     }, [dispatch])
     useDocumentMeta(
         'Subjects & how lessons run — Springboard Tutoring',
-        'Maths, physics, chemistry and biology for KS3 and GCSE, matched to your exam board — online or in person. See how lessons run, from enquiry to weekly sessions.'
+        'Maths, physics, chemistry and biology from KS3 to GCSE and A-level, matched to your exam board — online or in person. See how lessons run, from enquiry to weekly sessions.'
     )
     return (
         <OfferingsView

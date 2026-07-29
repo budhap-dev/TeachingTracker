@@ -41,14 +41,18 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
                 <p className="eyebrow">{content.siteName}</p>
                 <h3 className="offerings-hero-headline">{hero.headline}</h3>
                 <p className="offerings-hero-subhead">{hero.subhead}</p>
-                <p className="offerings-availability">{hero.availability}</p>
+                {hero.availability && (
+                    <p className="offerings-availability">
+                        {hero.availability}
+                    </p>
+                )}
                 <div className="home-hero-actions">
                     <Button
                         variant="contained"
                         component={Link}
                         to={paths.contact}
                     >
-                        Book a free assessment
+                        Request a free assessment
                     </Button>
                     <Button
                         variant="outlined"

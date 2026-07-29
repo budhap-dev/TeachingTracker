@@ -37,7 +37,9 @@ describe('SiteEditorView', () => {
         expect(screen.getAllByLabelText(/^subject$/i)[0]).toHaveValue(
             'Mathematics'
         )
-        expect(screen.getAllByLabelText(/levels/i)[0]).toHaveValue('KS3, GCSE')
+        expect(screen.getAllByLabelText(/levels/i)[0]).toHaveValue(
+            'KS3, GCSE, A-level'
+        )
         expect(screen.getAllByLabelText(/exam boards/i)[0]).toHaveValue(
             'AQA, Edexcel, OCR'
         )

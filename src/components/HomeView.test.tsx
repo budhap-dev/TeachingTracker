@@ -41,11 +41,13 @@ describe('HomeView', () => {
         expect(
             screen.getByText(defaultSiteContent.hero.headline)
         ).toBeInTheDocument()
+        // The default availability line is blank, so no line renders — the
+        // teacher publishes one via the site editor when there is news.
         expect(
-            screen.getByText(defaultSiteContent.hero.availability)
-        ).toBeInTheDocument()
+            document.querySelector('.offerings-availability')
+        ).not.toBeInTheDocument()
         expect(
-            screen.getByRole('link', { name: /book a free assessment/i })
+            screen.getByRole('link', { name: /request a free assessment/i })
         ).toHaveAttribute('href', '/contact')
         expect(
             screen.getByRole('link', { name: /see what we offer/i })
