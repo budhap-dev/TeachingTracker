@@ -201,7 +201,7 @@ describe('OfferingsView', () => {
         renderView({}, onBookAssessment)
 
         const buttons = screen.getAllByRole('button', {
-            name: /book a free assessment/i,
+            name: /request a free assessment/i,
         })
         expect(buttons).toHaveLength(2)
         await user.click(buttons[0])

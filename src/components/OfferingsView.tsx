@@ -90,7 +90,7 @@ export const OfferingsView = ({
                         endIcon={<ArrowForwardRoundedIcon />}
                         onClick={onBookAssessment}
                     >
-                        Book a free assessment
+                        Request a free assessment
                     </Button>
                     <a
                         className="offerings-cta-secondary"
@@ -274,7 +274,7 @@ export const OfferingsView = ({
                 <div>
                     <h4 className="offerings-heading">Ready to start?</h4>
                     <p className="section-subtitle">
-                        Book a free assessment and we’ll take it from there.
+                        Request a free assessment and we’ll take it from there.
                     </p>
                 </div>
                 <Button
@@ -282,7 +282,7 @@ export const OfferingsView = ({
                     endIcon={<ArrowForwardRoundedIcon />}
                     onClick={onBookAssessment}
                 >
-                    Book a free assessment
+                    Request a free assessment
                 </Button>
             </div>
         </section>

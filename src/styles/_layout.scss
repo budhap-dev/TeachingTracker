@@ -18,6 +18,17 @@
     min-width: 0;
     overflow-x: hidden;
 
+    /* Desktop: pin the menu to the viewport with its own scrollbar, so the
+       route-change scroll-to-top resets the content without yanking the menu
+       back to the top with it. Mobile keeps its own sticky-header treatment
+       (see _responsive.scss). */
+    @media (min-width: 901px) {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+    }
+
     h1 {
         margin: 0 0 8px;
         font-size: 1.8rem;

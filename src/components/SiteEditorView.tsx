@@ -499,7 +499,7 @@ export const SiteEditorView = ({
                                             <TextField
                                                 label="Levels"
                                                 size="small"
-                                                placeholder="KS3, GCSE"
+                                                placeholder="KS3, GCSE, A-level"
                                                 value={row.keyStages}
                                                 onChange={(event) =>
                                                     editSubject(

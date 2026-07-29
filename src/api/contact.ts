@@ -1,13 +1,16 @@
-import type { Contact } from '../data/contact'
+import type { Contact, ContactAvailability, ContactChannel } from '../data/contact'
 import { apiRequest } from './client'
 
 /**
  * What the teacher submits when editing contact details. Same shape as
- * {@link Contact}; a blank field is a removal the API drops.
+ * {@link Contact}; a blank field is a removal the API drops. An empty-string
+ * `preferred` clears the preference.
  */
 export type ContactInput = {
     email?: string
     phone?: string
+    availability?: ContactAvailability
+    preferred?: ContactChannel | ''
 }
 
 /** GET /contact — public: the details shown on the Contact page. */

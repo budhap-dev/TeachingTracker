@@ -104,7 +104,7 @@ describe('public pages', () => {
 
         await user.click(
             screen.getAllByRole('button', {
-                name: /book a free assessment/i,
+                name: /request a free assessment/i,
             })[0]
         )
 
