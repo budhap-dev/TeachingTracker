@@ -3213,3 +3213,26 @@ $note-rule: 32px;
         color: #dc2626;
     }
 }
+
+/* Per-channel availability on the Contact page (contact availability). */
+.contact-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.contact-availability {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.contact-preferred-pill {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    background: color-mix(in srgb, #16a34a 15%, var(--surface));
+    color: #15803d;
+}

@@ -148,14 +148,27 @@ beforeEach(() => {
             } else if (url.includes('/contact')) {
                 if (init.method === 'PUT') {
                     // Echo the saved record, dropping blanks the way the API
-                    // does — a cleared field is a removal.
+                    // does — a cleared field is a removal, notes survive only
+                    // for offered channels, and '' preferred clears it.
                     const input = JSON.parse(String(init.body))
+                    const email = input.email?.trim()
+                    const phone = input.phone?.trim()
+                    const offered = (channel: string) =>
+                        channel === 'email' ? Boolean(email) : Boolean(phone)
+                    const availability = Object.fromEntries(
+                        Object.entries(input.availability ?? {}).filter(
+                            ([channel, note]) =>
+                                String(note ?? '').trim() && offered(channel)
+                        )
+                    )
                     body = {
-                        ...(input.email?.trim()
-                            ? { email: input.email.trim() }
+                        ...(email ? { email } : {}),
+                        ...(phone ? { phone } : {}),
+                        ...(Object.keys(availability).length
+                            ? { availability }
                             : {}),
-                        ...(input.phone?.trim()
-                            ? { phone: input.phone.trim() }
+                        ...(input.preferred && offered(input.preferred)
+                            ? { preferred: input.preferred }
                             : {}),
                     }
                 } else {

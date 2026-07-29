@@ -29,8 +29,9 @@ describe('ContactView', () => {
         const email = screen.getByRole('link', { name: 'tutor@example.com' })
         expect(email).toHaveAttribute('href', 'mailto:tutor@example.com')
 
-        // The number is shown as text, with a call and a WhatsApp icon link.
-        expect(screen.getByText('+44 7700 900123')).toBeInTheDocument()
+        // The number is shown as text on both phone rows — call and WhatsApp
+        // are separate channels now, each with its own icon link.
+        expect(screen.getAllByText('+44 7700 900123')).toHaveLength(2)
         expect(
             screen.getByRole('link', { name: 'Call +44 7700 900123' })
         ).toHaveAttribute('href', 'tel:+447700900123')
@@ -64,6 +65,88 @@ describe('ContactView', () => {
         expect(screen.queryByText(/^Email$/)).not.toBeInTheDocument()
     })
 
+    it('shows availability notes and puts the preferred channel first', () => {
+        renderView({
+            contact: {
+                ...both,
+                availability: {
+                    email: 'Anytime — we reply within a day',
+                    call: 'Evenings and weekends only',
+                    whatsapp: 'As per availability',
+                },
+                preferred: 'whatsapp',
+            },
+        })
+
+        expect(
+            screen.getByText('Anytime — we reply within a day')
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText('Evenings and weekends only')
+        ).toBeInTheDocument()
+        expect(screen.getByText('As per availability')).toBeInTheDocument()
+
+        // WhatsApp wears the pill and sorts to the top of the list.
+        const items = screen.getAllByRole('listitem')
+        expect(items[0]).toHaveTextContent('WhatsApp')
+        expect(items[0]).toHaveTextContent('Preferred')
+        expect(items[1]).toHaveTextContent('Email')
+        expect(items[2]).toHaveTextContent('Call')
+        expect(screen.getAllByText('Preferred')).toHaveLength(1)
+    })
+
+    it('saves availability notes and the preferred channel', async () => {
+        const onSave = vi.fn()
+        const user = userEvent.setup()
+        renderView({ canEdit: true, onSave })
+
+        await user.click(screen.getByRole('button', { name: /edit details/i }))
+        await user.type(
+            screen.getByLabelText('Call availability'),
+            'Evenings and weekends only'
+        )
+        await user.type(
+            screen.getByLabelText('WhatsApp availability'),
+            'As per availability'
+        )
+        await user.click(
+            screen.getByLabelText('Preferred contact method')
+        )
+        await user.click(screen.getByRole('option', { name: 'WhatsApp' }))
+        await user.click(screen.getByRole('button', { name: /save details/i }))
+
+        expect(onSave).toHaveBeenCalledWith({
+            email: 'tutor@example.com',
+            phone: '+44 7700 900123',
+            availability: {
+                email: '',
+                call: 'Evenings and weekends only',
+                whatsapp: 'As per availability',
+            },
+            preferred: 'whatsapp',
+        })
+    })
+
+    it('seeds the editor with the stored notes and preference', async () => {
+        const user = userEvent.setup()
+        renderView({
+            canEdit: true,
+            contact: {
+                ...both,
+                availability: { call: 'Evenings only' },
+                preferred: 'email',
+            },
+        })
+
+        await user.click(screen.getByRole('button', { name: /edit details/i }))
+        expect(screen.getByLabelText('Call availability')).toHaveValue(
+            'Evenings only'
+        )
+        expect(
+            screen.getByLabelText('Preferred contact method')
+        ).toHaveTextContent('Email')
+    })
+
     it('invites the teacher to add details when none are set', () => {
         renderView({ contact: {}, canEdit: true })
 
@@ -89,10 +172,12 @@ describe('ContactView', () => {
         await user.type(email, 'new@example.com')
         await user.click(screen.getByRole('button', { name: /save details/i }))
 
-        expect(onSave).toHaveBeenCalledWith({
-            email: 'new@example.com',
-            phone: '+44 7700 900123',
-        })
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                email: 'new@example.com',
+                phone: '+44 7700 900123',
+            })
+        )
         // The form closes back to the display, with the note visible again.
         expect(
             screen.queryByRole('button', { name: /save details/i })
@@ -108,10 +193,12 @@ describe('ContactView', () => {
         await user.clear(screen.getByLabelText('Phone'))
         await user.click(screen.getByRole('button', { name: /save details/i }))
 
-        expect(onSave).toHaveBeenCalledWith({
-            email: 'tutor@example.com',
-            phone: '',
-        })
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                email: 'tutor@example.com',
+                phone: '',
+            })
+        )
     })
 
     it('blocks saving a malformed email with an inline error (REQ-029)', async () => {
@@ -138,10 +225,12 @@ describe('ContactView', () => {
         await user.clear(email)
         await user.type(email, 'fixed@example.com')
         await user.click(screen.getByRole('button', { name: /save details/i }))
-        expect(onSave).toHaveBeenCalledWith({
-            email: 'fixed@example.com',
-            phone: '+44 7700 900123',
-        })
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                email: 'fixed@example.com',
+                phone: '+44 7700 900123',
+            })
+        )
     })
 
     it('blocks saving a malformed phone with an inline error (REQ-029)', async () => {
@@ -181,10 +270,12 @@ describe('ContactView', () => {
         await user.type(screen.getByLabelText('Email'), 'fresh@example.com')
         await user.click(screen.getByRole('button', { name: /save details/i }))
 
-        expect(onSave).toHaveBeenCalledWith({
-            email: 'fresh@example.com',
-            phone: '',
-        })
+        expect(onSave).toHaveBeenCalledWith(
+            expect.objectContaining({
+                email: 'fresh@example.com',
+                phone: '',
+            })
+        )
     })
 
     it('cancels editing without saving', async () => {
