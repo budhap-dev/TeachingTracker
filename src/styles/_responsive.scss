@@ -60,6 +60,17 @@
         padding: 16px;
     }
 
+    /* Narrow screens: a header's action button must not get crushed beside
+       the heading (the label was wrapping mid-word) — let it drop onto its
+       own line instead. */
+    .section-header {
+        flex-wrap: wrap;
+    }
+
+    .section-header .MuiButton-root {
+        white-space: nowrap;
+    }
+
     .topbar {
         flex-direction: column;
         align-items: flex-start;
