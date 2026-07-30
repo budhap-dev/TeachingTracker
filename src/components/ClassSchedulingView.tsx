@@ -1,5 +1,15 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
+import {
+    DndContext,
+    PointerSensor,
+    useDraggable,
+    useDroppable,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
 import {
     Autocomplete,
     Button,
@@ -81,6 +91,66 @@ const displayMembers = (entry: DayEntry) => {
 /** The API keeps one subject string; the form edits it as chips. */
 const splitSubjects = (subject?: string) => (subject ? subject.split(', ') : [])
 
+/** '16:30' → minutes since midnight, for overlap checks. */
+const toMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number)
+    return hours * 60 + minutes
+}
+
+/** A day cell (or week column) that accepts a dropped class. */
+const DroppableDay = ({
+    dayKey,
+    children,
+}: {
+    dayKey: string
+    children: ReactNode
+}) => {
+    const { setNodeRef, isOver } = useDroppable({ id: dayKey })
+    return (
+        <div ref={setNodeRef} className={isOver ? 'drop-target' : undefined}>
+            {children}
+        </div>
+    )
+}
+
+/**
+ * Makes a class chip/row draggable onto another day. Listeners ride a plain
+ * wrapper (no ARIA attributes — the inner button stays the interactive
+ * element) and the pointer sensor's distance threshold keeps clicks working.
+ */
+const DraggableEntry = ({
+    id,
+    fromDate,
+    entry,
+    children,
+}: {
+    id: string
+    fromDate: string
+    entry: DayEntry
+    children: ReactNode
+}) => {
+    const { setNodeRef, listeners, transform, isDragging } = useDraggable({
+        id,
+        data: { fromDate, entry },
+    })
+    return (
+        <div
+            ref={setNodeRef}
+            className={`draggable-entry ${isDragging ? 'dragging' : ''}`}
+            style={
+                transform
+                    ? {
+                          transform: `translate(${transform.x}px, ${transform.y}px)`,
+                      }
+                    : undefined
+            }
+            {...listeners}
+        >
+            {children}
+        </div>
+    )
+}
+
 const getMonthGrid = (referenceDate: Date) => {
     const monthStart = new Date(
         referenceDate.getFullYear(),
@@ -149,6 +219,8 @@ export const ClassSchedulingView = ({
     // reset whenever a day or entry is opened so a fresh form starts clean.
     const [submitted, setSubmitted] = useState(false)
     const [monthReference, setMonthReference] = useState(() => new Date())
+    // Month grid or a single week in detail; the reference date drives both.
+    const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
     // The day whose modal is open. The calendar owns the date now, so there is
     // no date field to keep in sync — null means no modal.
     const [openDate, setOpenDate] = useState<string | null>(null)
@@ -160,6 +232,60 @@ export const ClassSchedulingView = ({
     )
     // What the "are you sure?" dialog is about to cancel, if anything.
     const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null)
+    // The target date for "copy this class to another day", when picked.
+    const [copyDate, setCopyDate] = useState('')
+    // A drag has landed: the class and the day it was dropped on, awaiting
+    // the move confirmation.
+    const [moveTarget, setMoveTarget] = useState<{
+        entry: DayEntry
+        toDate: string
+    } | null>(null)
+
+    // Drags start after a little travel, so a plain click still opens a class.
+    const dragSensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    )
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const toDate = event.over ? String(event.over.id) : null
+        const data = event.active.data.current as
+            | { fromDate: string; entry: DayEntry }
+            | undefined
+        if (!toDate || !data || toDate === data.fromDate) {
+            return
+        }
+        setMoveTarget({ entry: data.entry, toDate })
+    }
+
+    /**
+     * Warns (never blocks) when the picked students already have a class
+     * overlapping the chosen slot on `date` — the row being edited excluded.
+     */
+    const clashesOn = (date: string | null) => {
+        if (!date || !time) {
+            return []
+        }
+        const start = toMinutes(time)
+        const end = start + durationMinutes
+        const pickedIds = new Set(selectedStudents.map((option) => option.id))
+        return sessions.filter((session) => {
+            if (
+                session.date !== date ||
+                session.status === 'Cancelled' ||
+                !pickedIds.has(session.studentId)
+            ) {
+                return false
+            }
+            if (
+                editingEntry?.sessions.some((row) => row.id === session.id)
+            ) {
+                return false
+            }
+            const otherStart = toMinutes(session.time)
+            const otherEnd = otherStart + (session.durationMinutes ?? 60)
+            return start < otherEnd && otherStart < end
+        })
+    }
     // The class the delete confirmation is about, if any (a whole entry).
     const [deleteTarget, setDeleteTarget] = useState<DayEntry | null>(null)
 
@@ -216,6 +342,7 @@ export const ClassSchedulingView = ({
         setDurationMinutes(entry?.lead.durationMinutes ?? 60)
         setNotes(entry?.lead.notes ?? '')
         setSubmitted(false)
+        setCopyDate('')
     }
 
     /** Opens a day to edit `entryKey`, or its earliest entry, or to add one. */
@@ -265,6 +392,63 @@ export const ClassSchedulingView = ({
         year: 'numeric',
     })
     const todayKey = toDateKey(new Date())
+
+    // The reference date's week, Sunday first — same week shape as the grid.
+    const weekDays = useMemo(() => {
+        const start = new Date(monthReference)
+        start.setDate(monthReference.getDate() - monthReference.getDay())
+        return Array.from({ length: 7 }, (_, index) => {
+            const day = new Date(start)
+            day.setDate(start.getDate() + index)
+            return day
+        })
+    }, [monthReference])
+    const weekLabel = `${weekDays[0].toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+    })} – ${weekDays[6].toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    })}`
+
+    /** Switches to the week view. Month navigation parks the reference on
+        the 1st, so landing in the current month means "this week", not the
+        week of the 1st. */
+    const showWeekView = () => {
+        setViewMode('week')
+        setMonthReference((current) => {
+            const now = new Date()
+            return current.getMonth() === now.getMonth() &&
+                current.getFullYear() === now.getFullYear()
+                ? now
+                : current
+        })
+    }
+
+    /** True while the visible period already contains today — Current then
+        has nowhere to go and disables. */
+    const atCurrentPeriod =
+        viewMode === 'month'
+            ? monthReference.getMonth() === new Date().getMonth() &&
+              monthReference.getFullYear() === new Date().getFullYear()
+            : weekDays.some((day) => toDateKey(day) === todayKey)
+
+    /** Previous/Next: a month at a time on the grid, seven days in week view. */
+    const stepReference = (direction: 1 | -1) =>
+        setMonthReference((current) =>
+            viewMode === 'month'
+                ? new Date(
+                      current.getFullYear(),
+                      current.getMonth() + direction,
+                      1
+                  )
+                : new Date(
+                      current.getFullYear(),
+                      current.getMonth(),
+                      current.getDate() + direction * 7
+                  )
+        )
 
     // What is still to come — classes, not rows: a group hour counts once.
     const upcomingCount = useMemo(
@@ -327,6 +511,27 @@ export const ClassSchedulingView = ({
 
     // Save is always live when adding; when editing it waits for a valid change.
     const saveDisabled = Boolean(editingEntry) && (!formValid || !isDirty)
+
+    /**
+     * Books a duplicate of the open class on the picked date — same students,
+     * subject, time, duration and notes, exactly as the form shows them (an
+     * unsaved tweak copies too: the copy is what's on screen). The API books
+     * it as a brand-new class, group or solo alike.
+     */
+    const handleCopy = () => {
+        if (!copyDate || !formValid) {
+            return
+        }
+        onScheduleClass({
+            studentIds: selectedStudents.map((option) => option.id),
+            subject: subjects.join(', '),
+            date: copyDate,
+            time,
+            durationMinutes,
+            notes: notes.trim() || 'Scheduled from the class planner',
+        })
+        setOpenDate(null)
+    }
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
@@ -613,6 +818,20 @@ export const ClassSchedulingView = ({
                                 </MenuItem>
                             ))}
                         </TextField>
+                        {/* A heads-up, not a blocker: double-booking may be
+                            deliberate (back-to-back siblings, a makeup). */}
+                        {clashesOn(openDate).length > 0 && (
+                            <p className="clash-warning" role="alert">
+                                Overlaps{' '}
+                                {clashesOn(openDate)
+                                    .map(
+                                        (session) =>
+                                            `${session.studentName}’s ${session.time} class`
+                                    )
+                                    .join(' and ')}{' '}
+                                on this day — double-check before booking.
+                            </p>
+                        )}
                         <TextField
                             label="Notes"
                             value={notes}
@@ -621,6 +840,52 @@ export const ClassSchedulingView = ({
                             minRows={3}
                             placeholder="Homework focus, topics, or parent notes"
                         />
+
+                        {/* Copy the open class to another day: pick a date,
+                            one click, booked as a new class. */}
+                        {editingEntry && (
+                            <div className="day-modal-copy">
+                                <TextField
+                                    label="Copy to date"
+                                    type="date"
+                                    size="small"
+                                    value={copyDate}
+                                    onChange={(event) =>
+                                        setCopyDate(event.target.value)
+                                    }
+                                    slotProps={{
+                                        inputLabel: { shrink: true },
+                                    }}
+                                />
+                                <Button
+                                    variant="outlined"
+                                    disabled={
+                                        !copyDate ||
+                                        copyDate === openDate ||
+                                        !formValid
+                                    }
+                                    onClick={handleCopy}
+                                >
+                                    Copy class
+                                </Button>
+                                {copyDate !== openDate &&
+                                    clashesOn(copyDate).length > 0 && (
+                                        <p
+                                            className="clash-warning"
+                                            role="alert"
+                                        >
+                                            Overlaps{' '}
+                                            {clashesOn(copyDate)
+                                                .map(
+                                                    (session) =>
+                                                        `${session.studentName}’s ${session.time} class`
+                                                )
+                                                .join(' and ')}{' '}
+                                            on that day.
+                                        </p>
+                                    )}
+                            </div>
+                        )}
 
                         {/* The primary action lives in the modal header; only
                             the destructive/status actions stay by the form. */}
@@ -792,57 +1057,175 @@ export const ClassSchedulingView = ({
             </Dialog>
 
             <div className="card scheduling-calendar-card">
+              <DndContext sensors={dragSensors} onDragEnd={handleDragEnd}>
                 <div className="calendar-header scheduling-calendar-header">
                     <div>
-                        <h3>{monthLabel}</h3>
+                        <h3>
+                            {viewMode === 'month' ? monthLabel : weekLabel}
+                        </h3>
+                        {/* One description for both views — swapping copy on
+                            toggle re-wrapped the header and made the whole
+                            card jitter. */}
                         <p>
-                            Booked days are shaded by how many classes they
-                            hold. Pick a day to add a class, or cancel and
-                            restore the ones already on it.
+                            Pick a day to add a class, or one already booked
+                            to change it — and drag a class onto another day
+                            to move it.
                         </p>
                     </div>
                     <div className="calendar-actions">
-                        <button
-                            type="button"
-                            className="calendar-nav-button"
-                            onClick={() =>
-                                setMonthReference(
-                                    (current) =>
-                                        new Date(
-                                            current.getFullYear(),
-                                            current.getMonth() - 1,
-                                            1
-                                        )
-                                )
-                            }
+                        {/* Two distinct clusters: what you're LOOKING AT (a
+                            joined segmented toggle) and where you're GOING
+                            (pill nav buttons), spaced apart so they never
+                            read as five siblings. */}
+                        <div
+                            className={`calendar-view-toggle ${viewMode}`}
+                            role="group"
+                            aria-label="Calendar view"
                         >
-                            Previous
-                        </button>
-                        <button
-                            type="button"
-                            className="calendar-nav-button"
-                            onClick={() =>
-                                setMonthReference(
-                                    (current) =>
-                                        new Date(
-                                            current.getFullYear(),
-                                            current.getMonth() + 1,
-                                            1
-                                        )
-                                )
-                            }
-                        >
-                            Next
-                        </button>
+                            <button
+                                type="button"
+                                className={`calendar-view-segment ${viewMode === 'month' ? 'active' : ''}`}
+                                aria-pressed={viewMode === 'month'}
+                                onClick={() => setViewMode('month')}
+                            >
+                                Month
+                            </button>
+                            <button
+                                type="button"
+                                className={`calendar-view-segment ${viewMode === 'week' ? 'active' : ''}`}
+                                aria-pressed={viewMode === 'week'}
+                                onClick={showWeekView}
+                            >
+                                Week
+                            </button>
+                        </div>
+                        <div className="calendar-nav-group">
+                            <button
+                                type="button"
+                                className="calendar-nav-button"
+                                onClick={() => stepReference(-1)}
+                                aria-label="Previous"
+                            >
+                                « Prev
+                            </button>
+                            <button
+                                type="button"
+                                className="calendar-nav-button"
+                                onClick={() => setMonthReference(new Date())}
+                                disabled={atCurrentPeriod}
+                            >
+                                Current
+                            </button>
+                            <button
+                                type="button"
+                                className="calendar-nav-button"
+                                onClick={() => stepReference(1)}
+                                aria-label="Next"
+                            >
+                                Next »
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="calendar-weekdays" aria-hidden="true">
-                    {weekdayLabels.map((weekday) => (
-                        <span key={weekday}>{weekday}</span>
-                    ))}
-                </div>
+                {viewMode === 'week' && (
+                    <div
+                        className="week-grid"
+                        role="grid"
+                        aria-label="Class schedule week"
+                    >
+                        {weekDays.map((day) => {
+                            const dayKey = toDateKey(day)
+                            const dayEntries = entriesByDate[dayKey] || []
+                            const isToday = dayKey === todayKey
+                            const isWeekend =
+                                day.getDay() === 0 || day.getDay() === 6
+                            return (
+                              <DroppableDay key={dayKey} dayKey={dayKey}>
+                                <div
+                                    className={`week-day ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}`}
+                                    role="gridcell"
+                                    aria-label={
+                                        day.toDateString() +
+                                        (isToday ? ' (today)' : '')
+                                    }
+                                >
+                                    <button
+                                        type="button"
+                                        className="week-day-head"
+                                        onClick={() => openDay(dayKey)}
+                                        aria-label={`Open ${day.toDateString()}`}
+                                    >
+                                        <span className="week-day-name">
+                                            {day.toLocaleDateString('en-GB', {
+                                                weekday: 'short',
+                                            })}
+                                        </span>
+                                        <span className="calendar-day-number">
+                                            {day.getDate()}
+                                        </span>
+                                    </button>
+                                    <div className="week-day-entries">
+                                        {dayEntries.map((entry) => {
+                                            const cancelled =
+                                                activeMembers(entry).length ===
+                                                0
+                                            return (
+                                                <DraggableEntry
+                                                    key={entry.key}
+                                                    id={`week-${dayKey}-${entry.key}`}
+                                                    fromDate={dayKey}
+                                                    entry={entry}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        className={`week-entry ${cancelled ? 'cancelled' : ''}`}
+                                                        onClick={() =>
+                                                            openDay(
+                                                                dayKey,
+                                                                entry.key
+                                                            )
+                                                        }
+                                                        aria-label={`${entry.lead.time} ${entryTitle(entry)}, ${entry.lead.subject} on ${day.toDateString()}${cancelled ? ' (cancelled)' : ''}`}
+                                                    >
+                                                        <strong>
+                                                            {entry.lead.time}
+                                                        </strong>
+                                                        <span className="week-entry-title">
+                                                            {entryTitle(entry)}
+                                                        </span>
+                                                        <span className="week-entry-subject">
+                                                            {entry.lead.subject}
+                                                        </span>
+                                                    </button>
+                                                </DraggableEntry>
+                                            )
+                                        })}
+                                        {dayEntries.length === 0 && (
+                                            <span
+                                                className="week-day-empty"
+                                                aria-hidden="true"
+                                            >
+                                                No classes
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                              </DroppableDay>
+                            )
+                        })}
+                    </div>
+                )}
 
+                {viewMode === 'month' && (
+                    <div className="calendar-weekdays" aria-hidden="true">
+                        {weekdayLabels.map((weekday) => (
+                            <span key={weekday}>{weekday}</span>
+                        ))}
+                    </div>
+                )}
+
+                {viewMode === 'month' && (
                 <div
                     className="calendar-grid"
                     role="grid"
@@ -857,6 +1240,8 @@ export const ClassSchedulingView = ({
                         const isCurrentMonth =
                             day.getMonth() === monthReference.getMonth()
                         const isToday = dayKey === todayKey
+                        const isWeekend =
+                            day.getDay() === 0 || day.getDay() === 6
 
                         // The cell is a plain gridcell, not a button: the
                         // numbered chips inside are buttons, and buttons
@@ -864,7 +1249,7 @@ export const ClassSchedulingView = ({
                         // space above them instead.
                         const cell = (
                             <div
-                                className={`calendar-day ${isCurrentMonth ? '' : 'muted'} ${isToday ? 'today' : ''} ${bookedLevelClass(booked.length)}`}
+                                className={`calendar-day ${isCurrentMonth ? '' : 'muted'} ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''} ${bookedLevelClass(booked.length)}`}
                                 role="gridcell"
                                 aria-label={
                                     (booked.length > 0
@@ -886,22 +1271,35 @@ export const ClassSchedulingView = ({
                                 {dayEntries.length > 0 && (
                                     <div className="calendar-day-chips">
                                         {dayEntries.map((entry, index) => (
-                                            <button
+                                            <DraggableEntry
                                                 key={entry.key}
-                                                type="button"
-                                                className={`calendar-day-chip ${activeMembers(entry).length === 0 ? 'cancelled' : ''}`}
-                                                onClick={() =>
-                                                    openDay(dayKey, entry.key)
-                                                }
-                                                aria-label={`Class ${index + 1} on ${day.toDateString()}: ${entry.lead.time} ${entryTitle(entry)}, ${entry.lead.subject}${activeMembers(entry).length === 0 ? ' (cancelled)' : ''}`}
+                                                id={`month-${dayKey}-${entry.key}`}
+                                                fromDate={dayKey}
+                                                entry={entry}
                                             >
-                                                {index + 1}
-                                                {entry.isGroup && (
-                                                    <span className="chip-group-size">
-                                                        ×{entry.sessions.length}
-                                                    </span>
-                                                )}
-                                            </button>
+                                                <button
+                                                    type="button"
+                                                    className={`calendar-day-chip ${activeMembers(entry).length === 0 ? 'cancelled' : ''}`}
+                                                    onClick={() =>
+                                                        openDay(
+                                                            dayKey,
+                                                            entry.key
+                                                        )
+                                                    }
+                                                    aria-label={`Class ${index + 1} on ${day.toDateString()}: ${entry.lead.time} ${entryTitle(entry)}, ${entry.lead.subject}${activeMembers(entry).length === 0 ? ' (cancelled)' : ''}`}
+                                                >
+                                                    {index + 1}
+                                                    {entry.isGroup && (
+                                                        <span className="chip-group-size">
+                                                            ×
+                                                            {
+                                                                entry.sessions
+                                                                    .length
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </DraggableEntry>
                                         ))}
                                     </div>
                                 )}
@@ -911,15 +1309,21 @@ export const ClassSchedulingView = ({
                         // Nothing on: no tooltip to open.
                         if (dayEntries.length === 0) {
                             return (
-                                <div key={`${dayKey}-${day.getMonth()}`}>
+                                <DroppableDay
+                                    key={`${dayKey}-${day.getMonth()}`}
+                                    dayKey={dayKey}
+                                >
                                     {cell}
-                                </div>
+                                </DroppableDay>
                             )
                         }
 
                         return (
+                          <DroppableDay
+                              key={`${dayKey}-${day.getMonth()}`}
+                              dayKey={dayKey}
+                          >
                             <Tooltip
-                                key={`${dayKey}-${day.getMonth()}`}
                                 arrow
                                 placement="top"
                                 title={
@@ -974,10 +1378,55 @@ export const ClassSchedulingView = ({
                             >
                                 {cell}
                             </Tooltip>
+                          </DroppableDay>
                         )
                     })}
                 </div>
+                )}
+              </DndContext>
             </div>
+
+            <Dialog
+                open={moveTarget !== null}
+                onClose={() => setMoveTarget(null)}
+                maxWidth="xs"
+            >
+                {moveTarget && (
+                    <>
+                        <DialogTitle>
+                            {moveTarget.entry.isGroup
+                                ? 'Move this class for everyone?'
+                                : 'Move this class?'}
+                        </DialogTitle>
+                        <DialogContent>
+                            <p className="session-summary-meta">
+                                {`${moveTarget.entry.lead.time} • ${entryTitle(moveTarget.entry)} • ${moveTarget.entry.lead.subject}`}
+                            </p>
+                            <p>
+                                {`Moves to ${formatDayLabel(moveTarget.toDate)} — same time, same details.`}
+                            </p>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setMoveTarget(null)}>
+                                Keep
+                            </Button>
+                            <Button
+                                variant="contained"
+                                onClick={() => {
+                                    onEditClass(
+                                        moveTarget.entry.lead.id,
+                                        { date: moveTarget.toDate },
+                                        moveTarget.entry.isGroup
+                                    )
+                                    setMoveTarget(null)
+                                }}
+                            >
+                                Move
+                            </Button>
+                        </DialogActions>
+                    </>
+                )}
+            </Dialog>
         </section>
     )
 }

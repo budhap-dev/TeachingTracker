@@ -119,7 +119,7 @@ export const ContactView = ({
         })
         rows.push({
             channel: 'whatsapp',
-            label: 'WhatsApp',
+            label: 'WhatsApp chat',
             value: contact.phone,
             href: toWhatsAppHref(contact.phone),
             ariaLabel: `WhatsApp ${contact.phone}`,

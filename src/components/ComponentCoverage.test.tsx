@@ -131,6 +131,7 @@ describe('component-level coverage', () => {
     it('renders dashboard summary data and triggers the student-management action', async () => {
         const user = userEvent.setup()
         const onManageStudents = vi.fn()
+        const onOpenSnapshot = vi.fn()
 
         render(
             <DashboardView
@@ -153,6 +154,7 @@ describe('component-level coverage', () => {
                 upcomingSessions={upcomingSessions}
                 weekLoad={[]}
                 onManageStudents={onManageStudents}
+                onOpenSnapshot={onOpenSnapshot}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
             />
@@ -166,6 +168,17 @@ describe('component-level coverage', () => {
         )
 
         expect(onManageStudents).toHaveBeenCalledTimes(1)
+
+        // The stat tiles are doors, not decoration: each opens the page
+        // behind its number.
+        await user.click(
+            screen.getByRole('button', { name: /total students/i })
+        )
+        expect(onManageStudents).toHaveBeenCalledTimes(2)
+        await user.click(
+            screen.getByRole('button', { name: /avg progress/i })
+        )
+        expect(onOpenSnapshot).toHaveBeenCalledTimes(1)
     })
 
     it('renders student link rows and emits navigation callback', async () => {
@@ -646,6 +659,165 @@ describe('component-level coverage', () => {
 
         await user.click(screen.getByRole('button', { name: /next/i }))
         await user.click(screen.getByRole('button', { name: /previous/i }))
+    })
+
+    it('switches to a week view listing classes readably, and back', async () => {
+        const user = userEvent.setup()
+        const todayNoon = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            today.getDate(),
+            12
+        )
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[
+                    {
+                        id: 1,
+                        studentId: 1,
+                        studentName: 'Asha Perera',
+                        year: '10',
+                        subject: 'Mathematics',
+                        date: dateKey(todayNoon),
+                        time: '09:00',
+                        notes: '',
+                        status: 'Scheduled',
+                    },
+                ]}
+                onScheduleClass={vi.fn()}
+                onEditClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        await user.click(screen.getByRole('button', { name: /^week$/i }))
+
+        // Today's class reads as a row — time, student, subject — and the
+        // day is openable like a month cell.
+        const entry = screen.getByRole('button', {
+            name: new RegExp(
+                `^09:00 Asha Perera, Mathematics on ${todayNoon.toDateString()}`
+            ),
+        })
+        expect(entry).toBeInTheDocument()
+        expect(
+            screen.getByRole('grid', { name: /class schedule week/i })
+        ).toBeInTheDocument()
+
+        // A week step moves seven days: this week's class leaves the view.
+        await user.click(screen.getByRole('button', { name: /next/i }))
+        expect(
+            screen.queryByRole('button', { name: /^09:00 Asha Perera/ })
+        ).not.toBeInTheDocument()
+        await user.click(screen.getByRole('button', { name: /previous/i }))
+
+        // Clicking the class opens the same edit modal as the month view.
+        await user.click(
+            screen.getByRole('button', { name: /^09:00 Asha Perera/ })
+        )
+        const dialog = await screen.findByRole('dialog')
+        expect(within(dialog).getByLabelText(/time/i)).toHaveValue('09:00')
+
+        // And back to the familiar month grid.
+        await user.keyboard('{Escape}')
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        )
+        await user.click(screen.getByRole('button', { name: /^month$/i }))
+        expect(
+            screen.getByRole('grid', { name: /class schedule calendar/i })
+        ).toBeInTheDocument()
+    })
+
+    it('returns to the current month with Current', async () => {
+        const user = userEvent.setup()
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[]}
+                onScheduleClass={vi.fn()}
+                onEditClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+        const currentLabel = today.toLocaleDateString('en-GB', {
+            month: 'long',
+            year: 'numeric',
+        })
+        expect(
+            screen.getByRole('heading', { name: currentLabel })
+        ).toBeInTheDocument()
+        // Already looking at now: nowhere for Current to go.
+        expect(
+            screen.getByRole('button', { name: /^current$/i })
+        ).toBeDisabled()
+
+        await user.click(screen.getByRole('button', { name: /next/i }))
+        expect(
+            screen.queryByRole('heading', { name: currentLabel })
+        ).not.toBeInTheDocument()
+
+        const currentButton = screen.getByRole('button', {
+            name: /^current$/i,
+        })
+        expect(currentButton).toBeEnabled()
+        await user.click(currentButton)
+        expect(
+            screen.getByRole('heading', { name: currentLabel })
+        ).toBeInTheDocument()
+        expect(currentButton).toBeDisabled()
+    })
+
+    it('warns about an overlapping class without blocking the booking', async () => {
+        const user = userEvent.setup()
+        const day = new Date(today.getFullYear(), today.getMonth(), 14, 12)
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[
+                    {
+                        id: 1,
+                        studentId: 1,
+                        studentName: 'Asha Perera',
+                        year: '10',
+                        subject: 'Mathematics',
+                        date: dateKey(day),
+                        time: '09:00',
+                        notes: '',
+                        status: 'Scheduled',
+                    },
+                ]}
+                onScheduleClass={vi.fn()}
+                onEditClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        await user.click(openDayCell(day))
+        // Editing the 09:00 class itself: its own slot is not a clash.
+        expect(screen.queryByText(/overlaps/i)).not.toBeInTheDocument()
+
+        // A second class for the same student, half-way through the first.
+        await user.click(screen.getByRole('tab', { name: /add a class/i }))
+        await user.type(screen.getByLabelText(/students/i), 'Asha')
+        await user.click(await screen.findByRole('option', { name: /asha/i }))
+        fireEvent.change(screen.getByLabelText(/time/i), {
+            target: { value: '09:30' },
+        })
+        expect(
+            screen.getByText(/overlaps asha perera’s 09:00 class/i)
+        ).toBeInTheDocument()
+        // A warning, never a blocker — the booking stays available.
+        expect(
+            screen.getByRole('button', { name: /add class/i })
+        ).toBeEnabled()
+
+        // Clear of the slot, the warning goes.
+        fireEvent.change(screen.getByLabelText(/time/i), {
+            target: { value: '11:00' },
+        })
+        expect(screen.queryByText(/overlaps/i)).not.toBeInTheDocument()
     })
 
     it('shows the empty scheduler state when there are no students', async () => {
@@ -1147,6 +1319,49 @@ describe('component-level coverage', () => {
             expect(
                 within(dialog).getByText(/Sam Bailey/)
             ).toBeInTheDocument()
+        })
+
+        it('copies the open class to another date as a new booking', async () => {
+            const user = userEvent.setup()
+            const onScheduleClass = vi.fn()
+            const onEditClass = vi.fn()
+            renderBooked({ onScheduleClass, onEditClass })
+
+            await user.click(openDayCell(day))
+            const copyField = screen.getByLabelText(/copy to date/i)
+            const copyButton = screen.getByRole('button', {
+                name: /copy class/i,
+            })
+            // Nowhere to copy to yet; and the same day is not a copy.
+            expect(copyButton).toBeDisabled()
+            fireEvent.change(copyField, { target: { value: dateKey(day) } })
+            expect(copyButton).toBeDisabled()
+
+            const target = new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                day.getDate() + 7,
+                12
+            )
+            fireEvent.change(copyField, { target: { value: dateKey(target) } })
+            await user.click(copyButton)
+
+            // A brand-new booking on the target date with the same details —
+            // never an edit of the original.
+            expect(onEditClass).not.toHaveBeenCalled()
+            expect(onScheduleClass).toHaveBeenCalledWith({
+                studentIds: [1],
+                subject: 'Mathematics',
+                date: dateKey(target),
+                time: '09:00',
+                durationMinutes: 60,
+                notes: 'Algebra',
+            })
+            await waitFor(() =>
+                expect(
+                    screen.queryByRole('dialog')
+                ).not.toBeInTheDocument()
+            )
         })
 
         it('saves an edit to the open class via onEditClass', async () => {

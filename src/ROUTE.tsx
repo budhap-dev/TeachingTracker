@@ -272,6 +272,7 @@ const DashboardRoute = () => {
             attention={attention}
             weekLoad={weekLoad}
             onManageStudents={() => navigate(paths.students)}
+            onOpenSnapshot={() => navigate(paths.studySnapshot)}
             onOpenStudentPage={openStudentPage}
             onOpenDay={(dateKey) =>
                 navigate(`${paths.scheduling}?day=${dateKey}`)
