@@ -56,6 +56,7 @@ describe('DashboardView', () => {
                 upcomingSessions={manySessions}
                 weekLoad={quietWeek}
                 onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
             />
@@ -101,6 +102,7 @@ describe('DashboardView', () => {
                 ]}
                 weekLoad={quietWeek}
                 onManageStudents={onManageStudents}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={onOpenStudentPage}
                 onOpenDay={vi.fn()}
             />
@@ -160,6 +162,7 @@ describe('DashboardView', () => {
                 ]}
                 weekLoad={quietWeek}
                 onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={onOpenStudentPage}
                 onOpenDay={vi.fn()}
             />
@@ -203,6 +206,7 @@ describe('DashboardView', () => {
                 upcomingSessions={[]}
                 weekLoad={quietWeek}
                 onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={onOpenStudentPage}
                 onOpenDay={vi.fn()}
             />
@@ -231,6 +235,7 @@ describe('DashboardView', () => {
                 upcomingSessions={[]}
                 weekLoad={quietWeek}
                 onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
             />
@@ -283,6 +288,7 @@ describe('DashboardView', () => {
                 upcomingSessions={[]}
                 weekLoad={quietWeek}
                 onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
             />
@@ -327,6 +333,7 @@ describe('DashboardView', () => {
                 upcomingSessions={[]}
                 weekLoad={quietWeek}
                 onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
             />
@@ -352,6 +359,7 @@ describe('DashboardView', () => {
                 upcomingSessions={[]}
                 weekLoad={quietWeek}
                 onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
             />
@@ -386,6 +394,7 @@ describe('DashboardView', () => {
                 upcomingSessions={[]}
                 weekLoad={busyWeek}
                 onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={onOpenDay}
             />

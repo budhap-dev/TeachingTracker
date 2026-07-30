@@ -35,6 +35,8 @@ type DashboardViewProps = {
     }[]
     weekLoad: DayLoad[]
     onManageStudents: () => void
+    /** The progress tile opens the Study Snapshot. */
+    onOpenSnapshot: () => void
     /** Open enquiries (status New) awaiting the teacher — REQ-019. */
     newEnquiries: number
     onOpenLeads: () => void
@@ -48,6 +50,7 @@ export const DashboardView = ({
     upcomingSessions,
     weekLoad,
     onManageStudents,
+    onOpenSnapshot,
     onOpenStudentPage,
     onOpenDay,
     newEnquiries,
@@ -134,24 +137,26 @@ export const DashboardView = ({
                         )}
                     </div>
                 </div>
-                <table className="dashboard-hero-stats">
-                    <thead>
-                        <tr>
-                            <th scope="col">Total students</th>
-                            <th scope="col">Avg progress</th>
-                            <th scope="col">Online</th>
-                            <th scope="col">Face to face</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{stats.totalStudents}</td>
-                            <td>{stats.avgProgress}%</td>
-                            <td>{stats.onlineStudents}</td>
-                            <td>{stats.faceToFaceStudents}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                {/* Each stat opens the page that explains it — a tile that
+                    looks tappable should be. */}
+                <div className="dashboard-hero-stats">
+                    <button type="button" onClick={onManageStudents}>
+                        <span>Total students</span>
+                        <strong>{stats.totalStudents}</strong>
+                    </button>
+                    <button type="button" onClick={onOpenSnapshot}>
+                        <span>Avg progress</span>
+                        <strong>{stats.avgProgress}%</strong>
+                    </button>
+                    <button type="button" onClick={onManageStudents}>
+                        <span>Online</span>
+                        <strong>{stats.onlineStudents}</strong>
+                    </button>
+                    <button type="button" onClick={onManageStudents}>
+                        <span>Face to face</span>
+                        <strong>{stats.faceToFaceStudents}</strong>
+                    </button>
+                </div>
             </div>
 
             <div className="card calendar-card">

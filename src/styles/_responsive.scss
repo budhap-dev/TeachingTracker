@@ -315,17 +315,16 @@
 }
 
 @media (max-width: 640px) {
-    /* The hero stat strip tightens on phones — four columns still fit. */
-    .dashboard-hero-stats th,
-    .dashboard-hero-stats td {
+    /* The hero stat strip tightens on phones — four tiles still fit. */
+    .dashboard-hero-stats button {
         padding: 2px 10px;
     }
 
-    .dashboard-hero-stats td {
+    .dashboard-hero-stats button strong {
         font-size: 1.15rem;
     }
 
-    .dashboard-hero-stats th {
+    .dashboard-hero-stats button span {
         white-space: normal;
     }
 }
