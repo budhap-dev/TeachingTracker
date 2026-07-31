@@ -64,7 +64,7 @@ export const PrivacyView = () => {
                     needs, we never sell or share it for marketing, and you
                     can ask for it — or ask for it to be gone — at any time.
                 </p>
-                <p className="privacy-updated">Last updated: 28 July 2026</p>
+                <p className="privacy-updated">Last updated: 31 July 2026</p>
             </div>
 
             <div className="card">
@@ -131,13 +131,15 @@ export const PrivacyView = () => {
                 <h4 className="offerings-heading">How long we keep it</h4>
                 <ul className="privacy-list">
                     <li>
-                        <strong>Enquiries</strong> — until answered and no
-                        longer needed, or immediately on request.
+                        <strong>Enquiries</strong> — twelve months, or six
+                        months once tutoring starts and the details have moved
+                        into the student record. Deleted sooner on request.
                     </li>
                     <li>
                         <strong>Student records</strong> — while tutoring
-                        continues, then only as long as a returning student
-                        might reasonably need them.
+                        continues, then two years, so a returning student
+                        picks up where they left off. After that they are
+                        deleted.
                     </li>
                     <li>
                         <strong>Payment records</strong> — up to six years,
@@ -146,9 +148,17 @@ export const PrivacyView = () => {
                     </li>
                     <li>
                         <strong>Reviews</strong> — while published; removed
-                        on request at any time.
+                        on request at any time. Reviews we do not publish are
+                        deleted.
                     </li>
                 </ul>
+                <p>
+                    We check these dates and clear out what is past them every
+                    three months. One honest detail: we keep a monthly private
+                    copy of our records in case something breaks, so a deleted
+                    record can linger in those copies for up to a year before
+                    they are rotated out.
+                </p>
             </div>
 
             <div className="card">
@@ -190,9 +200,7 @@ export const PrivacyView = () => {
                     <strong>object</strong> to how it is used. Ask via the{' '}
                     <a href={paths.contact}>Contact page</a> and we will
                     respond within a month. Deleting a student&apos;s record
-                    removes their lessons and payment history with it. The
-                    one limit: payment records that tax law requires us to
-                    keep stay for that legal period.
+                    removes their lessons and their payment history with it.
                 </p>
                 <p>
                     If you are unhappy with how a request is handled, you can

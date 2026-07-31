@@ -100,13 +100,17 @@ XS is an afternoon, XL is a project.
 | 26 | ✅ | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
 | 27 | ✅ | [REQ-028 — Profanity screen flags reviews for moderation](#req-028--profanity-screen-flags-reviews-for-moderation) | S | both | REQ-027 (backend screen merged 2026-07-24) |
 | — | | **Privacy & GDPR — make the app defensibly hostable** (REQ-030 epic, split 2026-07-28) | | | |
-| 28 | 🔲 | [REQ-030 — Privacy policy and GDPR compliance (epic)](#req-030--privacy-policy-and-gdpr-compliance) | M | both + docs/ops | — (split into REQ-031…034 below) |
-| 29 | 🚧 | [REQ-031 — Public privacy page + collection notices](#req-031--public-privacy-policy-page-and-point-of-collection-notices) | S | frontend | — (built on feature/req-031-032-privacy, in review) |
-| 30 | 🚧 | [REQ-032 — Erasure end-to-end: delete an enquiry](#req-032--erasure-works-end-to-end-delete-an-enquiry) | S | both | — (built on feature/req-031-032-privacy + func branch, in review) |
-| 31 | 🔲 | [REQ-033 — Retention schedule and purge routine](#req-033--retention-schedule-and-purge-routine) | S | docs/ops (+ small backend if automated) | REQ-032 (erasure paths exist first) |
-| 32 | 🔲 | [REQ-034 — Privacy operations records: ROPA, breach plan, ICO fee](#req-034--privacy-operations-records-ropa-breach-plan-ico-fee) | S | docs/ops | REQ-031 (policy states what the records must match) |
+| 28 | ✅ | [REQ-030 — Privacy policy and GDPR compliance (epic)](#req-030--privacy-policy-and-gdpr-compliance) | M | both + docs/ops | — (all four slices shipped 2026-07-31; owner actions listed below) |
+| 29 | ✅ | [REQ-031 — Public privacy page + collection notices](#req-031--public-privacy-policy-page-and-point-of-collection-notices) | S | frontend | — (shipped: frontend PR #59) |
+| 30 | ✅ | [REQ-032 — Erasure end-to-end: delete an enquiry](#req-032--erasure-works-end-to-end-delete-an-enquiry) | S | both | — (shipped: frontend PR #59 + backend PR #48) |
+| 31 | ✅ | [REQ-033 — Retention schedule and purge routine](#req-033--retention-schedule-and-purge-routine) | S | docs/ops (+ small backend if automated) | — (shipped 2026-07-31: `docs/PRIVACY-RETENTION.md`) |
+| 32 | ✅ | [REQ-034 — Privacy operations records: ROPA, breach plan, ICO fee](#req-034--privacy-operations-records-ropa-breach-plan-ico-fee) | S | docs/ops | — (shipped 2026-07-31: `docs/PRIVACY-ROPA.md`) |
 
-**Next up: [REQ-029](#req-029--forms-mark-required-fields-and-show-inline-validation) — required-field markers + inline validation** (prioritised by the owner 2026-07-24; frontend-only, no deps, so it can ship immediately). Then finish [REQ-009](#req-009--replace-the-in-memory-store-with-a-real-database) — prod cutover only. Reconciled 2026-07-24 against the code: REQ-003/REQ-004 completed (prod enforces sign-in), and REQ-013/014/015/016/017/027 are all **shipped** — the backlog had them as 🚧/🔲. REQ-028 is **half-built** (frontend flag display shipped; the backend profanity screen was never written — small, unblocked backend work). REQ-009 is *nearly* done: its plan (`func-teaching-tracker/docs/PLAN-req-009-database.md`) shows dev fully on durable Table Storage (Phases 0–5); only **Phase 6, the prod data cutover** (UK South move + seed prod tables empty + verify), remains — operational infra work. ⚠️ Prod's live `DATA_STORE` app setting is already `tables` (as is `variables.tf`), so this needs reconciling like the REQ-004 flag drift did. What's genuinely unbuilt from here: REQ-023 (SEO/OG) and REQ-024 (public Home) — frontend, no deps; the enquiry/leads path (REQ-018/019/026) waits on REQ-009; the content-driven pieces (REQ-008/020/021/022/025) land through **REQ-008**'s in-app editor.
+**Next up: [REQ-008](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) — the teacher edits the public site.** Its backend slice (Phase 1: site content served and published by the API) shipped in backend PR #49; the in-portal editor and preview are what remain. It is the gate for four content stories behind it (REQ-020/021/022/025), so it unblocks the most. [REQ-026](#req-026--refer-a-family) (refer a family, S) is the small unblocked filler if a break from an XL story is wanted.
+
+Reconciled 2026-07-31 against both repos. **The GDPR epic is closed:** REQ-031 and REQ-032 shipped (frontend PR #59, backend PR #48), and REQ-033/034 landed as `docs/PRIVACY-RETENTION.md` and `docs/PRIVACY-ROPA.md`. ⚠️ Three owner actions remain and are *not* code: confirm the ICO data protection fee, confirm the retention values marked _(default)_, and decide the payment-history conflict recorded in [PRIVACY-RETENTION.md §4](./PRIVACY-RETENTION.md) — erasing a student currently deletes their settlement rows, so the policy's tax-law carve-out was removed to keep the public page honest.
+
+Earlier reconciliation (2026-07-24) is now history: REQ-029, REQ-009 (prod on UK South tables), REQ-018/019, REQ-023, REQ-024 and REQ-028's backend screen have all since shipped. What is genuinely unbuilt from here: **REQ-008** and the content pieces behind it (REQ-020/021/022/025), plus REQ-026.
 
 **Three things this order is trying to respect:**
 
@@ -1168,15 +1172,18 @@ when a save is refused, exactly which field to fix and why.
 
 ## REQ-030 — Privacy policy and GDPR compliance
 
-**Status:** 🔲 Not started — **epic**, split 2026-07-28 into
+**Status:** ✅ Done (2026-07-31) — **epic**, split 2026-07-28 into
 [REQ-031](#req-031--public-privacy-policy-page-and-point-of-collection-notices)
 (policy page + notices),
 [REQ-032](#req-032--erasure-works-end-to-end-delete-an-enquiry) (erasure),
 [REQ-033](#req-033--retention-schedule-and-purge-routine) (retention) and
 [REQ-034](#req-034--privacy-operations-records-ropa-breach-plan-ico-fee)
 (operational records). The acceptance criteria below are the epic's
-definition of done; each sub-story carries its slice. Queued behind REQ-008
-(the site-editor work in flight). ·
+definition of done; each sub-story carries its slice — **all four have now
+shipped.** ⚠️ What remains is not code: the owner must confirm the ICO fee
+position ([ROPA §8](./PRIVACY-ROPA.md)), sign off the retention values marked
+_(default)_, set the quarterly purge reminder, and settle the payment-history
+conflict in [PRIVACY-RETENTION.md §4](./PRIVACY-RETENTION.md). ·
 **Impact:** both + docs/ops · **Effort:** M · **Depends on:** — (unblocked)
 
 **Story**
@@ -1203,49 +1210,70 @@ actually read).
 
 **Acceptance criteria**
 
-- [ ] A public **`/privacy` page**, linked from the footer of every public page
+- [x] A public **`/privacy` page**, linked from the footer of every public page
       and from the portal, written in plain English: who the controller is, what
       is collected (the table above), why, the lawful basis for each purpose,
       how long it is kept, who it is shared with, and how to exercise rights.
-- [ ] **Point-of-collection notices:** the `/enquire` and `/reviews` submit
+      → REQ-031, `PrivacyView.tsx`.
+- [x] **Point-of-collection notices:** the `/enquire` and `/reviews` submit
       buttons carry a one-line notice linking to the policy ("We use these
       details to reply to you — privacy policy"). No pre-ticked boxes; the
       review form's notice states the review is for publication.
-- [ ] **Data minimisation pass:** review every stored field against need —
+      → REQ-031.
+- [x] **Data minimisation pass:** review every stored field against need —
       e.g. does the roster genuinely need the child's full home address and
       DOB, or would year-group and an area suffice? Drop or justify each.
-- [ ] **Rights handling:** a documented route (the contact page) for access,
+      → [ROPA §2.2](./PRIVACY-ROPA.md) — every field justified, with three
+      ⚠️ challenges recorded rather than waved through: **DOB** (school year
+      already conveys age), **home address** (needed for face-to-face
+      students, not online-only ones), and the **student name denormalised
+      onto every payment row**. Owner decisions; each is minimisation debt,
+      not a blocker.
+- [x] **Rights handling:** a documented route (the contact page) for access,
       correction, deletion, portability and objection requests, answered within
       one month. **Erasure must actually work end-to-end:** deleting a student
       removes their classes and payment rows too (archive is *not* erasure),
       and enquiries/reviews can be deleted on request — today leads have no
       delete at all (only status updates), so a small backend piece is needed.
-- [ ] **Retention schedule**, stated in the policy and honoured in practice:
+      → REQ-032 shipped `DELETE /api/leads/{id}`; all three erasure paths are
+      listed in [ROPA §3.1](./PRIVACY-ROPA.md).
+- [x] **Retention schedule**, stated in the policy and honoured in practice:
       how long alumni records, closed enquiries and payment history are kept
       (payment records typically 6 years for HMRC; the rest much shorter), and
       a periodic purge — documented as a manual routine at minimum.
-- [ ] **Security statement** backed by what's true: HTTPS everywhere, Entra
+      → REQ-033, [`PRIVACY-RETENTION.md`](./PRIVACY-RETENTION.md).
+- [x] **Security statement** backed by what's true: HTTPS everywhere, Entra
       sign-in on every teacher endpoint (REQ-003/004), Azure Table Storage
       encryption at rest, data held in the **UK South** region, access limited
       to the teacher.
-- [ ] **Processor list** in the policy and a record of each DPA: Microsoft
+      → [ROPA §3.1](./PRIVACY-ROPA.md), which also states what is **not**
+      true: no independent or off-site backups beyond the monthly dumps.
+- [x] **Processor list** in the policy and a record of each DPA: Microsoft
       Azure (hosting + storage) and Microsoft Entra (sign-in) under Microsoft's
       standard Data Protection Addendum; GitHub (code, no personal data). No
       analytics or email providers exist today — the policy says so, and adding
       one later means updating this list *first*.
-- [ ] **Cookie/tracker audit, written down:** the app sets no analytics or
+      → [ROPA §3](./PRIVACY-ROPA.md), with the "no new processor without
+      paperwork first" rule now also a review step in `CONTRIBUTING.md`.
+- [x] **Cookie/tracker audit, written down:** the app sets no analytics or
       marketing trackers; MSAL's token storage is strictly necessary for
       sign-in. Conclusion: **no consent banner is required** — and the policy
       commits to adding consent *before* any non-essential tracker ever ships.
-- [ ] **Records of processing (Art. 30):** a short `docs/PRIVACY-ROPA.md`
+      → REQ-031's Cookies section; [ROPA §2.3](./PRIVACY-ROPA.md) records the
+      absence as a deliberate position.
+- [x] **Records of processing (Art. 30):** a short `docs/PRIVACY-ROPA.md`
       (or equivalent) recording purposes, categories, recipients, retention and
       security measures — kept current as stories add data.
-- [ ] **Breach plan:** a documented procedure — contain, assess, notify the
+      → REQ-034.
+- [x] **Breach plan:** a documented procedure — contain, assess, notify the
       ICO within 72 hours where required, inform affected families where the
       risk is high — with the ICO contact details written down *before* they
       are ever needed.
+      → [ROPA §4](./PRIVACY-ROPA.md), plus the §7 breach log.
 - [ ] Owner action (not code): confirm whether the **ICO data protection fee**
       applies and register if so.
+      → ⚠️ **Still open.** [ROPA §8](./PRIVACY-ROPA.md) has the
+      self-assessment link and the blanks to fill in.
 
 **Notes**
 
@@ -1254,14 +1282,12 @@ actually read).
   schedule**, a **breach-notification plan**, and the **ICO fee**. It also
   listed cookie consent — which this app resolves by *having no non-essential
   cookies*, a cheaper and stronger position than a banner.
-- ❓ Open: is a **DPIA** required? Processing children's data at scale can
-  trigger one; a single-tutor roster is almost certainly not "at scale", but
-  write the reasoning down — the point of a challenge checklist is having the
-  answer ready.
-- ❓ Open: should the policy text be teacher-editable via REQ-008's editor, or
-  shipped in the bundle? Recommend **bundled** for the first cut: policy edits
-  should be deliberate and reviewed, not casual — and the freeform noticeboard
-  is the wrong register for legal text.
+- ✅ **Answered (2026-07-31): no DPIA required.** The screening and its
+  reasoning are written down and dated in [ROPA §5](./PRIVACY-ROPA.md) — not
+  large scale, no profiling, no special-category data, no sharing — together
+  with explicit **review triggers** that would force a re-screen.
+- ✅ **Answered: bundled.** The policy ships as `PrivacyView.tsx`, not through
+  REQ-008's editor — legal text changes deliberately, via review.
 - The `/enquire` form already stores the goal free-text; the policy should warn
   against putting sensitive details (health, SEN) in it, or the minimisation
   pass should add guidance text to the field itself.
@@ -1270,7 +1296,9 @@ actually read).
 
 ## REQ-031 — Public privacy policy page and point-of-collection notices
 
-**Status:** 🚧 Built (2026-07-28, in review) · **Impact:** frontend · **Effort:** S ·
+**Status:** ✅ Done — shipped in frontend PR #59 (merged 2026-07-28). The
+retention section was made concrete on 2026-07-31 by REQ-033. ·
+**Impact:** frontend · **Effort:** S ·
 **Depends on:** — (first slice of the REQ-030 epic)
 
 **Story**
@@ -1327,7 +1355,8 @@ GDPR question has a written answer to point at.
 
 ## REQ-032 — Erasure works end-to-end: delete an enquiry
 
-**Status:** 🚧 Built (2026-07-28, in review) · **Impact:** both · **Effort:** S ·
+**Status:** ✅ Done — shipped in frontend PR #59 and backend PR #48 (merged
+2026-07-28). · **Impact:** both · **Effort:** S ·
 **Depends on:** — (unblocked)
 
 **Story**
@@ -1361,7 +1390,11 @@ want to delete their enquiry outright from the Leads inbox, so that the
 
 ## REQ-033 — Retention schedule and purge routine
 
-**Status:** 🔲 Not started · **Impact:** docs/ops (+ small backend if
+**Status:** ✅ Done (2026-07-31) — delivered as
+[`docs/PRIVACY-RETENTION.md`](./PRIVACY-RETENTION.md), with the schedule
+mirrored into the public policy page. ⚠️ The values marked _(default)_ in it
+still need the owner's confirmation, and §4 records three gaps the owner must
+decide. · **Impact:** docs/ops (+ small backend if
 automated) · **Effort:** S · **Depends on:** REQ-032 (the erasure paths it
 uses must exist)
 
@@ -1372,19 +1405,27 @@ whenever someone remembers.
 
 **Acceptance criteria**
 
-- [ ] A **schedule** in the policy and ops doc, per category:
+- [x] A **schedule** in the policy and ops doc, per category:
       payment/settlement records ~6 years (HMRC); alumni student records N
       months after archiving (owner to set N); closed/converted enquiries N
       months after last touch; published reviews until removed or on request;
       unpublished (rejected) reviews promptly.
-- [ ] A **purge routine** that applies it — first cut may be a documented
+      → §1; N = **24 months** alumni, **12 months** enquiries (**6** once
+      converted), all marked _(default)_ pending owner sign-off.
+- [x] A **purge routine** that applies it — first cut may be a documented
       manual checklist run on a recurring date (calendar reminder), using the
       REQ-032 erasure endpoints; an automated timer function is a follow-up,
       not a requirement.
-- [ ] The routine covers **all stores**: live tables and the seeded dev data
+      → §3, a quarterly checklist (1 Feb / May / Aug / Nov). ⚠️ Owner still
+      needs to create the recurring calendar reminder.
+- [x] The routine covers **all stores**: live tables and the seeded dev data
       (dev fixtures are invented people, note that in the ROPA and move on).
-- [ ] Each purge run is **logged** (date, categories, counts) — the evidence
+      → §2. It also caught a store the story missed: the **monthly JSON
+      dumps**, which outlive a live erasure by up to 12 months.
+- [x] Each purge run is **logged** (date, categories, counts) — the evidence
       a challenge asks for.
+      → §5, counts only, so the log never becomes a record of the people it
+      erased.
 
 **Notes**
 
@@ -1397,7 +1438,10 @@ whenever someone remembers.
 
 ## REQ-034 — Privacy operations records: ROPA, breach plan, ICO fee
 
-**Status:** 🔲 Not started · **Impact:** docs/ops · **Effort:** S ·
+**Status:** ✅ Done (2026-07-31) — delivered as
+[`docs/PRIVACY-ROPA.md`](./PRIVACY-ROPA.md). ⚠️ One owner action is still
+open inside it: the ICO data protection fee self-assessment (§8). ·
+**Impact:** docs/ops · **Effort:** S ·
 **Depends on:** REQ-031 (the records must match what the policy claims)
 
 **Story**
@@ -1407,25 +1451,35 @@ challenge is answered by opening a file, not by reconstruction.
 
 **Acceptance criteria**
 
-- [ ] **`docs/PRIVACY-ROPA.md`** — Article-30-style record: purposes,
+- [x] **`docs/PRIVACY-ROPA.md`** — Article-30-style record: purposes,
       categories (children's data flagged), recipients/processors (Microsoft
       Azure UK South, Entra ID, GitHub for code only), retention (from
       REQ-033), security measures (HTTPS, Entra auth on teacher endpoints,
       encryption at rest, single-teacher access). Updated whenever a story
       adds or changes personal data — noted as a review step in CONTRIBUTING.
-- [ ] **Breach plan** in the same doc: contain → assess risk → notify the ICO
+      → §2 (five processing records), §3 (processors + security). The review
+      step is now a section in `CONTRIBUTING.md`.
+- [x] **Breach plan** in the same doc: contain → assess risk → notify the ICO
       within 72h where required → inform affected families where risk is
       high; the ICO's reporting contact written down now; a named severity
       call ("who decides"— the owner).
-- [ ] **DPIA screening note**: children's data, single-tutor scale, the
+      → §4, with the ICO breach line (0303 123 1113) and the report form
+      written down before they are needed; §7 is the breach log.
+- [x] **DPIA screening note**: children's data, single-tutor scale, the
       reasoning for (almost certainly) not needing a full DPIA — written
       down, dated.
+      → §5, dated 2026-07-31, with explicit **review triggers** that would
+      force a re-screen (roster past ~100, a second person with access, any
+      special-category data, profiling or AI touching student records).
 - [ ] **ICO registration**: owner confirms whether the data protection fee
       applies and records the outcome (registration number or the exemption
       reasoning) in the doc.
-- [ ] Processor DPAs referenced by link (Microsoft's DPA covers Azure +
+      → ⚠️ **Owner action, still open.** §8 carries the self-assessment link,
+      the likely tier (£52/year) and the blanks to fill in.
+- [x] Processor DPAs referenced by link (Microsoft's DPA covers Azure +
       Entra); a rule stated: **no new processor** (analytics, email, backups)
       without adding it here and to the policy first.
+      → §3, including the owner's own dump storage as a fourth row.
 
 **Notes**
 
