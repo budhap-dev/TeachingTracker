@@ -443,6 +443,90 @@ describe('PaymentTrackerView session breakdown', () => {
         expect(within(total).getByText('£60')).toBeInTheDocument()
     })
 
+    it('closes each student\'s block with their own total row', async () => {
+        const user = userEvent.setup()
+        const asha = buildStudent({ id: 1, firstName: 'Asha', lastName: 'Perera' })
+        const rohan = buildStudent({ id: 2, firstName: 'Rohan', lastName: 'Mehta' })
+        const ashaRecord = buildRecord({
+            id: 10,
+            studentId: 1,
+            studentName: 'Asha Perera',
+            sessionsHeld: 2,
+            amountDue: 110,
+            sessions: [
+                { date: '2026-07-03', subject: 'Maths', durationMinutes: 60, fee: 55 },
+                { date: '2026-07-10', subject: 'Maths', durationMinutes: 90, fee: 55 },
+            ],
+        })
+        const rohanRecord = buildRecord({
+            id: 20,
+            studentId: 2,
+            studentName: 'Rohan Mehta',
+            sessionsHeld: 1,
+            amountDue: 60,
+            sessions: [
+                { date: '2026-07-05', subject: 'Physics', durationMinutes: 60, fee: 60 },
+            ],
+        })
+        renderBreakdown([asha, rohan], [ashaRecord, rohanRecord])
+        await openBreakdown(user)
+
+        // Asha: two classes, 2.5 hours, £110 — her own line, not the footer's.
+        const ashaTotal = screen
+            .getByText(/Asha Perera — total \(2 classes\)/i)
+            .closest('tr')!
+        expect(within(ashaTotal).getByText('2h 30m')).toBeInTheDocument()
+        expect(within(ashaTotal).getByText('£110')).toBeInTheDocument()
+        // It keeps her tint, so it reads as the close of her block.
+        expect(ashaTotal.className).toContain('student-group-0')
+        expect(ashaTotal.className).toContain('session-student-total-row')
+
+        // Rohan's single class takes the singular label.
+        const rohanTotal = screen
+            .getByText(/Rohan Mehta — total \(1 class\)/i)
+            .closest('tr')!
+        expect(within(rohanTotal).getByText('£60')).toBeInTheDocument()
+        expect(rohanTotal.className).toContain('student-group-1')
+
+        // Each subtotal sits directly after its student's last class, and the
+        // footed total still sums the students rather than double-counting.
+        const bodyRows = within(screen.getByRole('table')).getAllByRole('row')
+        const ashaLast = screen.getByText('10 Jul 2026').closest('tr')!
+        expect(bodyRows.indexOf(ashaTotal)).toBe(bodyRows.indexOf(ashaLast) + 1)
+        const footer = screen.getByText(/total \(3 items\)/i).closest('tr')!
+        expect(within(footer).getByText('£170')).toBeInTheDocument()
+    })
+
+    it('totals a monthly student once, without double-counting their classes', async () => {
+        const user = userEvent.setup()
+        const student = buildStudent({ id: 1 })
+        // A monthly student's classes are covered by the flat fee, so their
+        // subtotal must charge £400 once — and report the month's teaching
+        // time from the fee line, not that plus each covered class again.
+        const record = buildRecord({
+            studentId: 1,
+            studentName: 'Asha Perera',
+            feeType: 'monthly',
+            feePerSession: 400,
+            sessionsHeld: 2,
+            amountDue: 400,
+            totalDurationMinutes: 150,
+            sessions: [
+                { date: '2026-07-03', subject: 'Maths', durationMinutes: 60, fee: 0 },
+                { date: '2026-07-10', subject: 'Maths', durationMinutes: 90, fee: 0 },
+            ],
+        })
+        renderBreakdown([student], [record])
+        await openBreakdown(user)
+
+        const subtotal = screen
+            .getByText(/Asha Perera — total \(2 classes\)/i)
+            .closest('tr')!
+        expect(within(subtotal).getByText('£400')).toBeInTheDocument()
+        // 150 minutes, the month's teaching time — not 150 + 60 + 90.
+        expect(within(subtotal).getByText('2h 30m')).toBeInTheDocument()
+    })
+
     it('exports the visible rows as CSV, escaping fields that need it', async () => {
         const user = userEvent.setup()
         const createObjectURL = vi.fn(() => 'blob:mock')
@@ -567,9 +651,10 @@ describe('PaymentTrackerView session breakdown', () => {
         expect(within(mathsRow).getByText('—')).toBeInTheDocument()
         expect(screen.getByText('10 Jul 2026')).toBeInTheDocument()
 
-        // The fee appears exactly once, on the Monthly fee row (which follows
-        // the dates), and the total foots to the flat fee alone.
-        expect(screen.getAllByText('£400').length).toBe(2) // row + total
+        // The fee is charged exactly once, on the Monthly fee row (which
+        // follows the dates); it then re-appears only as a total — the
+        // student's own subtotal and the table's footed total.
+        expect(screen.getAllByText('£400').length).toBe(3) // row + subtotal + total
         const feeRow = screen.getByText('Monthly fee').closest('tr')!
         expect(within(feeRow).getByText('£400')).toBeInTheDocument()
         const bodyRows = screen

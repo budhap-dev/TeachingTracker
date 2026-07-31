@@ -1086,6 +1086,23 @@
         font-weight: 700;
     }
 
+    /* The subtotal closing each student's block. It keeps the student's tint
+       so it still reads as part of their group, with a rule above and a
+       heavier one below to separate one student from the next. */
+    tbody tr.session-student-total-row {
+        font-weight: 700;
+
+        td {
+            border-top: 1px solid var(--border);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td:first-child {
+            text-align: right;
+            color: var(--muted);
+        }
+    }
+
     tfoot .session-total-row {
         font-weight: 700;
 

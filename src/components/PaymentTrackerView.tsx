@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import { Button, TextField } from '@mui/material'
@@ -329,6 +329,34 @@ export const PaymentTrackerView = ({
             ),
         [billableRecords]
     )
+
+    // What each student's block adds up to, for the subtotal row that closes
+    // it. Duration and fee follow the same rule as the grand total: a monthly
+    // student's class rows are covered by their flat-fee line, so only the
+    // charged line contributes and nothing is counted twice. Classes are
+    // counted from the dated rows alone, so a monthly fee never reads as one.
+    const studentTotals = useMemo(() => {
+        const totals = new Map<
+            number,
+            { classCount: number; durationMinutes: number; fee: number }
+        >()
+        for (const row of sessionRows) {
+            const running = totals.get(row.studentId) ?? {
+                classCount: 0,
+                durationMinutes: 0,
+                fee: 0,
+            }
+            if (row.kind === 'session') {
+                running.classCount += 1
+            }
+            if (!(row.kind === 'session' && row.coveredByMonthlyFee)) {
+                running.durationMinutes += row.durationMinutes
+                running.fee += row.fee
+            }
+            totals.set(row.studentId, running)
+        }
+        return totals
+    }, [sessionRows])
 
     // A monthly student's class rows are covered by their monthly-fee row, so
     // only that one line contributes — the total still tallies the Due column.
@@ -708,8 +736,9 @@ export const PaymentTrackerView = ({
                             student&apos;s classes are covered by one flat-fee
                             row, so their payment appears on a single line.
                             Duration is shown for context; it doesn&apos;t
-                            change the fee. The total tallies the Due column of
-                            the monthly summary.
+                            change the fee. Each student&apos;s block closes
+                            with their own total, and the footed total tallies
+                            the Due column of the monthly summary.
                         </p>
                     </div>
                 </div>
@@ -764,56 +793,91 @@ export const PaymentTrackerView = ({
                                 </tr>
                             </thead>
                             <tbody>
-                                {sessionRows.map((row, index) => (
-                                    <tr
-                                        key={`${row.studentName}-${index}`}
-                                        className={`student-group-${studentGroupById.get(row.studentId)!}${
-                                            row.kind === 'monthly'
-                                                ? ' session-monthly-row'
-                                                : ''
-                                        }`}
-                                    >
-                                        <td data-label="Student">
-                                            {row.studentName}
-                                        </td>
-                                        {row.kind === 'monthly' ? (
-                                            // A monthly fee spans the whole
-                                            // month: merge Date + Day into the
-                                            // month it covers.
-                                            <td
-                                                colSpan={2}
-                                                data-label="Period"
-                                            >
-                                                {selectedMonthLabel}
+                                {sessionRows.map((row, index) => {
+                                    // Rows arrive grouped by student, so the
+                                    // subtotal goes after the last of each run.
+                                    const isLastForStudent =
+                                        sessionRows[index + 1]?.studentId !==
+                                        row.studentId
+                                    const totals = studentTotals.get(
+                                        row.studentId
+                                    )!
+                                    return (
+                                        <Fragment
+                                            key={`${row.studentName}-${index}`}
+                                        >
+                                        <tr
+                                            className={`student-group-${studentGroupById.get(row.studentId)!}${
+                                                row.kind === 'monthly'
+                                                    ? ' session-monthly-row'
+                                                    : ''
+                                            }`}
+                                        >
+                                            <td data-label="Student">
+                                                {row.studentName}
                                             </td>
-                                        ) : (
-                                            <>
-                                                <td data-label="Date">
-                                                    {formatDate(row.date)}
+                                            {row.kind === 'monthly' ? (
+                                                // A monthly fee spans the whole
+                                                // month: merge Date + Day into the
+                                                // month it covers.
+                                                <td
+                                                    colSpan={2}
+                                                    data-label="Period"
+                                                >
+                                                    {selectedMonthLabel}
                                                 </td>
-                                                <td data-label="Day">
-                                                    {dayOfWeek(row.date)}
+                                            ) : (
+                                                <>
+                                                    <td data-label="Date">
+                                                        {formatDate(row.date)}
+                                                    </td>
+                                                    <td data-label="Day">
+                                                        {dayOfWeek(row.date)}
+                                                    </td>
+                                                </>
+                                            )}
+                                            <td data-label="Subject">
+                                                {row.kind === 'monthly'
+                                                    ? 'Monthly fee'
+                                                    : row.subject}
+                                            </td>
+                                            <td data-label="Duration">
+                                                {durationCell(row.durationMinutes)}
+                                            </td>
+                                            <td data-label="Fee">
+                                                {row.kind === 'session' &&
+                                                row.coveredByMonthlyFee
+                                                    ? // Covered by the student's
+                                                      // monthly-fee row below.
+                                                      '—'
+                                                    : formatCurrency(row.fee)}
+                                            </td>
+                                        </tr>
+                                        {isLastForStudent && (
+                                            <tr
+                                                className={`student-group-${studentGroupById.get(row.studentId)!} session-student-total-row`}
+                                            >
+                                                <td colSpan={4}>
+                                                    {row.studentName} — total (
+                                                    {totals.classCount}{' '}
+                                                    {totals.classCount === 1
+                                                        ? 'class'
+                                                        : 'classes'}
+                                                    )
                                                 </td>
-                                            </>
+                                                <td data-label="Total duration">
+                                                    {durationCell(
+                                                        totals.durationMinutes
+                                                    )}
+                                                </td>
+                                                <td data-label="Total fee">
+                                                    {formatCurrency(totals.fee)}
+                                                </td>
+                                            </tr>
                                         )}
-                                        <td data-label="Subject">
-                                            {row.kind === 'monthly'
-                                                ? 'Monthly fee'
-                                                : row.subject}
-                                        </td>
-                                        <td data-label="Duration">
-                                            {durationCell(row.durationMinutes)}
-                                        </td>
-                                        <td data-label="Fee">
-                                            {row.kind === 'session' &&
-                                            row.coveredByMonthlyFee
-                                                ? // Covered by the student's
-                                                  // monthly-fee row below.
-                                                  '—'
-                                                : formatCurrency(row.fee)}
-                                        </td>
-                                    </tr>
-                                ))}
+                                        </Fragment>
+                                    )
+                                })}
                             </tbody>
                             <tfoot>
                                 <tr className="session-total-row">
