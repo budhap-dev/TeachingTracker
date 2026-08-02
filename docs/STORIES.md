@@ -80,7 +80,7 @@ XS is an afternoon, XL is a project.
 | 7 | ✅ | [REQ-004 — Entra ID sign-in](#req-004--teacher-signs-in-with-microsoft-entra-id) | L | both + infra | — |
 | 8 | ✅ | [REQ-029 — Forms mark required fields and show inline validation](#req-029--forms-mark-required-fields-and-show-inline-validation) | M | frontend | — (shipped: PR #51 + contact format follow-up) |
 | 9 | ✅ | [REQ-009 — Real database](#req-009--replace-the-in-memory-store-with-a-real-database) | L | backend + infra | — (verified 2026-07-24: prod on UK South tables; dump tool added) |
-| 10 | 🔲 | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 |
+| 10 | ✅ | [REQ-008 — Teacher edits the public site](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) | XL | both | REQ-009 (shipped: backend PR #49 + frontend PRs #56–58 — editor, reorder, preview, publish) |
 | 11 | ❌ | [REQ-005 — Google Calendar sync](#req-005--scheduled-classes-sync-to-google-calendar) | XL | both + infra | — (dropped) |
 | 12 | ✅ | [REQ-013 — Archive a student (Alumni)](#req-013--archive-a-student-with-a-closing-note-alumni-section) | M | both | — (shipped) |
 | 13 | ✅ | [REQ-014 — Progress per subject](#req-014--progress-is-tracked-per-subject) | M | both | — (shipped) |
@@ -105,12 +105,15 @@ XS is an afternoon, XL is a project.
 | 30 | ✅ | [REQ-032 — Erasure end-to-end: delete an enquiry](#req-032--erasure-works-end-to-end-delete-an-enquiry) | S | both | — (shipped: frontend PR #59 + backend PR #48) |
 | 31 | ✅ | [REQ-033 — Retention schedule and purge routine](#req-033--retention-schedule-and-purge-routine) | S | docs/ops (+ small backend if automated) | — (shipped 2026-07-31: `docs/PRIVACY-RETENTION.md`) |
 | 32 | ✅ | [REQ-034 — Privacy operations records: ROPA, breach plan, ICO fee](#req-034--privacy-operations-records-ropa-breach-plan-ico-fee) | S | docs/ops | — (shipped 2026-07-31: `docs/PRIVACY-ROPA.md`) |
+| — | | **Planner stories** (drafted 2026-07-17; missed by the table until 2026-08-02) | | | |
+| 33 | ✅ | [REQ-011 — Group sessions](#req-011--group-sessions-several-students-attend-one-class) | L | both | — (shipped with the planner UX pack, merged 2026-07-30) |
+| 34 | ✅ | [REQ-012 — Planner subject multi-select](#req-012--class-planner-subject-is-a-multi-select) | S | frontend | — (shipped with the planner UX pack; see deviations in the story) |
 
-**Next up: [REQ-008](#req-008--the-teacher-edits-the-public-site-from-the-portal-with-a-preview) — the teacher edits the public site.** Its backend slice (Phase 1: site content served and published by the API) shipped in backend PR #49; the in-portal editor and preview are what remain. It is the gate for four content stories behind it (REQ-020/021/022/025), so it unblocks the most. [REQ-026](#req-026--refer-a-family) (refer a family, S) is the small unblocked filler if a break from an XL story is wanted.
+**Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
 Reconciled 2026-07-31 against both repos. **The GDPR epic is closed:** REQ-031 and REQ-032 shipped (frontend PR #59, backend PR #48), and REQ-033/034 landed as `docs/PRIVACY-RETENTION.md` and `docs/PRIVACY-ROPA.md`. ⚠️ Three owner actions remain and are *not* code: confirm the ICO data protection fee, confirm the retention values marked _(default)_, and decide the payment-history conflict recorded in [PRIVACY-RETENTION.md §4](./PRIVACY-RETENTION.md) — erasing a student currently deletes their settlement rows, so the policy's tax-law carve-out was removed to keep the public page honest.
 
-Earlier reconciliation (2026-07-24) is now history: REQ-029, REQ-009 (prod on UK South tables), REQ-018/019, REQ-023, REQ-024 and REQ-028's backend screen have all since shipped. What is genuinely unbuilt from here: **REQ-008** and the content pieces behind it (REQ-020/021/022/025), plus REQ-026.
+Earlier reconciliation (2026-07-24) is now history: REQ-029, REQ-009 (prod on UK South tables), REQ-018/019, REQ-023, REQ-024 and REQ-028's backend screen have all since shipped. Reconciled again 2026-08-02: **REQ-008 is done** (editor, reorder, preview, publish — the 2026-07-31 note above predated PRs #57/58 landing), and **REQ-011/REQ-012 shipped** with the planner UX pack merged 2026-07-30 — verified against the code and the 490-test suite (98.5% coverage). What is genuinely unbuilt from here: the content pieces (REQ-020/021/022/025) plus REQ-026.
 
 **Three things this order is trying to respect:**
 
@@ -410,7 +413,7 @@ another password, and without paying for an auth tier.
 
 ## REQ-009 — Replace the in-memory store with a real database
 
-**Status:** 🔲 Not started · **Impact:** backend + infra · **Effort:** L
+**Status:** ✅ Done (verified 2026-07-24 — dev and prod on durable Table Storage, prod on UK South; see the backlog table) · **Impact:** backend + infra · **Effort:** L
 
 **Story**
 As the teacher, I want everything I enter to survive a restart, so that student
@@ -446,7 +449,7 @@ records, payments and published words don't quietly disappear.
 
 ## REQ-008 — The teacher edits the public site from the portal, with a preview
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** XL
+**Status:** ✅ Done (reconciled 2026-08-02) · **Impact:** both · **Effort:** XL · **Delivered:** backend PR #49 (site content served + published by the API) and frontend PRs #56–58 — `SiteEditorView` with per-section forms, drag-to-reorder (`SortableList`), a visitor-accurate preview including unsaved edits, one Publish, and the free-form noticeboard section
 
 **Story**
 As the teacher, I want to change what the public site says — subjects, selling
@@ -549,7 +552,7 @@ I get reminders and notifications directly without checking the portal.
 
 ## REQ-011 — Group sessions: several students attend one class
 
-**Status:** 🚧 In progress · **Impact:** both · **Effort:** L
+**Status:** ✅ Done (shipped with the planner UX pack, merged 2026-07-30; every criterion below verified in code 2026-08-02) · **Impact:** both · **Effort:** L
 
 **Story**
 As a teacher, I want to book one class that several students attend together,
@@ -567,23 +570,28 @@ attendance, cancellation and bill stay their own.
 
 **Acceptance criteria**
 
-- [ ] The planner's student picker takes **multiple students**; one Save books
+- [x] The planner's student picker takes **multiple students**; one Save books
       the class for all of them (API: `POST /sessions` with `studentIds[]`
       creates the linked rows and returns them).
-- [ ] The calendar shows a grouped slot as **one chip**, not one per student;
+- [x] The calendar shows a grouped slot as **one chip**, not one per student;
       hover and the day modal name every attendee.
-- [ ] Editing a grouped class's shared fields (subject, date, time, duration,
+      _(`groupDaySessions`/`entryTitle` in `src/utils/sessionGroups.ts`)_
+- [x] Editing a grouped class's shared fields (subject, date, time, duration,
       notes) applies to **every linked row** — the group moves as one.
-- [ ] A single attendee can be cancelled (and restored) without affecting the
+- [x] A single attendee can be cancelled (and restored) without affecting the
       others; **Cancel for everyone** cancels every linked row, behind the
-      same are-you-sure confirmation.
-- [ ] A cancelled attendee is **never billed** for that class; the others
+      same are-you-sure confirmation. _(Plus "Restore for everyone", and
+      membership edits: dropping an attendee cancels their row, adding one
+      joins them via `POST /sessions/{id}/members`.)_
+- [x] A cancelled attendee is **never billed** for that class; the others
       still are (REQ-010/REQ-001 semantics per row).
-- [ ] Dashboard week-load hours count a group hour **once**, not once per
-      attendee.
-- [ ] Seed includes a weekly group class in every environment, so the state
-      is visible without booking one by hand.
-- [ ] Frontend coverage stays at 100%; API deploys before the frontend.
+- [x] Dashboard week-load hours count a group hour **once**, not once per
+      attendee. _(`getWeekLoad` counts entries, not rows; the upcoming list
+      folds groups the same way.)_
+- [x] Seed includes a weekly group class in every environment, so the state
+      is visible without booking one by hand. _(`grp-seed-*` Saturday rows.)_
+- [x] Frontend coverage stays at 100%; API deploys before the frontend.
+      _(Thresholds are 90% since REQ-029/PR #51; the suite sits at ~98.5%.)_
 
 **Notes**
 
@@ -596,7 +604,16 @@ attendance, cancellation and bill stay their own.
 
 ## REQ-012 — Class planner: subject is a multi-select
 
-**Status:** 🚧 In progress · **Impact:** frontend · **Effort:** S
+**Status:** ✅ Done (shipped with the planner UX pack; reconciled 2026-08-02) · **Impact:** frontend · **Effort:** S
+
+> **Deviations from the 2026-07-17 decisions**, made deliberately in the
+> implementation: the dropdown offers the **picked students' registered
+> subjects** (their union), not the whole roster's, and **freeSolo was
+> dropped** — a class can only be tagged with subjects its attendees are
+> registered for, so a picked subject can never be one they don't take.
+> Consequently there is no auto-seeding of the first student's subject;
+> the field simply unlocks once a student is picked. New subjects are added
+> on the student, not typed ad hoc into a class.
 
 **Story**
 As a teacher, I want to tag a class with more than one subject (a combined
@@ -616,15 +633,23 @@ so that the class record reflects what was actually covered.
 
 **Acceptance criteria**
 
-- [ ] The planner's Subject field is a chip-based multi-select with the
-      roster's distinct subjects as its dropdown options.
-- [ ] A typed subject not in the list can still be committed (freeSolo).
-- [ ] Picking the first student still seeds their first subject — as a chip,
-      and never overwriting subjects already chosen.
-- [ ] Editing a class splits its stored subject string back into chips;
-      saving joins them again.
-- [ ] Booking is blocked while no subject chip is committed.
-- [ ] Frontend coverage stays at 100%.
+- [x] The planner's Subject field is a chip-based multi-select ~~with the
+      roster's distinct subjects as its dropdown options~~ — offering the
+      **picked students' subjects** instead (see deviation note above).
+- [x] ~~A typed subject not in the list can still be committed (freeSolo).~~
+      Dropped (deviation note): subjects are constrained to what the
+      attendees are registered for; removing a student prunes any chip
+      they alone justified.
+- [x] ~~Picking the first student still seeds their first subject~~ Dropped
+      with freeSolo: the Subject field unlocks on the first student pick
+      and offers exactly their subjects — no silent seeding.
+- [x] Editing a class splits its stored subject string back into chips;
+      saving joins them again. _(`splitSubjects` / `subjects.join(', ')` —
+      the wire format stays one string, as decided.)_
+- [x] Booking is blocked while no subject chip is committed. _(REQ-029
+      required-field error: "Pick at least one subject".)_
+- [x] Frontend coverage stays at 100%. _(Thresholds are 90% since PR #51;
+      the suite sits at ~98.5%.)_
 
 ## REQ-013 — Archive a student with a closing note; Alumni section
 
@@ -838,7 +863,20 @@ follow them up and convert the good ones into students.
 
 ## REQ-020 — Testimonials and outcomes
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M · **Depends on:** REQ-008 (content), REQ-009 (store)
+**Status:** 🚧 Built (2026-08-02, in review — uncommitted in both working
+trees) · **Impact:** both · **Effort:** M · **Depends on:** REQ-008 (content,
+done), REQ-009 (store, done) · **Delivered:** public `GET /outcomes`
+(anonymous, aggregate-only: students taught, sessions delivered with a group
+class counted once, hours, distinct subjects, and the approved-review star
+rating — computed from live data on every read, never stored) + an outcomes
+strip on the public Home that renders only when there is a record to show
+and hides empty tiles. The strip leads with a teacher-stated "20+ years of
+tutoring experience" tile — owner-entered via the site editor's Hero section
+(`hero.experienceYears`, sanitised 1–99 on write), not hardcoded; blank
+hides it. ⚠️ If a published site-content document already exists, the field
+is absent from it — set it in the editor and publish once to show the tile. _(Average progress was built, then dropped by the
+owner 2026-08-02 — a public "72% average progress" invites misreading; the
+review rating replaced it as the trust number.)_
 
 **Story**
 As a parent, I want to see testimonials and real outcomes, so that I trust this
@@ -846,11 +884,17 @@ tutor with my child.
 
 **Acceptance criteria**
 
-- [ ] Testimonials section: quote, attribution (name / relation), optional result.
-- [ ] An outcomes strip: e.g. students taught, sessions delivered, average
+- [x] ~~Testimonials section: quote, attribution (name / relation), optional
+      result.~~ Superseded by REQ-027 (families submit, teacher moderates) —
+      see the split note below.
+- [x] An outcomes strip: e.g. students taught, sessions delivered, average
       progress — sourced from real app data where possible, not invented.
-- [ ] Testimonial content is teacher-editable via REQ-008; nothing hardcoded.
-- [ ] Frontend coverage stays 100%.
+      _(`GET /outcomes` + the Home strip; a group class counts once, matching
+      the dashboard's week-load rule.)_
+- [x] ~~Testimonial content is teacher-editable via REQ-008; nothing
+      hardcoded.~~ Owned by REQ-027's moderation flow.
+- [x] Frontend coverage stays 100%. _(Thresholds are 90% since PR #51; the
+      suite sits at ~98.6% with the strip's tests in.)_
 
 **Notes**
 
@@ -1080,7 +1124,7 @@ _Cross-cutting_
 
 ## REQ-028 — Profanity screen flags reviews for moderation
 
-**Status:** 🚧 In progress (frontend display built; **backend screen not built**) · **Impact:** both · **Effort:** S · **Blocked by:** REQ-027
+**Status:** ✅ Done (frontend flag display shipped with REQ-027; backend profanity screen merged 2026-07-24) · **Impact:** both · **Effort:** S · **Blocked by:** REQ-027 (done)
 
 **Story**
 As the teacher, I want a submitted review that trips a profanity screen to be
