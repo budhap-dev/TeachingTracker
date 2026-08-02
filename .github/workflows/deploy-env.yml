@@ -54,6 +54,19 @@ jobs:
           VITE_ENTRA_API_SCOPE: ${{ vars.VITE_ENTRA_API_SCOPE }}
           VITE_APP_VERSION: ${{ env.APP_VERSION }}
 
+      # What this environment runs, fetchable from the live site itself:
+      # https://<site>/version.json — no need to dig through Actions runs.
+      - name: Stamp version.json
+        run: |
+          cat > dist/version.json <<EOF
+          {
+            "environment": "${{ inputs.environment }}",
+            "version": "$APP_VERSION",
+            "commit": "${{ github.sha }}",
+            "deployedAt": "$(date -u +%FT%TZ)"
+          }
+          EOF
+
       - name: Deploy to Azure Static Web Apps (${{ inputs.environment }})
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -62,3 +75,16 @@ jobs:
           app_location: dist
           output_location: ''
           skip_app_build: true
+
+      # The run's Summary answers "what went where" without opening logs.
+      - name: Record what this environment now runs
+        run: |
+          {
+            echo "## ✅ ${{ inputs.environment }} now runs $APP_VERSION"
+            echo ""
+            echo "| Version | Commit | Deployed (UTC) |"
+            echo "|---|---|---|"
+            echo "| $APP_VERSION | \`${{ github.sha }}\` | $(date -u +'%F %T') |"
+            echo ""
+            echo "Both environments at a glance: Actions → **Environment status**, or \`/version.json\` on the live site."
+          } >> "$GITHUB_STEP_SUMMARY"
