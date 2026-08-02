@@ -66,7 +66,7 @@ export const OfferingsView = ({
     content,
     onBookAssessment,
 }: OfferingsViewProps) => {
-    const { hero, subjects, journey, approach, freeform } = content
+    const { hero, subjects, journey, approach, bio, faq, freeform } = content
     // Which subject card is flipped (tapped). Hover flips on its own via CSS;
     // this makes the flip work on touch too, just for fun.
     const [flipped, setFlipped] = useState<string | null>(null)
@@ -254,11 +254,73 @@ export const OfferingsView = ({
             </div>
         ) : null
 
+    // The tutor bio + safeguarding (REQ-021): renders only what the owner
+    // wrote — an untouched bio shows nothing, and the DBS badge appears only
+    // when the owner has switched it on.
+    const hasBio =
+        bio.heading ||
+        bio.body ||
+        bio.qualifications.length > 0 ||
+        bio.dbsChecked ||
+        bio.safeguarding
+    const bioSection = hasBio ? (
+        <div className="card offerings-bio">
+            {bio.heading && (
+                <h4 className="offerings-heading">{bio.heading}</h4>
+            )}
+            {bio.body && (
+                <div className="bio-body">{renderMarkdown(bio.body)}</div>
+            )}
+            {bio.qualifications.length > 0 && (
+                <ul className="bio-qualifications">
+                    {bio.qualifications.map((line) => (
+                        <li key={line}>{line}</li>
+                    ))}
+                </ul>
+            )}
+            {(bio.dbsChecked || bio.safeguarding) && (
+                <div className="bio-safeguarding">
+                    {bio.dbsChecked && (
+                        <span className="bio-dbs-badge">
+                            <span aria-hidden>✓</span> Enhanced DBS checked
+                        </span>
+                    )}
+                    {bio.safeguarding && <p>{bio.safeguarding}</p>}
+                </div>
+            )}
+        </div>
+    ) : null
+
+    // The FAQ accordion (REQ-025): native details/summary — accessible and
+    // crawlable — closing on the same enquiry CTA the rest of the page uses.
+    const faqSection =
+        faq.length > 0 ? (
+            <div className="card offerings-faq">
+                <h4 className="offerings-heading">Questions families ask</h4>
+                <div className="faq-list">
+                    {faq.map((item) => (
+                        <details key={item.question} className="faq-item">
+                            <summary>{item.question}</summary>
+                            <p>{item.answer}</p>
+                        </details>
+                    ))}
+                </div>
+                <p className="faq-cta">
+                    A question we haven’t answered?{' '}
+                    <Button variant="text" onClick={onBookAssessment}>
+                        Ask us — request a free assessment
+                    </Button>
+                </p>
+            </div>
+        ) : null
+
     const sections = {
         hero: heroSection,
         subjects: subjectsSection,
         journey: journeySection,
         approach: approachSection,
+        bio: bioSection,
+        faq: faqSection,
         freeform: freeformSection,
     }
 

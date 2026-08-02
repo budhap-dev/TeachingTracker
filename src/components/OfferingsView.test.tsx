@@ -44,8 +44,24 @@ const buildContent = (overrides: Partial<SiteContent> = {}): SiteContent => ({
     subjects,
     journey,
     approach,
+    bio: {
+        heading: '',
+        body: '',
+        qualifications: [],
+        dbsChecked: false,
+        safeguarding: '',
+    },
+    faq: [],
     freeform: { heading: '', markdown: '' },
-    sectionOrder: ['hero', 'subjects', 'journey', 'approach', 'freeform'],
+    sectionOrder: [
+        'hero',
+        'subjects',
+        'journey',
+        'approach',
+        'bio',
+        'faq',
+        'freeform',
+    ],
     ...overrides,
 })
 
@@ -207,5 +223,78 @@ describe('OfferingsView', () => {
         await user.click(buttons[0])
         await user.click(buttons[1])
         expect(onBookAssessment).toHaveBeenCalledTimes(2)
+    })
+
+    it('hides the bio until something is written, then renders only what is (REQ-021)', () => {
+        // The default empty bio renders nothing at all.
+        renderView()
+        expect(document.querySelector('.offerings-bio')).toBeNull()
+
+        renderView({
+            bio: {
+                heading: 'Meet your tutor',
+                body: 'Twenty years of **maths** teaching.',
+                qualifications: ['PGCE, Secondary Mathematics'],
+                dbsChecked: true,
+                safeguarding: 'Parents are kept in the loop after every lesson.',
+            },
+        })
+        expect(
+            screen.getByRole('heading', { name: /meet your tutor/i })
+        ).toBeInTheDocument()
+        // Markdown renders as marked-up text, never raw asterisks.
+        expect(screen.getByText('maths')).toBeInTheDocument()
+        expect(
+            screen.getByText('PGCE, Secondary Mathematics')
+        ).toBeInTheDocument()
+        expect(screen.getByText(/enhanced dbs checked/i)).toBeInTheDocument()
+        expect(
+            screen.getByText(/parents are kept in the loop/i)
+        ).toBeInTheDocument()
+    })
+
+    it('never shows the DBS badge unless the owner switched it on', () => {
+        renderView({
+            bio: {
+                heading: 'Meet your tutor',
+                body: '',
+                qualifications: [],
+                dbsChecked: false,
+                safeguarding: '',
+            },
+        })
+        expect(screen.queryByText(/dbs checked/i)).not.toBeInTheDocument()
+    })
+
+    it('renders the FAQ as an accordion with the enquiry CTA closing it (REQ-025)', async () => {
+        const onBookAssessment = vi.fn()
+        const user = userEvent.setup()
+        renderView(
+            {
+                faq: [
+                    { question: 'Are lessons online?', answer: 'Yes — live.' },
+                    { question: 'Group or one-to-one?', answer: 'Either.' },
+                ],
+            },
+            onBookAssessment
+        )
+
+        expect(
+            screen.getByRole('heading', { name: /questions families ask/i })
+        ).toBeInTheDocument()
+        expect(screen.getByText('Are lessons online?')).toBeInTheDocument()
+        expect(screen.getByText('Yes — live.')).toBeInTheDocument()
+
+        await user.click(
+            screen.getByRole('button', { name: /ask us — request a free/i })
+        )
+        expect(onBookAssessment).toHaveBeenCalled()
+    })
+
+    it('leaves the FAQ card out while no questions are published', () => {
+        renderView()
+        expect(
+            screen.queryByRole('heading', { name: /questions families ask/i })
+        ).not.toBeInTheDocument()
     })
 })

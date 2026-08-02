@@ -3150,6 +3150,119 @@ $note-rule: 32px;
 }
 
 
+/* The tutor bio + safeguarding (REQ-021). Quiet prose card; the DBS badge
+   is the one deliberate splash — a green pill that reads as verified. */
+.offerings-bio {
+    .bio-body {
+        max-width: 68ch;
+    }
+
+    .bio-qualifications {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        li {
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+            font-size: 0.85rem;
+        }
+    }
+
+    .bio-safeguarding {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+
+        p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+            max-width: 68ch;
+        }
+    }
+
+    .bio-dbs-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #fff;
+        background: #2e7d32;
+    }
+}
+
+/* The FAQ accordion (REQ-025): native details/summary rows, a chevron that
+   turns when open, and the enquiry CTA as the closing line. */
+.offerings-faq {
+    .faq-list {
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .faq-item {
+        border-bottom: 1px solid var(--border);
+
+        summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 13px 2px;
+            font-weight: 600;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        /* Hide the default disclosure triangle; the chevron replaces it. */
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: '▾';
+            color: var(--muted);
+            transition: transform 0.15s ease;
+        }
+
+        &[open] summary::after {
+            transform: rotate(180deg);
+        }
+
+        &[open] summary {
+            color: var(--accent);
+        }
+
+        p {
+            margin: 0 0 14px;
+            padding: 0 2px;
+            color: var(--muted);
+            max-width: 68ch;
+        }
+    }
+
+    .faq-cta {
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+
+        .MuiButton-root {
+            text-transform: none;
+            padding: 0 4px;
+            vertical-align: baseline;
+        }
+    }
+}
+
 /* The free-form section is the site's noticeboard (REQ-008): cork in a
    wooden frame, and the teacher's words on a pinned, gently swaying
    handwritten note. Pure decoration — the Markdown rendering is untouched. */

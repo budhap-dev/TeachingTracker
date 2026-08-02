@@ -92,11 +92,11 @@ XS is an afternoon, XL is a project.
 | 18 | ✅ | [REQ-019 — Leads inbox](#req-019--leads-inbox) | M | both | REQ-018 (shipped 2026-07-25) |
 | 19 | 🔲 | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | REQ-008, REQ-009 |
 | 20 | 🔲 | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | REQ-008 |
-| 21 | 🔲 | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | REQ-008 |
+| 21 | ⏸️ | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | REQ-008 (parked 2026-08-02: owner will set prices first) |
 | 22 | ✅ | [REQ-023 — Public pages are discoverable (SEO / OG)](#req-023--public-pages-are-discoverable-seo--og) | M | frontend | — (static meta + per-route titles + sitemap/robots; prerender deferred) |
 | 23 | ✅ | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
 | 24 | 🔲 | [REQ-025 — FAQ](#req-025--faq) | S | both | REQ-008 |
-| 25 | 🔲 | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | REQ-009 |
+| 25 | ❌ | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | — (dropped 2026-08-02, owner: not needed) |
 | 26 | ✅ | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
 | 27 | ✅ | [REQ-028 — Profanity screen flags reviews for moderation](#req-028--profanity-screen-flags-reviews-for-moderation) | S | both | REQ-027 (backend screen merged 2026-07-24) |
 | — | | **Privacy & GDPR — make the app defensibly hostable** (REQ-030 epic, split 2026-07-28) | | | |
@@ -908,7 +908,7 @@ tutor with my child.
 
 ## REQ-021 — Tutor bio and safeguarding
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content)
+**Status:** 🚧 Built (2026-08-02, in review) · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content, done) · **Delivered:** a `bio` site-content section (heading, Markdown body, qualification pills, DBS badge, safeguarding line) — editable in the site editor, rendered on Offerings in the teacher-chosen order. **Ships empty**: the public section hides until the owner writes it, and the DBS badge only ever appears when the owner ticks it — nothing is invented on their behalf. The optional photo from the criteria is deferred (no asset storage yet). ⚠️ Owner action: fill the Bio section in the site editor and publish.
 
 **Story**
 As a parent, I want a tutor bio with credentials and safeguarding information,
@@ -923,7 +923,9 @@ so that I feel safe choosing this service.
 
 ## REQ-022 — Transparent pricing
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content)
+**Status:** ⏸️ Parked (2026-08-02) — the owner wants to work out the pricing
+itself before anything is published; build waits on that decision ·
+**Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content)
 
 **Story**
 As a parent, I want to see pricing up front, so that I can decide whether to
@@ -988,7 +990,7 @@ root shows the pitch, not the teacher dashboard behind a sign-in.
 
 ## REQ-025 — FAQ
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content)
+**Status:** 🚧 Built (2026-08-02, in review) · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content, done) · **Delivered:** a `faq` site-content section — question/answer rows in the site editor (add, remove, drag to reorder), rendered on Offerings as a native details/summary accordion closing on the enquiry CTA. A drafted starter set ships in the bundled defaults and behind an "Add the starter questions" button for the owner to review and edit; **an already-published document gains an empty FAQ**, so nothing unapproved ever goes live. _(Owner asked whether the FAQ could be a chatbot (2026-08-02): decided accordion-first — a grounded "ask a question" box that answers only from published content could be a separate later story; a freeform public chatbot was advised against.)_
 
 **Story**
 As a parent, I want an FAQ, so that the usual questions are answered before I
@@ -1003,7 +1005,10 @@ have to ask them.
 
 ## REQ-026 — Refer a family
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** S · **Blocked by:** REQ-009 (store)
+**Status:** ❌ Dropped (2026-08-02) — owner call: not needed. Word of mouth
+already flows through the existing contact channels; revisit only if
+enquiry volume makes attribution worth tracking. · **Impact:** both ·
+**Effort:** S · **Blocked by:** REQ-009 (store)
 
 **Story**
 As a current parent, I want to refer another family in one tap, so that

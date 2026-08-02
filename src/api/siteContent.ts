@@ -1,9 +1,12 @@
 import type { SiteContent } from '../data/siteContent'
+import { normaliseSiteContent } from '../data/siteContent'
 import { apiRequest } from './client'
 
-/** GET /site-content — public: what the public pages render (REQ-008). */
+/** GET /site-content — public: what the public pages render (REQ-008).
+    Normalised so a document from an older API (predating bio/faq) still
+    has the full shape — with the new sections empty. */
 export const fetchSiteContent = (): Promise<SiteContent> =>
-    apiRequest<SiteContent>('/site-content')
+    apiRequest<SiteContent>('/site-content').then(normaliseSiteContent)
 
 /**
  * PUT /site-content — teacher: publish the whole document atomically.

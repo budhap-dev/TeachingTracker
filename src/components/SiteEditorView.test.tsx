@@ -315,4 +315,71 @@ describe('SiteEditorView', () => {
             screen.getByRole('button', { name: /publishing…/i })
         ).toBeDisabled()
     })
+
+    it('publishes the bio the owner writes — DBS strictly opt-in (REQ-021)', async () => {
+        const user = userEvent.setup()
+        const { onPublish } = renderEditor()
+
+        await user.type(
+            screen.getByLabelText(/bio heading/i),
+            'Meet your tutor'
+        )
+        await user.type(
+            screen.getByLabelText(/about you/i),
+            'Twenty years of maths teaching.'
+        )
+        await user.type(
+            screen.getByLabelText(/qualifications — one per line/i),
+            'PGCE, Secondary Mathematics{enter}BSc Physics'
+        )
+        await user.click(screen.getByRole('checkbox'))
+        await user.type(
+            screen.getByLabelText(/safeguarding statement/i),
+            'Parents are kept in the loop.'
+        )
+        await user.click(publishButton())
+
+        const published = onPublish.mock.calls[0][0] as SiteContent
+        expect(published.bio).toEqual({
+            heading: 'Meet your tutor',
+            body: 'Twenty years of maths teaching.',
+            qualifications: ['PGCE, Secondary Mathematics', 'BSc Physics'],
+            dbsChecked: true,
+            safeguarding: 'Parents are kept in the loop.',
+        })
+        // The bundled starter questions ride along untouched.
+        expect(published.faq).toEqual(defaultSiteContent.faq)
+    })
+
+    it('fills an empty FAQ from the starter set, and drops half-filled rows (REQ-025)', async () => {
+        const user = userEvent.setup()
+        const empty = structuredClone(defaultSiteContent)
+        empty.faq = []
+        const { onPublish } = renderEditor({ content: empty })
+
+        // The nudge only exists while the FAQ is empty.
+        await user.click(
+            screen.getByRole('button', { name: /add the starter questions/i })
+        )
+        expect(
+            screen.getByDisplayValue('What subjects and levels do you cover?')
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('button', {
+                name: /add the starter questions/i,
+            })
+        ).not.toBeInTheDocument()
+
+        // A question typed without an answer must not fail the publish —
+        // the incomplete row is simply left out.
+        await user.click(
+            screen.getByRole('button', { name: /add question/i })
+        )
+        const questions = screen.getAllByLabelText(/^question$/i)
+        await user.type(questions[questions.length - 1], 'Half-finished?')
+
+        await user.click(publishButton())
+        const published = onPublish.mock.calls[0][0] as SiteContent
+        expect(published.faq).toEqual(defaultSiteContent.faq)
+    })
 })
