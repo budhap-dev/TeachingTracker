@@ -430,6 +430,27 @@ export const SiteEditorView = ({
                                 }
                                 helperText="e.g. “Now taking Year 10 & 11 students”. Leave blank to hide it."
                             />
+                            <TextField
+                                label="Years of tutoring experience"
+                                size="small"
+                                type="number"
+                                slotProps={{
+                                    htmlInput: { min: 0, max: 99 },
+                                }}
+                                value={draft.hero.experienceYears || ''}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        const years = Number(
+                                            event.target.value
+                                        )
+                                        next.hero.experienceYears =
+                                            Number.isFinite(years) && years > 0
+                                                ? Math.floor(years)
+                                                : undefined
+                                    })
+                                }
+                                helperText="Shown on the Home page as “20+ years of tutoring experience”. Leave blank to hide it."
+                            />
                         </div>
                     </div>
 

@@ -39,6 +39,9 @@ export type OfferingsHero = {
     subhead: string
     /** A scarcity/availability line, e.g. "Now taking Year 10 & 11". */
     availability: string
+    /** Years of tutoring experience — leads the Home outcomes strip as
+        "20+ years of tutoring experience". 0/absent hides the tile. */
+    experienceYears?: number
 }
 
 /** The free-form section: a heading plus a Markdown body (REQ-008). */
@@ -84,6 +87,7 @@ export const defaultSiteContent: SiteContent = {
         // Blank by default — the page hides the line until the teacher
         // publishes one via the site editor.
         availability: '',
+        experienceYears: 20,
     },
     subjects: [
         {

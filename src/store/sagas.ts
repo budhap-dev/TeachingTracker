@@ -6,6 +6,8 @@ import {
     updateLeadStatus,
 } from '../api/leads'
 import { fetchSiteContent, updateSiteContent as putSiteContent } from '../api/siteContent'
+import { fetchOutcomes } from '../api/outcomes'
+import type { Outcomes } from '../data/outcomes'
 import type { SiteContent } from '../data/siteContent'
 import type {
     Lead,
@@ -81,6 +83,9 @@ import {
     publishSiteContentRequested,
     publishSiteContentSucceeded,
     publishSiteContentFailed,
+    fetchOutcomesRequested,
+    fetchOutcomesSucceeded,
+    fetchOutcomesFailed,
     fetchLeadsRequested,
     fetchLeadsSucceeded,
     fetchLeadsFailed,
@@ -368,6 +373,18 @@ export function* loadSiteContentSaga() {
     }
 }
 
+/** Fetches the public outcomes tallies; failure just leaves the strip out. */
+export function* loadOutcomesSaga() {
+    try {
+        const outcomes: Outcomes = yield call(fetchOutcomes)
+        yield put(fetchOutcomesSucceeded(outcomes))
+    } catch {
+        // Silent by design (REQ-020, same stance as site content): the Home
+        // renders without the strip; a visitor gets no error toast.
+        yield put(fetchOutcomesFailed())
+    }
+}
+
 /** Publishes the site content; the sanitised document comes back. */
 export function* publishSiteContentSaga(
     action: ReturnType<typeof publishSiteContentRequested>
@@ -581,6 +598,7 @@ export function* rootSaga() {
         takeEvery(editSessionRequested.type, editSessionSaga),
         takeEvery(savePaymentRequested.type, savePaymentSaga),
         takeLatest(fetchSiteContentRequested.type, loadSiteContentSaga),
+        takeLatest(fetchOutcomesRequested.type, loadOutcomesSaga),
         takeEvery(publishSiteContentRequested.type, publishSiteContentSaga),
         takeLatest(fetchLeadsRequested.type, loadLeadsSaga),
         takeEvery(submitLeadRequested.type, submitLeadSaga),

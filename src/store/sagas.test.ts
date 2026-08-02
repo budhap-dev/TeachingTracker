@@ -35,6 +35,7 @@ import {
     saveStudentSaga,
     setSessionStatusSaga,
     loadSiteContentSaga,
+    loadOutcomesSaga,
     publishSiteContentSaga,
     loadLeadsSaga,
     submitLeadSaga,
@@ -86,6 +87,9 @@ import {
     deleteSessionFailed,
     fetchSiteContentRequested,
     fetchSiteContentFailed,
+    fetchOutcomesRequested,
+    fetchOutcomesSucceeded,
+    fetchOutcomesFailed,
     publishSiteContentRequested,
     publishSiteContentFailed,
     fetchLeadsRequested,
@@ -534,6 +538,7 @@ describe('rootSaga', () => {
                     fetchSiteContentRequested.type,
                     loadSiteContentSaga
                 ),
+                takeLatest(fetchOutcomesRequested.type, loadOutcomesSaga),
                 takeEvery(
                     publishSiteContentRequested.type,
                     publishSiteContentSaga
@@ -580,6 +585,29 @@ describe('site-content sagas (REQ-008)', () => {
         // Failure puts the silent action — no message, no toast.
         expect(gen.throw(new Error('offline')).value).toEqual(
             put(fetchSiteContentFailed())
+        )
+    })
+
+    it('loads the outcomes tallies and swallows failures silently (REQ-020)', () => {
+        const tallies = {
+            studentsTaught: 9,
+            sessionsDelivered: 120,
+            hoursDelivered: 110,
+            subjectsCount: 4,
+            averageRating: 4.9,
+            reviewCount: 12,
+        }
+        let gen = loadOutcomesSaga()
+        gen.next()
+        expect(gen.next(tallies).value).toEqual(
+            put(fetchOutcomesSucceeded(tallies))
+        )
+
+        gen = loadOutcomesSaga()
+        gen.next()
+        // Failure puts the silent action — no message, no toast.
+        expect(gen.throw(new Error('offline')).value).toEqual(
+            put(fetchOutcomesFailed())
         )
     })
 

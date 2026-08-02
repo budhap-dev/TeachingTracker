@@ -2,7 +2,11 @@ import { useEffect } from 'react'
 import { Button, Rating } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { fetchSiteContentRequested, fetchTestimonialsRequested } from '../store/store'
+import {
+    fetchOutcomesRequested,
+    fetchSiteContentRequested,
+    fetchTestimonialsRequested,
+} from '../store/store'
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { signIn } from '../auth/msal'
 
@@ -10,12 +14,16 @@ import { paths } from '../paths'
 import type { Testimonial } from '../data/students'
 
 import type { SiteContent } from '../data/siteContent'
+import type { Outcomes } from '../data/outcomes'
 
 type HomeViewProps = {
     /** Approved reviews for the proof strip; the view shows up to three. */
     testimonials: Testimonial[]
     /** The teacher-published document (REQ-008) feeding the hero + journey. */
     content: SiteContent
+    /** Live outcome tallies (REQ-020); null (not yet loaded / API away)
+        simply leaves the strip out. */
+    outcomes: Outcomes | null
 }
 
 /** A friendly glyph for each journey step, in order (mirrors Offerings). */
@@ -27,13 +35,14 @@ const journeyIcons = ['💬', '📝', '🎯', '📅']
  * sign-in wall. The teacher's dashboard stays behind sign-in at the same
  * path; teacher sign-in is a quiet afterline here, not the headline.
  */
-export const HomeView = ({ testimonials, content }: HomeViewProps) => {
+export const HomeView = ({ testimonials, content, outcomes }: HomeViewProps) => {
     useDocumentMeta(
         'Springboard Tutoring — one-to-one tutoring that builds confidence',
         'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
     )
     const { hero, journey } = content
     const proof = testimonials.slice(0, 3)
+    const experienceYears = hero.experienceYears ?? 0
 
     return (
         <section className="content-stack home-view">
@@ -63,6 +72,61 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
                     </Button>
                 </div>
             </div>
+
+            {/* The outcomes strip (REQ-020): real numbers only — the
+                teacher-stated experience (site content) leads, and the live
+                tallies follow. Hidden entirely until there is something to
+                show, so a brand-new site never brags about zero. */}
+            {(experienceYears > 0 ||
+                (outcomes && outcomes.studentsTaught > 0)) && (
+                <ul
+                    className="card outcomes-strip"
+                    aria-label="Teaching record so far"
+                >
+                    {experienceYears > 0 && (
+                        <li>
+                            <strong>{experienceYears}+</strong>
+                            <span>years of tutoring experience</span>
+                        </li>
+                    )}
+                    {outcomes && outcomes.studentsTaught > 0 && (
+                        <>
+                            <li>
+                                <strong>{outcomes.studentsTaught}</strong>
+                                <span>students taught</span>
+                            </li>
+                            {outcomes.sessionsDelivered > 0 && (
+                                <li>
+                                    <strong>
+                                        {outcomes.sessionsDelivered}
+                                    </strong>
+                                    <span>classes delivered</span>
+                                </li>
+                            )}
+                            {outcomes.hoursDelivered > 0 && (
+                                <li>
+                                    <strong>{outcomes.hoursDelivered}</strong>
+                                    <span>hours of teaching</span>
+                                </li>
+                            )}
+                            {outcomes.reviewCount > 0 && (
+                                <li>
+                                    <strong>
+                                        {outcomes.averageRating}
+                                        <span aria-hidden>★</span>
+                                    </strong>
+                                    <span>
+                                        from {outcomes.reviewCount} family{' '}
+                                        {outcomes.reviewCount === 1
+                                            ? 'review'
+                                            : 'reviews'}
+                                    </span>
+                                </li>
+                            )}
+                        </>
+                    )}
+                </ul>
+            )}
 
             {proof.length > 0 && (
                 <div className="card">
@@ -148,9 +212,17 @@ export const HomeLanding = () => {
         (state) => state.students.testimonials
     )
     const content = useAppSelector((state) => state.students.siteContent)
+    const outcomes = useAppSelector((state) => state.students.outcomes)
     useEffect(() => {
         dispatch(fetchTestimonialsRequested())
         dispatch(fetchSiteContentRequested())
+        dispatch(fetchOutcomesRequested())
     }, [dispatch])
-    return <HomeView testimonials={testimonials} content={content} />
+    return (
+        <HomeView
+            testimonials={testimonials}
+            content={content}
+            outcomes={outcomes}
+        />
+    )
 }
