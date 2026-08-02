@@ -33,8 +33,6 @@ import {
     fetchSessionsSucceeded,
     fetchStudentsFailed,
     fetchSiteContentSucceeded,
-    fetchOutcomesSucceeded,
-    fetchOutcomesFailed,
     fetchSiteContentFailed,
     publishSiteContentRequested,
     publishSiteContentSucceeded,
@@ -861,29 +859,6 @@ describe('lead lifecycle (REQ-018/019)', () => {
             updateLeadStatusFailed('conflict')
         )
         expect(failed.error).toBe('conflict')
-    })
-})
-
-describe('outcomes strip (REQ-020)', () => {
-    it('starts empty, keeps the tallies on success, stays silent on failure', () => {
-        const state = initial()
-        expect(state.outcomes).toBeNull()
-
-        const tallies = {
-            studentsTaught: 9,
-            sessionsDelivered: 120,
-            hoursDelivered: 110,
-            subjectsCount: 4,
-            averageRating: 4.9,
-            reviewCount: 12,
-        }
-        const loaded = studentReducer(state, fetchOutcomesSucceeded(tallies))
-        expect(loaded.outcomes).toEqual(tallies)
-
-        const failed = studentReducer(initial(), fetchOutcomesFailed())
-        expect(failed.outcomes).toBeNull()
-        // Graceful degradation: no visitor-facing error.
-        expect(failed.error).toBeNull()
     })
 })
 

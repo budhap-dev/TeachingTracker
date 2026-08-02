@@ -450,10 +450,17 @@
 }
 
 @media (max-width: 640px) {
-    /* The outcomes strip: four spread tiles become a tidy 2-up grid. */
+    /* The record strip: the two stats sit side by side with less padding;
+       the hairline between them stays. */
     .outcomes-strip {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        justify-content: stretch;
+        padding: 20px 8px;
+
+        li {
+            padding: 4px 12px;
+        }
+
+        strong {
+            font-size: 1.8rem;
+        }
     }
 }

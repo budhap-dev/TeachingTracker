@@ -3,7 +3,6 @@ import { Button, Rating } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
-    fetchOutcomesRequested,
     fetchSiteContentRequested,
     fetchTestimonialsRequested,
 } from '../store/store'
@@ -14,16 +13,12 @@ import { paths } from '../paths'
 import type { Testimonial } from '../data/students'
 
 import type { SiteContent } from '../data/siteContent'
-import type { Outcomes } from '../data/outcomes'
 
 type HomeViewProps = {
     /** Approved reviews for the proof strip; the view shows up to three. */
     testimonials: Testimonial[]
     /** The teacher-published document (REQ-008) feeding the hero + journey. */
     content: SiteContent
-    /** Live outcome tallies (REQ-020); null (not yet loaded / API away)
-        simply leaves the strip out. */
-    outcomes: Outcomes | null
 }
 
 /** A friendly glyph for each journey step, in order (mirrors Offerings). */
@@ -35,7 +30,7 @@ const journeyIcons = ['💬', '📝', '🎯', '📅']
  * sign-in wall. The teacher's dashboard stays behind sign-in at the same
  * path; teacher sign-in is a quiet afterline here, not the headline.
  */
-export const HomeView = ({ testimonials, content, outcomes }: HomeViewProps) => {
+export const HomeView = ({ testimonials, content }: HomeViewProps) => {
     useDocumentMeta(
         'Springboard Tutoring — one-to-one tutoring that builds confidence',
         'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
@@ -43,6 +38,19 @@ export const HomeView = ({ testimonials, content, outcomes }: HomeViewProps) => 
     const { hero, journey } = content
     const proof = testimonials.slice(0, 3)
     const experienceYears = hero.experienceYears ?? 0
+    // The rating tile averages the approved reviews already on this page —
+    // real, permissioned numbers (REQ-027), no extra endpoint.
+    const reviewCount = testimonials.length
+    const averageRating = reviewCount
+        ? Math.round(
+              (testimonials.reduce(
+                  (sum, testimonial) => sum + testimonial.rating,
+                  0
+              ) /
+                  reviewCount) *
+                  10
+          ) / 10
+        : 0
 
     return (
         <section className="content-stack home-view">
@@ -74,11 +82,10 @@ export const HomeView = ({ testimonials, content, outcomes }: HomeViewProps) => 
             </div>
 
             {/* The outcomes strip (REQ-020): real numbers only — the
-                teacher-stated experience (site content) leads, and the live
-                tallies follow. Hidden entirely until there is something to
-                show, so a brand-new site never brags about zero. */}
-            {(experienceYears > 0 ||
-                (outcomes && outcomes.studentsTaught > 0)) && (
+                teacher-stated experience (site content, REQ-008) and the
+                approved-review rating (REQ-027). Hidden entirely until there
+                is something to show. */}
+            {(experienceYears > 0 || reviewCount > 0) && (
                 <ul
                     className="card outcomes-strip"
                     aria-label="Teaching record so far"
@@ -89,41 +96,21 @@ export const HomeView = ({ testimonials, content, outcomes }: HomeViewProps) => 
                             <span>years of tutoring experience</span>
                         </li>
                     )}
-                    {outcomes && outcomes.studentsTaught > 0 && (
-                        <>
-                            <li>
-                                <strong>{outcomes.studentsTaught}</strong>
-                                <span>students taught</span>
-                            </li>
-                            {outcomes.sessionsDelivered > 0 && (
-                                <li>
-                                    <strong>
-                                        {outcomes.sessionsDelivered}
-                                    </strong>
-                                    <span>classes delivered</span>
-                                </li>
-                            )}
-                            {outcomes.hoursDelivered > 0 && (
-                                <li>
-                                    <strong>{outcomes.hoursDelivered}</strong>
-                                    <span>hours of teaching</span>
-                                </li>
-                            )}
-                            {outcomes.reviewCount > 0 && (
-                                <li>
-                                    <strong>
-                                        {outcomes.averageRating}
-                                        <span aria-hidden>★</span>
-                                    </strong>
-                                    <span>
-                                        from {outcomes.reviewCount} family{' '}
-                                        {outcomes.reviewCount === 1
-                                            ? 'review'
-                                            : 'reviews'}
-                                    </span>
-                                </li>
-                            )}
-                        </>
+                    {reviewCount > 0 && (
+                        <li>
+                            {/* The rating is a doorway: tap it to read the
+                                reviews behind the number. */}
+                            <Link to={paths.reviews}>
+                                <strong>
+                                    {averageRating}
+                                    <span aria-hidden>★</span>
+                                </strong>
+                                <span>
+                                    from {reviewCount} family{' '}
+                                    {reviewCount === 1 ? 'review' : 'reviews'}
+                                </span>
+                            </Link>
+                        </li>
                     )}
                 </ul>
             )}
@@ -212,17 +199,9 @@ export const HomeLanding = () => {
         (state) => state.students.testimonials
     )
     const content = useAppSelector((state) => state.students.siteContent)
-    const outcomes = useAppSelector((state) => state.students.outcomes)
     useEffect(() => {
         dispatch(fetchTestimonialsRequested())
         dispatch(fetchSiteContentRequested())
-        dispatch(fetchOutcomesRequested())
     }, [dispatch])
-    return (
-        <HomeView
-            testimonials={testimonials}
-            content={content}
-            outcomes={outcomes}
-        />
-    )
+    return <HomeView testimonials={testimonials} content={content} />
 }

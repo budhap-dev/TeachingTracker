@@ -36,12 +36,13 @@ const TeacherGreeting = ({ quote }: { quote: string }) => (
     </div>
 )
 
-/** Visitors get the site's name — it is not their portal, and the
-    daily quote talks to the teacher, so it stays out too. */
+/** Visitors get the site's identity — brand as the headline, the offer as
+    the eyebrow. It is not their portal, and the daily quote talks to the
+    teacher, so it stays out too. */
 const VisitorGreeting = () => (
     <div className="topbar-greeting">
-        <p className="eyebrow">Springboard Tutoring</p>
-        <h2>Personal tutoring</h2>
+        <p className="eyebrow">Maths &amp; sciences · Years 7 to 13</p>
+        <h2>Springboard Tutoring</h2>
     </div>
 )
 
