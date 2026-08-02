@@ -90,8 +90,12 @@ describe('HomeView', () => {
             name: /teaching record so far/i,
         })
         expect(strip).toHaveTextContent('20+years of tutoring experience')
-        // The fixture's four approved five-star reviews average to 5.
+        // The fixture's four approved five-star reviews average to 5, and
+        // the rating tile links through to the reviews behind the number.
         expect(strip).toHaveTextContent('5★from 4 family reviews')
+        expect(
+            screen.getByRole('link', { name: /from 4 family reviews/i })
+        ).toHaveAttribute('href', '/reviews')
     })
 
     it('hides tiles with nothing to say, and the whole strip when both are empty', () => {

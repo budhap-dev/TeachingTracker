@@ -98,14 +98,18 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
                     )}
                     {reviewCount > 0 && (
                         <li>
-                            <strong>
-                                {averageRating}
-                                <span aria-hidden>★</span>
-                            </strong>
-                            <span>
-                                from {reviewCount} family{' '}
-                                {reviewCount === 1 ? 'review' : 'reviews'}
-                            </span>
+                            {/* The rating is a doorway: tap it to read the
+                                reviews behind the number. */}
+                            <Link to={paths.reviews}>
+                                <strong>
+                                    {averageRating}
+                                    <span aria-hidden>★</span>
+                                </strong>
+                                <span>
+                                    from {reviewCount} family{' '}
+                                    {reviewCount === 1 ? 'review' : 'reviews'}
+                                </span>
+                            </Link>
                         </li>
                     )}
                 </ul>
