@@ -212,7 +212,8 @@ describe('SiteEditorView', () => {
             heading: 'Term dates',
             markdown: '- Autumn: 1 Sep',
         })
-    })
+        // Rendering the full editor under coverage is slow on CI runners.
+    }, 30000)
 
     it('blocks publishing without a site name or headline', () => {
         renderEditor()
@@ -315,4 +316,76 @@ describe('SiteEditorView', () => {
             screen.getByRole('button', { name: /publishing…/i })
         ).toBeDisabled()
     })
+
+    it('publishes the bio the owner writes — DBS strictly opt-in (REQ-021)', async () => {
+        const user = userEvent.setup()
+        const { onPublish } = renderEditor()
+
+        // Single change events, not keystrokes — each keystroke re-renders
+        // the whole editor and CI runners blow the test budget.
+        fireEvent.change(screen.getByLabelText(/bio heading/i), {
+            target: { value: 'Meet your tutor' },
+        })
+        fireEvent.change(screen.getByLabelText(/about you/i), {
+            target: { value: 'Twenty years of maths teaching.' },
+        })
+        fireEvent.change(
+            screen.getByLabelText(/qualifications — one per line/i),
+            {
+                target: {
+                    value: 'PGCE, Secondary Mathematics\nBSc Physics',
+                },
+            }
+        )
+        await user.click(screen.getByRole('checkbox'))
+        fireEvent.change(screen.getByLabelText(/safeguarding statement/i), {
+            target: { value: 'Parents are kept in the loop.' },
+        })
+        await user.click(publishButton())
+
+        const published = onPublish.mock.calls[0][0] as SiteContent
+        expect(published.bio).toEqual({
+            heading: 'Meet your tutor',
+            body: 'Twenty years of maths teaching.',
+            qualifications: ['PGCE, Secondary Mathematics', 'BSc Physics'],
+            dbsChecked: true,
+            safeguarding: 'Parents are kept in the loop.',
+        })
+        // The bundled starter questions ride along untouched.
+        expect(published.faq).toEqual(defaultSiteContent.faq)
+    }, 30000)
+
+    it('fills an empty FAQ from the starter set, and drops half-filled rows (REQ-025)', async () => {
+        const user = userEvent.setup()
+        const empty = structuredClone(defaultSiteContent)
+        empty.faq = []
+        const { onPublish } = renderEditor({ content: empty })
+
+        // The nudge only exists while the FAQ is empty.
+        await user.click(
+            screen.getByRole('button', { name: /add the starter questions/i })
+        )
+        expect(
+            screen.getByDisplayValue('What subjects and levels do you cover?')
+        ).toBeInTheDocument()
+        expect(
+            screen.queryByRole('button', {
+                name: /add the starter questions/i,
+            })
+        ).not.toBeInTheDocument()
+
+        // A question typed without an answer must not fail the publish —
+        // the incomplete row is simply left out.
+        await user.click(
+            screen.getByRole('button', { name: /add question/i })
+        )
+        const questions = screen.getAllByLabelText(/^question$/i)
+        fireEvent.change(questions[questions.length - 1], {
+            target: { value: 'Half-finished?' },
+        })
+
+        await user.click(publishButton())
+        const published = onPublish.mock.calls[0][0] as SiteContent
+        expect(published.faq).toEqual(defaultSiteContent.faq)
+    }, 30000)
 })

@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconButton, Tab, Tabs, TextField } from '@mui/material'
+import {
+    Button,
+    Checkbox,
+    FormControlLabel,
+    IconButton,
+    Tab,
+    Tabs,
+    TextField,
+} from '@mui/material'
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import type { SectionKey, SiteContent, SubjectOffering } from '../data/siteContent'
+import { defaultSiteContent } from '../data/siteContent'
 import { SortableItem, SortableList } from './SortableList'
 import { OfferingsView } from './OfferingsView'
 
@@ -20,6 +29,8 @@ const sectionLabels: Record<SectionKey, string> = {
     subjects: 'Subjects taught',
     journey: 'How it works',
     approach: 'Why families choose us',
+    bio: 'Tutor bio & safeguarding',
+    faq: 'FAQ',
     freeform: 'Free-form section',
 }
 
@@ -41,12 +52,24 @@ type SubjectRow = {
 /** A journey step or selling point while being edited. */
 type PointRow = { key: string; title: string; detail: string }
 
+/** The bio while being edited: qualifications as one-per-line text. */
+type BioDraft = {
+    heading: string
+    body: string
+    qualificationsText: string
+    dbsChecked: boolean
+    safeguarding: string
+}
+
 type Draft = {
     siteName: string
     hero: SiteContent['hero']
     subjects: SubjectRow[]
     journey: PointRow[]
     approach: PointRow[]
+    bio: BioDraft
+    /** FAQ rows ride the PointRow shape: title = question, detail = answer. */
+    faq: PointRow[]
     freeform: SiteContent['freeform']
     sectionOrder: SectionKey[]
 }
@@ -66,6 +89,18 @@ const toDraft = (content: SiteContent): Draft => ({
     approach: content.approach.map((point) => ({
         key: newRowKey(),
         ...point,
+    })),
+    bio: {
+        heading: content.bio.heading,
+        body: content.bio.body,
+        qualificationsText: content.bio.qualifications.join('\n'),
+        dbsChecked: content.bio.dbsChecked,
+        safeguarding: content.bio.safeguarding,
+    },
+    faq: content.faq.map((item) => ({
+        key: newRowKey(),
+        title: item.question,
+        detail: item.answer,
     })),
     freeform: { ...content.freeform },
     sectionOrder: [...content.sectionOrder],
@@ -107,6 +142,24 @@ const assemble = (draft: Draft): SiteContent => ({
     approach: draft.approach
         .filter((row) => row.title.trim() || row.detail.trim())
         .map((row) => ({ title: row.title.trim(), detail: row.detail })),
+    bio: {
+        heading: draft.bio.heading.trim(),
+        body: draft.bio.body,
+        qualifications: draft.bio.qualificationsText
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean),
+        dbsChecked: draft.bio.dbsChecked,
+        safeguarding: draft.bio.safeguarding.trim(),
+    },
+    // Both halves required: the API rejects a question without an answer,
+    // so an incomplete row is dropped rather than failing the publish.
+    faq: draft.faq
+        .filter((row) => row.title.trim() && row.detail.trim())
+        .map((row) => ({
+            question: row.title.trim(),
+            answer: row.detail.trim(),
+        })),
     freeform: draft.freeform,
     sectionOrder: draft.sectionOrder,
 })
@@ -177,7 +230,7 @@ export const SiteEditorView = ({
         })
 
     const editPoint = (
-        list: 'journey' | 'approach',
+        list: 'journey' | 'approach' | 'faq',
         key: string,
         field: 'title' | 'detail',
         value: string
@@ -190,10 +243,14 @@ export const SiteEditorView = ({
         })
 
     const pointsCard = (
-        list: 'journey' | 'approach',
+        list: 'journey' | 'approach' | 'faq',
         heading: string,
         subtitle: string,
-        noun: string
+        noun: string,
+        labels: { title: string; detail: string } = {
+            title: 'Title',
+            detail: 'Detail',
+        }
     ) => (
         <div className="card">
             <div className="section-header">
@@ -237,7 +294,7 @@ export const SiteEditorView = ({
                         >
                             <div className="site-editor-point-row">
                                 <TextField
-                                    label="Title"
+                                    label={labels.title}
                                     size="small"
                                     value={row.title}
                                     onChange={(event) =>
@@ -250,7 +307,7 @@ export const SiteEditorView = ({
                                     }
                                 />
                                 <TextField
-                                    label="Detail"
+                                    label={labels.detail}
                                     size="small"
                                     multiline
                                     value={row.detail}
@@ -590,6 +647,119 @@ export const SiteEditorView = ({
                         `Why families choose ${draft.siteName.trim() || 'us'}`,
                         'The selling points, each a short claim with the detail behind it.',
                         'selling point'
+                    )}
+
+                    <div className="card">
+                        <h4 className="offerings-heading">
+                            Tutor bio &amp; safeguarding
+                        </h4>
+                        <p className="section-subtitle">
+                            Who you are, your qualifications, and the
+                            safeguarding facts parents look for. Leave it all
+                            blank to hide the section — the DBS badge shows
+                            only when you tick it.
+                        </p>
+                        <div className="site-editor-fields">
+                            <TextField
+                                label="Bio heading"
+                                size="small"
+                                value={draft.bio.heading}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.bio.heading = event.target.value
+                                    })
+                                }
+                                helperText="e.g. “Meet your tutor”."
+                            />
+                            <TextField
+                                label="About you (Markdown)"
+                                size="small"
+                                multiline
+                                minRows={4}
+                                value={draft.bio.body}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.bio.body = event.target.value
+                                    })
+                                }
+                                helperText="Who you are, how long you've taught, what you believe about teaching."
+                            />
+                            <TextField
+                                label="Qualifications — one per line"
+                                size="small"
+                                multiline
+                                minRows={3}
+                                value={draft.bio.qualificationsText}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.bio.qualificationsText =
+                                            event.target.value
+                                    })
+                                }
+                                helperText="Each line becomes a pill, e.g. “PGCE, Secondary Mathematics”."
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={draft.bio.dbsChecked}
+                                        onChange={(event) =>
+                                            edit((next) => {
+                                                next.bio.dbsChecked =
+                                                    event.target.checked
+                                            })
+                                        }
+                                    />
+                                }
+                                label="Show the “Enhanced DBS checked” badge — tick only if your certificate is current"
+                            />
+                            <TextField
+                                label="Safeguarding statement"
+                                size="small"
+                                multiline
+                                value={draft.bio.safeguarding}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.bio.safeguarding =
+                                            event.target.value
+                                    })
+                                }
+                                helperText="A short line on how lessons are kept safe — parents in the loop, records kept, and so on."
+                            />
+                        </div>
+                    </div>
+
+                    {pointsCard(
+                        'faq',
+                        'FAQ',
+                        'The questions families ask, each with your answer. An entry missing either half is left out when you publish.',
+                        'question',
+                        { title: 'Question', detail: 'Answer' }
+                    )}
+                    {draft.faq.length === 0 && (
+                        <div className="card site-editor-faq-starter">
+                            <p className="section-subtitle">
+                                Not sure where to begin? Load the suggested
+                                questions and edit them to fit — nothing goes
+                                live until you publish.
+                            </p>
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() =>
+                                    edit((next) => {
+                                        next.faq = defaultSiteContent.faq.map(
+                                            (item) => ({
+                                                key: newRowKey(),
+                                                title: item.question,
+                                                detail: item.answer,
+                                            })
+                                        )
+                                    })
+                                }
+                            >
+                                Add the starter questions
+                            </Button>
+                        </div>
                     )}
 
                     <div className="card">

@@ -52,12 +52,38 @@ export type FreeformSection = {
     markdown: string
 }
 
+/**
+ * The tutor bio + safeguarding (REQ-021). Every field may be empty and the
+ * public section hides until something is written — nothing here is ever
+ * invented on the owner's behalf, least of all the DBS indicator.
+ */
+export type BioSection = {
+    /** e.g. "Meet your tutor". */
+    heading: string
+    /** Who the tutor is — Markdown, like the free-form section. */
+    body: string
+    /** Qualification bullet lines, e.g. "PGCE, Secondary Mathematics". */
+    qualifications: string[]
+    /** Shows the DBS-checked indicator — only ever set by the owner. */
+    dbsChecked: boolean
+    /** A short safeguarding statement. */
+    safeguarding: string
+}
+
+/** One FAQ entry (REQ-025). Plain text; the API strips HTML on write. */
+export type FaqItem = {
+    question: string
+    answer: string
+}
+
 /** The reorderable page sections, in their canonical order (REQ-008). */
 export const sectionKeys = [
     'hero',
     'subjects',
     'journey',
     'approach',
+    'bio',
+    'faq',
     'freeform',
 ] as const
 
@@ -74,9 +100,37 @@ export type SiteContent = {
     subjects: SubjectOffering[]
     journey: JourneyStep[]
     approach: ApproachPoint[]
+    bio: BioSection
+    faq: FaqItem[]
     freeform: FreeformSection
     sectionOrder: SectionKey[]
 }
+
+/** An empty bio — what older documents are filled with, and the reset. */
+export const emptyBio: BioSection = {
+    heading: '',
+    body: '',
+    qualifications: [],
+    dbsChecked: false,
+    safeguarding: '',
+}
+
+/**
+ * Fills a document from an older API (no bio/faq, 5-key order) so every
+ * consumer sees the full shape — with EMPTY new sections, never drafts the
+ * owner hasn't approved.
+ */
+export const normaliseSiteContent = (
+    content: SiteContent
+): SiteContent => ({
+    ...content,
+    bio: content.bio ?? emptyBio,
+    faq: content.faq ?? [],
+    sectionOrder: [
+        ...content.sectionOrder,
+        ...sectionKeys.filter((key) => !content.sectionOrder.includes(key)),
+    ],
+})
 
 /** The bundled fallback — the same copy the site has always shipped. */
 export const defaultSiteContent: SiteContent = {
@@ -151,9 +205,45 @@ export const defaultSiteContent: SiteContent = {
             detail: 'You get a clear picture of where your child stands, without having to ask for it.',
         },
     ],
+    // Empty until the teacher writes it — an empty bio renders nothing, and
+    // the DBS indicator is only ever switched on by the owner (REQ-021).
+    bio: { ...emptyBio },
+    // A starter set the owner reviews and edits before publishing (REQ-025);
+    // it mirrors the API's bundled default. Every answer sticks to what the
+    // site already claims — no invented policies, prices or promises.
+    faq: [
+        {
+            question: 'What subjects and levels do you cover?',
+            answer: 'Maths and the sciences, from KS3 through GCSE to A-level. Lessons follow your child’s own exam board and specification, not a generic syllabus.',
+        },
+        {
+            question: 'Are lessons online or in person?',
+            answer: 'Both — choose whichever suits your family, or mix the two. Online lessons are live and interactive, never pre-recorded.',
+        },
+        {
+            question: 'Are lessons one-to-one or in groups?',
+            answer: 'Most lessons are one-to-one. Small group sessions also run where a few students at the same level learn well together.',
+        },
+        {
+            question: 'How do we get started?',
+            answer: 'Request a free assessment. We talk through where your child is now and what success looks like, then agree a plan — no commitment until you’re happy.',
+        },
+        {
+            question: 'How will we know it’s working?',
+            answer: 'Every lesson ends with a written note of what was covered and what to practise, and progress is reviewed against the goals we agree at the start — you stay in the loop without having to ask.',
+        },
+    ],
     // Empty until the teacher writes one — an empty section renders nothing.
     freeform: { heading: '', markdown: '' },
-    sectionOrder: ['hero', 'subjects', 'journey', 'approach', 'freeform'],
+    sectionOrder: [
+        'hero',
+        'subjects',
+        'journey',
+        'approach',
+        'bio',
+        'faq',
+        'freeform',
+    ],
 }
 
 /** Strips spacing so a displayed number is still a valid `tel:` target. */

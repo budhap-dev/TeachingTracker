@@ -22,6 +22,40 @@ describe('site-content api (REQ-008)', () => {
         )
     })
 
+    it('normalises a document from an older API: empty bio/faq, keys appended', async () => {
+        // A published document from before REQ-021/025 — no bio, no faq,
+        // five-key section order.
+        const older: Record<string, unknown> = {
+            ...defaultSiteContent,
+            sectionOrder: [
+                'hero',
+                'subjects',
+                'journey',
+                'approach',
+                'freeform',
+            ],
+        }
+        delete older.bio
+        delete older.faq
+        const fetchMock = jsonResponse(older)
+        vi.stubGlobal('fetch', fetchMock)
+
+        const served = await fetchSiteContent()
+        // Empty — never the bundled drafts the owner hasn't approved.
+        expect(served.faq).toEqual([])
+        expect(served.bio.dbsChecked).toBe(false)
+        expect(served.bio.heading).toBe('')
+        expect(served.sectionOrder).toEqual([
+            'hero',
+            'subjects',
+            'journey',
+            'approach',
+            'freeform',
+            'bio',
+            'faq',
+        ])
+    })
+
     it('publishes via PUT /site-content and returns the sanitised copy', async () => {
         const published = { ...defaultSiteContent, siteName: 'Harbour Tuition' }
         const fetchMock = jsonResponse(published)
