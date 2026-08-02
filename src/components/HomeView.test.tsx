@@ -24,15 +24,6 @@ const reviews: Testimonial[] = [1, 2, 3, 4].map((id) => ({
     submittedOn: `2026-0${id}-01`,
 }))
 
-const outcomes = {
-    studentsTaught: 9,
-    sessionsDelivered: 120,
-    hoursDelivered: 110,
-    subjectsCount: 4,
-    averageRating: 4.9,
-    reviewCount: 12,
-}
-
 // The bundled default states 20 years of experience; this variant keeps a
 // hero without it, for the strip's fully-empty case.
 const contentWithoutExperience = {
@@ -42,16 +33,11 @@ const contentWithoutExperience = {
 
 const renderHome = (
     testimonials: Testimonial[] = reviews,
-    tallies: typeof outcomes | null = null,
     content = defaultSiteContent
 ) =>
     render(
         <MemoryRouter>
-            <HomeView
-                testimonials={testimonials}
-                content={content}
-                outcomes={tallies}
-            />
+            <HomeView testimonials={testimonials} content={content} />
         </MemoryRouter>
     )
 
@@ -97,62 +83,39 @@ describe('HomeView', () => {
         ).toBeInTheDocument()
     })
 
-    it('shows the outcomes strip: experience first, then the live tallies (REQ-020)', () => {
-        renderHome(reviews, outcomes)
+    it('shows the record strip: stated experience + the approved-review rating (REQ-020)', () => {
+        renderHome()
 
         const strip = screen.getByRole('list', {
             name: /teaching record so far/i,
         })
-        expect(strip).toHaveTextContent(
-            '20+years of tutoring experience'
-        )
-        expect(strip).toHaveTextContent('9students taught')
-        expect(strip).toHaveTextContent('120classes delivered')
-        expect(strip).toHaveTextContent('110hours of teaching')
-        expect(strip).toHaveTextContent('4.9★from 12 family reviews')
+        expect(strip).toHaveTextContent('20+years of tutoring experience')
+        // The fixture's four approved five-star reviews average to 5.
+        expect(strip).toHaveTextContent('5★from 4 family reviews')
     })
 
-    it('keeps the experience tile even while tallies are missing', () => {
-        // Tallies not yet loaded (or the API is away): the teacher-stated
-        // experience still shows — it comes from site content, not the API.
-        renderHome()
+    it('hides tiles with nothing to say, and the whole strip when both are empty', () => {
+        // Experience stated, no reviews yet: the rating tile stays out.
+        renderHome([])
         const strip = screen.getByRole('list', {
             name: /teaching record so far/i,
         })
         expect(strip).toHaveTextContent('years of tutoring experience')
-        expect(strip).not.toHaveTextContent('students taught')
-    })
+        expect(strip).not.toHaveTextContent('family review')
 
-    it('hides empty tiles, and the whole strip when there is nothing to show', () => {
-        // A roster with no held classes yet brags about nothing but the roster.
-        renderHome(
-            reviews,
-            {
-                ...outcomes,
-                sessionsDelivered: 0,
-                hoursDelivered: 0,
-                averageRating: 0,
-                reviewCount: 0,
-            },
-            contentWithoutExperience
-        )
-        const strip = screen.getByRole('list', {
+        // Reviews but no stated experience: only the rating tile.
+        renderHome([reviews[0]], contentWithoutExperience)
+        const ratingOnly = screen.getAllByRole('list', {
             name: /teaching record so far/i,
-        })
-        expect(strip).toHaveTextContent('students taught')
-        expect(strip).not.toHaveTextContent('classes delivered')
-        expect(strip).not.toHaveTextContent('family reviews')
-        expect(strip).not.toHaveTextContent('years of tutoring experience')
+        })[1]
+        expect(ratingOnly).toHaveTextContent('5★from 1 family review')
+        expect(ratingOnly).not.toHaveTextContent('experience')
 
-        // No experience stated, no students taught: no strip at all.
-        renderHome(
-            reviews,
-            { ...outcomes, studentsTaught: 0 },
-            contentWithoutExperience
-        )
+        // Neither: no strip at all.
+        renderHome([], contentWithoutExperience)
         expect(
             screen.queryAllByRole('list', { name: /teaching record so far/i })
-        ).toHaveLength(1) // only the earlier render's strip, not a new one
+        ).toHaveLength(2) // the two earlier renders' strips, no new one
     })
 
     it('sets the page title and description while mounted, restoring after', () => {

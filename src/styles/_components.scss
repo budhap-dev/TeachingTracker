@@ -2858,41 +2858,63 @@ $note-rule: 32px;
     font-size: 0.9rem;
 }
 
-/* The outcomes strip (REQ-020): a row of stat tiles — value over label, text
-   ink (the number is the message; colour would add nothing), evenly spread.
-   Phones fall to a 2-up grid via _responsive.scss. */
+/* The record strip (REQ-020): the site's two trust numbers, showcased — a
+   theme-tinted gradient band, big ink numerals over quiet uppercase labels,
+   a hairline between the stats, the star in review gold. Colour lives in
+   the band and the star; the numbers stay ink, so they do the talking. */
 .outcomes-strip {
     list-style: none;
     margin: 0;
-    padding: 18px 20px;
+    padding: 26px 20px;
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around;
-    gap: 16px;
+    justify-content: center;
+    align-items: stretch;
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--accent) 14%, var(--surface)),
+        color-mix(in srgb, var(--accent-alt) 16%, var(--surface))
+    );
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
 
     li {
+        flex: 1 1 0;
+        max-width: 340px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 2px;
+        justify-content: center;
+        gap: 6px;
         text-align: center;
+        padding: 4px 28px;
+    }
+
+    li + li {
+        border-left: 1px solid
+            color-mix(in srgb, var(--accent) 28%, var(--border));
     }
 
     strong {
-        font-size: 1.7rem;
-        font-weight: 700;
-        line-height: 1.1;
+        font-size: 2.3rem;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.02em;
     }
 
-    /* The rating's star: part of the value, a touch smaller than the digits. */
+    /* The rating's star: part of the value, in the review gold both themes
+       already use for stars. */
     strong span {
-        font-size: 1.1rem;
-        margin-left: 2px;
+        font-size: 1.4rem;
+        margin-left: 4px;
+        color: #faaf00;
     }
 
     li > span {
         color: var(--muted);
-        font-size: 0.85rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
     }
 }
 

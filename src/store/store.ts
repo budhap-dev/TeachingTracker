@@ -18,7 +18,6 @@ import type { TestimonialInput } from '../api/reviews'
 import type { LeadInput } from '../api/leads'
 import type { SiteContent } from '../data/siteContent'
 import { defaultSiteContent } from '../data/siteContent'
-import type { Outcomes } from '../data/outcomes'
 import type { ContactInput } from '../api/contact'
 import { rootSaga } from './sagas'
 
@@ -77,9 +76,6 @@ type StudentState = {
     // editor's in-flight flag.
     siteContent: SiteContent
     publishingSiteContent: boolean
-    /** The public outcomes strip's tallies (REQ-020); null until fetched,
-        and the strip simply doesn't render. */
-    outcomes: Outcomes | null
     // Leads (REQ-018/019): the teacher's enquiries inbox, plus the public
     // form's in-flight flag.
     leads: Lead[]
@@ -152,7 +148,6 @@ const createInitialState = (): StudentState => ({
     hasLocalStudentChanges: false,
     siteContent: defaultSiteContent,
     publishingSiteContent: false,
-    outcomes: null,
     leads: [],
     leadsLoading: true,
     savingLead: false,
@@ -549,19 +544,6 @@ const studentSlice = createSlice({
             state.publishingSiteContent = false
             fail(state, action.payload)
         },
-        // --- Outcomes strip (REQ-020) ---
-        fetchOutcomesRequested: () => {
-            // No loading flag: the strip appears when the tallies land.
-        },
-        fetchOutcomesSucceeded: (
-            state,
-            action: PayloadAction<Outcomes>
-        ) => {
-            state.outcomes = action.payload
-        },
-        fetchOutcomesFailed: () => {
-            // Silent like site content: a visitor just doesn't get the strip.
-        },
         // --- Leads: teacher inbox (REQ-019) ---
         fetchLeadsRequested: (state) => {
             state.leadsLoading = true
@@ -820,9 +802,6 @@ export const {
     publishSiteContentRequested,
     publishSiteContentSucceeded,
     publishSiteContentFailed,
-    fetchOutcomesRequested,
-    fetchOutcomesSucceeded,
-    fetchOutcomesFailed,
     fetchLeadsRequested,
     fetchLeadsSucceeded,
     fetchLeadsFailed,

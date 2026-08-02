@@ -863,20 +863,21 @@ follow them up and convert the good ones into students.
 
 ## REQ-020 — Testimonials and outcomes
 
-**Status:** 🚧 Built (2026-08-02, in review — uncommitted in both working
-trees) · **Impact:** both · **Effort:** M · **Depends on:** REQ-008 (content,
-done), REQ-009 (store, done) · **Delivered:** public `GET /outcomes`
-(anonymous, aggregate-only: students taught, sessions delivered with a group
-class counted once, hours, distinct subjects, and the approved-review star
-rating — computed from live data on every read, never stored) + an outcomes
-strip on the public Home that renders only when there is a record to show
-and hides empty tiles. The strip leads with a teacher-stated "20+ years of
-tutoring experience" tile — owner-entered via the site editor's Hero section
-(`hero.experienceYears`, sanitised 1–99 on write), not hardcoded; blank
-hides it. ⚠️ If a published site-content document already exists, the field
-is absent from it — set it in the editor and publish once to show the tile. _(Average progress was built, then dropped by the
-owner 2026-08-02 — a public "72% average progress" invites misreading; the
-review rating replaced it as the trust number.)_
+**Status:** 🚧 In review (PRs raised 2026-08-02: frontend #64, backend #50) ·
+**Impact:** both · **Effort:** M · **Depends on:** REQ-008 (content, done),
+REQ-009 (store, done) · **Delivered:** a record strip on the public Home
+with two tiles: a teacher-stated "20+ years of tutoring experience"
+(owner-entered via the site editor's Hero section — `hero.experienceYears`,
+sanitised 1–99 on write; blank hides it) and the approved-review star
+rating, averaged in the browser from the reviews the page already loads
+(REQ-027) — no new endpoint. ⚠️ If a published site-content document
+already exists, the experience field is absent from it — set it in the
+editor and publish once to show the tile. _(The app-data tallies — students
+taught, classes delivered, hours, average progress — were first built as a
+public `GET /outcomes`, then **dropped by the owner 2026-08-02**: the
+numbers didn't sell the service, and average progress invites misreading.
+The endpoint went with them; the PR history keeps the code if a future
+story wants tallies back.)_
 
 **Story**
 As a parent, I want to see testimonials and real outcomes, so that I trust this
@@ -889,8 +890,9 @@ tutor with my child.
       see the split note below.
 - [x] An outcomes strip: e.g. students taught, sessions delivered, average
       progress — sourced from real app data where possible, not invented.
-      _(`GET /outcomes` + the Home strip; a group class counts once, matching
-      the dashboard's week-load rule.)_
+      _(Delivered as the record strip — stated experience + review rating.
+      The app-data tallies were built and then dropped by the owner; see the
+      status note.)_
 - [x] ~~Testimonial content is teacher-editable via REQ-008; nothing
       hardcoded.~~ Owned by REQ-027's moderation flow.
 - [x] Frontend coverage stays 100%. _(Thresholds are 90% since PR #51; the
