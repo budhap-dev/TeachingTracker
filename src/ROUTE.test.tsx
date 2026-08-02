@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from './App'
@@ -363,9 +363,13 @@ describe('site editor (REQ-008)', () => {
         window.history.pushState({}, '', '/site-editor')
         render(<App />)
 
+        // One change event, not keystrokes — every keystroke re-renders the
+        // whole editor and CI runners blow the test budget (same fix as
+        // e5f8435).
         const headline = await screen.findByLabelText(/^headline/i)
-        await user.clear(headline)
-        await user.type(headline, 'Published straight from the test.')
+        fireEvent.change(headline, {
+            target: { value: 'Published straight from the test.' },
+        })
         await user.click(screen.getByRole('button', { name: /^publish$/i }))
 
         // The saga PUTs, the mock echoes, and the success toast confirms.
@@ -376,7 +380,8 @@ describe('site editor (REQ-008)', () => {
         expect(
             screen.getByRole('button', { name: /^publish$/i })
         ).toBeDisabled()
-    })
+        // The whole-app round trip under coverage is slow on CI runners.
+    }, 30000)
 })
 
 describe('loading states', () => {

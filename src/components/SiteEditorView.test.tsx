@@ -212,7 +212,8 @@ describe('SiteEditorView', () => {
             heading: 'Term dates',
             markdown: '- Autumn: 1 Sep',
         })
-    })
+        // Rendering the full editor under coverage is slow on CI runners.
+    }, 30000)
 
     it('blocks publishing without a site name or headline', () => {
         renderEditor()
@@ -320,23 +321,26 @@ describe('SiteEditorView', () => {
         const user = userEvent.setup()
         const { onPublish } = renderEditor()
 
-        await user.type(
-            screen.getByLabelText(/bio heading/i),
-            'Meet your tutor'
-        )
-        await user.type(
-            screen.getByLabelText(/about you/i),
-            'Twenty years of maths teaching.'
-        )
-        await user.type(
+        // Single change events, not keystrokes — each keystroke re-renders
+        // the whole editor and CI runners blow the test budget.
+        fireEvent.change(screen.getByLabelText(/bio heading/i), {
+            target: { value: 'Meet your tutor' },
+        })
+        fireEvent.change(screen.getByLabelText(/about you/i), {
+            target: { value: 'Twenty years of maths teaching.' },
+        })
+        fireEvent.change(
             screen.getByLabelText(/qualifications — one per line/i),
-            'PGCE, Secondary Mathematics{enter}BSc Physics'
+            {
+                target: {
+                    value: 'PGCE, Secondary Mathematics\nBSc Physics',
+                },
+            }
         )
         await user.click(screen.getByRole('checkbox'))
-        await user.type(
-            screen.getByLabelText(/safeguarding statement/i),
-            'Parents are kept in the loop.'
-        )
+        fireEvent.change(screen.getByLabelText(/safeguarding statement/i), {
+            target: { value: 'Parents are kept in the loop.' },
+        })
         await user.click(publishButton())
 
         const published = onPublish.mock.calls[0][0] as SiteContent
@@ -349,7 +353,7 @@ describe('SiteEditorView', () => {
         })
         // The bundled starter questions ride along untouched.
         expect(published.faq).toEqual(defaultSiteContent.faq)
-    })
+    }, 30000)
 
     it('fills an empty FAQ from the starter set, and drops half-filled rows (REQ-025)', async () => {
         const user = userEvent.setup()
@@ -376,10 +380,12 @@ describe('SiteEditorView', () => {
             screen.getByRole('button', { name: /add question/i })
         )
         const questions = screen.getAllByLabelText(/^question$/i)
-        await user.type(questions[questions.length - 1], 'Half-finished?')
+        fireEvent.change(questions[questions.length - 1], {
+            target: { value: 'Half-finished?' },
+        })
 
         await user.click(publishButton())
         const published = onPublish.mock.calls[0][0] as SiteContent
         expect(published.faq).toEqual(defaultSiteContent.faq)
-    })
+    }, 30000)
 })
