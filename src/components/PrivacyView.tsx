@@ -47,8 +47,8 @@ const inventory: InventoryRow[] = [
 
 export const PrivacyView = () => {
     useDocumentMeta(
-        'Privacy policy — Springboard Tutoring',
-        'What Springboard Tutoring collects, why, how long it is kept, and your rights — including how to ask for your family’s details to be corrected or deleted.'
+        'Privacy policy — AbhiTutor',
+        'What AbhiTutor collects, why, how long it is kept, and your rights — including how to ask for your family’s details to be corrected or deleted.'
     )
 
     return (
@@ -59,7 +59,7 @@ export const PrivacyView = () => {
                     Privacy policy
                 </h3>
                 <p className="section-subtitle">
-                    How Springboard Tutoring handles your family&apos;s
+                    How AbhiTutor handles your family&apos;s
                     details. Short version: we collect only what tutoring
                     needs, we never sell or share it for marketing, and you
                     can ask for it — or ask for it to be gone — at any time.
@@ -70,7 +70,7 @@ export const PrivacyView = () => {
             <div className="card">
                 <h4 className="offerings-heading">Who we are</h4>
                 <p>
-                    Springboard Tutoring is a small, single-tutor teaching
+                    AbhiTutor is a small, single-tutor teaching
                     practice, and the tutor is the data controller for
                     everything described here. For anything in this policy —
                     questions, requests, corrections — use the details on the{' '}

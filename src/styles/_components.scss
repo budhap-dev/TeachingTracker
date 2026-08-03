@@ -1,3 +1,161 @@
+/* The AbhiTutor brand (REQ-035): "Abhi" signed in Alex Brush, "Tutor"
+   upright, the green ink mark beneath, and (in the full lockup) the slim
+   pen resting after the name. The face ships with the app — no request. */
+@font-face {
+    font-family: 'Alex Brush';
+    /* Resolved against the SCSS entry (src/styles.scss), not this partial —
+       hence no `../`. A wrong path here fails SILENTLY into a system
+       cursive, so check the build output lists the woff2. */
+    src: url('./assets/fonts/alex-brush.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+.brand-logo {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1;
+}
+
+.brand-wordline {
+    display: inline-flex;
+    align-items: baseline;
+    /* The wordmark is one gesture — it never wraps mid-name. */
+    white-space: nowrap;
+}
+
+.brand-abhi {
+    font-family: 'Alex Brush', cursive;
+    font-weight: 400;
+    font-size: 2.1em;
+    line-height: 0.9;
+    color: var(--brand-abhi);
+    margin-right: 0.14em;
+}
+
+.brand-tutor {
+    font-weight: 800;
+    font-size: 1.32em;
+    letter-spacing: -0.02em;
+    /* White everywhere the brand appears (owner call) — the pale-chrome
+       themes swap the variable so it never sits white-on-pale. */
+    color: var(--brand-tutor);
+}
+
+.brand-pen {
+    margin-left: 0.45em;
+    transform: translateY(0.28em);
+    /* The barrel wears Tutor's colour. */
+    color: var(--brand-tutor);
+}
+
+.brand-mark {
+    margin-top: -0.24em;
+    margin-left: 0.15em;
+    fill: var(--brand-mark);
+}
+
+/* On the sidebar's band the brand reads in the band's own light (or, on the
+   pale-chrome themes, dark) colours. */
+.sidebar .brand-abhi {
+    color: var(--sidebar-brand-abhi);
+}
+
+.sidebar .brand-mark {
+    fill: var(--sidebar-brand-mark);
+}
+
+/* The badge: self-contained on any surface — its disc IS its ground. */
+.brand-badge {
+    border-radius: 50%;
+    border-style: solid;
+    border-color: #0284c7;
+    background: linear-gradient(135deg, #0b1f33, #123152);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.brand-badge-word {
+    display: inline-flex;
+    align-items: baseline;
+    line-height: 1;
+}
+
+.brand-badge-a {
+    font-family: 'Alex Brush', cursive;
+    /* The same luminous sky as the lockups' "Abhi". */
+    color: #8fdcff;
+    line-height: 0.9;
+}
+
+.brand-badge-t {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+}
+
+.brand-badge-tick {
+    fill: #4ade80;
+    margin-top: 4%;
+}
+
+/* Sidebar header: badge + wordmark as one brand block. The h1's default
+   1.8rem would scale the em-based lockup to ~220px and burst the 280px
+   sidebar — the block sets its own base size so everything fits. */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+
+    h1 {
+        margin: 0;
+        line-height: 1;
+        font-size: 1rem;
+    }
+
+    p {
+        margin: 4px 0 0;
+        font-size: 0.82rem;
+    }
+}
+
+/* The topbar's h2 sizes the visitor lockup the same way. */
+.topbar-greeting h2 .brand-logo {
+    font-size: 1.05rem;
+}
+
+/* The offer line sits under the lockup, clear of the ink mark. */
+.visitor-offer-line {
+    margin-top: 6px;
+}
+
+/* Home hero: the badge leads, large — the brand's front-door moment. The
+   text block may wrap; the badge never shrinks or distorts. */
+.home-hero-brand {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+
+    > div {
+        min-width: 0;
+    }
+
+    .eyebrow {
+        margin-bottom: 2px;
+    }
+
+    .offerings-hero-headline {
+        margin: 0;
+    }
+}
+
 .table-wrapper {
     overflow-x: auto;
     max-width: 100%;

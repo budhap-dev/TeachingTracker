@@ -130,10 +130,10 @@ describe('HomeView', () => {
         document.head.appendChild(meta)
 
         const { unmount } = renderHome()
-        expect(document.title).toMatch(/springboard tutoring/i)
+        expect(document.title).toMatch(/abhitutor/i)
         expect(meta.getAttribute('content')).toMatch(/personal tutoring/i)
         unmount()
-        expect(document.title).toMatch(/springboard tutoring/i)
+        expect(document.title).toMatch(/abhitutor/i)
         expect(meta.getAttribute('content')).toMatch(/personal tutoring/i)
         meta.remove()
     })

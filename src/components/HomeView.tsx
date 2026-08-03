@@ -8,6 +8,7 @@ import {
 } from '../store/store'
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { signIn } from '../auth/msal'
+import { BrandBadge } from './BrandBadge'
 
 import { paths } from '../paths'
 import type { Testimonial } from '../data/students'
@@ -32,7 +33,7 @@ const journeyIcons = ['💬', '📝', '🎯', '📅']
  */
 export const HomeView = ({ testimonials, content }: HomeViewProps) => {
     useDocumentMeta(
-        'Springboard Tutoring — one-to-one tutoring that builds confidence',
+        'AbhiTutor — Where confidence takes off.',
         'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
     )
     const { hero, journey } = content
@@ -55,8 +56,18 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
     return (
         <section className="content-stack home-view">
             <div className="card offerings-hero home-hero">
-                <p className="eyebrow">{content.siteName}</p>
-                <h3 className="offerings-hero-headline">{hero.headline}</h3>
+                {/* The badge leads the front door (REQ-035): self-grounded,
+                    so it carries the brand onto the light card where the
+                    white-Tutor lockup cannot go. */}
+                <div className="home-hero-brand">
+                    <BrandBadge size={64} />
+                    <div>
+                        <p className="eyebrow">{content.siteName}</p>
+                        <h3 className="offerings-hero-headline">
+                            {hero.headline}
+                        </h3>
+                    </div>
+                </div>
                 <p className="offerings-hero-subhead">{hero.subhead}</p>
                 {hero.availability && (
                     <p className="offerings-availability">

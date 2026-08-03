@@ -181,7 +181,7 @@ describe('TopbarGreeting', () => {
         mockAccount = null
         render(<TopbarGreeting quote="Keep going" />)
         expect(
-            screen.getByRole('heading', { name: /springboard tutoring/i })
+            screen.getByRole('heading', { name: /abhitutor/i })
         ).toBeInTheDocument()
         expect(
             screen.getByText(/maths & sciences · years 7 to 13/i)

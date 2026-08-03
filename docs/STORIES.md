@@ -108,6 +108,7 @@ XS is an afternoon, XL is a project.
 | — | | **Planner stories** (drafted 2026-07-17; missed by the table until 2026-08-02) | | | |
 | 33 | ✅ | [REQ-011 — Group sessions](#req-011--group-sessions-several-students-attend-one-class) | L | both | — (shipped with the planner UX pack, merged 2026-07-30) |
 | 34 | ✅ | [REQ-012 — Planner subject multi-select](#req-012--class-planner-subject-is-a-multi-select) | S | frontend | — (shipped with the planner UX pack; see deviations in the story) |
+| 35 | 🔲 | [REQ-035 — Custom domain for the production app](#req-035--custom-domain-for-the-production-app) | S | infra + both | — (future; owner buys the domain — the rest is free) |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -1538,3 +1539,136 @@ challenge is answered by opening a file, not by reconstruction.
   REQ-031's policy honest — every claim on the public page traces to a line
   here.
 - UK framing (ICO, UK GDPR); EU visitors are covered by the same controls.
+
+## REQ-035 — Custom domain for the production app
+
+**Status:** 🔲 Not started (future) · **Impact:** infra + both · **Effort:** S ·
+**Blocked by:** the owner registering a domain
+
+**Story**
+As the owner, I want the production site on a proper domain instead of the
+generated `*.azurestaticapps.net` address, so that the site looks
+legitimate to parents and is easy to say out loud — at no running cost
+beyond the domain itself.
+
+**Chosen name** _(owner, 2026-08-03)_: **`abhitutor.co.uk`** or
+**`abhitutor.com`**. Both checked and **unregistered** as of 2026-08-03
+(WHOIS "No match", no DNS) — availability is not a reservation, so register
+before announcing anything; ideally take both (~£15/yr total) and redirect
+one to the other.
+
+**Name research** _(2026-08-03)_
+
+- **"Learn with Abhi" was considered and rejected**: `learnwithabhi.com` is
+  an active education site ("LearnWithAbhi — Learn. Build. Grow",
+  registered 2025-07) — same name, same sector; trading as Learn with Abhi
+  would mean living in their shadow even on a `.co.uk`.
+- **"AbhiTutor" is clean**: no site, no search presence. Nearest neighbour
+  is "AB Tutor" (abtutor.com, UK classroom-management *software*) —
+  different name and product, low risk, noted for awareness.
+
+**The rename** _(agreed 2026-08-03)_ — the brand becomes **"AbhiTutor"**:
+one word, capital A and T, exactly matching the domain (never "Abhi
+Tutor"). The tagline is **"Where confidence takes off."** everywhere
+(owner call 2026-08-03 — replacing "one-to-one tutoring that builds
+confidence", and matching the line the sidebar always had).
+
+**Applied 2026-08-03 (in review, uncommitted)** — the owner decoupled the
+rename from the domain and had the brand applied immediately: every
+"Springboard Tutoring" string renamed in both repos (title/OG tags,
+meta defaults, privacy page, Reviews/Enquire copy, bundled site-content
+defaults); the **lockup** built as `BrandLogo.tsx` (Alex Brush bundled
+~22 KB, brand CSS variables with dark-theme + pale-sidebar overrides) and
+mounted in the sidebar (compact, no pen) and the signed-out topbar (full,
+with pen); the **badge favicon** generated as `public/badge.svg` with the
+Alex Brush "A" traced to a path (favicons can't load fonts) over the navy
+disc + sky ring + green tick; `theme-color` now brand sky. Suites green:
+499 frontend / 110 backend. Still domain-gated: sitemap/OG URLs and the
+site-editor siteName publish (the live published document still says
+Springboard Tutoring until the owner republishes).
+"Learn with Abhi" may appear only as a small strapline (e.g. in the hero
+subhead), never as the brand. Rename and domain cutover happen together,
+after the domain is registered. Where each "Springboard Tutoring" goes:
+
+| Surface | Becomes |
+|---|---|
+| Site name (site editor → headings like "Why families choose …") | AbhiTutor |
+| Topbar visitor headline (`TopbarAuth.tsx`, hardcoded) | AbhiTutor |
+| Browser tab / OG title (`index.html`, `useDocumentMeta.ts`) | AbhiTutor — Where confidence takes off. |
+| Privacy page + collection notices (`PrivacyView.tsx`) | AbhiTutor |
+| Bundled content defaults (`data/siteContent.ts`, both repos) | AbhiTutor |
+| Sidebar, Enquire, Reviews copy (grep `Springboard`) | AbhiTutor |
+
+**The logo** _(owner-approved 2026-08-03 after eight design rounds; mock-up:
+claude.ai/code/artifact/cad8952e-8feb-4ff9-9282-6fe5e67ee4c5)_
+
+- **Wordmark**: "Abhi" in **Alex Brush** (OFL, ~22 KB woff2, bundled — no
+  Google request) in the Summer sky (`#0284c7`; `#7dd3fc` on dark) +
+  **"Tutor" in Inter 800, white everywhere** (owner call 2026-08-03 — the
+  lockup lives on the dark sidebar/topbar bands; the two pale-chrome
+  themes swap `--brand-tutor` to their band ink so it never sits
+  white-on-pale). The pen's barrel wears Tutor's colour.
+- **The mark**: a fountain-pen ink stroke (hairline in → pressured swell →
+  fine tail, with a small pool at touch-down) tucked just beneath the
+  lettering, in **bright green** (`#22c55e`; `#4ade80` on dark) — the
+  teacher's tick under the name.
+- **The pen**: a slim fountain pen resting after "Tutor", nib pointing back
+  at the word — **green nib + green grip/band/clip**, barrel in ink
+  (flips near-white on dark grounds). Ships as one SVG with the mark.
+- **The short mark** _(owner-approved 2026-08-03, from ten drafts → three
+  finalists → the dark badge)_: a **circular badge** — navy disc
+  (`#0b1f33 → #123152` gradient), **sky ring** (`#0284c7`, ~3 px at 92,
+  thinning with size), sky-light Alex Brush "A" (`#7dd3fc`), and a
+  **solid white T — no border** (owner call 2026-08-03, superseding the
+  earlier bordered-ink pick: "Tutor is white everywhere, and the logo
+  won't need the white border"), with the green tick + nib beneath.
+  Scale behaviour: full badge
+  at ≥48 px; at 32 px the tick shrinks; **at 16 px the
+  badge reduces to the sky "A" alone**. On dark grounds the badge adds a
+  faint sky outer glow to separate.
+- **Favicon**: the badge, per the scale behaviour above (16 px = sky "A"
+  in the ringed disc).
+- Rejected on the way (recorded so it isn't relitigated): mortarboard/tile
+  concepts (round 1–3), gold ink (round 6 — replaced by green), grafted or
+  restyled "b" (rounds 5–6), Satisfy/Yellowtail/Sacramento/Norican/Style
+  Script/Grand Hotel (rounds 7–8 — Alex Brush won the rematch), and **Fave
+  Script Pro** (commercial, Aerotype — not licensed; do not ship without
+  purchase).
+
+**What "free" gets us** _(researched 2026-08-03)_
+
+- Azure Static Web Apps **Free tier includes custom domains (2 per app) with
+  free managed TLS certificates** — no plan upgrade, no cert to buy or renew.
+- The **only unavoidable cost is the domain registration** (~£5–15/year;
+  genuinely free registrars are gone). Keep DNS at the registrar or on
+  Cloudflare's free tier — Azure DNS is not required.
+- `www.<domain>` is a plain CNAME to the SWA hostname; the apex (naked)
+  domain needs a registrar that supports ALIAS/ANAME/CNAME-flattening, or
+  TXT validation + the registrar's redirect to `www`.
+
+**Acceptance criteria**
+
+- [ ] Prod answers on the custom domain with a valid managed certificate;
+      the `*.azurestaticapps.net` host redirects or is treated as secondary.
+- [ ] Entra sign-in still works: the SPA app registration gains the new
+      redirect URI (REQ-004) — teacher sign-in tested on the new domain.
+- [ ] The API accepts the new origin: Function App CORS updated in
+      Terraform, not by hand in the portal.
+- [ ] SEO artifacts follow the domain (REQ-023): canonical/OG URLs,
+      `sitemap.xml` and `robots.txt` name the custom domain.
+- [ ] The privacy policy/ROPA name the new domain where they reference the
+      site (REQ-031/034).
+- [ ] Terraform holds the custom-domain resource, so the binding is
+      reproducible — nothing click-configured.
+- [ ] The public branding matches the domain: the site name (site editor),
+      topbar and meta/OG tags say AbhiTutor, not Springboard Tutoring —
+      or the owner has explicitly decided they differ.
+
+**Notes**
+
+- Do **not** put the dev environment on a custom domain — the generated
+  hostname is a feature there (obviously not production).
+- Domain choice is the owner's call; UK families read `.co.uk` as local and
+  established. Once registered, the cutover is an afternoon.
+- If email on the domain is ever wanted (enquiries@…), that's a separate
+  paid product (e.g. Zoho free tier / Google Workspace) — out of scope here.

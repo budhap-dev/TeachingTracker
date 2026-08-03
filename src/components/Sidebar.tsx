@@ -20,6 +20,8 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import { isAuthConfigured } from '../auth/msal'
 import { appVersion } from '../version'
 import { paths } from '../paths'
+import { BrandLogo } from './BrandLogo'
+import { BrandBadge } from './BrandBadge'
 
 type NavItem = {
     label: string
@@ -187,9 +189,14 @@ const SidebarContent = ({
             style={{ backgroundImage: sidebarBackground }}
         >
             <div className="sidebar-header">
-                <div>
-                    <h1>Springboard</h1>
-                    <p>Where confidence takes off.</p>
+                <div className="sidebar-brand">
+                    <BrandBadge size={46} />
+                    <div>
+                        <h1 aria-label="AbhiTutor">
+                            <BrandLogo pen={false} />
+                        </h1>
+                        <p>Where confidence takes off.</p>
+                    </div>
                 </div>
                 <button
                     type="button"

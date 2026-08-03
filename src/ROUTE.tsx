@@ -632,7 +632,7 @@ const OfferingsRoute = () => {
         dispatch(fetchSiteContentRequested())
     }, [dispatch])
     useDocumentMeta(
-        'Subjects & how lessons run — Springboard Tutoring',
+        'Subjects & how lessons run — AbhiTutor',
         'Maths, physics, chemistry and biology from KS3 to GCSE and A-level, matched to your exam board — online or in person. See how lessons run, from enquiry to weekly sessions.'
     )
     return (
@@ -676,7 +676,7 @@ const SiteEditorRoute = () => {
 const ContactRouteInner = ({ canEdit }: { canEdit: boolean }) => {
     const dispatch = useAppDispatch()
     useDocumentMeta(
-        'Contact us — Springboard Tutoring',
+        'Contact us — AbhiTutor',
         'Ask about tutoring availability, subjects or a free first assessment — by email, phone or WhatsApp. We usually reply within a day.'
     )
     const contact = useAppSelector((state) => state.students.contact)
@@ -721,8 +721,8 @@ const ContactRoute = () =>
 const ReviewsRoute = () => {
     const dispatch = useAppDispatch()
     useDocumentMeta(
-        'Reviews from families — Springboard Tutoring',
-        'What parents and students say about tutoring with Springboard — real reviews, checked before they appear. Share your own experience too.'
+        'Reviews from families — AbhiTutor',
+        'What parents and students say about tutoring with AbhiTutor — real reviews, checked before they appear. Share your own experience too.'
     )
     const testimonials = useAppSelector(
         (state) => state.students.testimonials

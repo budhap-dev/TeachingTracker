@@ -28,7 +28,7 @@ describe('SiteEditorView', () => {
         renderEditor()
 
         expect(screen.getByLabelText(/site name/i)).toHaveValue(
-            'Springboard Tutoring'
+            'AbhiTutor'
         )
         expect(screen.getByLabelText(/^headline/i)).toHaveValue(
             defaultSiteContent.hero.headline
