@@ -93,7 +93,7 @@ export const ReviewsView = ({
                             Reviews
                         </h3>
                         <p className="section-subtitle">
-                            What families say about tutoring with Springboard.
+                            What families say about tutoring with AbhiTutor.
                         </p>
                     </div>
                 </div>

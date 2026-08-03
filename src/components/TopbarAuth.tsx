@@ -1,6 +1,7 @@
 import { Button } from '@mui/material'
 import { useAccount, useIsAuthenticated, useMsal } from '@azure/msal-react'
 import { isAuthConfigured, signOut } from '../auth/msal'
+import { BrandLogo } from './BrandLogo'
 
 /**
  * Auth widgets for the topbar. Each is split in two so the MSAL hooks only
@@ -36,13 +37,17 @@ const TeacherGreeting = ({ quote }: { quote: string }) => (
     </div>
 )
 
-/** Visitors get the site's identity — brand as the headline, the offer as
-    the eyebrow. It is not their portal, and the daily quote talks to the
-    teacher, so it stays out too. */
+/** Visitors get the site's identity — the signed AbhiTutor lockup as the
+    headline, the offer as the eyebrow. It is not their portal, and the
+    daily quote talks to the teacher, so it stays out too. */
 const VisitorGreeting = () => (
     <div className="topbar-greeting">
-        <p className="eyebrow">Maths &amp; sciences · Years 7 to 13</p>
-        <h2>Springboard Tutoring</h2>
+        <h2 aria-label="AbhiTutor">
+            <BrandLogo />
+        </h2>
+        <p className="eyebrow visitor-offer-line">
+            Maths &amp; sciences · Years 7 to 13
+        </p>
     </div>
 )
 

@@ -43,7 +43,7 @@ export const EnquireView = ({
     onSubmit,
 }: EnquireViewProps) => {
     useDocumentMeta(
-        'Enquire about tutoring — Springboard Tutoring',
+        'Enquire about tutoring — AbhiTutor',
         'Tell us the subject, year and what your child wants from tutoring, and we will come back to you — usually within a day.'
     )
     const [parentName, setParentName] = useState('')

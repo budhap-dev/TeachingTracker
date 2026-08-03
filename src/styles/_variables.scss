@@ -24,6 +24,20 @@
     --sidebar-end: #1d4ed8;
     --sidebar-text: #ffffff;
     --sidebar-muted: #dbeafe;
+    /* The AbhiTutor brand (REQ-035): the signed "Abhi" sky and the green
+       ink mark. Theme-independent identity — dark themes lighten them, and
+       the pale-sidebar themes override the sidebar pair. */
+    /* One "Abhi" everywhere (owner call): a bright luminous sky that reads
+       identically on the sidebar and topbar bands. The pale-chrome themes
+       override to the deep brand sky, where a light tint would wash out. */
+    --brand-abhi: #8fdcff;
+    /* "Tutor" is white wherever the brand appears (owner call 2026-08-03) —
+       the lockup lives on the sidebar/topbar bands, which are dark in every
+       theme except the two pale-chrome ones, which override this. */
+    --brand-tutor: #ffffff;
+    --brand-mark: #22c55e;
+    --sidebar-brand-abhi: #8fdcff;
+    --sidebar-brand-mark: #4ade80;
     --pill-bg: #dbeafe;
     --pill-text: #1d4ed8;
     --button-bg: rgba(255, 255, 255, 0.12);
@@ -83,6 +97,8 @@
 }
 
 [data-theme='midnight'] {
+    --brand-abhi: #8fdcff;
+    --brand-mark: #4ade80;
     --bg: linear-gradient(135deg, #020617, #111827 45%, #1e293b);
     --text: #e2e8f0;
     --muted: #94a3b8;
@@ -261,6 +277,8 @@
 /* The dark shelf (REQ: light/dark picker groups). Same variable contract as
    midnight — dark page, dark surfaces, sidebar palette to match. */
 [data-theme='graphite'] {
+    --brand-abhi: #8fdcff;
+    --brand-mark: #4ade80;
     --bg: linear-gradient(135deg, #09090b, #18181b 45%, #27272a);
     --text: #e4e4e7;
     --muted: #a1a1aa;
@@ -282,6 +300,8 @@
 }
 
 [data-theme='deepsea'] {
+    --brand-abhi: #8fdcff;
+    --brand-mark: #4ade80;
     --bg: linear-gradient(135deg, #041420, #0a1929 45%, #102a43);
     --text: #dbeafe;
     --muted: #94a3b8;
@@ -303,6 +323,8 @@
 }
 
 [data-theme='pine'] {
+    --brand-abhi: #8fdcff;
+    --brand-mark: #4ade80;
     --bg: linear-gradient(135deg, #04140c, #0a1f14 45%, #143024);
     --text: #d1fae5;
     --muted: #9db8ab;
@@ -399,6 +421,10 @@
    sidebar/topbar band is pale, so --sidebar-text goes dark, --button-bg
    becomes a faint dark wash, and the active/hover nav sits on the accent. */
 [data-theme='daylight'] {
+    --brand-abhi: #0284c7;
+    --brand-tutor: var(--sidebar-text);
+    --sidebar-brand-abhi: #0284c7;
+    --sidebar-brand-mark: #16a34a;
     --bg: linear-gradient(135deg, #f8fafc, #eff6ff 45%, #e0f2fe);
     --accent: #2563eb;
     --accent-alt: #0ea5e9;
@@ -419,6 +445,10 @@
 }
 
 [data-theme='parchment'] {
+    --brand-abhi: #0284c7;
+    --brand-tutor: var(--sidebar-text);
+    --sidebar-brand-abhi: #0284c7;
+    --sidebar-brand-mark: #16a34a;
     --bg: linear-gradient(135deg, #fdfaf3, #faf5ea 45%, #f3e9d6);
     --surface-alt: #faf6ee;
     --accent: #b45309;

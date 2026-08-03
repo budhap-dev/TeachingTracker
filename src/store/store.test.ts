@@ -865,7 +865,7 @@ describe('lead lifecycle (REQ-018/019)', () => {
 describe('site content (REQ-008)', () => {
     it('starts on the bundled fallback and swaps in the fetched document', () => {
         const state = initial()
-        expect(state.siteContent.siteName).toBe('Springboard Tutoring')
+        expect(state.siteContent.siteName).toBe('AbhiTutor')
 
         const fetched = {
             ...state.siteContent,
@@ -877,7 +877,7 @@ describe('site content (REQ-008)', () => {
 
     it('keeps the fallback silently when the fetch fails', () => {
         const failed = studentReducer(initial(), fetchSiteContentFailed())
-        expect(failed.siteContent.siteName).toBe('Springboard Tutoring')
+        expect(failed.siteContent.siteName).toBe('AbhiTutor')
         // Graceful degradation: no visitor-facing error.
         expect(failed.error).toBeNull()
     })

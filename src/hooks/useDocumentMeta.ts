@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 /** The site-wide defaults from index.html, restored when a page unmounts. */
-const DEFAULT_TITLE = 'Springboard Tutoring — one-to-one tutoring that builds confidence'
+const DEFAULT_TITLE = 'AbhiTutor — Where confidence takes off.'
 const DEFAULT_DESCRIPTION =
     'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
 

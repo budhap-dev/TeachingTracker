@@ -134,7 +134,7 @@ export const normaliseSiteContent = (
 
 /** The bundled fallback — the same copy the site has always shipped. */
 export const defaultSiteContent: SiteContent = {
-    siteName: 'Springboard Tutoring',
+    siteName: 'AbhiTutor',
     hero: {
         headline: 'Confident tutoring for Years 7 to 13.',
         subhead: 'One-to-one lessons in maths and the sciences, from KS3 through GCSE to A-level — in person or online, matched to your child’s exam board and built around their school week.',
