@@ -57,6 +57,25 @@ jobs:
           # else yellow — the two apps can never be mistaken.
           VITE_APP_ENV: ${{ inputs.environment }}
 
+      # Non-prod installs must be tellable from prod at a glance: the home
+      # screen icon wears a yellow ring and the install is named "(dev)".
+      # Prod's assets stay byte-identical — this step never runs for it.
+      - name: Mark dev install assets
+        if: ${{ inputs.environment != 'prod' }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('dist/manifest.webmanifest', 'utf8'));
+            m.name = 'AbhiTutor (dev)';
+            m.short_name = 'AbhiTutor dev';
+            m.icons = m.icons.map((icon) => ({
+              ...icon,
+              src: icon.src.replace('/icons/', '/icons-dev/'),
+            }));
+            fs.writeFileSync('dist/manifest.webmanifest', JSON.stringify(m, null, 2));
+          "
+          sed -i 's|/icons/apple-touch-icon.png|/icons-dev/apple-touch-icon.png|; s|/badge.svg|/badge-dev.svg|' dist/index.html
+
       # What this environment runs, fetchable from the live site itself:
       # https://<site>/version.json — no need to dig through Actions runs.
       - name: Stamp version.json
