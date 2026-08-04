@@ -9,4 +9,4 @@ Disallow: /scheduling
 Disallow: /reviews/moderation
 Disallow: /leads
 
-Sitemap: https://nice-sea-095463c0f.7.azurestaticapps.net/sitemap.xml
+Sitemap: https://abhitutor.co.uk/sitemap.xml

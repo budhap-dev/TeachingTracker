@@ -16,7 +16,7 @@ Frontend (Static Web App)                API (Function App)
 | Env      | Frontend (open this)                                            | API base URL                                                    |
 | -------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
 | **dev**  | https://delightful-water-09b7c480f.7.azurestaticapps.net         | https://func-teachtracker-dev-pjlmrq.azurewebsites.net/api       |
-| **prod** | https://nice-sea-095463c0f.7.azurestaticapps.net                 | https://func-teachtracker-prod-gjvecw.azurewebsites.net/api      |
+| **prod** | https://abhitutor.co.uk (custom, REQ-035; azurestaticapps URL stays as secondary) | https://func-teachtracker-prod-gjvecw.azurewebsites.net/api      |
 
 Each environment serves a **different dataset**, so you can tell them apart at a
 glance (counts are owned by the API repo's `src/data/seed.ts`):
