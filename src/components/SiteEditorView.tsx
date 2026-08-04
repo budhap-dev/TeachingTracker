@@ -343,7 +343,9 @@ export const SiteEditorView = ({
 
     return (
         <section className="content-stack">
-            <div className="card">
+            {/* Sticky on desktop: the long form scrolls, Publish never
+                leaves sight. */}
+            <div className="card site-editor-header">
                 <div className="section-header">
                     <div>
                         <h3 className="page-heading">

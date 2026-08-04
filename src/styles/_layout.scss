@@ -129,7 +129,11 @@
     flex-direction: column;
     gap: 16px;
     min-width: 0;
-    overflow-x: hidden;
+    /* clip, not hidden: hidden makes this the "scroll container" for any
+       position: sticky inside (the editor's Publish header) — and since
+       main-content never scrolls itself, sticky silently does nothing.
+       clip clips identically without creating a scroll container. */
+    overflow-x: clip;
 }
 
 /* Wears the sidebar gradient (inline background-image from the component),

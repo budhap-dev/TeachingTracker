@@ -109,6 +109,7 @@ XS is an afternoon, XL is a project.
 | 33 | ✅ | [REQ-011 — Group sessions](#req-011--group-sessions-several-students-attend-one-class) | L | both | — (shipped with the planner UX pack, merged 2026-07-30) |
 | 34 | ✅ | [REQ-012 — Planner subject multi-select](#req-012--class-planner-subject-is-a-multi-select) | S | frontend | — (shipped with the planner UX pack; see deviations in the story) |
 | 35 | 🔲 | [REQ-035 — Custom domain for the production app](#req-035--custom-domain-for-the-production-app) | S | infra + both | — (future; owner buys the domain — the rest is free) |
+| 36 | ⏸️ | [REQ-036 — "Ask us": a grounded FAQ chat box](#req-036--ask-us-a-grounded-faq-chat-box) | M | both | — (parked by owner 2026-08-04; accordion stays the source of truth) |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -1672,3 +1673,32 @@ claude.ai/code/artifact/cad8952e-8feb-4ff9-9282-6fe5e67ee4c5)_
   established. Once registered, the cutover is an afternoon.
 - If email on the domain is ever wanted (enquiries@…), that's a separate
   paid product (e.g. Zoho free tier / Google Workspace) — out of scope here.
+
+## REQ-036 — "Ask us": a grounded FAQ chat box
+
+**Status:** ⏸️ Parked (owner call, 2026-08-04 — twice considered, twice
+parked; revisit if enquiry volume suggests parents aren't finding answers) ·
+**Impact:** both · **Effort:** M · **Depends on:** REQ-025 (FAQ, shipped)
+
+**Story**
+As a parent, I want to ask a question in my own words and get an answer
+drawn from what the site already says, so that I don't have to hunt
+through the FAQ — and as the owner, I want it incapable of inventing
+policies, prices or promises on my behalf.
+
+**The agreed shape (when unparked)**
+
+- The **accordion stays** — SEO-visible, zero-cost, the canonical answers.
+  The chat box sits on top of it, never replaces it.
+- **Grounded-only**: a new API endpoint calls a small Claude model with the
+  published site content (FAQ, subjects, bio, privacy) as its entire
+  world. Anything unanswerable from that gets a polite handoff to the
+  enquiry CTA — no freeform improvisation, ever.
+- **Cost/ops guardrails**: ~£0.003/question at Haiku-class pricing; public
+  endpoint needs rate limiting per IP, a monthly spend cap with alerting,
+  and the API key as a Function App secret via Terraform.
+- **GDPR**: visitor questions transiting an AI provider is a disclosure —
+  one line in the privacy policy + ROPA entry (REQ-031/034 kept true).
+- Cheaper fallback considered: a no-AI fuzzy matcher over the FAQ
+  (search in a chat costume) — free, riskless, ~80% of the value.
+
