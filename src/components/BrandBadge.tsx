@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isProdBuild } from '../version'
 
 /**
  * The AbhiTutor badge (REQ-035's short mark): navy disc, sky ring, the
@@ -15,7 +16,7 @@ export const BrandBadge = ({ size = 48 }: { size?: number }) => {
     const [entered, setEntered] = useState(false)
     return (
     <span
-        className={`brand-badge ${entered ? 'entered' : ''}`}
+        className={`brand-badge ${entered ? 'entered' : ''} ${isProdBuild ? '' : 'env-dev'}`}
         onAnimationEnd={(event) => {
             if (event.animationName === 'brand-badge-fly-in') {
                 setEntered(true)

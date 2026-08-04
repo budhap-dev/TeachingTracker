@@ -306,6 +306,31 @@ export const ClassSchedulingView = ({
         return entries
     }, [sessions])
 
+    // Which student's classes the calendar SHOWS — a view-only filter. Whole
+    // group entries stay intact ("Group of 3" still reads as a group), and
+    // opening a day always edits the real, unfiltered class — the filter
+    // never feeds the save path, so a filtered edit can't drop attendees.
+    const [filterStudent, setFilterStudent] = useState<StudentOption | null>(
+        null
+    )
+    const displayEntriesByDate = useMemo(() => {
+        if (!filterStudent) {
+            return entriesByDate
+        }
+        const filtered: Record<string, DayEntry[]> = {}
+        Object.entries(entriesByDate).forEach(([date, entries]) => {
+            const kept = entries.filter((entry) =>
+                entry.sessions.some(
+                    (session) => session.studentId === filterStudent.id
+                )
+            )
+            if (kept.length) {
+                filtered[date] = kept
+            }
+        })
+        return filtered
+    }, [entriesByDate, filterStudent])
+
     /**
      * Mirrors an entry into the form. Passing nothing clears it — the blank
      * "add a new class" state.
@@ -1128,6 +1153,37 @@ export const ClassSchedulingView = ({
                     </div>
                 </div>
 
+                {/* View-only student filter: the calendar shows one
+                    student's classes; booking and editing still see every
+                    class, so a filtered edit can never drop attendees. */}
+                <div className="calendar-filter-row">
+                    <Autocomplete
+                        options={studentOptions}
+                        value={filterStudent}
+                        onChange={(_event, value) => setFilterStudent(value)}
+                        isOptionEqualToValue={(option, value) =>
+                            option.id === value.id
+                        }
+                        getOptionLabel={(option) => option.label}
+                        size="small"
+                        className="calendar-student-filter"
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Show one student's classes"
+                                placeholder="All students"
+                            />
+                        )}
+                    />
+                    {filterStudent && (
+                        <span className="calendar-filter-hint">
+                            Showing {filterStudent.firstName}&apos;s classes —
+                            group classes stay whole, and opening a day still
+                            shows everything booked.
+                        </span>
+                    )}
+                </div>
+
                 {viewMode === 'week' && (
                     <div
                         className="week-grid"
@@ -1136,7 +1192,7 @@ export const ClassSchedulingView = ({
                     >
                         {weekDays.map((day) => {
                             const dayKey = toDateKey(day)
-                            const dayEntries = entriesByDate[dayKey] || []
+                            const dayEntries = displayEntriesByDate[dayKey] || []
                             const isToday = dayKey === todayKey
                             const isWeekend =
                                 day.getDay() === 0 || day.getDay() === 6
@@ -1233,7 +1289,7 @@ export const ClassSchedulingView = ({
                 >
                     {monthGrid.map((day) => {
                         const dayKey = toDateKey(day)
-                        const dayEntries = entriesByDate[dayKey] || []
+                        const dayEntries = displayEntriesByDate[dayKey] || []
                         const booked = dayEntries.filter(
                             (entry) => activeMembers(entry).length > 0
                         )
