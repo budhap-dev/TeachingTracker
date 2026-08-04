@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 /**
  * The AbhiTutor badge (REQ-035's short mark): navy disc, sky ring, the
  * Alex Brush "A" in sky-light, a solid white "T" (no border — owner call),
@@ -7,9 +9,18 @@
  * Sizes proportionally from the `size` prop; below 40 px the tick bows out
  * (detail that can't be seen shouldn't be drawn).
  */
-export const BrandBadge = ({ size = 48 }: { size?: number }) => (
+export const BrandBadge = ({ size = 48 }: { size?: number }) => {
+    // Once the fly-in has played, it is disarmed — otherwise CSS would
+    // replay the entrance every time a hover animation ends.
+    const [entered, setEntered] = useState(false)
+    return (
     <span
-        className="brand-badge"
+        className={`brand-badge ${entered ? 'entered' : ''}`}
+        onAnimationEnd={(event) => {
+            if (event.animationName === 'brand-badge-fly-in') {
+                setEntered(true)
+            }
+        }}
         style={{
             width: size,
             height: size,
@@ -37,4 +48,5 @@ export const BrandBadge = ({ size = 48 }: { size?: number }) => (
             </svg>
         )}
     </span>
-)
+    )
+}

@@ -25,6 +25,18 @@
         <meta name="twitter:card" content="summary" />
         <meta name="theme-color" content="#0284c7" />
         <link rel="icon" type="image/svg+xml" href="/badge.svg" />
+        <!-- Installable as an app from the browser (Add to Home Screen /
+             Install): the manifest gives the full-bleed badge icon and a
+             standalone, no-URL-bar launch. iOS reads the touch icon + metas
+             (it ignores SVG favicons entirely). -->
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+            name="apple-mobile-web-app-status-bar-style"
+            content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="AbhiTutor" />
     </head>
     <body>
         <div id="root"></div>

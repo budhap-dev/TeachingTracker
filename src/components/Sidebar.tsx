@@ -190,10 +190,10 @@ const SidebarContent = ({
         >
             <div className="sidebar-header">
                 <div className="sidebar-brand">
-                    <BrandBadge size={46} />
+                    <BrandBadge size={50} />
                     <div>
                         <h1 aria-label="AbhiTutor">
-                            <BrandLogo pen={false} />
+                            <BrandLogo />
                         </h1>
                         <p>Where confidence takes off.</p>
                     </div>

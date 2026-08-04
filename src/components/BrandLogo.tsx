@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 /**
  * The AbhiTutor lockup (REQ-035): "Abhi" signed in Alex Brush, "Tutor"
  * upright in Inter 800, the green fountain-pen ink mark tucked beneath, and
@@ -7,8 +9,22 @@
  *
  * Size scales from the parent's font-size: the wordmark is set in em.
  */
-export const BrandLogo = ({ pen = true }: { pen?: boolean }) => (
-    <span className="brand-logo">
+export const BrandLogo = ({ pen = true }: { pen?: boolean }) => {
+    // Once the entrance has played, it is disarmed — otherwise CSS would
+    // replay it every time the hover signature ends.
+    const [entered, setEntered] = useState(false)
+    return (
+    <span
+        className={`brand-logo ${entered ? 'entered' : ''}`}
+        onAnimationEnd={(event) => {
+            if (
+                event.animationName === 'brand-pen-write' ||
+                event.animationName === 'brand-ink-draw'
+            ) {
+                setEntered(true)
+            }
+        }}
+    >
         <span className="brand-wordline">
             <span className="brand-abhi">Abhi</span>
             <span className="brand-tutor">Tutor</span>
@@ -72,4 +88,5 @@ export const BrandLogo = ({ pen = true }: { pen?: boolean }) => (
             <ellipse cx="7" cy="7.6" rx="2.4" ry="1.3" />
         </svg>
     </span>
-)
+    )
+}
