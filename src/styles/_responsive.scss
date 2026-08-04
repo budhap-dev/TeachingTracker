@@ -517,3 +517,54 @@
         }
     }
 }
+
+@media (max-width: 640px) {
+    /* Privacy inventory: four columns crushed the "What" column into a
+       narrow tower on phones. Each row becomes a stacked entry — the data
+       description leads bold, the other three cells follow under small
+       labels pulled from data-label. */
+    .privacy-table {
+        display: block;
+
+        thead {
+            display: none;
+        }
+
+        tbody {
+            display: block;
+        }
+
+        tr {
+            display: block;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            display: block;
+            padding: 0;
+            border-bottom: none;
+        }
+
+        td::before {
+            content: attr(data-label);
+            display: block;
+            margin: 10px 0 2px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* The description IS the row's heading — no label above it. */
+        td:first-child {
+            font-weight: 600;
+        }
+
+        td:first-child::before {
+            content: none;
+            margin: 0;
+        }
+    }
+}
