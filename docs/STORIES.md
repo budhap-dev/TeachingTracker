@@ -1543,8 +1543,15 @@ challenge is answered by opening a file, not by reconstruction.
 
 ## REQ-035 — Custom domain for the production app
 
-**Status:** 🔲 Not started (future) · **Impact:** infra + both · **Effort:** S ·
-**Blocked by:** the owner registering a domain
+**Status:** 🚧 Part 2 built (2026-08-04, in review) — **the domain is
+registered**: `abhitutor.co.uk`, Cloudflare, 2026-08-04, `.co.uk` only
+(owner call — the `.com` deliberately skipped; check its availability
+later if the brand takes off). Terraform for the SWA custom-domain
+binding (apex TXT + www CNAME), prod CORS + Entra SPA redirect URIs
+(one list drives both), sitemap/robots/OG on the new domain, and
+`docs/RUNBOOK-domain-cutover.md` with the exact DNS records and apply
+order. Remaining: the owner runs the runbook (two DNS records, two
+applies, certificate wait). · **Impact:** infra + both · **Effort:** S
 
 **Story**
 As the owner, I want the production site on a proper domain instead of the

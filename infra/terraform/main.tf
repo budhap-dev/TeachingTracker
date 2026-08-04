@@ -8,5 +8,7 @@ module "web" {
   location = each.value.location
   sku_tier = each.value.sku_tier
   sku_size = each.value.sku_size
-  tags     = merge(var.tags, { environment = each.key })
+
+  custom_domain = each.value.custom_domain
+  tags          = merge(var.tags, { environment = each.key })
 }

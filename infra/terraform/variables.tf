@@ -17,9 +17,10 @@ variable "project" {
 variable "environments" {
   description = "Per-environment configuration (keyed by environment name: dev/prod)."
   type = map(object({
-    location = string
-    sku_tier = optional(string, "Free")
-    sku_size = optional(string, "Free")
+    location      = string
+    sku_tier      = optional(string, "Free")
+    sku_size      = optional(string, "Free")
+    custom_domain = optional(string)
   }))
   default = {
     # REQ-009 phase 0 note: the SWA stays here deliberately. It serves only
@@ -32,6 +33,9 @@ variable "environments" {
     }
     prod = {
       location = "eastus2"
+      # REQ-035: the registered production domain (owner, 2026-08-04 — the
+      # .co.uk only; the .com was deliberately skipped).
+      custom_domain = "abhitutor.co.uk"
     }
   }
 }

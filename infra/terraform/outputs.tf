@@ -18,3 +18,9 @@ output "static_web_app_api_tokens" {
   value       = { for k, m in module.web : k => m.api_key }
   sensitive   = true
 }
+
+output "custom_domain_validation_tokens" {
+  description = "Environment -> apex TXT validation token (REQ-035). Read with: terraform output custom_domain_validation_tokens"
+  value       = { for k, m in module.web : k => m.custom_domain_validation_token }
+  sensitive   = true
+}

@@ -30,3 +30,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "custom_domain" {
+  description = "Apex custom domain to bind (e.g. abhitutor.co.uk); www is bound alongside it. null = no custom domain (dev stays on the generated hostname deliberately)."
+  type        = string
+  default     = null
+}
