@@ -18,7 +18,7 @@ import PrivacyTipOutlinedIcon from '@mui/icons-material/PrivacyTipOutlined'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import { isAuthConfigured } from '../auth/msal'
-import { appVersion } from '../version'
+import { appVersion, isProdBuild } from '../version'
 import { paths } from '../paths'
 import { BrandLogo } from './BrandLogo'
 import { BrandBadge } from './BrandBadge'
@@ -238,7 +238,11 @@ const SidebarContent = ({
                 ))}
             </nav>
             <footer className="sidebar-footer">
-                <span>Version {appVersion}</span>
+                {/* Non-prod names itself, like the badge's yellow ring. */}
+                <span>
+                    Version {appVersion}
+                    {!isProdBuild && ' (dev)'}
+                </span>
             </footer>
         </aside>
     )
