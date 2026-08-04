@@ -3569,6 +3569,20 @@ $note-rule: 32px;
     flex-wrap: wrap;
 }
 
+/* The editor's header card (title, tabs, Publish) rides along on desktop
+   so Publish is always in reach on a long form. Phones keep it in flow —
+   the sticky sidebar already owns the viewport top there. */
+@media (min-width: 901px) {
+    .site-editor-header {
+        position: sticky;
+        /* Flush to the viewport top — any gap lets the form visibly scroll
+           through the strip above the stuck card. */
+        top: 0;
+        z-index: 5;
+        box-shadow: 0 8px 26px rgba(15, 23, 42, 0.12);
+    }
+}
+
 .site-editor-fields {
     display: flex;
     flex-direction: column;
