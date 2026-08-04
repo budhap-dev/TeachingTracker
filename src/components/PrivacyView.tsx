@@ -95,10 +95,16 @@ export const PrivacyView = () => {
                         <tbody>
                             {inventory.map((row) => (
                                 <tr key={row.data}>
-                                    <td>{row.data}</td>
-                                    <td>{row.source}</td>
-                                    <td>{row.why}</td>
-                                    <td>{row.basis}</td>
+                                    <td data-label="What">{row.data}</td>
+                                    <td data-label="Where it comes from">
+                                        {row.source}
+                                    </td>
+                                    <td data-label="Why we have it">
+                                        {row.why}
+                                    </td>
+                                    <td data-label="Lawful basis">
+                                        {row.basis}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

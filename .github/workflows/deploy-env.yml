@@ -53,6 +53,9 @@ jobs:
           VITE_ENTRA_SPA_CLIENT_ID: ${{ vars.VITE_ENTRA_SPA_CLIENT_ID }}
           VITE_ENTRA_API_SCOPE: ${{ vars.VITE_ENTRA_API_SCOPE }}
           VITE_APP_VERSION: ${{ env.APP_VERSION }}
+          # The badge's ring colour keys off this: prod sky, everything
+          # else yellow — the two apps can never be mistaken.
+          VITE_APP_ENV: ${{ inputs.environment }}
 
       # What this environment runs, fetchable from the live site itself:
       # https://<site>/version.json — no need to dig through Actions runs.

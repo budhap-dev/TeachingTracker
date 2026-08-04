@@ -661,6 +661,85 @@ describe('component-level coverage', () => {
         await user.click(screen.getByRole('button', { name: /previous/i }))
     })
 
+    it("filters the calendar to one student's classes, view-only", async () => {
+        const user = userEvent.setup()
+        const scheduledDay = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            1,
+            12
+        )
+        const day = scheduledDay.toISOString().slice(0, 10)
+        const session = (
+            id: number,
+            studentId: number,
+            studentName: string,
+            time: string
+        ): ScheduledSession => ({
+            id,
+            studentId,
+            studentName,
+            year: '10',
+            subject: 'Mathematics',
+            date: day,
+            time,
+            notes: '',
+            status: 'Scheduled',
+        })
+
+        render(
+            <ClassSchedulingView
+                students={[
+                    buildStudent(),
+                    buildStudent({
+                        id: 2,
+                        firstName: 'Maya',
+                        lastName: 'Fernando',
+                        subjects: ['Physics'],
+                    }),
+                ]}
+                sessions={[
+                    session(1, 1, 'Asha Perera', '09:00'),
+                    session(2, 1, 'Asha Perera', '10:00'),
+                    session(3, 2, 'Maya Fernando', '11:00'),
+                ]}
+                onScheduleClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        // Unfiltered: the day carries all three classes.
+        expect(
+            screen.getByRole('gridcell', {
+                name: new RegExp(`${scheduledDay.toDateString()}: 3 classes`),
+            })
+        ).toBeInTheDocument()
+
+        // Filter to Maya: the calendar shows only her class.
+        await user.click(
+            screen.getByLabelText(/show one student's classes/i)
+        )
+        await user.click(await screen.findByText('Maya Fernando • Year 10'))
+        expect(
+            screen.getByRole('gridcell', {
+                name: new RegExp(`${scheduledDay.toDateString()}: 1 class`),
+            })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText(/showing maya's classes/i)
+        ).toBeInTheDocument()
+
+        // View-only: opening the day still lists every class booked on it
+        // (three class tabs + the add tab), so an edit made while filtered
+        // can never drop other students.
+        await user.click(
+            screen.getByRole('button', {
+                name: `Open ${scheduledDay.toDateString()}`,
+            })
+        )
+        expect(screen.getAllByRole('tab')).toHaveLength(4)
+    })
+
     it('switches to a week view listing classes readably, and back', async () => {
         const user = userEvent.setup()
         const todayNoon = new Date(

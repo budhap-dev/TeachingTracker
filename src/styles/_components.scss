@@ -312,6 +312,12 @@
     transform: rotate(-6deg) scale(1.1);
 }
 
+/* Non-prod builds wear a yellow ring (owner call): dev and prod can never
+   be mistaken for each other. Prod keeps the sky ring. */
+.brand-badge.env-dev {
+    border-color: #facc15;
+}
+
 /* Press: a quick squash — release springs back via the transition. */
 .brand-badge:active {
     transform: scale(0.9);
@@ -1437,6 +1443,26 @@
         padding: 8px 10px;
         cursor: pointer;
     }
+}
+
+/* The planner's view-only student filter, under the calendar header. */
+.calendar-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 12px 0 4px;
+}
+
+.calendar-student-filter {
+    width: 280px;
+    max-width: 100%;
+}
+
+.calendar-filter-hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    max-width: 46ch;
 }
 
 .session-breakdown-empty {
