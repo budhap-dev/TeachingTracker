@@ -2801,10 +2801,12 @@ $note-rule: 32px;
 }
 
 .subject-spec {
+    /* Label on its own line, chips on the line below (owner call) — the
+       chips get the card's full width instead of sharing it with a 96px
+       label column. */
     display: grid;
-    grid-template-columns: 96px 1fr;
-    gap: 10px;
-    align-items: baseline;
+    grid-template-columns: 1fr;
+    gap: 5px;
     padding: 8px 0;
 
     & + & {
