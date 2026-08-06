@@ -14,27 +14,88 @@
         display: inline-flex;
     }
 
-    .sidebar .sidebar-nav {
-        display: none;
+    /* The menu is a left drawer on phones: a fixed panel that slides in
+       over a dimmed backdrop. visibility rides the transition so the
+       closed drawer is untabbable without a display flip killing the
+       animation. dvh tracks the mobile browser chrome. */
+    .sidebar .sidebar-drawer {
+        display: flex;
         flex-direction: column;
-        width: 100%;
-    }
-
-    /* Open menu becomes a full-height panel so its rows scroll inside it
-       instead of running off the bottom of the page. Otherwise the last items
-       (and the version footer) sit below the fold and can only be reached by
-       scrolling the content underneath. dvh tracks the mobile browser chrome. */
-    .sidebar.mobile-open {
+        position: fixed;
+        top: 0;
+        left: 0;
         height: 100vh;
         height: 100dvh;
-        overflow: hidden;
+        width: min(300px, 84vw);
+        z-index: 40;
+        padding: 20px 16px;
+        background: var(--sidebar-gradient);
+        /* The visible edge is curved — top-right and bottom-right — and
+           rimmed in the brand sky, so the drawer reads as a lit panel
+           floating over the dimmed page. */
+        border-radius: 0 16px 16px 0;
+        border-right: 2px solid var(--brand-abhi);
+        /* Both shadow layers derive from the active theme: the drop from the
+           theme's own sidebar dark, the glow from the brand sky variable. */
+        box-shadow:
+            8px 0 30px color-mix(in srgb, var(--sidebar-start) 55%, transparent),
+            2px 0 12px color-mix(in srgb, var(--brand-abhi) 45%, transparent);
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition:
+            transform 0.28s ease,
+            visibility 0s linear 0.28s;
+        overflow-y: auto;
     }
 
-    .sidebar.mobile-open .sidebar-nav {
+    .sidebar.mobile-open .sidebar-drawer {
+        transform: translateX(0);
+        visibility: visible;
+        transition:
+            transform 0.28s ease,
+            visibility 0s;
+    }
+
+    .sidebar .sidebar-nav {
         display: flex;
+        flex-direction: column;
+        width: 100%;
         flex: 1 1 auto;
-        min-height: 0;
-        overflow-y: auto;
+    }
+
+    /* The version footer rides the drawer's bottom edge. */
+    .sidebar .sidebar-footer {
+        margin-top: auto;
+        padding-top: 14px;
+    }
+
+    .mobile-nav-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        /* The dimming tint is the theme's own dark, not a fixed navy. */
+        background: color-mix(in srgb, var(--sidebar-start) 50%, transparent);
+        animation: mobile-backdrop-fade 0.25s ease;
+    }
+
+    @keyframes mobile-backdrop-fade {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .sidebar .sidebar-drawer,
+        .sidebar.mobile-open .sidebar-drawer {
+            transition: none;
+        }
+
+        .mobile-nav-backdrop {
+            animation: none;
+        }
     }
 
     .sidebar .sidebar-nav button {
@@ -452,16 +513,36 @@
 @media (max-width: 640px) {
     /* The record strip: the two stats sit side by side with less padding;
        the hairline between them stays. */
-    .outcomes-strip {
-        padding: 20px 8px;
+    .home-hero-band {
+        padding: 24px 18px 22px;
+        text-align: center;
+    }
 
-        li {
-            padding: 4px 12px;
-        }
+    /* Phones: the band stacks — badge above the promise, thumb-height CTA
+       full width, chips centred. */
+    .home-band-lead {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
 
-        strong {
-            font-size: 1.8rem;
-        }
+    .home-band-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .home-band-cta.MuiButton-root {
+        padding: 12px;
+    }
+
+    .home-band-chips,
+    .home-subject-chips {
+        justify-content: center;
+    }
+
+    .home-proof-row {
+        grid-template-columns: 1fr;
     }
 }
 

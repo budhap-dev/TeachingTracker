@@ -108,8 +108,10 @@ XS is an afternoon, XL is a project.
 | — | | **Planner stories** (drafted 2026-07-17; missed by the table until 2026-08-02) | | | |
 | 33 | ✅ | [REQ-011 — Group sessions](#req-011--group-sessions-several-students-attend-one-class) | L | both | — (shipped with the planner UX pack, merged 2026-07-30) |
 | 34 | ✅ | [REQ-012 — Planner subject multi-select](#req-012--class-planner-subject-is-a-multi-select) | S | frontend | — (shipped with the planner UX pack; see deviations in the story) |
-| 35 | 🔲 | [REQ-035 — Custom domain for the production app](#req-035--custom-domain-for-the-production-app) | S | infra + both | — (future; owner buys the domain — the rest is free) |
+| 35 | ✅ | [REQ-035 — Custom domain for the production app](#req-035--custom-domain-for-the-production-app) | S | infra + both | — (LIVE 2026-08-04: https://abhitutor.co.uk, registered → padlock same day) |
 | 36 | ⏸️ | [REQ-036 — "Ask us": a grounded FAQ chat box](#req-036--ask-us-a-grounded-faq-chat-box) | M | both | — (parked by owner 2026-08-04; accordion stays the source of truth) |
+| 37 | 🔲 | [REQ-037 — "About the teacher": a CV-style public page, edited in place](#req-037--about-the-teacher-a-cv-style-public-page-edited-in-place) | M | both | — (builds on REQ-021's bio; follows the FAQ-page pattern) |
+| 38 | 🔲 | [REQ-038 — Hero highlights: the selling points that close](#req-038--hero-highlights-the-selling-points-that-close) | S | both | — (content decisions first: dedupe vs the approach list; evidence rule for "proven results") |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -994,7 +996,7 @@ root shows the pitch, not the teacher dashboard behind a sign-in.
 
 ## REQ-025 — FAQ
 
-**Status:** 🚧 Built (2026-08-02, in review) · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content, done) · **Delivered:** a `faq` site-content section — question/answer rows in the site editor (add, remove, drag to reorder), rendered on Offerings as a native details/summary accordion closing on the enquiry CTA. A drafted starter set ships in the bundled defaults and behind an "Add the starter questions" button for the owner to review and edit; **an already-published document gains an empty FAQ**, so nothing unapproved ever goes live. _(Owner asked whether the FAQ could be a chatbot (2026-08-02): decided accordion-first — a grounded "ask a question" box that answers only from published content could be a separate later story; a freeform public chatbot was advised against.)_
+**Status:** 🚧 Built (2026-08-02, in review) · **Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content, done) · **Delivered:** a `faq` site-content section — question/answer rows in the site editor (add, remove, drag to reorder), rendered on Offerings as a native details/summary accordion closing on the enquiry CTA. **Moved 2026-08-04 (owner call): the FAQ now lives on its own public page (`/faq`, own menu item) and is edited IN PLACE there — the site editor keeps only a pointer card, and Offerings no longer renders the section.** A drafted starter set ships in the bundled defaults and behind an "Add the starter questions" button for the owner to review and edit; **an already-published document gains an empty FAQ**, so nothing unapproved ever goes live. _(Owner asked whether the FAQ could be a chatbot (2026-08-02): decided accordion-first — a grounded "ask a question" box that answers only from published content could be a separate later story; a freeform public chatbot was advised against.)_
 
 **Story**
 As a parent, I want an FAQ, so that the usual questions are answered before I
@@ -1543,15 +1545,20 @@ challenge is answered by opening a file, not by reconstruction.
 
 ## REQ-035 — Custom domain for the production app
 
-**Status:** 🚧 Part 2 built (2026-08-04, in review) — **the domain is
-registered**: `abhitutor.co.uk`, Cloudflare, 2026-08-04, `.co.uk` only
-(owner call — the `.com` deliberately skipped; check its availability
-later if the brand takes off). Terraform for the SWA custom-domain
-binding (apex TXT + www CNAME), prod CORS + Entra SPA redirect URIs
-(one list drives both), sitemap/robots/OG on the new domain, and
-`docs/RUNBOOK-domain-cutover.md` with the exact DNS records and apply
-order. Remaining: the owner runs the runbook (two DNS records, two
-applies, certificate wait). · **Impact:** infra + both · **Effort:** S
+**Status:** ✅ **Cutover complete — the site is LIVE on
+https://abhitutor.co.uk** (2026-08-04 evening). Registered on Cloudflare
+that morning (`.co.uk` only — owner call; the `.com` deliberately
+skipped, check its availability later if the brand takes off), runbook
+executed the same day: www CNAME → backend apply (CORS + Entra redirect
+in one list) → frontend apply + apex TXT (validated in ~18 minutes) →
+apex CNAME. Both hostnames answer 200 with valid Azure-managed
+certificates; the API preflight-accepts the new origin (verified);
+`/version.json` confirms prod. The old `*.azurestaticapps.net` URL keeps
+working as secondary. **Two follow-throughs, not part of this story's
+plumbing:** prod promotion (the domain served pre-rebrand `1.0.86` at
+cutover — the merged sitemap/OG/branding go live with it) and the prod
+site-editor republish; teacher sign-in on the new domain gets its first
+real test right after. · **Impact:** infra + both · **Effort:** S
 
 **Story**
 As the owner, I want the production site on a proper domain instead of the
@@ -1656,21 +1663,34 @@ claude.ai/code/artifact/cad8952e-8feb-4ff9-9282-6fe5e67ee4c5)_
 
 **Acceptance criteria**
 
-- [ ] Prod answers on the custom domain with a valid managed certificate;
+- [x] Prod answers on the custom domain with a valid managed certificate;
       the `*.azurestaticapps.net` host redirects or is treated as secondary.
-- [ ] Entra sign-in still works: the SPA app registration gains the new
+      _(Live 2026-08-04: apex + www both 200 with valid certs; the old
+      host stays as secondary.)_
+- [x] Entra sign-in still works: the SPA app registration gains the new
       redirect URI (REQ-004) — teacher sign-in tested on the new domain.
-- [ ] The API accepts the new origin: Function App CORS updated in
-      Terraform, not by hand in the portal.
-- [ ] SEO artifacts follow the domain (REQ-023): canonical/OG URLs,
-      `sitemap.xml` and `robots.txt` name the custom domain.
-- [ ] The privacy policy/ROPA name the new domain where they reference the
-      site (REQ-031/034).
-- [ ] Terraform holds the custom-domain resource, so the binding is
-      reproducible — nothing click-configured.
-- [ ] The public branding matches the domain: the site name (site editor),
+      _(Redirect URI applied via Terraform — derived from the CORS list.
+      ⚠️ The live sign-in test happens right after prod promotion.)_
+- [x] The API accepts the new origin: Function App CORS updated in
+      Terraform, not by hand in the portal. _(Preflight verified:
+      `Access-Control-Allow-Origin: https://abhitutor.co.uk`.)_
+- [x] SEO artifacts follow the domain (REQ-023): canonical/OG URLs,
+      `sitemap.xml` and `robots.txt` name the custom domain. _(Merged;
+      serves live with the next prod promotion. Deviation: `og:url` on
+      the root, no per-route `rel=canonical` — a root canonical on an SPA
+      would mislabel deep routes.)_
+- [x] ~~The privacy policy/ROPA name the new domain where they reference
+      the site~~ — checked: neither document cites a URL; nothing to
+      change.
+- [x] Terraform holds the custom-domain resource, so the binding is
+      reproducible — nothing click-configured. _(Module `custom_domain`
+      var; only prod sets it. The two DNS records live in Cloudflare —
+      recorded in RUNBOOK-domain-cutover.md.)_
+- [x] The public branding matches the domain: the site name (site editor),
       topbar and meta/OG tags say AbhiTutor, not Springboard Tutoring —
-      or the owner has explicitly decided they differ.
+      or the owner has explicitly decided they differ. _(In code since the
+      2026-08-03 rebrand; the published-document siteName flips with the
+      owner's one-time prod republish.)_
 
 **Notes**
 
@@ -1709,3 +1729,100 @@ policies, prices or promises on my behalf.
 - Cheaper fallback considered: a no-AI fuzzy matcher over the FAQ
   (search in a chat costume) — free, riskless, ~80% of the value.
 
+
+## REQ-037 — "About the teacher": a CV-style public page, edited in place
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M ·
+**Builds on:** REQ-021 (bio + safeguarding, shipped) · **Pattern:** the FAQ
+page (own menu + inline teacher editing, owner-preferred 2026-08-04)
+
+**Story**
+As a parent, I want a proper "About the teacher" page — who they are, their
+qualifications and experience laid out like a well-set CV — so that I can
+judge who will be teaching my child. As the teacher, I want to edit that
+page on the page itself, the way the FAQ works.
+
+**Shape**
+
+- **Own public menu item + route** (e.g. `/about`), SEO'd and in the
+  sitemap. The REQ-021 bio section moves OFF Offerings to this page (same
+  move the FAQ made; `bio` stays valid in `sectionOrder`).
+- **CV-style layout**, not a wall of text: intro paragraph (Markdown, the
+  existing `bio.body`), then structured sections —
+  - **Experience**: dated entries (role / place / years / one line).
+  - **Education & qualifications**: dated entries; the existing
+    `qualifications` pills fold in here.
+  - **The trust row**: DBS badge (existing strictly-boolean flag),
+    safeguarding statement, experience-years — reused, not duplicated.
+- **Model change**: `bio` gains `experience: CvEntry[]` and
+  `education: CvEntry[]` (`{ years, title, place?, detail? }`), sanitised
+  like every list; older documents normalise to empty lists (same
+  never-invent rule as REQ-021 — the page shows only what the owner wrote).
+- **Edited in place**: signed-in teacher gets the editor on the page —
+  rows with add/remove/drag per section + one Publish, exactly the FAQ
+  page's mechanics. The site editor keeps only a pointer card.
+
+**Acceptance criteria**
+
+- [ ] Public `/about` with menu item; renders only owner-written content;
+      empty sections hide; DBS badge remains strictly owner-set.
+- [ ] CV entries read in reverse-chronological order, dates styled quietly.
+- [ ] Teacher edits and publishes on the page; site editor points here.
+- [ ] Offerings no longer renders the bio section.
+- [ ] Older published documents normalise (frontend + API) with empty
+      CV lists; sitemap + per-route meta updated; coverage holds.
+
+## REQ-038 — Hero highlights: the selling points that close
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** S ·
+**Depends on:** content decisions below (owner)
+
+**Story**
+As a parent skimming the first screen, I want the handful of reasons this
+tutor fits my child — visible without scrolling — so the Hero sells harder
+than headline + subhead alone.
+
+**The owner's candidate list** _(2026-08-04)_
+
+Flexible scheduling · Regular progress updates / clear communication with
+parents · Regular progress reports · Online convenience · Personalized
+learning · Confidence-building approach · Exam and assessment preparation ·
+Proven results
+
+**Decisions to make before building** _(recorded so the build is an
+afternoon, not a debate)_
+
+1. **Dedupe against the published "approach" list** — "Progress recorded
+   every session" and "Parents kept in the loop" already say the
+   progress/communication items. One list must own each claim: either these
+   highlights REPLACE the approach section on the first screen, or the two
+   lists are merged in the editor. Duplicated claims on one page read as
+   padding.
+2. **The evidence rule**: "Proven results" goes live only when something on
+   the site backs it (the reviews' outcomes, or REQ-020-style tallies if
+   ever revived). Same honesty bar as the DBS badge — claims are
+   owner-set, but load-bearing ones need visible support.
+3. **Spelling**: "Personalised" (UK) — the audience is UK parents.
+4. **Where**: a compact icon-grid strip directly under the Brand Band's
+   trust chips (two rows of four on desktop, 2-up on phones) — punchier
+   than more chips, quieter than more cards.
+
+**Shape (once decided)**
+
+- Content-driven like everything public: a `highlights: { icon?, title,
+  detail? }[]` list on the document (or the repurposed `approach` list),
+  edited where it renders or in the site editor — owner's call at build
+  time, given the FAQ-page precedent.
+- Icons from a small curated set (calendar, chat, report, laptop, target,
+  heart, exam, trophy) matched by keyword, book fallback — the
+  subjectIcons pattern.
+
+**Acceptance criteria**
+
+- [ ] The first screen shows the highlight grid without scrolling on a
+      laptop and within one swipe on a phone.
+- [ ] Every highlight is published content; none are hardcoded; empty list
+      hides the strip.
+- [ ] No claim appears twice on the page (approach dedupe resolved).
+- [ ] "Proven results" (if kept) links to or sits beside its evidence.
+- [ ] Coverage holds; the band's layout does not regress at 320px.

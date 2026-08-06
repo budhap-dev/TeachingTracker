@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import { defaultSiteContent } from '../data/siteContent'
 import type { SiteContent } from '../data/siteContent'
 import { SiteEditorView } from './SiteEditorView'
@@ -12,11 +13,13 @@ const renderEditor = (overrides?: {
 }) => {
     const onPublish = overrides?.onPublish ?? vi.fn()
     const utils = render(
+        <MemoryRouter>
         <SiteEditorView
             content={overrides?.content ?? defaultSiteContent}
             publishing={overrides?.publishing ?? false}
             onPublish={onPublish}
         />
+        </MemoryRouter>
     )
     return { ...utils, onPublish }
 }
@@ -280,11 +283,13 @@ describe('SiteEditorView', () => {
 
         // Untouched: the fetch replacing the fallback refills the form.
         rerender(
-            <SiteEditorView
-                content={fetched}
-                publishing={false}
-                onPublish={vi.fn()}
-            />
+            <MemoryRouter>
+                <SiteEditorView
+                    content={fetched}
+                    publishing={false}
+                    onPublish={vi.fn()}
+                />
+            </MemoryRouter>
         )
         expect(screen.getByLabelText(/site name/i)).toHaveValue(
             'Harbour Tuition'
@@ -295,11 +300,13 @@ describe('SiteEditorView', () => {
             target: { value: 'Hands off my draft' },
         })
         rerender(
-            <SiteEditorView
-                content={{ ...fetched, siteName: 'Late Arrival' }}
-                publishing={false}
-                onPublish={vi.fn()}
-            />
+            <MemoryRouter>
+                <SiteEditorView
+                    content={{ ...fetched, siteName: 'Late Arrival' }}
+                    publishing={false}
+                    onPublish={vi.fn()}
+                />
+            </MemoryRouter>
         )
         expect(screen.getByLabelText(/^headline/i)).toHaveValue(
             'Hands off my draft'
@@ -355,37 +362,15 @@ describe('SiteEditorView', () => {
         expect(published.faq).toEqual(defaultSiteContent.faq)
     }, 30000)
 
-    it('fills an empty FAQ from the starter set, and drops half-filled rows (REQ-025)', async () => {
-        const user = userEvent.setup()
-        const empty = structuredClone(defaultSiteContent)
-        empty.faq = []
-        const { onPublish } = renderEditor({ content: empty })
+    it('points at the FAQ page instead of editing the FAQ here (2026-08-04)', () => {
+        renderEditor()
 
-        // The nudge only exists while the FAQ is empty.
-        await user.click(
-            screen.getByRole('button', { name: /add the starter questions/i })
-        )
         expect(
-            screen.getByDisplayValue('What subjects and levels do you cover?')
-        ).toBeInTheDocument()
+            screen.getByRole('link', { name: /open the faq page/i })
+        ).toHaveAttribute('href', '/faq')
+        // No FAQ rows are editable in the site editor any more.
         expect(
-            screen.queryByRole('button', {
-                name: /add the starter questions/i,
-            })
+            screen.queryByLabelText(/^question$/i)
         ).not.toBeInTheDocument()
-
-        // A question typed without an answer must not fail the publish —
-        // the incomplete row is simply left out.
-        await user.click(
-            screen.getByRole('button', { name: /add question/i })
-        )
-        const questions = screen.getAllByLabelText(/^question$/i)
-        fireEvent.change(questions[questions.length - 1], {
-            target: { value: 'Half-finished?' },
-        })
-
-        await user.click(publishButton())
-        const published = onPublish.mock.calls[0][0] as SiteContent
-        expect(published.faq).toEqual(defaultSiteContent.faq)
-    }, 30000)
+    })
 })

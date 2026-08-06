@@ -9,6 +9,7 @@ import {
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { signIn } from '../auth/msal'
 import { BrandBadge } from './BrandBadge'
+import { subjectIcon } from '../utils/subjectIcons'
 
 import { paths } from '../paths'
 import type { Testimonial } from '../data/students'
@@ -37,9 +38,9 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
         'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
     )
     const { hero, journey } = content
-    const proof = testimonials.slice(0, 3)
+    const lead = testimonials[0]
     const experienceYears = hero.experienceYears ?? 0
-    // The rating tile averages the approved reviews already on this page —
+    // The rating chip averages the approved reviews already on this page —
     // real, permissioned numbers (REQ-027), no extra endpoint.
     const reviewCount = testimonials.length
     const averageRating = reviewCount
@@ -52,137 +53,175 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
                   10
           ) / 10
         : 0
+    // The levels and boards chips: distinct values across the published
+    // subjects, in first-seen order — "KS3 · GCSE · A-level", "AQA ·
+    // Edexcel · OCR". Both are the teacher's own content, never hardcoded.
+    const levels = Array.from(
+        new Set(
+            content.subjects.flatMap((subject) => subject.keyStages ?? [])
+        )
+    ).join(' · ')
+    const boards = Array.from(
+        new Set(
+            content.subjects.flatMap((subject) => subject.examBoards ?? [])
+        )
+    ).join(' · ')
 
     return (
         <section className="content-stack home-view">
-            <div className="card offerings-hero home-hero">
-                {/* The badge leads the front door (REQ-035): self-grounded,
-                    so it carries the brand onto the light card where the
-                    white-Tutor lockup cannot go. */}
-                <div className="home-hero-brand">
-                    <BrandBadge size={64} />
-                    <div>
-                        <p className="eyebrow">{content.siteName}</p>
-                        <h3 className="offerings-hero-headline">
-                            {hero.headline}
-                        </h3>
+            {/* D1 "the Brand Band" (owner pick, 2026-08-04): the hero is a
+                sweep of the brand gradient — badge, promise, ONE call to
+                action and the trust chips all inside the first viewport.
+                The site name is deliberately absent here: the topbar lockup
+                already says it, and saying it twice was the old page's
+                fault. */}
+            <div className="home-hero-band">
+                <div className="home-band-lead">
+                    <BrandBadge size={74} />
+                    <div className="home-band-copy">
+                        <h3 className="home-band-headline">{hero.headline}</h3>
+                        <p className="home-band-subhead">{hero.subhead}</p>
+                        {hero.availability && (
+                            <p className="home-band-availability">
+                                {hero.availability}
+                            </p>
+                        )}
                     </div>
                 </div>
-                <p className="offerings-hero-subhead">{hero.subhead}</p>
-                {hero.availability && (
-                    <p className="offerings-availability">
-                        {hero.availability}
-                    </p>
-                )}
-                <div className="home-hero-actions">
+                <div className="home-band-actions">
                     <Button
-                        variant="contained"
+                        className="home-band-cta"
                         component={Link}
-                        to={paths.contact}
+                        to={paths.enquire}
                     >
                         Request a free assessment
                     </Button>
-                    <Button
-                        variant="outlined"
-                        component={Link}
-                        to={paths.offerings}
-                    >
-                        See what we offer
-                    </Button>
+                    <Link className="home-band-more" to={paths.offerings}>
+                        Explore subjects →
+                    </Link>
                 </div>
+                {(reviewCount > 0 ||
+                    experienceYears > 0 ||
+                    levels ||
+                    boards) && (
+                    <ul
+                        className="home-band-chips"
+                        aria-label="Teaching record so far"
+                    >
+                        {reviewCount > 0 && (
+                            <li>
+                                ★ {averageRating} · {reviewCount}{' '}
+                                {reviewCount === 1 ? 'family' : 'families'}
+                            </li>
+                        )}
+                        {experienceYears > 0 && (
+                            <li>{experienceYears}+ years teaching</li>
+                        )}
+                        {levels && <li>{levels}</li>}
+                        {boards && <li>{boards}</li>}
+                    </ul>
+                )}
             </div>
 
-            {/* The outcomes strip (REQ-020): real numbers only — the
-                teacher-stated experience (site content, REQ-008) and the
-                approved-review rating (REQ-027). Hidden entirely until there
-                is something to show. */}
-            {(experienceYears > 0 || reviewCount > 0) && (
-                <ul
-                    className="card outcomes-strip"
-                    aria-label="Teaching record so far"
+            {/* What we teach, without a click: the published subjects. */}
+            {content.subjects.length > 0 && (
+                <div
+                    className="home-subject-chips"
+                    aria-label="Subjects taught"
                 >
-                    {experienceYears > 0 && (
-                        <li>
-                            <strong>{experienceYears}+</strong>
-                            <span>years of tutoring experience</span>
-                        </li>
-                    )}
-                    {reviewCount > 0 && (
-                        <li>
-                            {/* The rating is a doorway: tap it to read the
-                                reviews behind the number. */}
-                            <Link to={paths.reviews}>
-                                <strong>
-                                    {averageRating}
-                                    <span aria-hidden>★</span>
-                                </strong>
-                                <span>
-                                    from {reviewCount} family{' '}
-                                    {reviewCount === 1 ? 'review' : 'reviews'}
-                                </span>
+                    {content.subjects.map((subject) => {
+                        const Icon = subjectIcon(subject.name)
+                        return (
+                            <Link
+                                key={subject.name}
+                                className="home-subject-chip"
+                                to={paths.offerings}
+                            >
+                                <Icon fontSize="small" aria-hidden />
+                                {subject.name}
                             </Link>
-                        </li>
-                    )}
-                </ul>
+                        )
+                    })}
+                </div>
             )}
 
-            {proof.length > 0 && (
-                <div className="card">
-                    <div className="section-header">
-                        <div>
-                            <h4 className="offerings-heading">
-                                What families say
-                            </h4>
-                        </div>
-                        <Button
-                            variant="text"
-                            component={Link}
-                            to={paths.reviews}
-                        >
-                            Read all reviews
-                        </Button>
-                    </div>
-                    <div className="testimonial-grid">
-                        {proof.map((testimonial) => (
-                            <figure
-                                key={testimonial.id}
-                                className="testimonial-card review"
-                            >
+            {/* Proof with a face + the journey at a glance, side by side.
+                The review card leads with the whole record — hero rating,
+                star row, the live distribution — then one voice from it. */}
+            <div className="home-proof-row">
+                {lead && (
+                    <figure className="card home-quote">
+                        <div className="home-rating-summary">
+                            <span className="home-rating-big">
+                                {averageRating.toFixed(1)}
+                            </span>
+                            <div>
                                 <Rating
-                                    value={testimonial.rating}
+                                    value={averageRating}
+                                    precision={0.1}
                                     readOnly
                                     size="small"
                                 />
-                                <blockquote>{testimonial.quote}</blockquote>
-                                <figcaption>
-                                    <strong>{testimonial.authorName}</strong>
-                                    <span>{testimonial.role}</span>
-                                </figcaption>
-                            </figure>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            <div className="card">
-                <div className="section-header">
-                    <div>
-                        <h4 className="offerings-heading">How it works</h4>
-                    </div>
-                </div>
-                <ol className="offerings-journey">
-                    {journey.map((step, index) => (
-                        <li key={step.title} className="offerings-step">
-                            <span className="offerings-step-icon" aria-hidden>
-                                {journeyIcons[index % journeyIcons.length]}
-                            </span>
-                            <div>
-                                <strong>{step.title}</strong>
-                                <p>{step.detail}</p>
+                                <span className="home-rating-count">
+                                    from {reviewCount} family{' '}
+                                    {reviewCount === 1 ? 'review' : 'reviews'}
+                                </span>
                             </div>
-                        </li>
-                    ))}
-                </ol>
+                        </div>
+                        <ul
+                            className="home-rating-bars"
+                            aria-label="Rating breakdown"
+                        >
+                            {[5, 4, 3, 2, 1].map((stars) => {
+                                const count = testimonials.filter(
+                                    (t) => t.rating === stars
+                                ).length
+                                return (
+                                    <li key={stars}>
+                                        <span>{stars}★</span>
+                                        <span className="home-rating-track">
+                                            <span
+                                                className="home-rating-fill"
+                                                style={{
+                                                    width: `${(count / reviewCount) * 100}%`,
+                                                }}
+                                            />
+                                        </span>
+                                        <span>{count}</span>
+                                    </li>
+                                )
+                            })}
+                        </ul>
+                        <blockquote>{lead.quote}</blockquote>
+                        <figcaption>
+                            <strong>{lead.authorName}</strong>
+                            <span>{lead.role}</span>
+                            <Button
+                                variant="text"
+                                component={Link}
+                                to={paths.reviews}
+                            >
+                                Read all reviews
+                            </Button>
+                        </figcaption>
+                    </figure>
+                )}
+                <div className="card home-journey-mini">
+                    <h4 className="offerings-heading">How it works</h4>
+                    <ol>
+                        {journey.map((step, index) => (
+                            <li key={step.title}>
+                                <span className="home-journey-icon" aria-hidden>
+                                    {journeyIcons[index % journeyIcons.length]}
+                                </span>
+                                <div>
+                                    <strong>{step.title}</strong>
+                                    <p>{step.detail}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
             </div>
 
             <p className="home-teacher-line">

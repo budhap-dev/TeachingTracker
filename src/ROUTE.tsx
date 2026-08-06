@@ -59,6 +59,7 @@ import { OfferingsView } from './components/OfferingsView'
 import { SiteEditorView } from './components/SiteEditorView'
 import { PrivacyView } from './components/PrivacyView'
 import { ReviewsView } from './components/ReviewsView'
+import { FaqLanding } from './components/FaqView'
 import { ReviewModerationView } from './components/ReviewModerationView'
 import { PageLoading } from './components/PageLoading'
 import { RequireTeacher } from './components/RequireTeacher'
@@ -886,6 +887,9 @@ export const AppRoutes = () => (
             <Route path={paths.privacy} element={<PrivacyView />} />
             {/* Public reviews (REQ-027); moderation is teacher-only. */}
             <Route path={paths.reviews} element={<ReviewsRoute />} />
+            {/* The FAQ on its own page (REQ-025, owner call 2026-08-04);
+                the signed-in teacher edits it right there. */}
+            <Route path={paths.faq} element={<FaqLanding />} />
             <Route
                 path={paths.reviewsModeration}
                 element={teacher(<ReviewModerationRoute />)}

@@ -448,3 +448,10 @@
         color: var(--accent);
     }
 }
+
+/* Desktop: the drawer wrapper is layout-invisible — nav and footer stay
+   direct flex children of the sidebar. The phone layout turns it into a
+   fixed slide-in panel (see _responsive.scss). */
+.sidebar-drawer {
+    display: contents;
+}

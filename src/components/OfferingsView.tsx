@@ -4,23 +4,10 @@ import { Button } from '@mui/material'
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
-import FunctionsRoundedIcon from '@mui/icons-material/FunctionsRounded'
-import ScienceRoundedIcon from '@mui/icons-material/ScienceRounded'
-import BiotechRoundedIcon from '@mui/icons-material/BiotechRounded'
-import BoltRoundedIcon from '@mui/icons-material/BoltRounded'
-import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded'
-import type { SvgIconComponent } from '@mui/icons-material'
 import type { SiteContent } from '../data/siteContent'
 import { renderMarkdown } from '../utils/markdown'
+import { subjectIcon } from '../utils/subjectIcons'
 
-/** A subject-appropriate glyph; a book stands in for anything unrecognised. */
-const subjectIcon = (name: string): SvgIconComponent =>
-    ({
-        Mathematics: FunctionsRoundedIcon,
-        Physics: BoltRoundedIcon,
-        Chemistry: ScienceRoundedIcon,
-        Biology: BiotechRoundedIcon,
-    })[name] ?? MenuBookRoundedIcon
 
 /** Five playful, subject-relevant emoji that cycle on the flip side, for fun. */
 const subjectImages = (name: string): string[] =>
@@ -66,7 +53,7 @@ export const OfferingsView = ({
     content,
     onBookAssessment,
 }: OfferingsViewProps) => {
-    const { hero, subjects, journey, approach, bio, faq, freeform } = content
+    const { hero, subjects, journey, approach, bio, freeform } = content
     // Which subject card is flipped (tapped). Hover flips on its own via CSS;
     // this makes the flip work on touch too, just for fun.
     const [flipped, setFlipped] = useState<string | null>(null)
@@ -291,28 +278,10 @@ export const OfferingsView = ({
         </div>
     ) : null
 
-    // The FAQ accordion (REQ-025): native details/summary — accessible and
-    // crawlable — closing on the same enquiry CTA the rest of the page uses.
-    const faqSection =
-        faq.length > 0 ? (
-            <div className="card offerings-faq">
-                <h4 className="offerings-heading">Questions families ask</h4>
-                <div className="faq-list">
-                    {faq.map((item) => (
-                        <details key={item.question} className="faq-item">
-                            <summary>{item.question}</summary>
-                            <p>{item.answer}</p>
-                        </details>
-                    ))}
-                </div>
-                <p className="faq-cta">
-                    A question we haven’t answered?{' '}
-                    <Button variant="text" onClick={onBookAssessment}>
-                        Ask us — request a free assessment
-                    </Button>
-                </p>
-            </div>
-        ) : null
+    // The FAQ lives on its own page now (owner call, 2026-08-04) — the
+    // 'faq' section key renders nothing here, but stays in sectionOrder so
+    // older published documents keep validating.
+    const faqSection = null
 
     const sections = {
         hero: heroSection,

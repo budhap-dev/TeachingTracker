@@ -42,7 +42,7 @@ const renderHome = (
     )
 
 describe('HomeView', () => {
-    it('pitches with the hero and routes onward to the public pages', () => {
+    it('pitches from the brand band and routes onward (D1, 2026-08-04)', () => {
         renderHome()
 
         expect(
@@ -51,75 +51,93 @@ describe('HomeView', () => {
         // The default availability line is blank, so no line renders — the
         // teacher publishes one via the site editor when there is news.
         expect(
-            document.querySelector('.offerings-availability')
+            document.querySelector('.home-band-availability')
         ).not.toBeInTheDocument()
+        // ONE call to action, straight to the enquiry form (REQ-018).
         expect(
             screen.getByRole('link', { name: /request a free assessment/i })
-        ).toHaveAttribute('href', '/contact')
+        ).toHaveAttribute('href', '/enquire')
         expect(
-            screen.getByRole('link', { name: /see what we offer/i })
+            screen.getByRole('link', { name: /explore subjects/i })
         ).toHaveAttribute('href', '/offerings')
         expect(
             screen.getByRole('link', { name: /read all reviews/i })
         ).toHaveAttribute('href', '/reviews')
     })
 
-    it('shows at most three reviews as proof', () => {
+    it('surfaces the published subjects as chips linking onward', () => {
+        renderHome()
+
+        const chips = screen.getAllByRole('link', { name: 'Mathematics' })
+        expect(chips[0]).toHaveAttribute('href', '/offerings')
+        expect(
+            screen.getByRole('link', { name: 'Physics' })
+        ).toBeInTheDocument()
+    })
+
+    it('leads with one strong review, not a wall of three', () => {
         renderHome()
 
         expect(screen.getByText('Quote number 1.')).toBeInTheDocument()
-        expect(screen.getByText('Quote number 3.')).toBeInTheDocument()
-        expect(screen.queryByText('Quote number 4.')).not.toBeInTheDocument()
+        expect(screen.queryByText('Quote number 2.')).not.toBeInTheDocument()
     })
 
-    it('drops the proof strip entirely when there are no reviews yet', () => {
+    it('shows the rating record: hero number and the live distribution', () => {
+        renderHome()
+
+        // Four five-star fixture reviews: 5.0 hero, all counts on the 5★ row.
+        expect(screen.getByText('5.0')).toBeInTheDocument()
+        expect(screen.getByText(/from 4 family reviews/i)).toBeInTheDocument()
+        const bars = screen.getByRole('list', { name: /rating breakdown/i })
+        expect(bars).toHaveTextContent('5★')
+        expect(bars).toHaveTextContent('1★')
+    })
+
+    it('drops the quote card entirely when there are no reviews yet', () => {
         renderHome([])
 
-        expect(screen.queryByText(/what families say/i)).not.toBeInTheDocument()
-        // The journey still shows.
+        expect(
+            screen.queryByRole('link', { name: /read all reviews/i })
+        ).not.toBeInTheDocument()
+        // The journey still shows, compact — titles with their step number.
         expect(screen.getByText(/how it works/i)).toBeInTheDocument()
         expect(
             screen.getByText(defaultSiteContent.journey[0].title)
         ).toBeInTheDocument()
     })
 
-    it('shows the record strip: stated experience + the approved-review rating (REQ-020)', () => {
+    it('carries the trust chips inside the band (REQ-020 as D1 chips)', () => {
         renderHome()
 
-        const strip = screen.getByRole('list', {
+        const chips = screen.getByRole('list', {
             name: /teaching record so far/i,
         })
-        expect(strip).toHaveTextContent('20+years of tutoring experience')
-        // The fixture's four approved five-star reviews average to 5, and
-        // the rating tile links through to the reviews behind the number.
-        expect(strip).toHaveTextContent('5★from 4 family reviews')
-        expect(
-            screen.getByRole('link', { name: /from 4 family reviews/i })
-        ).toHaveAttribute('href', '/reviews')
+        // Four approved five-star fixture reviews average to 5.
+        expect(chips).toHaveTextContent('★ 5 · 4 families')
+        expect(chips).toHaveTextContent('20+ years teaching')
+        // Levels and boards derive from the published subjects.
+        expect(chips).toHaveTextContent('KS3 · GCSE · A-level')
+        expect(chips).toHaveTextContent('AQA · Edexcel · OCR')
     })
 
-    it('hides tiles with nothing to say, and the whole strip when both are empty', () => {
-        // Experience stated, no reviews yet: the rating tile stays out.
+    it('hides chips with nothing to say, and the whole row when empty', () => {
+        // No reviews yet: the rating chip stays out.
         renderHome([])
-        const strip = screen.getByRole('list', {
+        const chips = screen.getByRole('list', {
             name: /teaching record so far/i,
         })
-        expect(strip).toHaveTextContent('years of tutoring experience')
-        expect(strip).not.toHaveTextContent('family review')
+        expect(chips).toHaveTextContent('years teaching')
+        expect(chips).not.toHaveTextContent('★')
 
-        // Reviews but no stated experience: only the rating tile.
-        renderHome([reviews[0]], contentWithoutExperience)
-        const ratingOnly = screen.getAllByRole('list', {
-            name: /teaching record so far/i,
-        })[1]
-        expect(ratingOnly).toHaveTextContent('5★from 1 family review')
-        expect(ratingOnly).not.toHaveTextContent('experience')
-
-        // Neither: no strip at all.
-        renderHome([], contentWithoutExperience)
+        // No experience stated either — and no subjects to derive levels
+        // from: the whole chip row disappears.
+        renderHome([], {
+            ...contentWithoutExperience,
+            subjects: [],
+        })
         expect(
             screen.queryAllByRole('list', { name: /teaching record so far/i })
-        ).toHaveLength(2) // the two earlier renders' strips, no new one
+        ).toHaveLength(1) // only the earlier render's row, no new one
     })
 
     it('sets the page title and description while mounted, restoring after', () => {
@@ -163,9 +181,9 @@ describe('HomeLanding', () => {
         expect(
             screen.getByText(defaultSiteContent.hero.headline)
         ).toBeInTheDocument()
-        // The mocked API's approved reviews arrive as proof.
+        // The mocked API's approved reviews arrive as the lead quote.
         expect(
-            await screen.findByText(/what families say/i)
+            await screen.findByRole('link', { name: /read all reviews/i })
         ).toBeInTheDocument()
     })
 })

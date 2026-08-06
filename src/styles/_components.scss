@@ -381,26 +381,6 @@
     margin-top: 6px;
 }
 
-/* Home hero: the badge leads, large — the brand's front-door moment. The
-   text block may wrap; the badge never shrinks or distorts. */
-.home-hero-brand {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-
-    > div {
-        min-width: 0;
-    }
-
-    .eyebrow {
-        margin-bottom: 2px;
-    }
-
-    .offerings-hero-headline {
-        margin: 0;
-    }
-}
-
 .table-wrapper {
     overflow-x: auto;
     max-width: 100%;
@@ -2531,7 +2511,9 @@ $note-rule: 32px;
 
 .offerings-hero-subhead {
     margin: 0;
-    max-width: 60ch;
+    /* Full card width (owner call) — the 60ch readability cap left the
+       line looking cramped beside the hero badge. */
+    max-width: none;
     font-size: 1.02rem;
     line-height: 1.55;
     color: var(--muted);
@@ -3267,13 +3249,270 @@ $note-rule: 32px;
     opacity: 0.85;
 }
 
-/* Public Home landing (REQ-024). Reuses the offerings hero/journey/testimonial
-   styles; only the CTA row and the quiet teacher afterline are its own. */
-.home-hero-actions {
+/* Public Home landing (REQ-024) — D1 "the Brand Band" (owner pick,
+   2026-08-04). The hero is a sweep of the sidebar gradient: white promise,
+   one amber CTA, trust chips inside the band. */
+.home-hero-band {
+    border-radius: 18px;
+    padding: 30px 32px 26px;
+    background: var(--sidebar-gradient);
+    color: #ffffff;
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--sidebar-start) 40%, transparent);
+}
+
+.home-band-lead {
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: 22px;
+}
+
+.home-band-copy {
+    min-width: 0;
+}
+
+.home-band-headline {
+    margin: 0;
+    font-size: clamp(1.5rem, 3.5vw, 1.9rem);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+}
+
+.home-band-subhead {
+    margin: 6px 0 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.home-band-availability {
+    margin: 8px 0 0;
+    font-weight: 700;
+    color: #fde68a;
+}
+
+.home-band-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
     flex-wrap: wrap;
-    margin-top: 14px;
+    margin-top: 20px;
+}
+
+/* The one button. Amber regardless of theme: it is the marketing accent,
+   not a theme colour. */
+.home-band-cta.MuiButton-root {
+    background: #f59e0b;
+    color: #241a02;
+    font-weight: 800;
+    padding: 9px 22px;
+
+    &:hover {
+        background: #d97706;
+    }
+}
+
+.home-band-more {
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 600;
+}
+
+.home-band-chips {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    li {
+        background: rgba(255, 255, 255, 0.13);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+}
+
+/* The published subjects, one tap from the door. */
+.home-subject-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.home-subject-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1.5px solid var(--subject-accent);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--subject-accent) 82%, var(--text));
+    background: color-mix(in srgb, var(--subject-accent) 12%, var(--surface));
+    text-decoration: none;
+    transition: transform 0.15s ease;
+
+    svg {
+        font-size: 1.1rem;
+        color: var(--subject-accent);
+    }
+
+    &:hover {
+        background: color-mix(in srgb, var(--subject-accent) 20%, var(--surface));
+        transform: translateY(-1px);
+    }
+}
+
+/* The chips wear the same six-step theme-derived hue cycle as the subject
+   cards on Offerings — a subject keeps its colour family across pages. */
+.home-subject-chip:nth-child(6n + 1) {
+    --subject-accent: var(--accent);
+}
+.home-subject-chip:nth-child(6n + 2) {
+    --subject-accent: var(--accent-alt);
+}
+.home-subject-chip:nth-child(6n + 3) {
+    --subject-accent: color-mix(in srgb, var(--accent) 50%, var(--accent-alt));
+}
+.home-subject-chip:nth-child(6n + 4) {
+    --subject-accent: color-mix(in srgb, var(--accent) 72%, var(--text));
+}
+.home-subject-chip:nth-child(6n + 5) {
+    --subject-accent: color-mix(in srgb, var(--accent-alt) 72%, var(--text));
+}
+.home-subject-chip:nth-child(6n + 6) {
+    --subject-accent: color-mix(in srgb, var(--accent-alt) 45%, var(--accent));
+}
+
+/* Proof with a face + the journey at a glance. */
+.home-proof-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+}
+
+.home-quote {
+    margin: 0;
+
+    blockquote {
+        margin: 12px 0 10px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        font-size: 1.05rem;
+        line-height: 1.5;
+    }
+
+    figcaption {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        flex-wrap: wrap;
+        color: var(--muted);
+        font-size: 0.85rem;
+
+        strong {
+            color: var(--text);
+        }
+    }
+}
+
+/* The rating summary: a hero number with its star row, then the live
+   distribution as a single-hue meter — thin bars, counts as quiet direct
+   labels, text in ink (dataviz rules: text never wears the series color). */
+.home-rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.home-rating-big {
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.home-rating-count {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.home-rating-bars {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    li {
+        display: grid;
+        grid-template-columns: 28px 1fr 22px;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+
+        > span:last-child {
+            text-align: right;
+        }
+    }
+}
+
+.home-rating-track {
+    display: block;
+    height: 6px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--muted) 18%, transparent);
+    overflow: hidden;
+}
+
+.home-rating-fill {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--accent);
+}
+
+.home-journey-mini {
+    ol {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    li {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+
+        strong {
+            font-weight: 700;
+        }
+
+        p {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+    }
+}
+
+.home-journey-icon {
+    font-size: 1.15rem;
+    line-height: 1;
 }
 
 .home-teacher-line {
@@ -3283,87 +3522,6 @@ $note-rule: 32px;
     font-size: 0.9rem;
 }
 
-/* The record strip (REQ-020): the site's two trust numbers, showcased — a
-   theme-tinted gradient band, big ink numerals over quiet uppercase labels,
-   a hairline between the stats, the star in review gold. Colour lives in
-   the band and the star; the numbers stay ink, so they do the talking. */
-.outcomes-strip {
-    list-style: none;
-    margin: 0;
-    padding: 26px 20px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: stretch;
-    background: linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--accent) 14%, var(--surface)),
-        color-mix(in srgb, var(--accent-alt) 16%, var(--surface))
-    );
-    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
-
-    li {
-        flex: 1 1 0;
-        max-width: 340px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        text-align: center;
-        padding: 4px 28px;
-    }
-
-    li + li {
-        border-left: 1px solid
-            color-mix(in srgb, var(--accent) 28%, var(--border));
-    }
-
-    strong {
-        font-size: 2.3rem;
-        font-weight: 800;
-        line-height: 1;
-        letter-spacing: -0.02em;
-    }
-
-    /* The rating's star: part of the value, in the review gold both themes
-       already use for stars. */
-    strong span {
-        font-size: 1.4rem;
-        margin-left: 4px;
-        color: #faaf00;
-    }
-
-    li > span,
-    li a > span {
-        color: var(--muted);
-        font-size: 0.78rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.09em;
-    }
-
-    /* The rating tile links to the Reviews page; the tile look is unchanged
-       and the label picks up the accent on hover/focus as the affordance. */
-    li a {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        color: inherit;
-        text-decoration: none;
-        border-radius: 10px;
-    }
-
-    li a:hover > span,
-    li a:focus-visible > span {
-        color: var(--accent);
-        text-decoration: underline;
-    }
-}
-
-/* Public enquiry form (REQ-018): two columns like the review form; the goal,
-   submit and consent line run full width. */
 .enquire-form {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3682,14 +3840,15 @@ $note-rule: 32px;
 
 /* The FAQ accordion (REQ-025): native details/summary rows, a chevron that
    turns when open, and the enquiry CTA as the closing line. */
-.offerings-faq {
-    .faq-list {
-        margin-top: 12px;
-        display: flex;
-        flex-direction: column;
-    }
+/* The FAQ atoms — used by the FAQ page (REQ-025; its own page since
+   2026-08-04). */
+.faq-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+}
 
-    .faq-item {
+.faq-item {
         border-bottom: 1px solid var(--border);
 
         summary {
@@ -3730,16 +3889,15 @@ $note-rule: 32px;
         }
     }
 
-    .faq-cta {
-        margin: 14px 0 0;
-        color: var(--muted);
-        font-size: 0.92rem;
+.faq-cta {
+    margin: 14px 0 0;
+    color: var(--muted);
+    font-size: 0.92rem;
 
-        .MuiButton-root {
-            text-transform: none;
-            padding: 0 4px;
-            vertical-align: baseline;
-        }
+    .MuiButton-root {
+        text-transform: none;
+        padding: 0 4px;
+        vertical-align: baseline;
     }
 }
 

@@ -1,5 +1,13 @@
 # Runbook — abhitutor.co.uk cutover (REQ-035 part 2)
 
+> **✅ EXECUTED 2026-08-04** — registered in the morning, live by evening.
+> Steps 1–4 ran as written (apex TXT validated in ~18 minutes; www's
+> certificate landed first, apex minutes later). Both hostnames answer
+> with valid certificates; API preflight verified for the new origin.
+> Kept for reference, re-runs on a future domain, and the rollback.
+> Outstanding aftercare at execution time: prod promotion + prod
+> site-editor republish, PWA re-add, Search Console.
+
 The domain was registered 2026-08-04 (Cloudflare, `.co.uk` only — owner
 call). This runbook takes it from registered to live. Each step says who
 runs it. Total elapsed time is an afternoon, most of it DNS/certificate

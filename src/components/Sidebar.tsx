@@ -12,6 +12,7 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
+import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined'
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import PrivacyTipOutlinedIcon from '@mui/icons-material/PrivacyTipOutlined'
@@ -127,6 +128,12 @@ const navItems: NavItem[] = [
         isActive: (pathname) => pathname === paths.reviews,
     },
     {
+        label: 'FAQ',
+        path: paths.faq,
+        icon: <QuizOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.faq),
+    },
+    {
         label: 'Privacy',
         path: paths.privacy,
         icon: <PrivacyTipOutlinedIcon fontSize="small" />,
@@ -212,6 +219,18 @@ const SidebarContent = ({
                     <span />
                 </button>
             </div>
+            {/* Phones: tapping the dimmed page closes the drawer. Rendered
+                only while open; desktop never opens it (toggle is hidden). */}
+            {isMobileNavOpen && (
+                <div
+                    className="mobile-nav-backdrop"
+                    onClick={() => setIsMobileNavOpen(false)}
+                    aria-hidden="true"
+                />
+            )}
+            {/* display: contents on desktop — the drawer only materialises
+                as a fixed panel in the phone layout. */}
+            <div className="sidebar-drawer">
             <nav className="sidebar-nav">
                 {groups.map((group) => (
                     <div key={group.label} className="sidebar-nav-group">
@@ -244,6 +263,7 @@ const SidebarContent = ({
                     {!isProdBuild && ' (dev)'}
                 </span>
             </footer>
+            </div>
         </aside>
     )
 }
