@@ -60,6 +60,7 @@ import { SiteEditorView } from './components/SiteEditorView'
 import { PrivacyView } from './components/PrivacyView'
 import { ReviewsView } from './components/ReviewsView'
 import { FaqLanding } from './components/FaqView'
+import { PricingLanding } from './components/PricingView'
 import { ReviewModerationView } from './components/ReviewModerationView'
 import { PageLoading } from './components/PageLoading'
 import { RequireTeacher } from './components/RequireTeacher'
@@ -890,6 +891,8 @@ export const AppRoutes = () => (
             {/* The FAQ on its own page (REQ-025, owner call 2026-08-04);
                 the signed-in teacher edits it right there. */}
             <Route path={paths.faq} element={<FaqLanding />} />
+            {/* Transparent pricing (REQ-022) — public, edited in place. */}
+            <Route path={paths.pricing} element={<PricingLanding />} />
             <Route
                 path={paths.reviewsModeration}
                 element={teacher(<ReviewModerationRoute />)}

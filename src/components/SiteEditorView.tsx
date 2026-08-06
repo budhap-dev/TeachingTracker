@@ -71,6 +71,8 @@ type Draft = {
     bio: BioDraft
     /** FAQ rows ride the PointRow shape: title = question, detail = answer. */
     faq: PointRow[]
+    /** Pricing passes through untouched — edited on its own page. */
+    pricing: SiteContent['pricing']
     freeform: SiteContent['freeform']
     sectionOrder: SectionKey[]
 }
@@ -98,6 +100,7 @@ const toDraft = (content: SiteContent): Draft => ({
         dbsChecked: content.bio.dbsChecked,
         safeguarding: content.bio.safeguarding,
     },
+    pricing: content.pricing,
     faq: content.faq.map((item) => ({
         key: newRowKey(),
         title: item.question,
@@ -153,6 +156,7 @@ const assemble = (draft: Draft): SiteContent => ({
         dbsChecked: draft.bio.dbsChecked,
         safeguarding: draft.bio.safeguarding.trim(),
     },
+    pricing: draft.pricing,
     // Both halves required: the API rejects a question without an answer,
     // so an incomplete row is dropped rather than failing the publish.
     faq: draft.faq
@@ -412,12 +416,13 @@ export const SiteEditorView = ({
                             nothing to order on Offerings. */}
                         <SortableList
                             ids={draft.sectionOrder.filter(
-                                (key) => key !== 'faq'
+                                (key) => key !== 'faq' && key !== 'journey'
                             )}
                             onReorder={(ids) =>
                                 edit((next) => {
                                     next.sectionOrder = [
                                         ...(ids as SectionKey[]),
+                                        'journey',
                                         'faq',
                                     ]
                                 })
@@ -425,7 +430,11 @@ export const SiteEditorView = ({
                         >
                             <div className="sortable-rows">
                                 {draft.sectionOrder
-                                    .filter((key) => key !== 'faq')
+                                    .filter(
+                                        (key) =>
+                                            key !== 'faq' &&
+                                            key !== 'journey'
+                                    )
                                     .map((key) => (
                                         <SortableItem
                                             key={key}
@@ -653,7 +662,7 @@ export const SiteEditorView = ({
                     {pointsCard(
                         'journey',
                         'How it works',
-                        'The steps from first enquiry to weekly lessons.',
+                        'The steps from first enquiry to weekly lessons — shown on the Home page.',
                         'step'
                     )}
                     {pointsCard(
@@ -758,6 +767,22 @@ export const SiteEditorView = ({
                             to={paths.faq}
                         >
                             Open the FAQ page
+                        </Button>
+                    </div>
+
+                    <div className="card">
+                        <h4 className="offerings-heading">Pricing</h4>
+                        <p className="section-subtitle">
+                            Rates, factors and the closing note are edited on
+                            the pricing page itself.
+                        </p>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            component={RouterLink}
+                            to={paths.pricing}
+                        >
+                            Open the pricing page
                         </Button>
                     </div>
 

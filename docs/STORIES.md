@@ -92,7 +92,7 @@ XS is an afternoon, XL is a project.
 | 18 | ✅ | [REQ-019 — Leads inbox](#req-019--leads-inbox) | M | both | REQ-018 (shipped 2026-07-25) |
 | 19 | 🔲 | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | REQ-008, REQ-009 |
 | 20 | 🔲 | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | REQ-008 |
-| 21 | ⏸️ | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | REQ-008 (parked 2026-08-02: owner will set prices first) |
+| 21 | 🚧 | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | — (unparked 2026-08-04: from £20/hr/student; own page, FAQ pattern) |
 | 22 | ✅ | [REQ-023 — Public pages are discoverable (SEO / OG)](#req-023--public-pages-are-discoverable-seo--og) | M | frontend | — (static meta + per-route titles + sitemap/robots; prerender deferred) |
 | 23 | ✅ | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
 | 24 | 🔲 | [REQ-025 — FAQ](#req-025--faq) | S | both | REQ-008 |
@@ -929,21 +929,42 @@ so that I feel safe choosing this service.
 
 ## REQ-022 — Transparent pricing
 
-**Status:** ⏸️ Parked (2026-08-02) — the owner wants to work out the pricing
-itself before anything is published; build waits on that decision ·
-**Impact:** both · **Effort:** S · **Depends on:** REQ-008 (content)
+**Status:** 🚧 Unparked 2026-08-04 (owner set the anchor) · **Impact:**
+both · **Effort:** S · **Pattern:** the FAQ page (own menu, edited in
+place)
 
 **Story**
 As a parent, I want to see pricing up front, so that I can decide whether to
 enquire without having to ask.
 
+**Owner's facts** _(2026-08-04)_: pricing must be CLEAR to parents; it
+varies by criteria; it **generally starts from £20 per hour, per
+student**.
+
+**Decisions**
+
+- **Own public page** (`/pricing`, own menu item) — the FAQ-page pattern:
+  public rendering + the teacher editing IN PLACE with one Publish.
+- **Honest shape**: a big from-price (£/hour · per student), the *named*
+  factors that shape the exact rate (level, one-to-one vs small group,
+  online vs in person — named, not fake-quantified), and a note that the
+  exact rate is agreed at the free assessment. No invented price tables.
+- **The from-price also joins the Home band's trust chips** ("From
+  £20/hr") — price clarity is a selling point.
+- Older published documents normalise to a **hidden** pricing page body
+  (no from-price → "not published yet") — never-invent, as ever.
+
 **Acceptance criteria**
 
-- [ ] A pricing section showing the per-session and monthly-retainer options —
-      mirroring the app's existing fee types — with from-prices and what's included.
-- [ ] Optional bursary / concession note.
-- [ ] Pricing is teacher-editable via REQ-008.
-- [ ] Frontend coverage stays 100%.
+- [ ] Public `/pricing` + menu + sitemap: from-price hero, factor list,
+      the free-assessment note, enquiry CTA.
+- [ ] All of it published content: number + rows + note editable on the
+      page; site editor keeps a pointer card; publishes pass pricing
+      through untouched.
+- [ ] Home band shows "From £N/hr" only when published.
+- [ ] API sanitises (whole pounds, sane cap) and validates; older
+      documents normalise empty on both sides.
+- [ ] Coverage holds in both repos.
 
 **Notes**
 

@@ -61,6 +61,10 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
             content.subjects.flatMap((subject) => subject.keyStages ?? [])
         )
     ).join(' · ')
+    // The price chip anchors on the cheapest published rate (REQ-022).
+    const fromPrice = content.pricing.rates.length
+        ? Math.min(...content.pricing.rates.map((rate) => rate.fromPerHour))
+        : 0
     const boards = Array.from(
         new Set(
             content.subjects.flatMap((subject) => subject.examBoards ?? [])
@@ -119,6 +123,7 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
                         )}
                         {levels && <li>{levels}</li>}
                         {boards && <li>{boards}</li>}
+                        {fromPrice > 0 && <li>From £{fromPrice}/hr</li>}
                     </ul>
                 )}
             </div>

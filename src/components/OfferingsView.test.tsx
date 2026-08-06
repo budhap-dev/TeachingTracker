@@ -104,21 +104,18 @@ describe('OfferingsView', () => {
         ).toBeInTheDocument()
     })
 
-    it('lays out how it works as a numbered journey', () => {
+    it('no longer renders the journey — it lives on the Home page (2026-08-04)', () => {
         renderView()
 
         expect(
-            screen.getByRole('heading', { name: /how it works/i })
-        ).toBeInTheDocument()
+            screen.queryByRole('heading', { name: /how it works/i })
+        ).not.toBeInTheDocument()
         expect(
-            screen.getByRole('heading', { name: 'Enquire' })
-        ).toBeInTheDocument()
-        expect(
-            screen.getByRole('heading', { name: 'Free assessment' })
-        ).toBeInTheDocument()
+            screen.queryByRole('heading', { name: 'Enquire' })
+        ).not.toBeInTheDocument()
     })
 
-    it('keeps the selling points below the journey', () => {
+    it('keeps the selling points', () => {
         renderView()
 
         expect(
@@ -141,9 +138,9 @@ describe('OfferingsView', () => {
         expect(
             screen.getByText(/subject list coming soon/i)
         ).toBeInTheDocument()
-        // The journey and selling points still stand on their own.
+        // The selling points still stand on their own.
         expect(
-            screen.getByRole('heading', { name: 'Enquire' })
+            screen.getByRole('heading', { name: 'Grouped by year' })
         ).toBeInTheDocument()
     })
 
@@ -195,20 +192,22 @@ describe('OfferingsView', () => {
     it('renders sections in the teacher-chosen order', () => {
         renderView({
             sectionOrder: [
-                'journey',
+                'approach',
                 'hero',
                 'subjects',
-                'approach',
+                'journey',
                 'freeform',
             ],
         })
         const headings = screen
             .getAllByRole('heading')
             .map((heading) => heading.textContent)
-        // The journey's heading now precedes the hero's page heading.
-        expect(
-            headings.indexOf('How it works')
-        ).toBeLessThan(headings.indexOf('Offerings'))
+        // The approach heading now precedes the hero's page heading.
+        const approachIndex = headings.findIndex((text) =>
+            text?.startsWith('Why families choose')
+        )
+        expect(approachIndex).toBeGreaterThanOrEqual(0)
+        expect(approachIndex).toBeLessThan(headings.indexOf('Offerings'))
     })
 
     it('starts the assessment from either call-to-action', async () => {
