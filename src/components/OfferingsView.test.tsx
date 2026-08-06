@@ -266,35 +266,14 @@ describe('OfferingsView', () => {
         expect(screen.queryByText(/dbs checked/i)).not.toBeInTheDocument()
     })
 
-    it('renders the FAQ as an accordion with the enquiry CTA closing it (REQ-025)', async () => {
-        const onBookAssessment = vi.fn()
-        const user = userEvent.setup()
-        renderView(
-            {
-                faq: [
-                    { question: 'Are lessons online?', answer: 'Yes — live.' },
-                    { question: 'Group or one-to-one?', answer: 'Either.' },
-                ],
-            },
-            onBookAssessment
-        )
-
+    it('no longer renders the FAQ — it lives on its own page (2026-08-04)', () => {
+        renderView({
+            faq: [
+                { question: 'Are lessons online?', answer: 'Yes — live.' },
+            ],
+        })
         expect(
-            screen.getByRole('heading', { name: /questions families ask/i })
-        ).toBeInTheDocument()
-        expect(screen.getByText('Are lessons online?')).toBeInTheDocument()
-        expect(screen.getByText('Yes — live.')).toBeInTheDocument()
-
-        await user.click(
-            screen.getByRole('button', { name: /ask us — request a free/i })
-        )
-        expect(onBookAssessment).toHaveBeenCalled()
-    })
-
-    it('leaves the FAQ card out while no questions are published', () => {
-        renderView()
-        expect(
-            screen.queryByRole('heading', { name: /questions families ask/i })
+            screen.queryByText('Are lessons online?')
         ).not.toBeInTheDocument()
     })
 })

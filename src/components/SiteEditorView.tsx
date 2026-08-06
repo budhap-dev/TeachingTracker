@@ -11,8 +11,9 @@ import {
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import { Link as RouterLink } from 'react-router-dom'
 import type { SectionKey, SiteContent, SubjectOffering } from '../data/siteContent'
-import { defaultSiteContent } from '../data/siteContent'
+import { paths } from '../paths'
 import { SortableItem, SortableList } from './SortableList'
 import { OfferingsView } from './OfferingsView'
 
@@ -405,26 +406,37 @@ export const SiteEditorView = ({
                             Drag to choose the order sections appear on the
                             Offerings page.
                         </p>
+                        {/* 'faq' stays in the published sectionOrder (the
+                            API validates a full permutation) but has no chip:
+                            the FAQ lives on its own page now, so there is
+                            nothing to order on Offerings. */}
                         <SortableList
-                            ids={draft.sectionOrder}
+                            ids={draft.sectionOrder.filter(
+                                (key) => key !== 'faq'
+                            )}
                             onReorder={(ids) =>
                                 edit((next) => {
-                                    next.sectionOrder = ids as SectionKey[]
+                                    next.sectionOrder = [
+                                        ...(ids as SectionKey[]),
+                                        'faq',
+                                    ]
                                 })
                             }
                         >
                             <div className="sortable-rows">
-                                {draft.sectionOrder.map((key) => (
-                                    <SortableItem
-                                        key={key}
-                                        id={key}
-                                        label={`Reorder ${sectionLabels[key]}`}
-                                    >
-                                        <span className="site-editor-section-name">
-                                            {sectionLabels[key]}
-                                        </span>
-                                    </SortableItem>
-                                ))}
+                                {draft.sectionOrder
+                                    .filter((key) => key !== 'faq')
+                                    .map((key) => (
+                                        <SortableItem
+                                            key={key}
+                                            id={key}
+                                            label={`Reorder ${sectionLabels[key]}`}
+                                        >
+                                            <span className="site-editor-section-name">
+                                                {sectionLabels[key]}
+                                            </span>
+                                        </SortableItem>
+                                    ))}
                             </div>
                         </SortableList>
                     </div>
@@ -730,39 +742,24 @@ export const SiteEditorView = ({
                         </div>
                     </div>
 
-                    {pointsCard(
-                        'faq',
-                        'FAQ',
-                        'The questions families ask, each with your answer. An entry missing either half is left out when you publish.',
-                        'question',
-                        { title: 'Question', detail: 'Answer' }
-                    )}
-                    {draft.faq.length === 0 && (
-                        <div className="card site-editor-faq-starter">
-                            <p className="section-subtitle">
-                                Not sure where to begin? Load the suggested
-                                questions and edit them to fit — nothing goes
-                                live until you publish.
-                            </p>
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                onClick={() =>
-                                    edit((next) => {
-                                        next.faq = defaultSiteContent.faq.map(
-                                            (item) => ({
-                                                key: newRowKey(),
-                                                title: item.question,
-                                                detail: item.answer,
-                                            })
-                                        )
-                                    })
-                                }
-                            >
-                                Add the starter questions
-                            </Button>
-                        </div>
-                    )}
+                    {/* FAQ editing moved to the FAQ page itself (owner
+                        call, 2026-08-04) — publishes from here pass the
+                        stored entries through untouched. */}
+                    <div className="card">
+                        <h4 className="offerings-heading">FAQ</h4>
+                        <p className="section-subtitle">
+                            The FAQ is edited on its own page now — questions,
+                            answers and publishing all live there.
+                        </p>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            component={RouterLink}
+                            to={paths.faq}
+                        >
+                            Open the FAQ page
+                        </Button>
+                    </div>
 
                     <div className="card">
                         <h4 className="offerings-heading">
