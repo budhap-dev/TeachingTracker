@@ -139,8 +139,19 @@ export type PaymentRecord = {
  */
 export type TestimonialStatus = 'Pending' | 'Approved' | 'Rejected'
 
-/** Who left the review. */
-export type TestimonialRole = 'Parent' | 'Student'
+/** Who left the review. Parent/Student are star-rated family reviews;
+    Professional/Personal are recommendations without a rating. */
+export type TestimonialRole =
+    | 'Parent'
+    | 'Student'
+    | 'Professional'
+    | 'Personal'
+
+/** Recommendation roles carry no star rating. */
+export const recommendationRoles: TestimonialRole[] = [
+    'Professional',
+    'Personal',
+]
 
 export type Testimonial = {
     id: number
@@ -151,8 +162,8 @@ export type Testimonial = {
     subject?: string
     /** Optional school year, e.g. "10". */
     year?: string
-    /** Star rating, 1–5. */
-    rating: number
+    /** Star rating, 1–5 — family reviews only; recommendations have none. */
+    rating?: number
     /** The written experience — plain text. */
     quote: string
     status: TestimonialStatus

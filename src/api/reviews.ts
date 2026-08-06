@@ -11,7 +11,8 @@ export type TestimonialInput = {
     role: TestimonialRole
     subject?: string
     year?: string
-    rating: number
+    /** Family reviews only — a recommendation submits none. */
+    rating?: number
     quote: string
     website?: string
 }

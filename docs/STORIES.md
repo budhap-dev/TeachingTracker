@@ -111,7 +111,7 @@ XS is an afternoon, XL is a project.
 | 35 | ✅ | [REQ-035 — Custom domain for the production app](#req-035--custom-domain-for-the-production-app) | S | infra + both | — (LIVE 2026-08-04: https://abhitutor.co.uk, registered → padlock same day) |
 | 36 | ⏸️ | [REQ-036 — "Ask us": a grounded FAQ chat box](#req-036--ask-us-a-grounded-faq-chat-box) | M | both | — (parked by owner 2026-08-04; accordion stays the source of truth) |
 | 37 | 🔲 | [REQ-037 — "About the teacher": a CV-style public page, edited in place](#req-037--about-the-teacher-a-cv-style-public-page-edited-in-place) | M | both | — (builds on REQ-021's bio; follows the FAQ-page pattern) |
-| 38 | 🔲 | [REQ-038 — Hero highlights: the selling points that close](#req-038--hero-highlights-the-selling-points-that-close) | S | both | — (content decisions first: dedupe vs the approach list; evidence rule for "proven results") |
+| 38 | ✅ | [REQ-038 — Hero highlights: the selling points that close](#req-038--hero-highlights-the-selling-points-that-close) | S | both | — |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -1802,8 +1802,20 @@ page on the page itself, the way the FAQ works.
 
 ## REQ-038 — Hero highlights: the selling points that close
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** S ·
-**Depends on:** content decisions below (owner)
+**Status:** ✅ Built (2026-08-06) · **Impact:** both · **Effort:** S
+
+**How the decisions landed** _(2026-08-06)_: (1) the overlapping progress /
+communication items merged into "Clear communication with parents" +
+"Regular progress reports"; the approach list (Offerings-only) is untouched
+— no claim repeats on a page. (2) "Proven results" links to /reviews, its
+evidence. (3) "Personalised". (4) Placement settled (owner calls,
+2026-08-06) as **a "Why AbhiTutor" card sitting 50/50 with the journey
+card** — the hero's rating record (5.0 + distribution meter) and the
+parent lead quote were both retired the same day; the trust chips' ★
+average carries the number and the Reviews page owns the quotes.
+Content-driven: `highlights: string[]` on the document (both repos,
+sanitised + validated, prepared defaults owner-approved by provision),
+icons keyword-matched.
 
 **Story**
 As a parent skimming the first screen, I want the handful of reasons this

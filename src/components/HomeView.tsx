@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Button, Rating } from '@mui/material'
+import { Button } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
@@ -10,9 +10,19 @@ import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { signIn } from '../auth/msal'
 import { BrandBadge } from './BrandBadge'
 import { subjectIcon } from '../utils/subjectIcons'
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
+import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined'
+import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
+import LaptopChromebookOutlinedIcon from '@mui/icons-material/LaptopChromebookOutlined'
+import TrackChangesRoundedIcon from '@mui/icons-material/TrackChangesRounded'
+import SelfImprovementRoundedIcon from '@mui/icons-material/SelfImprovementRounded'
+import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
+import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded'
+import StarOutlineRoundedIcon from '@mui/icons-material/StarOutlineRounded'
 
 import { paths } from '../paths'
 import type { Testimonial } from '../data/students'
+import { recommendationRoles } from '../data/students'
 
 import type { SiteContent } from '../data/siteContent'
 
@@ -24,6 +34,37 @@ type HomeViewProps = {
     /** True once the site-content fetch settled — numeric trust chips wait
         for it so bundled defaults never flash unpublished claims. */
     contentLoaded?: boolean
+}
+
+/** A highlight tile's glyph, matched by keyword — the curated set from
+    REQ-038; a star stands in for anything unrecognised. */
+const highlightIcon = (title: string) => {
+    const lower = title.toLowerCase()
+    if (lower.includes('schedul') || lower.includes('flexib')) {
+        return CalendarMonthOutlinedIcon
+    }
+    if (lower.includes('communicat') || lower.includes('parent')) {
+        return ForumOutlinedIcon
+    }
+    if (lower.includes('progress') || lower.includes('report')) {
+        return InsightsOutlinedIcon
+    }
+    if (lower.includes('online')) {
+        return LaptopChromebookOutlinedIcon
+    }
+    if (lower.includes('personalis') || lower.includes('personaliz')) {
+        return TrackChangesRoundedIcon
+    }
+    if (lower.includes('confidence')) {
+        return SelfImprovementRoundedIcon
+    }
+    if (lower.includes('exam') || lower.includes('assessment')) {
+        return HistoryEduOutlinedIcon
+    }
+    if (lower.includes('result')) {
+        return EmojiEventsRoundedIcon
+    }
+    return StarOutlineRoundedIcon
 }
 
 /** A friendly glyph for each journey step, in order (mirrors Offerings). */
@@ -45,15 +86,18 @@ export const HomeView = ({
         'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
     )
     const { hero, journey } = content
-    const lead = testimonials[0]
+    // Recommendations (Professional/Personal) have no star rating — the
+    // rating maths and the "N families" claim use family reviews only, so
+    // the numbers stay honest.
+    const familyReviews = testimonials.filter(
+        (testimonial) => !recommendationRoles.includes(testimonial.role)
+    )
     const experienceYears = contentLoaded ? (hero.experienceYears ?? 0) : 0
-    // The rating chip averages the approved reviews already on this page —
-    // real, permissioned numbers (REQ-027), no extra endpoint.
-    const reviewCount = testimonials.length
+    const reviewCount = familyReviews.length
     const averageRating = reviewCount
         ? Math.round(
-              (testimonials.reduce(
-                  (sum, testimonial) => sum + testimonial.rating,
+              (familyReviews.reduce(
+                  (sum, testimonial) => sum + (testimonial.rating ?? 0),
                   0
               ) /
                   reviewCount) *
@@ -80,6 +124,41 @@ export const HomeView = ({
             content.subjects.flatMap((subject) => subject.examBoards ?? [])
         )
     ).join(' · ')
+
+    // The selling points that close (REQ-038): owner-approved highlight
+    // tiles in their own card — the in-card rating record and the parent
+    // quote both retired; the trust chips' ★ average carries the number
+    // (owner calls, 2026-08-06). "Proven results" carries its evidence —
+    // it links to the reviews.
+    const highlightGrid =
+        contentLoaded && content.highlights.length > 0 ? (
+            <ul className="home-highlights" aria-label="Why AbhiTutor">
+                {content.highlights.map((title) => {
+                    const Icon = highlightIcon(title)
+                    const provesResults = title
+                        .toLowerCase()
+                        .includes('result')
+                    return (
+                        <li key={title}>
+                            {provesResults ? (
+                                <Link
+                                    className="home-highlight-tile"
+                                    to={paths.reviews}
+                                >
+                                    <Icon fontSize="small" aria-hidden />
+                                    {title}
+                                </Link>
+                            ) : (
+                                <span className="home-highlight-tile">
+                                    <Icon fontSize="small" aria-hidden />
+                                    {title}
+                                </span>
+                            )}
+                        </li>
+                    )
+                })}
+            </ul>
+        ) : null
 
     return (
         <section className="content-stack home-view">
@@ -160,66 +239,16 @@ export const HomeView = ({
                 </div>
             )}
 
-            {/* Proof with a face + the journey at a glance, side by side.
-                The review card leads with the whole record — hero rating,
-                star row, the live distribution — then one voice from it. */}
+            {/* The reasons + the journey at a glance, side by side. Parent
+                quotes retired from the hero (owner call, 2026-08-06) — the
+                trust chips' ★ average and the Reviews page carry the
+                proof. */}
             <div className="home-proof-row">
-                {lead && (
-                    <figure className="card home-quote">
-                        <div className="home-rating-summary">
-                            <span className="home-rating-big">
-                                {averageRating.toFixed(1)}
-                            </span>
-                            <div>
-                                <Rating
-                                    value={averageRating}
-                                    precision={0.1}
-                                    readOnly
-                                    size="small"
-                                />
-                                <span className="home-rating-count">
-                                    from {reviewCount} family{' '}
-                                    {reviewCount === 1 ? 'review' : 'reviews'}
-                                </span>
-                            </div>
-                        </div>
-                        <ul
-                            className="home-rating-bars"
-                            aria-label="Rating breakdown"
-                        >
-                            {[5, 4, 3, 2, 1].map((stars) => {
-                                const count = testimonials.filter(
-                                    (t) => t.rating === stars
-                                ).length
-                                return (
-                                    <li key={stars}>
-                                        <span>{stars}★</span>
-                                        <span className="home-rating-track">
-                                            <span
-                                                className="home-rating-fill"
-                                                style={{
-                                                    width: `${(count / reviewCount) * 100}%`,
-                                                }}
-                                            />
-                                        </span>
-                                        <span>{count}</span>
-                                    </li>
-                                )
-                            })}
-                        </ul>
-                        <blockquote>{lead.quote}</blockquote>
-                        <figcaption>
-                            <strong>{lead.authorName}</strong>
-                            <span>{lead.role}</span>
-                            <Button
-                                variant="text"
-                                component={Link}
-                                to={paths.reviews}
-                            >
-                                Read all reviews
-                            </Button>
-                        </figcaption>
-                    </figure>
+                {highlightGrid && (
+                    <div className="card home-highlights-card">
+                        <h4 className="offerings-heading">Why AbhiTutor</h4>
+                        {highlightGrid}
+                    </div>
                 )}
                 <div className="card home-journey-mini">
                     <h4 className="offerings-heading">How it works</h4>

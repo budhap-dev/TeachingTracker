@@ -63,6 +63,8 @@ type Draft = {
     faq: PointRow[]
     /** Pricing passes through untouched — edited on its own page. */
     pricing: SiteContent['pricing']
+    /** Highlights pass through untouched (REQ-038). */
+    highlights: SiteContent['highlights']
     freeform: SiteContent['freeform']
     sectionOrder: SectionKey[]
 }
@@ -85,6 +87,7 @@ const toDraft = (content: SiteContent): Draft => ({
     })),
     bio: content.bio,
     pricing: content.pricing,
+    highlights: content.highlights,
     faq: content.faq.map((item) => ({
         key: newRowKey(),
         title: item.question,
@@ -132,6 +135,7 @@ const assemble = (draft: Draft): SiteContent => ({
         .map((row) => ({ title: row.title.trim(), detail: row.detail })),
     bio: draft.bio,
     pricing: draft.pricing,
+    highlights: draft.highlights,
     // Both halves required: the API rejects a question without an answer,
     // so an incomplete row is dropped rather than failing the publish.
     faq: draft.faq

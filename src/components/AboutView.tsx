@@ -11,6 +11,19 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded'
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
+import WorkOutlineRoundedIcon from '@mui/icons-material/WorkOutlineRounded'
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined'
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
+import EmojiObjectsOutlinedIcon from '@mui/icons-material/EmojiObjectsOutlined'
+import HandshakeOutlinedIcon from '@mui/icons-material/HandshakeOutlined'
+import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined'
+import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
+import AddAPhotoOutlinedIcon from '@mui/icons-material/AddAPhotoOutlined'
+import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded'
+import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded'
+import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded'
+import TrackChangesRoundedIcon from '@mui/icons-material/TrackChangesRounded'
+import StarRoundedIcon from '@mui/icons-material/StarRounded'
 import { useIsAuthenticated } from '@azure/msal-react'
 import { isAuthConfigured } from '../auth/msal'
 import { useAppDispatch, useAppSelector } from '../hooks'
@@ -34,6 +47,7 @@ const newRowKey = () => `about-row-${++rowCounter}`
 
 type AboutDraft = {
     heading: string
+    photo: string
     body: string
     qualificationsText: string
     dbsChecked: boolean
@@ -46,6 +60,7 @@ type AboutDraft = {
 
 const toDraft = (bio: BioSection): AboutDraft => ({
     heading: bio.heading,
+    photo: bio.photo,
     body: bio.body,
     qualificationsText: bio.qualifications.join('\n'),
     dbsChecked: bio.dbsChecked,
@@ -71,6 +86,7 @@ const lines = (raw: string): string[] =>
 /** The draft back into the publishable bio; titleless rows are left out. */
 const assemble = (draft: AboutDraft): BioSection => ({
     heading: draft.heading.trim(),
+    photo: draft.photo,
     body: draft.body,
     qualifications: lines(draft.qualificationsText),
     dbsChecked: draft.dbsChecked,
@@ -108,11 +124,99 @@ type AboutViewProps = {
     onPublish: (content: SiteContent) => void
 }
 
+/** Reads a picked image and downscales it to a small JPEG data-URI —
+    ~240px longest side — so the single-property stored document stays far
+    below Table Storage's 64KB ceiling. */
+const readAndShrink = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+            const img = new Image()
+            img.onload = () => {
+                const max = 240
+                const scale = Math.min(
+                    1,
+                    max / Math.max(img.width, img.height)
+                )
+                const canvas = document.createElement('canvas')
+                canvas.width = Math.round(img.width * scale)
+                canvas.height = Math.round(img.height * scale)
+                canvas
+                    .getContext('2d')!
+                    .drawImage(img, 0, 0, canvas.width, canvas.height)
+                resolve(canvas.toDataURL('image/jpeg', 0.78))
+            }
+            img.onerror = reject
+            img.src = reader.result as string
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+    })
+
+/** Professional glyphs cycling across the qualification cards — each in
+    its own colour (blue scholar, green verified, gold trophy) against the
+    block's gold ground. */
+const qualIcons = [
+    { Icon: SchoolRoundedIcon, tone: 'qual-icon-blue' },
+    { Icon: VerifiedRoundedIcon, tone: 'qual-icon-green' },
+    { Icon: EmojiEventsRoundedIcon, tone: 'qual-icon-gold' },
+]
+
+/** The expectation points cycle their own coloured glyphs — green tick,
+    blue target, gold star — matching the qualification cards' language. */
+const expectationIcons = [
+    { Icon: CheckCircleRoundedIcon, tone: 'qual-icon-green' },
+    { Icon: TrackChangesRoundedIcon, tone: 'qual-icon-blue' },
+    { Icon: StarRoundedIcon, tone: 'qual-icon-gold' },
+]
+
+/** A glyph for an owner-written section, matched by heading keyword —
+    the subjectIcons pattern; notes stand in for anything unrecognised. */
+const sectionIcon = (heading: string) => {
+    const lower = heading.toLowerCase()
+    if (lower.includes('philosoph') || lower.includes('approach')) {
+        return EmojiObjectsOutlinedIcon
+    }
+    if (lower.includes('promise') || lower.includes('commit')) {
+        return HandshakeOutlinedIcon
+    }
+    return NotesOutlinedIcon
+}
+
+/** A bordered section panel: icon + heading, then its content. */
+const AboutBlock = ({
+    icon: Icon,
+    heading,
+    children,
+    tone = '',
+}: {
+    icon: typeof NotesOutlinedIcon
+    heading: string
+    children: React.ReactNode
+    /** 'gold' dresses a block as an achievement showcase. */
+    tone?: string
+}) => (
+    <div className={`about-block ${tone}`.trim()}>
+        <h4 className="about-block-heading">
+            <Icon fontSize="small" aria-hidden />
+            {heading}
+        </h4>
+        {children}
+    </div>
+)
+
 /** A dated CV list — quiet years column, title, place, one-line detail. */
-const CvList = ({ heading, entries }: { heading: string; entries: CvEntry[] }) =>
+const CvList = ({
+    heading,
+    entries,
+    icon,
+}: {
+    heading: string
+    entries: CvEntry[]
+    icon: typeof NotesOutlinedIcon
+}) =>
     entries.length > 0 ? (
-        <div className="about-cv-block">
-            <h4 className="offerings-heading">{heading}</h4>
+        <AboutBlock icon={icon} heading={heading}>
             <ol className="about-cv-list">
                 {entries.map((entry) => (
                     <li key={`${entry.years}-${entry.title}`}>
@@ -125,7 +229,7 @@ const CvList = ({ heading, entries }: { heading: string; entries: CvEntry[] }) =
                     </li>
                 ))}
             </ol>
-        </div>
+        </AboutBlock>
     ) : null
 
 /**
@@ -145,6 +249,7 @@ export const AboutView = ({
     )
     const { bio, hero } = content
     const [draft, setDraft] = useState<AboutDraft>(() => toDraft(bio))
+    const [photoError, setPhotoError] = useState<string | null>(null)
     const [edited, setEdited] = useState(false)
     useEffect(() => {
         if (!edited) {
@@ -159,11 +264,14 @@ export const AboutView = ({
 
     const assembled = assemble(draft)
     const dirty = JSON.stringify(assembled) !== JSON.stringify(bio)
+    // The teacher sees the page AS THE DRAFT — photo, rows, everything —
+    // before publishing; visitors see only the published document.
+    const view = canEdit ? assembled : bio
     const empty =
-        !bio.heading &&
-        !bio.body &&
-        bio.qualifications.length === 0 &&
-        bio.experience.length === 0
+        !view.heading &&
+        !view.body &&
+        view.qualifications.length === 0 &&
+        view.experience.length === 0
 
     const cvRowEditor = (
         list: 'experience' | 'education',
@@ -261,9 +369,14 @@ export const AboutView = ({
                     <div>
                         <h3 className="page-heading">
                             <PersonOutlineRoundedIcon fontSize="small" />
-                            {bio.heading || 'About the teacher'}
+                            {view.heading || 'About the teacher'}
                         </h3>
                     </div>
+                    {canEdit && dirty && (
+                        <span className="about-preview-hint">
+                            Previewing unsaved changes
+                        </span>
+                    )}
                     {canEdit && (
                         <Button
                             variant="contained"
@@ -285,9 +398,20 @@ export const AboutView = ({
                     </p>
                 )}
 
-                {bio.body && (
-                    <div className="about-intro">
-                        {renderMarkdown(bio.body)}
+                {(bio.body || bio.photo) && (
+                    <div className="about-lead">
+                        {bio.photo && (
+                            <img
+                                className="about-photo"
+                                src={bio.photo}
+                                alt={`Portrait of ${content.siteName}'s tutor`}
+                            />
+                        )}
+                        {bio.body && (
+                            <div className="about-intro">
+                                {renderMarkdown(bio.body)}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -315,47 +439,95 @@ export const AboutView = ({
                     </div>
                 )}
 
-                {bio.qualifications.length > 0 && (
-                    <div className="about-quals">
-                        {bio.qualifications.map((line) => (
-                            <span key={line} className="about-qual-pill">
-                                {line}
-                            </span>
-                        ))}
-                    </div>
-                )}
-
-                <CvList heading="Teaching experience" entries={bio.experience} />
-                <CvList heading="Education" entries={bio.education} />
-
-                {bio.expectations.length > 0 && (
-                    <div className="about-cv-block">
-                        <h4 className="offerings-heading">
-                            What you can expect
-                        </h4>
-                        <ul className="about-expectations">
-                            {bio.expectations.map((line) => (
-                                <li key={line}>
-                                    <CheckCircleRoundedIcon fontSize="small" />
-                                    {line}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-
-                {bio.sections.map((section) => (
-                    <div key={section.heading} className="about-cv-block">
-                        {section.heading && (
-                            <h4 className="offerings-heading">
-                                {section.heading}
-                            </h4>
+                {/* Desktop uses the width as a CV would: the story runs
+                    down the main column, credentials sit in the rail. On
+                    phones the rail stacks first — solid points early. */}
+                <div className="about-columns">
+                    <div className="about-rail">
+                        {bio.qualifications.length > 0 && (
+                            <AboutBlock
+                                icon={WorkspacePremiumOutlinedIcon}
+                                heading="Qualifications"
+                            >
+                                <div className="about-quals">
+                                    {bio.qualifications.map(
+                                        (line, index) => {
+                                            const { Icon, tone } =
+                                                qualIcons[
+                                                    index % qualIcons.length
+                                                ]
+                                            return (
+                                                <span
+                                                    key={line}
+                                                    className="about-qual-pill"
+                                                >
+                                                    <Icon
+                                                        className={tone}
+                                                        fontSize="small"
+                                                        aria-hidden
+                                                    />
+                                                    {line}
+                                                </span>
+                                            )
+                                        }
+                                    )}
+                                </div>
+                            </AboutBlock>
                         )}
-                        <div className="about-section-body">
-                            {renderMarkdown(section.markdown)}
-                        </div>
+                        {bio.expectations.length > 0 && (
+                            <AboutBlock
+                                icon={FactCheckOutlinedIcon}
+                                heading="What you can expect"
+                            >
+                                <ul className="about-expectations">
+                                    {bio.expectations.map((line, index) => {
+                                        const { Icon, tone } =
+                                            expectationIcons[
+                                                index %
+                                                    expectationIcons.length
+                                            ]
+                                        return (
+                                            <li key={line}>
+                                                <Icon
+                                                    className={tone}
+                                                    fontSize="small"
+                                                    aria-hidden
+                                                />
+                                                {line}
+                                            </li>
+                                        )
+                                    })}
+                                </ul>
+                            </AboutBlock>
+                        )}
                     </div>
-                ))}
+                    <div className="about-main">
+                        <CvList
+                            heading="Teaching experience"
+                            entries={bio.experience}
+                            icon={WorkOutlineRoundedIcon}
+                        />
+                        <CvList
+                            heading="Education"
+                            entries={bio.education}
+                            icon={SchoolOutlinedIcon}
+                        />
+                        {bio.sections.map((section) => {
+                            const Icon = sectionIcon(section.heading)
+                            return (
+                                <AboutBlock
+                                    key={section.heading}
+                                    icon={Icon}
+                                    heading={section.heading}
+                                >
+                                    <div className="about-section-body">
+                                        {renderMarkdown(section.markdown)}
+                                    </div>
+                                </AboutBlock>
+                            )
+                        })}
+                    </div>
+                </div>
 
                 <div className="pricing-cta-actions about-cta">
                     <Button
@@ -410,6 +582,83 @@ export const AboutView = ({
                                 }))
                             }
                         />
+                        <div className="about-block about-photo-block">
+                            <h4 className="about-block-heading">
+                                <AddAPhotoOutlinedIcon
+                                    fontSize="small"
+                                    aria-hidden
+                                />
+                                Profile photo
+                            </h4>
+                            <div className="about-photo-editor">
+                                {draft.photo ? (
+                                    <img
+                                        className="about-photo small"
+                                        src={draft.photo}
+                                        alt="Profile photo preview"
+                                    />
+                                ) : (
+                                    <span className="section-subtitle">
+                                        No photo yet — it shows beside your
+                                        introduction. Any image works; it
+                                        is resized automatically.
+                                    </span>
+                                )}
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    component="label"
+                                >
+                                    {draft.photo
+                                        ? 'Replace photo'
+                                        : 'Add profile photo'}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="visually-hidden-input"
+                                        onChange={(event) => {
+                                            const file =
+                                                event.target.files?.[0]
+                                            // Same-file re-picks must fire.
+                                            event.target.value = ''
+                                            if (!file) {
+                                                return
+                                            }
+                                            setPhotoError(null)
+                                            readAndShrink(file).then(
+                                                (photo) =>
+                                                    edit((next) => ({
+                                                        ...next,
+                                                        photo,
+                                                    })),
+                                                () =>
+                                                    setPhotoError(
+                                                        'That image could not be read — HEIC photos from iPhones sometimes fail; a JPG or PNG will work.'
+                                                    )
+                                            )
+                                        }}
+                                    />
+                                </Button>
+                                {draft.photo && (
+                                    <Button
+                                        size="small"
+                                        onClick={() =>
+                                            edit((next) => ({
+                                                ...next,
+                                                photo: '',
+                                            }))
+                                        }
+                                    >
+                                        Remove photo
+                                    </Button>
+                                )}
+                            </div>
+                            {photoError && (
+                                <p className="review-field-error">
+                                    {photoError}
+                                </p>
+                            )}
+                        </div>
                         <TextField
                             label="Introduction (Markdown)"
                             size="small"
