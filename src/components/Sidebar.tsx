@@ -13,6 +13,7 @@ import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
 import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined'
+import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import PrivacyTipOutlinedIcon from '@mui/icons-material/PrivacyTipOutlined'
@@ -132,6 +133,12 @@ const navItems: NavItem[] = [
         path: paths.faq,
         icon: <QuizOutlinedIcon fontSize="small" />,
         isActive: (pathname) => pathname.startsWith(paths.faq),
+    },
+    {
+        label: 'Pricing',
+        path: paths.pricing,
+        icon: <SellOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.pricing),
     },
     {
         label: 'Privacy',

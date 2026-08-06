@@ -16,6 +16,7 @@ export const paths = {
     contact: '/contact',
     privacy: '/privacy',
     faq: '/faq',
+    pricing: '/pricing',
     reviews: '/reviews',
     reviewsModeration: '/reviews/moderation',
 } as const

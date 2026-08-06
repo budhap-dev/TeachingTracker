@@ -26,9 +26,6 @@ type OfferingsViewProps = {
     onBookAssessment: () => void
 }
 
-/** A friendly glyph for each journey step, in order. */
-const journeyIcons = ['💬', '📝', '🎯', '📅']
-
 /** One label/value row of the subject spec table — omitted when empty. */
 const SpecRow = ({ label, values }: { label: string; values?: string[] }) =>
     values && values.length > 0 ? (
@@ -53,7 +50,7 @@ export const OfferingsView = ({
     content,
     onBookAssessment,
 }: OfferingsViewProps) => {
-    const { hero, subjects, journey, approach, bio, freeform } = content
+    const { hero, subjects, approach, bio, freeform } = content
     // Which subject card is flipped (tapped). Hover flips on its own via CSS;
     // this makes the flip work on touch too, just for fun.
     const [flipped, setFlipped] = useState<string | null>(null)
@@ -170,31 +167,11 @@ export const OfferingsView = ({
             </div>
     )
 
-    const journeySection = (
-            <div className="card">
-                <h4 className="offerings-heading">How it works</h4>
-                <ol className="offerings-journey">
-                    {journey.map((step, index) => (
-                        <li key={step.title} className="offerings-step">
-                            <span
-                                className="offerings-step-icon"
-                                aria-hidden="true"
-                            >
-                                {journeyIcons[index]}
-                            </span>
-                            <div className="offerings-step-body">
-                                <h5 className="offerings-step-title">
-                                    {step.title}
-                                </h5>
-                                <p className="offerings-step-detail">
-                                    {step.detail}
-                                </p>
-                            </div>
-                        </li>
-                    ))}
-                </ol>
-            </div>
-    )
+    // The journey renders on the Home hero screen now (owner call,
+    // 2026-08-04) — saying it twice was padding. 'journey' stays valid in
+    // sectionOrder; the steps are still edited in the site editor because
+    // Home feeds from them.
+    const journeySection = null
 
     const approachSection = (
             <div className="card">

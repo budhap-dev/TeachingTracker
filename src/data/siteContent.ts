@@ -70,6 +70,32 @@ export type BioSection = {
     safeguarding: string
 }
 
+/** One per-level from-rate (REQ-022), e.g. GCSE from £20/hr. */
+export type PricingRate = {
+    /** The level the rate anchors, e.g. "GCSE", "A-level". */
+    label: string
+    /** Whole pounds per hour, per student. */
+    fromPerHour: number
+}
+
+/** One named factor that shapes the exact rate (REQ-022). */
+export type PricingFactor = {
+    title: string
+    detail: string
+}
+
+/**
+ * Transparent pricing (REQ-022). Rates vary by level (owner 2026-08-04:
+ * generally from GCSE £20/hr and A-level £30/hr, per student); factors
+ * are NAMED, never fake-quantified. No rates = pricing not published.
+ */
+export type PricingSection = {
+    rates: PricingRate[]
+    factors: PricingFactor[]
+    /** e.g. "Your exact rate is agreed at the free assessment." */
+    note: string
+}
+
 /** One FAQ entry (REQ-025). Plain text; the API strips HTML on write. */
 export type FaqItem = {
     question: string
@@ -102,6 +128,7 @@ export type SiteContent = {
     approach: ApproachPoint[]
     bio: BioSection
     faq: FaqItem[]
+    pricing: PricingSection
     freeform: FreeformSection
     sectionOrder: SectionKey[]
 }
@@ -126,6 +153,7 @@ export const normaliseSiteContent = (
     ...content,
     bio: content.bio ?? emptyBio,
     faq: content.faq ?? [],
+    pricing: content.pricing ?? { rates: [], factors: [], note: '' },
     sectionOrder: [
         ...content.sectionOrder,
         ...sectionKeys.filter((key) => !content.sectionOrder.includes(key)),
@@ -233,6 +261,26 @@ export const defaultSiteContent: SiteContent = {
             answer: 'Every lesson ends with a written note of what was covered and what to practise, and progress is reviewed against the goals we agree at the start — you stay in the loop without having to ask.',
         },
     ],
+    // Transparent pricing (REQ-022): the owner's anchor, factors NAMED,
+    // never fake-quantified. Mirrors the API's bundled default.
+    pricing: {
+        // The owner's anchors (2026-08-04): rates rise with the years.
+        rates: [
+            { label: 'GCSE', fromPerHour: 20 },
+            { label: 'A-level', fromPerHour: 30 },
+        ],
+        factors: [
+            {
+                title: 'One-to-one or small group',
+                detail: 'Group lessons share the hour — and the rate — between students.',
+            },
+            {
+                title: 'Online or in person',
+                detail: 'In-person lessons may reflect travel; online carries no extras.',
+            },
+        ],
+        note: 'Your exact rate is agreed at the free assessment — no obligation, no surprises.',
+    },
     // Empty until the teacher writes one — an empty section renders nothing.
     freeform: { heading: '', markdown: '' },
     sectionOrder: [
