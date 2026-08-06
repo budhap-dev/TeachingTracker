@@ -6,6 +6,39 @@ import { defaultSiteContent, emptyBio } from '../data/siteContent'
 import type { SiteContent } from '../data/siteContent'
 import { AboutView } from './AboutView'
 
+// react-easy-crop needs real layout/ResizeObserver — jsdom has neither.
+// The mock exposes a button that reports a crop/zoom back, the way the
+// real widget does after a drag.
+vi.mock('react-easy-crop', () => ({
+    default: (props: {
+        onCropChange?: (location: { x: number; y: number }) => void
+        onZoomChange?: (zoom: number) => void
+        onCropComplete?: (
+            area: { x: number; y: number; width: number; height: number },
+            areaPixels: {
+                x: number
+                y: number
+                width: number
+                height: number
+            }
+        ) => void
+    }) => (
+        <button
+            type="button"
+            onClick={() => {
+                props.onCropChange?.({ x: 4, y: 6 })
+                props.onZoomChange?.(2)
+                props.onCropComplete?.(
+                    { x: 0, y: 0, width: 50, height: 50 },
+                    { x: 10, y: 10, width: 120, height: 120 }
+                )
+            }}
+        >
+            mock-drag
+        </button>
+    ),
+}))
+
 const renderAbout = (overrides?: {
     content?: SiteContent
     canEdit?: boolean
@@ -120,6 +153,25 @@ describe('AboutView', () => {
         expect(published.pricing).toEqual(defaultSiteContent.pricing)
         expect(published.faq).toEqual(defaultSiteContent.faq)
     }, 30000)
+
+    it('stays clean when the API serves the bio with other key order', () => {
+        // The server serialises the same content with its own key order —
+        // that must not read as unsaved changes (owner report, 2026-08-06).
+        const served = Object.fromEntries(
+            Object.entries(defaultSiteContent.bio).reverse()
+        ) as SiteContent['bio']
+        renderAbout({
+            content: { ...defaultSiteContent, bio: served },
+            canEdit: true,
+        })
+
+        expect(
+            screen.getByRole('button', { name: /publish about/i })
+        ).toBeDisabled()
+        expect(
+            screen.queryByText(/previewing unsaved changes/i)
+        ).not.toBeInTheDocument()
+    })
 
     it('edits every field in place and publishes the assembled bio', async () => {
         const user = userEvent.setup()
@@ -278,15 +330,82 @@ describe('AboutView profile photo', () => {
         renderAbout({ canEdit: true })
 
         pickPhoto('image/jpeg')
+        // The crop dialog opens first (owner ask, 2026-08-06): position,
+        // zoom, then confirm.
+        await screen.findByText(/position your photo/i)
+        // A drag reports crop + zoom back; the zoom slider moves too.
+        await user.click(screen.getByRole('button', { name: 'mock-drag' }))
+        fireEvent.change(
+            screen.getByRole('slider', { name: /zoom/i }),
+            { target: { value: 3 } }
+        )
+        await user.click(
+            screen.getByRole('button', { name: /use photo/i })
+        )
         const preview = await screen.findByAltText(/profile photo preview/i)
         expect(preview).toHaveAttribute(
             'src',
             'data:image/jpeg;base64,shrunk'
         )
+        // The public region live-previews it too — adding a photo visibly
+        // changes the page before publishing (owner report, 2026-08-06).
+        expect(screen.getByAltText(/portrait of/i)).toHaveAttribute(
+            'src',
+            'data:image/jpeg;base64,shrunk'
+        )
+
+        // The dialog's exit transition must finish before the editor's
+        // buttons are visible to the accessibility tree again.
+        // Adjust crop reopens the dialog from the kept source image.
+        await user.click(
+            await screen.findByRole('button', { name: /adjust crop/i })
+        )
+        await screen.findByText(/position your photo/i)
+        await user.click(screen.getByRole('button', { name: /cancel/i }))
 
         await user.click(
-            screen.getByRole('button', { name: /remove photo/i })
+            await screen.findByRole('button', { name: /remove photo/i })
         )
+        expect(
+            screen.queryByAltText(/profile photo preview/i)
+        ).not.toBeInTheDocument()
+    }, 30000)
+
+    it('keeps stepping the shrink down, then explains a hopeless photo', async () => {
+        stubImage('load')
+        vi.spyOn(
+            HTMLCanvasElement.prototype,
+            'getContext'
+        ).mockReturnValue({
+            drawImage: vi.fn(),
+        } as unknown as CanvasRenderingContext2D)
+        // Every attempt overflows the API's base64 ceiling.
+        const toDataURL = vi
+            .spyOn(HTMLCanvasElement.prototype, 'toDataURL')
+            .mockReturnValue('data:image/jpeg;base64,' + 'A'.repeat(20000))
+        const user = userEvent.setup()
+        renderAbout({ canEdit: true })
+
+        pickPhoto('image/jpeg')
+        await screen.findByText(/position your photo/i)
+        await user.click(
+            screen.getByRole('button', { name: /use photo/i })
+        )
+        expect(
+            await screen.findByText(/too detailed to store/i)
+        ).toBeInTheDocument()
+        // It tried the whole quality/size ladder before giving up.
+        expect(toDataURL.mock.calls.length).toBeGreaterThan(1)
+    }, 30000)
+
+    it('cancelling the crop keeps the page unchanged', async () => {
+        stubImage('load')
+        const user = userEvent.setup()
+        renderAbout({ canEdit: true })
+
+        pickPhoto('image/jpeg')
+        await screen.findByText(/position your photo/i)
+        await user.click(screen.getByRole('button', { name: /cancel/i }))
         expect(
             screen.queryByAltText(/profile photo preview/i)
         ).not.toBeInTheDocument()

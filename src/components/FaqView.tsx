@@ -79,8 +79,11 @@ export const FaqView = ({
     }
 
     const assembled = assemble(rows)
+    // Same-shaped both sides (see AboutView): the API's key order must
+    // not keep Publish lit.
     const dirty =
-        JSON.stringify(assembled) !== JSON.stringify(content.faq)
+        JSON.stringify(assembled) !==
+        JSON.stringify(assemble(toRows(content.faq)))
 
     return (
         <section className="content-stack faq-page">

@@ -97,7 +97,13 @@ export const PricingView = ({
 
     const touch = () => setEdited(true)
     const assembled = assemble(rates, factors, note)
-    const dirty = JSON.stringify(assembled) !== JSON.stringify(pricing)
+    // Same-shaped both sides (see AboutView): the API's key order must
+    // not keep Publish lit.
+    const dirty =
+        JSON.stringify(assembled) !==
+        JSON.stringify(
+            assemble(toRateRows(pricing), toFactorRows(pricing), pricing.note)
+        )
     // The chat line anchors on the cheapest published rate.
     const minRate = pricing.rates.length
         ? Math.min(...pricing.rates.map((rate) => rate.fromPerHour))

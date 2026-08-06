@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../hooks'
@@ -86,6 +86,25 @@ export const HomeView = ({
         'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
     )
     const { hero, journey } = content
+    // The teacher door (owner ask, 2026-08-06): the sign-in afterline is
+    // hidden from visitors and revealed by five quick taps on the hero
+    // badge — a UX tidy-up, not security; sign-in stays Microsoft-gated.
+    // The reveal holds for the rest of the browser session.
+    const [teacherDoor, setTeacherDoor] = useState(
+        () => sessionStorage.getItem('teacher-door') === 'open'
+    )
+    const badgeTaps = useRef({ count: 0, last: 0 })
+    const handleBadgeTap = () => {
+        const now = Date.now()
+        const taps = badgeTaps.current
+        // A slow tap restarts the count — accidental pokes never add up.
+        taps.count = now - taps.last > 2000 ? 1 : taps.count + 1
+        taps.last = now
+        if (taps.count >= 5) {
+            setTeacherDoor(true)
+            sessionStorage.setItem('teacher-door', 'open')
+        }
+    }
     // Recommendations (Professional/Personal) have no star rating — the
     // rating maths and the "N families" claim use family reviews only, so
     // the numbers stay honest.
@@ -170,7 +189,14 @@ export const HomeView = ({
                 fault. */}
             <div className="home-hero-band">
                 <div className="home-band-lead">
-                    <BrandBadge size={74} />
+                    {/* display:contents — the wrapper counts taps without
+                        touching the band's flex layout. */}
+                    <span
+                        className="home-badge-tap"
+                        onClick={handleBadgeTap}
+                    >
+                        <BrandBadge size={74} />
+                    </span>
                     <div className="home-band-copy">
                         <h3 className="home-band-headline">{hero.headline}</h3>
                         <p className="home-band-subhead">{hero.subhead}</p>
@@ -268,16 +294,18 @@ export const HomeView = ({
                 </div>
             </div>
 
-            <p className="home-teacher-line">
-                Are you the teacher?{' '}
-                <Button
-                    size="small"
-                    variant="text"
-                    onClick={() => void signIn()}
-                >
-                    Sign in with Microsoft
-                </Button>
-            </p>
+            {teacherDoor && (
+                <p className="home-teacher-line">
+                    Are you the teacher?{' '}
+                    <Button
+                        size="small"
+                        variant="text"
+                        onClick={() => void signIn()}
+                    >
+                        Sign in with Microsoft
+                    </Button>
+                </p>
+            )}
         </section>
     )
 }
