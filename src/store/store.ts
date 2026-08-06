@@ -76,6 +76,8 @@ type StudentState = {
     // editor's in-flight flag.
     siteContent: SiteContent
     publishingSiteContent: boolean
+    /** True once the first site-content fetch settles (success or failure). */
+    siteContentLoaded: boolean
     // Leads (REQ-018/019): the teacher's enquiries inbox, plus the public
     // form's in-flight flag.
     leads: Lead[]
@@ -148,6 +150,10 @@ const createInitialState = (): StudentState => ({
     hasLocalStudentChanges: false,
     siteContent: defaultSiteContent,
     publishingSiteContent: false,
+    // True once the first site-content fetch settles (either way). Content
+    // pages gate on it so bundled defaults never flash claims — prices,
+    // experience — the owner hasn't published (REQ-022 flash bug).
+    siteContentLoaded: false,
     leads: [],
     leadsLoading: true,
     savingLead: false,
@@ -516,8 +522,12 @@ const studentSlice = createSlice({
             action: PayloadAction<SiteContent>
         ) => {
             state.siteContent = action.payload
+            state.siteContentLoaded = true
         },
-        fetchSiteContentFailed: () => {
+        fetchSiteContentFailed: (state) => {
+            // Graceful degradation: the bundled defaults stand in — but the
+            // page may now render, knowing the fetch has settled.
+            state.siteContentLoaded = true
             // Deliberately silent: a visitor should never see an error toast
             // because content fell back to the bundled copy.
         },

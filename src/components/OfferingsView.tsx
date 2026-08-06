@@ -50,7 +50,7 @@ export const OfferingsView = ({
     content,
     onBookAssessment,
 }: OfferingsViewProps) => {
-    const { hero, subjects, approach, bio, freeform } = content
+    const { hero, subjects, approach, freeform } = content
     // Which subject card is flipped (tapped). Hover flips on its own via CSS;
     // this makes the flip work on touch too, just for fun.
     const [flipped, setFlipped] = useState<string | null>(null)
@@ -218,42 +218,9 @@ export const OfferingsView = ({
             </div>
         ) : null
 
-    // The tutor bio + safeguarding (REQ-021): renders only what the owner
-    // wrote — an untouched bio shows nothing, and the DBS badge appears only
-    // when the owner has switched it on.
-    const hasBio =
-        bio.heading ||
-        bio.body ||
-        bio.qualifications.length > 0 ||
-        bio.dbsChecked ||
-        bio.safeguarding
-    const bioSection = hasBio ? (
-        <div className="card offerings-bio">
-            {bio.heading && (
-                <h4 className="offerings-heading">{bio.heading}</h4>
-            )}
-            {bio.body && (
-                <div className="bio-body">{renderMarkdown(bio.body)}</div>
-            )}
-            {bio.qualifications.length > 0 && (
-                <ul className="bio-qualifications">
-                    {bio.qualifications.map((line) => (
-                        <li key={line}>{line}</li>
-                    ))}
-                </ul>
-            )}
-            {(bio.dbsChecked || bio.safeguarding) && (
-                <div className="bio-safeguarding">
-                    {bio.dbsChecked && (
-                        <span className="bio-dbs-badge">
-                            <span aria-hidden>✓</span> Enhanced DBS checked
-                        </span>
-                    )}
-                    {bio.safeguarding && <p>{bio.safeguarding}</p>}
-                </div>
-            )}
-        </div>
-    ) : null
+    // The bio renders on the About page now (REQ-037, owner content
+    // received 2026-08-04). 'bio' stays valid in sectionOrder.
+    const bioSection = null
 
     // The FAQ lives on its own page now (owner call, 2026-08-04) — the
     // 'faq' section key renders nothing here, but stays in sectionOrder so

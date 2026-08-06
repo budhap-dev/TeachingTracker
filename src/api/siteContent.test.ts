@@ -43,8 +43,8 @@ describe('site-content api (REQ-008)', () => {
         const served = await fetchSiteContent()
         // Empty — never the bundled drafts the owner hasn't approved.
         expect(served.faq).toEqual([])
-        expect(served.bio.dbsChecked).toBe(false)
-        expect(served.bio.heading).toBe('')
+        // A blank bio serves the owner's prepared About copy (owner call).
+        expect(served.bio).toEqual(defaultSiteContent.bio)
         expect(served.sectionOrder).toEqual([
             'hero',
             'subjects',

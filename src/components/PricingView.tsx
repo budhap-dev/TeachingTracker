@@ -14,6 +14,7 @@ import {
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import type { PricingSection, SiteContent } from '../data/siteContent'
 import { paths } from '../paths'
+import { PageLoading } from './PageLoading'
 
 /** Editable rows, keyed like every other list editor. */
 type RateRow = { key: string; label: string; from: string }
@@ -402,9 +403,18 @@ const PricingConnected = ({ canEdit }: { canEdit: boolean }) => {
     const publishing = useAppSelector(
         (state) => state.students.publishingSiteContent
     )
+    const loaded = useAppSelector(
+        (state) => state.students.siteContentLoaded
+    )
     useEffect(() => {
         dispatch(fetchSiteContentRequested())
     }, [dispatch])
+    // Until the published document lands, showing the bundled defaults
+    // would flash claims the owner may not have published (the REQ-022
+    // refresh flicker) — wait for the first fetch to settle.
+    if (!loaded) {
+        return <PageLoading />
+    }
     return (
         <PricingView
             content={content}

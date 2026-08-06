@@ -862,6 +862,23 @@ describe('lead lifecycle (REQ-018/019)', () => {
     })
 })
 
+describe('site content loaded flag (REQ-022 flash fix)', () => {
+    it('starts unsettled, settles on success AND on silent failure', () => {
+        const state = initial()
+        expect(state.siteContentLoaded).toBe(false)
+
+        const loaded = studentReducer(
+            state,
+            fetchSiteContentSucceeded(state.siteContent)
+        )
+        expect(loaded.siteContentLoaded).toBe(true)
+
+        const failed = studentReducer(initial(), fetchSiteContentFailed())
+        expect(failed.siteContentLoaded).toBe(true)
+        expect(failed.error).toBeNull()
+    })
+})
+
 describe('site content (REQ-008)', () => {
     it('starts on the bundled fallback and swaps in the fetched document', () => {
         const state = initial()

@@ -68,6 +68,29 @@ export type BioSection = {
     dbsChecked: boolean
     /** A short safeguarding statement. */
     safeguarding: string
+    /** CV timelines (REQ-037): teaching first, then education. */
+    experience: CvEntry[]
+    education: CvEntry[]
+    /** The "What you can expect" tick list. */
+    expectations: string[]
+    /** Free sections — philosophy, promise, whatever comes next. */
+    sections: AboutSection[]
+}
+
+/** One dated CV entry on the About page (REQ-037). */
+export type CvEntry = {
+    /** e.g. "Since 2019", "2005". Free text, shown quietly. */
+    years: string
+    title: string
+    place: string
+    detail: string
+}
+
+/** A repeating About section: a heading plus a Markdown body (REQ-037). */
+export type AboutSection = {
+    heading: string
+    /** Markdown only — raw HTML is stripped on write. */
+    markdown: string
 }
 
 /** One per-level from-rate (REQ-022), e.g. GCSE from £20/hr. */
@@ -133,14 +156,26 @@ export type SiteContent = {
     sectionOrder: SectionKey[]
 }
 
-/** An empty bio — what older documents are filled with, and the reset. */
+/** An empty bio — what older documents' gaps are filled with. */
 export const emptyBio: BioSection = {
     heading: '',
     body: '',
     qualifications: [],
     dbsChecked: false,
     safeguarding: '',
+    experience: [],
+    education: [],
+    expectations: [],
+    sections: [],
 }
+
+/** A bio with no heading, body or experience has nothing to say — serve
+    the owner's prepared About copy instead (owner call 2026-08-04: these
+    are the owner's own approved words). */
+const withPreparedBioFallback = (bio: BioSection): BioSection =>
+    !bio.heading && !bio.body && bio.experience.length === 0
+        ? defaultSiteContent.bio
+        : bio
 
 /**
  * Fills a document from an older API (no bio/faq, 5-key order) so every
@@ -151,7 +186,7 @@ export const normaliseSiteContent = (
     content: SiteContent
 ): SiteContent => ({
     ...content,
-    bio: content.bio ?? emptyBio,
+    bio: withPreparedBioFallback({ ...emptyBio, ...(content.bio ?? {}) }),
     faq: content.faq ?? [],
     pricing: content.pricing ?? { rates: [], factors: [], note: '' },
     sectionOrder: [
@@ -233,9 +268,73 @@ export const defaultSiteContent: SiteContent = {
             detail: 'You get a clear picture of where your child stands, without having to ask for it.',
         },
     ],
-    // Empty until the teacher writes it — an empty bio renders nothing, and
-    // the DBS indicator is only ever switched on by the owner (REQ-021).
-    bio: { ...emptyBio },
+    // The owner's About copy (provided 2026-08-04) — mirrors the API's
+    // bundled default; the About page's "load the prepared content" button
+    // draws from here too.
+    bio: {
+        heading: 'About me',
+        body: 'Hello, and welcome!\n\nMy name is **Mrs Abhinanda Pandit**, and I currently work in a secondary school in Leeds as a **Maths Mentor**. Before that I was an **Assistant SENDCo**, supporting students with additional learning needs and helping them overcome barriers to success.\n\nTeaching has always been more than a profession for me — it is my passion. My love of working with young people and helping them reach their full potential inspired me to offer private tutoring, both online and in person from my home in the Middleton area of Leeds.\n\nMy journey as a tutor began in my own student years, helping fellow students and junior batches with Physics honours and much else besides. That early experience lit a lifelong passion for teaching and mentoring.',
+        qualifications: [
+            'BSc (Hons) Physics, First Class — University of Calcutta',
+            'B.Tech Computer Science — University Topper',
+            '20+ years teaching and tutoring',
+        ],
+        dbsChecked: false,
+        safeguarding: '',
+        experience: [
+            {
+                years: 'Now',
+                title: 'Maths Mentor',
+                place: 'Secondary school, Leeds',
+                detail: 'Previously Assistant SENDCo — supporting students with additional learning needs.',
+            },
+            {
+                years: 'Since 2019',
+                title: 'Tutor across the UK',
+                place: 'Tutoring centre and privately',
+                detail: 'Helping students build confidence, improve grades, and genuinely understand their subjects.',
+            },
+            {
+                years: 'Earlier',
+                title: 'Teacher at several schools',
+                place: 'India, before moving to the UK',
+                detail: 'Left a software career at a multinational because the pull of the classroom was stronger.',
+            },
+        ],
+        education: [
+            {
+                years: '2008',
+                title: 'B.Tech, Computer Science',
+                place: 'Graduated University Topper',
+                detail: '',
+            },
+            {
+                years: '2005',
+                title: 'BSc (Hons) Physics, First Class',
+                place: 'University of Calcutta',
+                detail: '',
+            },
+        ],
+        expectations: [
+            'Personalised one-to-one tuition',
+            'Patient and supportive teaching',
+            'Tailored learning plans',
+            'Regular progress feedback',
+            'Focus on understanding, not memorising',
+            'Proven exam preparation strategies',
+            'A commitment to helping every student achieve their best',
+        ],
+        sections: [
+            {
+                heading: 'My teaching philosophy',
+                markdown: '**Every student has the potential to succeed with the right guidance, encouragement and support.**\n\nMy approach focuses not only on academic performance but on confidence, resilience, and a positive attitude to learning. Every student learns differently — so each lesson is tailored to individual needs, learning styles and goals, in a safe, supportive environment where it is always okay to ask questions and make mistakes.',
+            },
+            {
+                heading: 'My promise',
+                markdown: '- Learning is not about being the best — it is about becoming better than you were yesterday.\n- Confidence is the foundation of success, and every lesson is designed to build it.\n- Together, we can turn challenges into achievements and goals into results.\n- More than improving grades, my goal is to help students believe in themselves.\n\nI look forward to supporting your child on their educational journey.',
+            },
+        ],
+    },
     // A starter set the owner reviews and edits before publishing (REQ-025);
     // it mirrors the API's bundled default. Every answer sticks to what the
     // site already claims — no invented policies, prices or promises.
