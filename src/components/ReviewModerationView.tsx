@@ -88,7 +88,7 @@ export const ReviewModerationView = ({
                                     </p>
                                 )}
                                 <Rating
-                                    value={testimonial.rating}
+                                    value={testimonial.rating ?? 0}
                                     readOnly
                                     size="small"
                                 />
@@ -156,7 +156,7 @@ export const ReviewModerationView = ({
                                 className="testimonial-card moderation"
                             >
                                 <Rating
-                                    value={testimonial.rating}
+                                    value={testimonial.rating ?? 0}
                                     readOnly
                                     size="small"
                                 />

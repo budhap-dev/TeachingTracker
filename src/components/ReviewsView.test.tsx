@@ -141,6 +141,67 @@ describe('ReviewsView', () => {
         expect(screen.getByRole('alert')).toBeInTheDocument()
     })
 
+    it('submits a Professional recommendation without a rating (2026-08-05)', async () => {
+        const onSubmit = vi.fn()
+        const user = userEvent.setup()
+        render(
+            <ReviewsView testimonials={[]} saving={false} onSubmit={onSubmit} />
+        )
+
+        await user.type(screen.getByLabelText(/your name/i), 'Head of Maths')
+        await user.click(screen.getByRole('combobox', { name: /you are a/i }))
+        await user.click(
+            screen.getByRole('option', { name: /professional — colleague/i })
+        )
+        // The star input leaves for recommendations.
+        expect(
+            screen.queryByRole('button', { name: '5 Stars' })
+        ).not.toBeInTheDocument()
+        await user.type(
+            screen.getByLabelText(/your review/i),
+            'A dedicated, knowledgeable colleague.'
+        )
+        await user.click(screen.getByRole('button', { name: /submit review/i }))
+
+        expect(onSubmit).toHaveBeenCalledWith({
+            authorName: 'Head of Maths',
+            role: 'Professional',
+            subject: undefined,
+            year: undefined,
+            quote: 'A dedicated, knowledgeable colleague.',
+            website: '',
+        })
+    })
+
+    it('shows recommendations in their own section, without stars', () => {
+        const recommendation: Testimonial = {
+            id: 3,
+            authorName: 'Mr T. Clarke',
+            role: 'Professional',
+            quote: 'An outstanding mentor to our students.',
+            status: 'Approved',
+            submittedOn: '2026-07-01',
+        }
+        render(
+            <ReviewsView
+                testimonials={[withMeta, recommendation]}
+                saving={false}
+                onSubmit={vi.fn()}
+            />
+        )
+
+        expect(
+            screen.getByRole('heading', {
+                name: /professional & personal recommendations/i,
+            })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText('An outstanding mentor to our students.')
+        ).toBeInTheDocument()
+        // The family review still shows in its own grid.
+        expect(screen.getByText('Brilliant tutor.')).toBeInTheDocument()
+    })
+
     it('marks each missing required field inline on submit (REQ-029)', async () => {
         const user = userEvent.setup()
         render(

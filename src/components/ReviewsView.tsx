@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { recommendationRoles } from '../data/students'
 import type { FormEvent } from 'react'
 import {
     Box,
@@ -51,15 +52,28 @@ export const ReviewsView = ({
     // field then marks itself inline; `error` stays as the one-line summary.
     const [submitted, setSubmitted] = useState(false)
 
+    const familyReviews = testimonials.filter(
+        (testimonial) => !recommendationRoles.includes(testimonial.role)
+    )
+    const recommendations = testimonials.filter((testimonial) =>
+        recommendationRoles.includes(testimonial.role)
+    )
+
     const nameMissing = !authorName.trim()
-    const ratingMissing = rating < 1
+    // A recommendation (Professional/Personal) carries no star rating.
+    const isRecommendation = recommendationRoles.includes(role)
+    const ratingMissing = !isRecommendation && rating < 1
     const quoteMissing = !quote.trim()
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
         setSubmitted(true)
         if (nameMissing || quoteMissing || ratingMissing) {
-            setError('Please add your name, a rating, and a few words.')
+            setError(
+                isRecommendation
+                    ? 'Please add your name and a few words.'
+                    : 'Please add your name, a rating, and a few words.'
+            )
             return
         }
         onSubmit({
@@ -68,7 +82,7 @@ export const ReviewsView = ({
             // Several subjects join into one string, like the class planner.
             subject: subjects.join(', ') || undefined,
             year: year.trim() || undefined,
-            rating,
+            ...(isRecommendation ? {} : { rating }),
             quote: quote.trim(),
             website,
         })
@@ -98,20 +112,20 @@ export const ReviewsView = ({
                     </div>
                 </div>
 
-                {testimonials.length === 0 ? (
+                {familyReviews.length === 0 ? (
                     <p className="section-subtitle">
                         No reviews yet — be the first to share your experience
                         below.
                     </p>
                 ) : (
                     <div className="testimonial-grid">
-                        {testimonials.map((testimonial) => (
+                        {familyReviews.map((testimonial) => (
                             <figure
                                 key={testimonial.id}
                                 className="testimonial-card review"
                             >
                                 <Rating
-                                    value={testimonial.rating}
+                                    value={testimonial.rating ?? 0}
                                     readOnly
                                     size="small"
                                 />
@@ -125,6 +139,38 @@ export const ReviewsView = ({
                     </div>
                 )}
             </div>
+
+            {/* Endorsements from colleagues and referees — no star rating,
+                their standing is the signal (owner ask, 2026-08-05). */}
+            {recommendations.length > 0 && (
+                <div className="card">
+                    <div className="section-header">
+                        <div>
+                            <h4 className="offerings-heading">
+                                Professional &amp; personal recommendations
+                            </h4>
+                            <p className="section-subtitle">
+                                From colleagues, school staff and people who
+                                know the teacher well.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="testimonial-grid">
+                        {recommendations.map((testimonial) => (
+                            <figure
+                                key={testimonial.id}
+                                className="testimonial-card review recommendation"
+                            >
+                                <blockquote>{testimonial.quote}</blockquote>
+                                <figcaption>
+                                    <strong>{testimonial.authorName}</strong>
+                                    <span>{attribution(testimonial)}</span>
+                                </figcaption>
+                            </figure>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="card">
                 <div className="section-header">
@@ -160,13 +206,24 @@ export const ReviewsView = ({
                         label="You are a"
                         size="small"
                         value={role}
-                        onChange={(event) =>
-                            setRole(event.target.value as TestimonialRole)
-                        }
+                        onChange={(event) => {
+                            const next = event.target
+                                .value as TestimonialRole
+                            setRole(next)
+                            if (recommendationRoles.includes(next)) {
+                                setRating(0)
+                            }
+                        }}
                         fullWidth
                     >
                         <MenuItem value="Parent">Parent</MenuItem>
                         <MenuItem value="Student">Student</MenuItem>
+                        <MenuItem value="Professional">
+                            Professional — colleague, school staff
+                        </MenuItem>
+                        <MenuItem value="Personal">
+                            Personal recommendation
+                        </MenuItem>
                     </TextField>
                     <TextField
                         select
@@ -213,6 +270,7 @@ export const ReviewsView = ({
                             </MenuItem>
                         ))}
                     </TextField>
+                    {!isRecommendation && (
                     <div
                         className={`review-rating ${
                             submitted && ratingMissing ? 'has-error' : ''
@@ -256,6 +314,7 @@ export const ReviewsView = ({
                             </span>
                         )}
                     </div>
+                    )}
                     <TextField
                         label="Your review"
                         size="small"

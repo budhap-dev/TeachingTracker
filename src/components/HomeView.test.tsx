@@ -60,9 +60,6 @@ describe('HomeView', () => {
         expect(
             screen.getByRole('link', { name: /explore subjects/i })
         ).toHaveAttribute('href', '/offerings')
-        expect(
-            screen.getByRole('link', { name: /read all reviews/i })
-        ).toHaveAttribute('href', '/reviews')
     })
 
     it('surfaces the published subjects as chips linking onward', () => {
@@ -75,27 +72,36 @@ describe('HomeView', () => {
         ).toBeInTheDocument()
     })
 
-    it('leads with one strong review, not a wall of three', () => {
+    it('retired the in-card rating record — the chip carries the number', () => {
         renderHome()
 
-        expect(screen.getByText('Quote number 1.')).toBeInTheDocument()
-        expect(screen.queryByText('Quote number 2.')).not.toBeInTheDocument()
+        // No hero "5.0" figure or distribution meter in the review card
+        // (owner call, 2026-08-06); the ★ average lives in the trust chips.
+        expect(screen.queryByText('5.0')).not.toBeInTheDocument()
+        expect(
+            screen.queryByRole('list', { name: /rating breakdown/i })
+        ).not.toBeInTheDocument()
     })
 
-    it('shows the rating record: hero number and the live distribution', () => {
+    it('gives the hero highlights their own card (REQ-038)', () => {
         renderHome()
 
-        // Four five-star fixture reviews: 5.0 hero, all counts on the 5★ row.
-        expect(screen.getByText('5.0')).toBeInTheDocument()
-        expect(screen.getByText(/from 4 family reviews/i)).toBeInTheDocument()
-        const bars = screen.getByRole('list', { name: /rating breakdown/i })
-        expect(bars).toHaveTextContent('5★')
-        expect(bars).toHaveTextContent('1★')
+        const strip = screen.getByRole('list', { name: /why abhitutor/i })
+        expect(strip).toHaveTextContent('Flexible scheduling')
+        // UK spelling, and the merged communication/progress claims.
+        expect(strip).toHaveTextContent('Personalised learning')
+        expect(strip).toHaveTextContent('Clear communication with parents')
+        // "Proven results" walks to its evidence (the evidence rule).
+        expect(
+            screen.getByRole('link', { name: /proven results/i })
+        ).toHaveAttribute('href', '/reviews')
     })
 
-    it('drops the quote card entirely when there are no reviews yet', () => {
-        renderHome([])
+    it('keeps parent quotes off the hero — the Reviews page owns them', () => {
+        renderHome()
 
+        // Quotes retired from the hero (owner call, 2026-08-06).
+        expect(screen.queryByText('Quote number 1.')).not.toBeInTheDocument()
         expect(
             screen.queryByRole('link', { name: /read all reviews/i })
         ).not.toBeInTheDocument()
@@ -183,9 +189,7 @@ describe('HomeLanding', () => {
         expect(
             screen.getByText(defaultSiteContent.hero.headline)
         ).toBeInTheDocument()
-        // The mocked API's approved reviews arrive as the lead quote.
-        expect(
-            await screen.findByRole('link', { name: /read all reviews/i })
-        ).toBeInTheDocument()
+        // The mocked API's approved reviews arrive as the ★ trust chip.
+        expect(await screen.findByText(/famil/i)).toBeInTheDocument()
     })
 })

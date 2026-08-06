@@ -38,14 +38,16 @@ describe('AboutView', () => {
         ).toBe('STRONG')
         // Qualification pills, timelines, expectations, sections.
         expect(
-            screen.getByText(/BSc \(Hons\) Physics, First Class — University/)
+            screen.getByText(/BSc \(Hons\) Physics, First Class/)
         ).toBeInTheDocument()
         expect(screen.getByText('Tutor across the UK')).toBeInTheDocument()
+        // Education retired from the prepared copy — the qualification
+        // cards carry it; the empty list hides the timeline block.
         expect(
-            screen.getByText('B.Tech, Computer Science')
-        ).toBeInTheDocument()
+            screen.queryByRole('heading', { name: /^education$/i })
+        ).not.toBeInTheDocument()
         expect(
-            screen.getByText('Personalised one-to-one tuition')
+            screen.getByText(/Personalised one-to-one tuition/)
         ).toBeInTheDocument()
         expect(
             screen.getByRole('heading', { name: /my teaching philosophy/i })
