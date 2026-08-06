@@ -61,6 +61,7 @@ import { PrivacyView } from './components/PrivacyView'
 import { ReviewsView } from './components/ReviewsView'
 import { FaqLanding } from './components/FaqView'
 import { PricingLanding } from './components/PricingView'
+import { AboutLanding } from './components/AboutView'
 import { ReviewModerationView } from './components/ReviewModerationView'
 import { PageLoading } from './components/PageLoading'
 import { RequireTeacher } from './components/RequireTeacher'
@@ -893,6 +894,8 @@ export const AppRoutes = () => (
             <Route path={paths.faq} element={<FaqLanding />} />
             {/* Transparent pricing (REQ-022) — public, edited in place. */}
             <Route path={paths.pricing} element={<PricingLanding />} />
+            {/* About the teacher (REQ-037) — public, edited in place. */}
+            <Route path={paths.about} element={<AboutLanding />} />
             <Route
                 path={paths.reviewsModeration}
                 element={teacher(<ReviewModerationRoute />)}

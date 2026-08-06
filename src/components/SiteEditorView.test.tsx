@@ -324,42 +324,24 @@ describe('SiteEditorView', () => {
         ).toBeDisabled()
     })
 
-    it('publishes the bio the owner writes — DBS strictly opt-in (REQ-021)', async () => {
+    it('points at the About page and passes the bio through untouched', async () => {
         const user = userEvent.setup()
         const { onPublish } = renderEditor()
 
-        // Single change events, not keystrokes — each keystroke re-renders
-        // the whole editor and CI runners blow the test budget.
-        fireEvent.change(screen.getByLabelText(/bio heading/i), {
-            target: { value: 'Meet your tutor' },
-        })
-        fireEvent.change(screen.getByLabelText(/about you/i), {
-            target: { value: 'Twenty years of maths teaching.' },
-        })
-        fireEvent.change(
-            screen.getByLabelText(/qualifications — one per line/i),
-            {
-                target: {
-                    value: 'PGCE, Secondary Mathematics\nBSc Physics',
-                },
-            }
-        )
-        await user.click(screen.getByRole('checkbox'))
-        fireEvent.change(screen.getByLabelText(/safeguarding statement/i), {
-            target: { value: 'Parents are kept in the loop.' },
+        expect(
+            screen.getByRole('link', { name: /open the about page/i })
+        ).toHaveAttribute('href', '/about')
+        // No bio fields are editable in the site editor any more.
+        expect(
+            screen.queryByLabelText(/about you/i)
+        ).not.toBeInTheDocument()
+
+        fireEvent.change(screen.getByLabelText(/^headline/i), {
+            target: { value: 'Tutoring that clicks.' },
         })
         await user.click(publishButton())
-
         const published = onPublish.mock.calls[0][0] as SiteContent
-        expect(published.bio).toEqual({
-            heading: 'Meet your tutor',
-            body: 'Twenty years of maths teaching.',
-            qualifications: ['PGCE, Secondary Mathematics', 'BSc Physics'],
-            dbsChecked: true,
-            safeguarding: 'Parents are kept in the loop.',
-        })
-        // The bundled starter questions ride along untouched.
-        expect(published.faq).toEqual(defaultSiteContent.faq)
+        expect(published.bio).toEqual(defaultSiteContent.bio)
     }, 30000)
 
     it('points at the FAQ page instead of editing the FAQ here (2026-08-04)', () => {

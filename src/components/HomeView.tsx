@@ -21,6 +21,9 @@ type HomeViewProps = {
     testimonials: Testimonial[]
     /** The teacher-published document (REQ-008) feeding the hero + journey. */
     content: SiteContent
+    /** True once the site-content fetch settled — numeric trust chips wait
+        for it so bundled defaults never flash unpublished claims. */
+    contentLoaded?: boolean
 }
 
 /** A friendly glyph for each journey step, in order (mirrors Offerings). */
@@ -32,14 +35,18 @@ const journeyIcons = ['💬', '📝', '🎯', '📅']
  * sign-in wall. The teacher's dashboard stays behind sign-in at the same
  * path; teacher sign-in is a quiet afterline here, not the headline.
  */
-export const HomeView = ({ testimonials, content }: HomeViewProps) => {
+export const HomeView = ({
+    testimonials,
+    content,
+    contentLoaded = true,
+}: HomeViewProps) => {
     useDocumentMeta(
         'AbhiTutor — Where confidence takes off.',
         'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
     )
     const { hero, journey } = content
     const lead = testimonials[0]
-    const experienceYears = hero.experienceYears ?? 0
+    const experienceYears = contentLoaded ? (hero.experienceYears ?? 0) : 0
     // The rating chip averages the approved reviews already on this page —
     // real, permissioned numbers (REQ-027), no extra endpoint.
     const reviewCount = testimonials.length
@@ -62,9 +69,12 @@ export const HomeView = ({ testimonials, content }: HomeViewProps) => {
         )
     ).join(' · ')
     // The price chip anchors on the cheapest published rate (REQ-022).
-    const fromPrice = content.pricing.rates.length
-        ? Math.min(...content.pricing.rates.map((rate) => rate.fromPerHour))
-        : 0
+    const fromPrice =
+        contentLoaded && content.pricing.rates.length
+            ? Math.min(
+                  ...content.pricing.rates.map((rate) => rate.fromPerHour)
+              )
+            : 0
     const boards = Array.from(
         new Set(
             content.subjects.flatMap((subject) => subject.examBoards ?? [])
@@ -254,9 +264,18 @@ export const HomeLanding = () => {
         (state) => state.students.testimonials
     )
     const content = useAppSelector((state) => state.students.siteContent)
+    const contentLoaded = useAppSelector(
+        (state) => state.students.siteContentLoaded
+    )
     useEffect(() => {
         dispatch(fetchTestimonialsRequested())
         dispatch(fetchSiteContentRequested())
     }, [dispatch])
-    return <HomeView testimonials={testimonials} content={content} />
+    return (
+        <HomeView
+            testimonials={testimonials}
+            content={content}
+            contentLoaded={contentLoaded}
+        />
+    )
 }

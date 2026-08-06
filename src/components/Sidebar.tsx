@@ -14,6 +14,7 @@ import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
 import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined'
 import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
+import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded'
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import PrivacyTipOutlinedIcon from '@mui/icons-material/PrivacyTipOutlined'
@@ -102,6 +103,12 @@ const navItems: NavItem[] = [
         icon: <LanguageOutlinedIcon fontSize="small" />,
         isActive: (pathname) => pathname.startsWith(paths.siteEditor),
         teacherOnly: true,
+    },
+    {
+        label: 'About',
+        path: paths.about,
+        icon: <PersonOutlineRoundedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.about),
     },
     {
         label: 'Offerings',

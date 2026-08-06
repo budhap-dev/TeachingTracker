@@ -1753,9 +1753,16 @@ policies, prices or promises on my behalf.
 
 ## REQ-037 — "About the teacher": a CV-style public page, edited in place
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M ·
-**Builds on:** REQ-021 (bio + safeguarding, shipped) · **Pattern:** the FAQ
-page (own menu + inline teacher editing, owner-preferred 2026-08-04)
+**Status:** 🚧 Built (2026-08-04, owner's real content received and
+shipped as the prepared copy behind a load button — nothing appears on an
+already-published site until the owner loads + publishes it on the page) ·
+**Impact:** both · **Effort:** M · **Builds on:** REQ-021 · **Pattern:**
+the FAQ page. Delivered: `/about` + menu + sitemap; CV layout (intro
+Markdown, qualification pills, experience/education timelines,
+expectations tick-grid, free sections for philosophy/promise, trust row
+with the strictly-owner-set DBS badge); edited in place with one Publish;
+Offerings drops the bio section; the site editor keeps a pointer.
+Deviation: no photo (unchanged from the story's deferral).
 
 **Story**
 As a parent, I want a proper "About the teacher" page — who they are, their

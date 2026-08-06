@@ -50,6 +50,10 @@ const buildContent = (overrides: Partial<SiteContent> = {}): SiteContent => ({
         qualifications: [],
         dbsChecked: false,
         safeguarding: '',
+        experience: [],
+        education: [],
+        expectations: [],
+        sections: [],
     },
     faq: [],
     freeform: { heading: '', markdown: '' },
@@ -224,44 +228,23 @@ describe('OfferingsView', () => {
         expect(onBookAssessment).toHaveBeenCalledTimes(2)
     })
 
-    it('hides the bio until something is written, then renders only what is (REQ-021)', () => {
-        // The default empty bio renders nothing at all.
-        renderView()
-        expect(document.querySelector('.offerings-bio')).toBeNull()
-
+    it('no longer renders the bio — it lives on the About page (REQ-037)', () => {
         renderView({
             bio: {
                 heading: 'Meet your tutor',
-                body: 'Twenty years of **maths** teaching.',
-                qualifications: ['PGCE, Secondary Mathematics'],
+                body: 'Twenty years of teaching.',
+                qualifications: ['PGCE'],
                 dbsChecked: true,
-                safeguarding: 'Parents are kept in the loop after every lesson.',
+                safeguarding: 'Kept safe.',
+                experience: [],
+                education: [],
+                expectations: [],
+                sections: [],
             },
         })
         expect(
-            screen.getByRole('heading', { name: /meet your tutor/i })
-        ).toBeInTheDocument()
-        // Markdown renders as marked-up text, never raw asterisks.
-        expect(screen.getByText('maths')).toBeInTheDocument()
-        expect(
-            screen.getByText('PGCE, Secondary Mathematics')
-        ).toBeInTheDocument()
-        expect(screen.getByText(/enhanced dbs checked/i)).toBeInTheDocument()
-        expect(
-            screen.getByText(/parents are kept in the loop/i)
-        ).toBeInTheDocument()
-    })
-
-    it('never shows the DBS badge unless the owner switched it on', () => {
-        renderView({
-            bio: {
-                heading: 'Meet your tutor',
-                body: '',
-                qualifications: [],
-                dbsChecked: false,
-                safeguarding: '',
-            },
-        })
+            screen.queryByRole('heading', { name: /meet your tutor/i })
+        ).not.toBeInTheDocument()
         expect(screen.queryByText(/dbs checked/i)).not.toBeInTheDocument()
     })
 

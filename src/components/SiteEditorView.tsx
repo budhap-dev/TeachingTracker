@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
     Button,
-    Checkbox,
-    FormControlLabel,
     IconButton,
     Tab,
     Tabs,
@@ -53,22 +51,14 @@ type SubjectRow = {
 /** A journey step or selling point while being edited. */
 type PointRow = { key: string; title: string; detail: string }
 
-/** The bio while being edited: qualifications as one-per-line text. */
-type BioDraft = {
-    heading: string
-    body: string
-    qualificationsText: string
-    dbsChecked: boolean
-    safeguarding: string
-}
-
 type Draft = {
     siteName: string
     hero: SiteContent['hero']
     subjects: SubjectRow[]
     journey: PointRow[]
     approach: PointRow[]
-    bio: BioDraft
+    /** Bio passes through untouched — edited on the About page. */
+    bio: SiteContent['bio']
     /** FAQ rows ride the PointRow shape: title = question, detail = answer. */
     faq: PointRow[]
     /** Pricing passes through untouched — edited on its own page. */
@@ -93,13 +83,7 @@ const toDraft = (content: SiteContent): Draft => ({
         key: newRowKey(),
         ...point,
     })),
-    bio: {
-        heading: content.bio.heading,
-        body: content.bio.body,
-        qualificationsText: content.bio.qualifications.join('\n'),
-        dbsChecked: content.bio.dbsChecked,
-        safeguarding: content.bio.safeguarding,
-    },
+    bio: content.bio,
     pricing: content.pricing,
     faq: content.faq.map((item) => ({
         key: newRowKey(),
@@ -146,16 +130,7 @@ const assemble = (draft: Draft): SiteContent => ({
     approach: draft.approach
         .filter((row) => row.title.trim() || row.detail.trim())
         .map((row) => ({ title: row.title.trim(), detail: row.detail })),
-    bio: {
-        heading: draft.bio.heading.trim(),
-        body: draft.bio.body,
-        qualifications: draft.bio.qualificationsText
-            .split('\n')
-            .map((line) => line.trim())
-            .filter(Boolean),
-        dbsChecked: draft.bio.dbsChecked,
-        safeguarding: draft.bio.safeguarding.trim(),
-    },
+    bio: draft.bio,
     pricing: draft.pricing,
     // Both halves required: the API rejects a question without an answer,
     // so an incomplete row is dropped rather than failing the publish.
@@ -416,12 +391,16 @@ export const SiteEditorView = ({
                             nothing to order on Offerings. */}
                         <SortableList
                             ids={draft.sectionOrder.filter(
-                                (key) => key !== 'faq' && key !== 'journey'
+                                (key) =>
+                                    key !== 'faq' &&
+                                    key !== 'journey' &&
+                                    key !== 'bio'
                             )}
                             onReorder={(ids) =>
                                 edit((next) => {
                                     next.sectionOrder = [
                                         ...(ids as SectionKey[]),
+                                        'bio',
                                         'journey',
                                         'faq',
                                     ]
@@ -433,7 +412,8 @@ export const SiteEditorView = ({
                                     .filter(
                                         (key) =>
                                             key !== 'faq' &&
-                                            key !== 'journey'
+                                            key !== 'journey' &&
+                                            key !== 'bio'
                                     )
                                     .map((key) => (
                                         <SortableItem
@@ -674,81 +654,20 @@ export const SiteEditorView = ({
 
                     <div className="card">
                         <h4 className="offerings-heading">
-                            Tutor bio &amp; safeguarding
+                            About the teacher
                         </h4>
                         <p className="section-subtitle">
-                            Who you are, your qualifications, and the
-                            safeguarding facts parents look for. Leave it all
-                            blank to hide the section — the DBS badge shows
-                            only when you tick it.
+                            The bio, CV, expectations and safeguarding are
+                            edited on the About page itself.
                         </p>
-                        <div className="site-editor-fields">
-                            <TextField
-                                label="Bio heading"
-                                size="small"
-                                value={draft.bio.heading}
-                                onChange={(event) =>
-                                    edit((next) => {
-                                        next.bio.heading = event.target.value
-                                    })
-                                }
-                                helperText="e.g. “Meet your tutor”."
-                            />
-                            <TextField
-                                label="About you (Markdown)"
-                                size="small"
-                                multiline
-                                minRows={4}
-                                value={draft.bio.body}
-                                onChange={(event) =>
-                                    edit((next) => {
-                                        next.bio.body = event.target.value
-                                    })
-                                }
-                                helperText="Who you are, how long you've taught, what you believe about teaching."
-                            />
-                            <TextField
-                                label="Qualifications — one per line"
-                                size="small"
-                                multiline
-                                minRows={3}
-                                value={draft.bio.qualificationsText}
-                                onChange={(event) =>
-                                    edit((next) => {
-                                        next.bio.qualificationsText =
-                                            event.target.value
-                                    })
-                                }
-                                helperText="Each line becomes a pill, e.g. “PGCE, Secondary Mathematics”."
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={draft.bio.dbsChecked}
-                                        onChange={(event) =>
-                                            edit((next) => {
-                                                next.bio.dbsChecked =
-                                                    event.target.checked
-                                            })
-                                        }
-                                    />
-                                }
-                                label="Show the “Enhanced DBS checked” badge — tick only if your certificate is current"
-                            />
-                            <TextField
-                                label="Safeguarding statement"
-                                size="small"
-                                multiline
-                                value={draft.bio.safeguarding}
-                                onChange={(event) =>
-                                    edit((next) => {
-                                        next.bio.safeguarding =
-                                            event.target.value
-                                    })
-                                }
-                                helperText="A short line on how lessons are kept safe — parents in the loop, records kept, and so on."
-                            />
-                        </div>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            component={RouterLink}
+                            to={paths.about}
+                        >
+                            Open the About page
+                        </Button>
                     </div>
 
                     {/* FAQ editing moved to the FAQ page itself (owner

@@ -16,6 +16,7 @@ import { defaultSiteContent } from '../data/siteContent'
 import type { FaqItem, SiteContent } from '../data/siteContent'
 import { SortableItem, SortableList } from './SortableList'
 import { paths } from '../paths'
+import { PageLoading } from './PageLoading'
 
 /** A FAQ row while being edited — keyed so reorders survive renames. */
 type FaqRow = { key: string; question: string; answer: string }
@@ -279,9 +280,18 @@ const FaqConnected = ({ canEdit }: { canEdit: boolean }) => {
     const publishing = useAppSelector(
         (state) => state.students.publishingSiteContent
     )
+    const loaded = useAppSelector(
+        (state) => state.students.siteContentLoaded
+    )
     useEffect(() => {
         dispatch(fetchSiteContentRequested())
     }, [dispatch])
+    // Until the published document lands, showing the bundled defaults
+    // would flash claims the owner may not have published (the REQ-022
+    // refresh flicker) — wait for the first fetch to settle.
+    if (!loaded) {
+        return <PageLoading />
+    }
     return (
         <FaqView
             content={content}
