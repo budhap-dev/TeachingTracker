@@ -112,6 +112,7 @@ XS is an afternoon, XL is a project.
 | 36 | ⏸️ | [REQ-036 — "Ask us": a grounded FAQ chat box](#req-036--ask-us-a-grounded-faq-chat-box) | M | both | — (parked by owner 2026-08-04; accordion stays the source of truth) |
 | 37 | 🔲 | [REQ-037 — "About the teacher": a CV-style public page, edited in place](#req-037--about-the-teacher-a-cv-style-public-page-edited-in-place) | M | both | — (builds on REQ-021's bio; follows the FAQ-page pattern) |
 | 38 | ✅ | [REQ-038 — Hero highlights: the selling points that close](#req-038--hero-highlights-the-selling-points-that-close) | S | both | — |
+| 39 | ✅ | [REQ-039 — The teacher door: sign-in behind five taps](#req-039--the-teacher-door-sign-in-behind-five-taps) | XS | frontend | — |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -1866,3 +1867,31 @@ afternoon, not a debate)_
 - [ ] No claim appears twice on the page (approach dedupe resolved).
 - [ ] "Proven results" (if kept) links to or sits beside its evidence.
 - [ ] Coverage holds; the band's layout does not regress at 320px.
+
+## REQ-039 — The teacher door: sign-in behind five taps
+
+**Status:** ✅ Built (2026-08-06) · **Impact:** frontend · **Effort:** XS
+
+**Story**
+As the owner, I want "Sign in with Microsoft" hidden from visitors — the
+public Home should carry no teacher chrome — revealed only by five quick
+taps/clicks on the hero badge (the Android developer-mode pattern).
+
+**How it landed**
+- The Home afterline (the only public sign-in affordance — verified) is
+  hidden until five taps on the hero BrandBadge, each within 2 seconds of
+  the last; a slow tap restarts the count so accidental pokes never open
+  it.
+- The reveal persists for the browser session (sessionStorage), so
+  navigating away and back does not close the door.
+- The tap wrapper is `display: contents` — no layout change, no pointer
+  cursor, nothing hinting the badge is a control.
+- This is UX tidiness, not security: sign-in remains Microsoft-gated;
+  discovering the taps grants nothing.
+
+**Acceptance criteria**
+- [x] No sign-in chrome anywhere on the public site by default.
+- [x] Five quick badge taps reveal the usual quiet afterline (no
+      auto-popup of the Microsoft window).
+- [x] Reveal survives navigation within the session.
+- [x] Works identically in the installed PWA.

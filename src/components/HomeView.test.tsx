@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
@@ -164,14 +164,35 @@ describe('HomeView', () => {
         meta.remove()
     })
 
-    it('keeps teacher sign-in as a quiet afterline', async () => {
+    it('hides teacher sign-in until five quick taps on the badge', async () => {
+        sessionStorage.clear()
         const user = userEvent.setup()
         renderHome()
 
+        // Visitors see no sign-in chrome at all (owner ask, 2026-08-06).
+        expect(
+            screen.queryByRole('button', { name: /sign in with microsoft/i })
+        ).not.toBeInTheDocument()
+
+        // Five quick taps on the hero badge open the teacher door.
+        const badge = document.querySelector('.home-badge-tap')!
+        for (let tap = 0; tap < 5; tap += 1) {
+            fireEvent.click(badge)
+        }
         await user.click(
             screen.getByRole('button', { name: /sign in with microsoft/i })
         )
         expect(signIn).toHaveBeenCalled()
+    })
+
+    it('keeps the teacher door open for the rest of the session', () => {
+        sessionStorage.setItem('teacher-door', 'open')
+        renderHome()
+
+        expect(
+            screen.getByRole('button', { name: /sign in with microsoft/i })
+        ).toBeInTheDocument()
+        sessionStorage.clear()
     })
 })
 

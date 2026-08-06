@@ -1,9 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Cropper from 'react-easy-crop'
+import type { Area } from 'react-easy-crop'
 import {
     Button,
     Checkbox,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     FormControlLabel,
     IconButton,
+    Slider,
     TextField,
 } from '@mui/material'
 import { Link } from 'react-router-dom'
@@ -124,34 +131,76 @@ type AboutViewProps = {
     onPublish: (content: SiteContent) => void
 }
 
-/** Reads a picked image and downscales it to a small JPEG data-URI —
-    ~240px longest side — so the single-property stored document stays far
-    below Table Storage's 64KB ceiling. */
-const readAndShrink = (file: File): Promise<string> =>
+/** The API stores the photo inline in the single-property document and
+    rejects base64 beyond 16k characters — stay safely under it. */
+const PHOTO_BASE64_BUDGET = 15000
+
+/** Reads a picked file into a decoded image, ready for cropping. */
+const readImage = (file: File): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => {
             const img = new Image()
-            img.onload = () => {
-                const max = 240
-                const scale = Math.min(
-                    1,
-                    max / Math.max(img.width, img.height)
-                )
-                const canvas = document.createElement('canvas')
-                canvas.width = Math.round(img.width * scale)
-                canvas.height = Math.round(img.height * scale)
-                canvas
-                    .getContext('2d')!
-                    .drawImage(img, 0, 0, canvas.width, canvas.height)
-                resolve(canvas.toDataURL('image/jpeg', 0.78))
-            }
-            img.onerror = reject
+            img.onload = () => resolve(img)
+            img.onerror = () => reject(new Error('photo-unreadable'))
             img.src = reader.result as string
         }
-        reader.onerror = reject
+        reader.onerror = () => reject(new Error('photo-unreadable'))
         reader.readAsDataURL(file)
     })
+
+/** The centred square of an image — the crop when the owner just hits
+    "Use photo" without adjusting. */
+const centredSquare = (img: HTMLImageElement): Area => {
+    const side = Math.min(img.width, img.height)
+    return {
+        x: (img.width - side) / 2,
+        y: (img.height - side) / 2,
+        width: side,
+        height: side,
+    }
+}
+
+/** Draws the cropped area to a small JPEG data-URI, stepping size and
+    quality down until it fits the API's ceiling — a busy photo at one
+    fixed setting can weigh 4x the budget (owner report, 2026-08-06). */
+const shrinkToBudget = (img: HTMLImageElement, area: Area): string => {
+    const attempts = [
+        { max: 240, quality: 0.78 },
+        { max: 240, quality: 0.6 },
+        { max: 200, quality: 0.55 },
+        { max: 170, quality: 0.5 },
+        { max: 140, quality: 0.45 },
+        { max: 110, quality: 0.4 },
+    ]
+    for (const { max, quality } of attempts) {
+        const scale = Math.min(1, max / Math.max(area.width, area.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(area.width * scale))
+        canvas.height = Math.max(1, Math.round(area.height * scale))
+        canvas
+            .getContext('2d')!
+            .drawImage(
+                img,
+                area.x,
+                area.y,
+                area.width,
+                area.height,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            )
+        const url = canvas.toDataURL('image/jpeg', quality)
+        if (
+            url.length - 'data:image/jpeg;base64,'.length <=
+            PHOTO_BASE64_BUDGET
+        ) {
+            return url
+        }
+    }
+    throw new Error('photo-too-large')
+}
 
 /** Professional glyphs cycling across the qualification cards — each in
     its own colour (blue scholar, green verified, gold trophy) against the
@@ -250,6 +299,34 @@ export const AboutView = ({
     const { bio, hero } = content
     const [draft, setDraft] = useState<AboutDraft>(() => toDraft(bio))
     const [photoError, setPhotoError] = useState<string | null>(null)
+    const photoInput = useRef<HTMLInputElement>(null)
+    // The picked image stays in memory so the crop can be reopened and
+    // adjusted until the photo is replaced or removed (session-only).
+    const [cropSource, setCropSource] = useState<HTMLImageElement | null>(
+        null
+    )
+    const [cropOpen, setCropOpen] = useState(false)
+    const [crop, setCrop] = useState({ x: 0, y: 0 })
+    const [zoom, setZoom] = useState(1)
+    const [cropArea, setCropArea] = useState<Area | null>(null)
+    const applyCrop = () => {
+        if (!cropSource) {
+            return
+        }
+        try {
+            const photo = shrinkToBudget(
+                cropSource,
+                cropArea ?? centredSquare(cropSource)
+            )
+            edit((next) => ({ ...next, photo }))
+            setCropOpen(false)
+        } catch {
+            setCropOpen(false)
+            setPhotoError(
+                'That photo is too detailed to store — please try a simpler or smaller image.'
+            )
+        }
+    }
     const [edited, setEdited] = useState(false)
     useEffect(() => {
         if (!edited) {
@@ -263,7 +340,11 @@ export const AboutView = ({
     }
 
     const assembled = assemble(draft)
-    const dirty = JSON.stringify(assembled) !== JSON.stringify(bio)
+    // The published side goes through the same assemble path before the
+    // stringify comparison — the API's key order differs from ours, and
+    // comparing raw kept Publish lit forever (owner report, 2026-08-06).
+    const dirty =
+        JSON.stringify(assembled) !== JSON.stringify(assemble(toDraft(bio)))
     // The teacher sees the page AS THE DRAFT — photo, rows, everything —
     // before publishing; visitors see only the published document.
     const view = canEdit ? assembled : bio
@@ -398,18 +479,18 @@ export const AboutView = ({
                     </p>
                 )}
 
-                {(bio.body || bio.photo) && (
+                {(view.body || view.photo) && (
                     <div className="about-lead">
-                        {bio.photo && (
+                        {view.photo && (
                             <img
                                 className="about-photo"
-                                src={bio.photo}
+                                src={view.photo}
                                 alt={`Portrait of ${content.siteName}'s tutor`}
                             />
                         )}
-                        {bio.body && (
+                        {view.body && (
                             <div className="about-intro">
-                                {renderMarkdown(bio.body)}
+                                {renderMarkdown(view.body)}
                             </div>
                         )}
                     </div>
@@ -604,50 +685,67 @@ export const AboutView = ({
                                         is resized automatically.
                                     </span>
                                 )}
+                                {/* A plain button opening the picker
+                                    programmatically — label-forwarding to
+                                    a clipped input proved unreliable on
+                                    the owner's devices (2026-08-06). */}
                                 <Button
                                     size="small"
                                     variant="outlined"
-                                    component="label"
+                                    onClick={() =>
+                                        photoInput.current?.click()
+                                    }
                                 >
                                     {draft.photo
                                         ? 'Replace photo'
                                         : 'Add profile photo'}
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="visually-hidden-input"
-                                        onChange={(event) => {
-                                            const file =
-                                                event.target.files?.[0]
-                                            // Same-file re-picks must fire.
-                                            event.target.value = ''
-                                            if (!file) {
-                                                return
-                                            }
-                                            setPhotoError(null)
-                                            readAndShrink(file).then(
-                                                (photo) =>
-                                                    edit((next) => ({
-                                                        ...next,
-                                                        photo,
-                                                    })),
-                                                () =>
-                                                    setPhotoError(
-                                                        'That image could not be read — HEIC photos from iPhones sometimes fail; a JPG or PNG will work.'
-                                                    )
-                                            )
-                                        }}
-                                    />
                                 </Button>
+                                <input
+                                    ref={photoInput}
+                                    type="file"
+                                    accept="image/*"
+                                    className="visually-hidden-input"
+                                    onChange={(event) => {
+                                        const file = event.target.files?.[0]
+                                        // Same-file re-picks must fire.
+                                        event.target.value = ''
+                                        if (!file) {
+                                            return
+                                        }
+                                        setPhotoError(null)
+                                        readImage(file).then(
+                                            (img) => {
+                                                setCropSource(img)
+                                                setCrop({ x: 0, y: 0 })
+                                                setZoom(1)
+                                                setCropArea(null)
+                                                setCropOpen(true)
+                                            },
+                                            () =>
+                                                setPhotoError(
+                                                    'That image could not be read — HEIC photos from iPhones sometimes fail; a JPG or PNG will work.'
+                                                )
+                                        )
+                                    }}
+                                />
+                                {cropSource && draft.photo && (
+                                    <Button
+                                        size="small"
+                                        onClick={() => setCropOpen(true)}
+                                    >
+                                        Adjust crop
+                                    </Button>
+                                )}
                                 {draft.photo && (
                                     <Button
                                         size="small"
-                                        onClick={() =>
+                                        onClick={() => {
+                                            setCropSource(null)
                                             edit((next) => ({
                                                 ...next,
                                                 photo: '',
                                             }))
-                                        }
+                                        }}
                                     >
                                         Remove photo
                                     </Button>
@@ -658,6 +756,74 @@ export const AboutView = ({
                                     {photoError}
                                 </p>
                             )}
+                            <Dialog
+                                open={cropOpen && Boolean(cropSource)}
+                                onClose={() => setCropOpen(false)}
+                                fullWidth
+                                maxWidth="xs"
+                            >
+                                <DialogTitle>
+                                    Position your photo
+                                </DialogTitle>
+                                <DialogContent>
+                                    <div className="about-crop-area">
+                                        {cropSource && (
+                                            <Cropper
+                                                image={cropSource.src}
+                                                crop={crop}
+                                                zoom={zoom}
+                                                aspect={1}
+                                                cropShape="round"
+                                                showGrid={false}
+                                                onCropChange={setCrop}
+                                                onZoomChange={setZoom}
+                                                onCropComplete={(
+                                                    croppedArea,
+                                                    croppedAreaPixels
+                                                ) => {
+                                                    void croppedArea
+                                                    setCropArea(
+                                                        croppedAreaPixels
+                                                    )
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                    <div className="about-crop-zoom">
+                                        <span>Zoom</span>
+                                        <Slider
+                                            size="small"
+                                            min={1}
+                                            max={4}
+                                            step={0.05}
+                                            value={zoom}
+                                            onChange={(sliderEvent, value) => {
+                                                void sliderEvent
+                                                setZoom(value as number)
+                                            }}
+                                            aria-label="Zoom"
+                                        />
+                                    </div>
+                                    <p className="section-subtitle">
+                                        Drag to reposition — pinch or use
+                                        the slider to zoom. The circle is
+                                        what the page shows.
+                                    </p>
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button
+                                        onClick={() => setCropOpen(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        onClick={applyCrop}
+                                    >
+                                        Use photo
+                                    </Button>
+                                </DialogActions>
+                            </Dialog>
                         </div>
                         <TextField
                             label="Introduction (Markdown)"
