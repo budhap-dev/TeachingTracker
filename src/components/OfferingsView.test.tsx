@@ -56,6 +56,10 @@ const buildContent = (overrides: Partial<SiteContent> = {}): SiteContent => ({
         sections: [],
     },
     faq: [],
+    services: [
+        'One-to-One Personalised Tutoring',
+        'Flexible In-Person and Online Sessions',
+    ],
     freeform: { heading: '', markdown: '' },
     sectionOrder: [
         'hero',
@@ -83,15 +87,29 @@ const renderView = (
 }
 
 describe('OfferingsView', () => {
-    it('leads with a hero, its headline and an availability nudge', () => {
+    it('leads with the page title and availability — the pitch is Home-only', () => {
         renderView()
 
         expect(
             screen.getByRole('heading', { name: /offerings/i })
         ).toBeInTheDocument()
-        expect(screen.getByText(hero.headline)).toBeInTheDocument()
-        expect(screen.getByText(hero.subhead)).toBeInTheDocument()
+        // The headline/subhead live on the Home band alone (owner call,
+        // 2026-08-07) — repeating them here read as padding.
+        expect(screen.queryByText(hero.headline)).not.toBeInTheDocument()
+        expect(screen.queryByText(hero.subhead)).not.toBeInTheDocument()
         expect(screen.getByText(hero.availability)).toBeInTheDocument()
+    })
+
+    it('lists the owner services checklist inside the Offerings card', () => {
+        renderView()
+
+        expect(screen.getByText('What I offer')).toBeInTheDocument()
+        expect(
+            screen.getByText('One-to-One Personalised Tutoring')
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText('Flexible In-Person and Online Sessions')
+        ).toBeInTheDocument()
     })
 
     it('shows subjects as cards, with levels and boards where given', () => {
@@ -214,18 +232,22 @@ describe('OfferingsView', () => {
         expect(approachIndex).toBeLessThan(headings.indexOf('Offerings'))
     })
 
-    it('starts the assessment from either call-to-action', async () => {
+    it('starts the assessment from the closing call-to-action only', async () => {
         const onBookAssessment = vi.fn()
         const user = userEvent.setup()
         renderView({}, onBookAssessment)
 
+        // One door, at the end — the hero's CTAs were retired so the
+        // subject cards lead the page (owner call, 2026-08-07).
         const buttons = screen.getAllByRole('button', {
             name: /request a free assessment/i,
         })
-        expect(buttons).toHaveLength(2)
+        expect(buttons).toHaveLength(1)
+        expect(
+            screen.queryByText(/see subjects/i)
+        ).not.toBeInTheDocument()
         await user.click(buttons[0])
-        await user.click(buttons[1])
-        expect(onBookAssessment).toHaveBeenCalledTimes(2)
+        expect(onBookAssessment).toHaveBeenCalledTimes(1)
     })
 
     it('no longer renders the bio — it lives on the About page (REQ-037)', () => {

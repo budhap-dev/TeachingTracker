@@ -623,7 +623,7 @@ export const AboutView = ({
                         component={Link}
                         to={paths.contact}
                     >
-                        Contact us
+                        Contact me
                     </Button>
                 </div>
             </div>

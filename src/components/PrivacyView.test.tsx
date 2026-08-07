@@ -19,9 +19,9 @@ describe('PrivacyView', () => {
         ).toBeInTheDocument()
         // The sections the checklist demands, by heading.
         ;[
-            /who we are/i,
+            /who i am/i,
             /children's information/i,
-            /how long we keep it/i,
+            /how long i keep it/i,
             /where it lives/i,
             /cookies/i,
             /your rights/i,

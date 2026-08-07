@@ -99,7 +99,7 @@ describe('AboutView', () => {
             screen.getByRole('link', { name: /request a free assessment/i })
         ).toHaveAttribute('href', '/enquire')
         expect(
-            screen.getByRole('link', { name: /contact us/i })
+            screen.getByRole('link', { name: /contact me/i })
         ).toHaveAttribute('href', '/contact')
         // A visitor gets no editing chrome.
         expect(

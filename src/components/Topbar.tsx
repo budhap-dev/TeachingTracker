@@ -16,10 +16,19 @@ type TopbarProps = {
 
 export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
     const [isThemePickerOpen, setIsThemePickerOpen] = useState(false)
-    const dailyQuote = useMemo(
-        () => teacherQuotes[Math.floor(Math.random() * teacherQuotes.length)],
-        []
-    )
+    // Genuinely daily: picked from the date, not Math.random — a random
+    // pick re-rolled on every page's mount, so the header height jumped
+    // with each quote's line count as you navigated (owner report,
+    // 2026-08-07).
+    const dailyQuote = useMemo(() => {
+        const today = new Date()
+        const dayOfYear = Math.floor(
+            (today.getTime() -
+                new Date(today.getFullYear(), 0, 0).getTime()) /
+                86400000
+        )
+        return teacherQuotes[dayOfYear % teacherQuotes.length]
+    }, [])
 
     return (
         // Wears the active theme's sidebar gradient, so the frame around the

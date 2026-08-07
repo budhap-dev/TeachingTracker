@@ -156,6 +156,8 @@ export type SiteContent = {
     pricing: PricingSection
     /** Hero highlight tiles (REQ-038). */
     highlights: string[]
+    /** The services checklist on Offerings (owner list, 2026-08-07). */
+    services: string[]
     freeform: FreeformSection
     sectionOrder: SectionKey[]
 }
@@ -196,6 +198,7 @@ export const normaliseSiteContent = (
     pricing: content.pricing ?? { rates: [], factors: [], note: '' },
     // Owner-approved by provision (2026-08-05), like the About copy.
     highlights: content.highlights ?? defaultSiteContent.highlights,
+    services: content.services ?? defaultSiteContent.services,
     sectionOrder: [
         ...content.sectionOrder,
         ...sectionKeys.filter((key) => !content.sectionOrder.includes(key)),
@@ -242,7 +245,7 @@ export const defaultSiteContent: SiteContent = {
     journey: [
         {
             title: 'Enquire',
-            detail: 'Tell us the subject, year and what your child wants to get out of tutoring.',
+            detail: 'Tell me the subject, year and what your child wants to get out of tutoring.',
         },
         {
             title: 'Free assessment',
@@ -388,6 +391,20 @@ export const defaultSiteContent: SiteContent = {
         'Confidence-building approach',
         'Exam and assessment preparation',
         'Proven results',
+    ],
+    // The Offerings services checklist — the owner's list, verbatim
+    // (2026-08-07); the view supplies the ticks.
+    services: [
+        'One-to-One Personalised Tutoring',
+        'Small Group Classes for Focused Learning',
+        'Homework & Assignment Support',
+        'Exam Preparation and Revision Strategies',
+        'Confidence Building & Study Skills Development',
+        'Progress Tracking and Parent Feedback',
+        'Foundation, Intermediate & Advanced Learning Support',
+        'GCSE, IGCSE & A-Level Preparation',
+        'University Entrance & Scholarship Coaching',
+        'Flexible In-Person and Online Sessions',
     ],
     // Empty until the teacher writes one — an empty section renders nothing.
     freeform: { heading: '', markdown: '' },

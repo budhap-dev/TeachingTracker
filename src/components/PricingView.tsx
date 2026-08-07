@@ -140,7 +140,7 @@ export const PricingView = ({
                     <p className="section-subtitle">
                         {canEdit
                             ? 'No rates published yet — add them below and publish.'
-                            : 'Rates are agreed individually — ask us for a quote below.'}
+                            : 'Rates are agreed individually — ask me for a quote below.'}
                     </p>
                 )}
                 {pricing.rates.length > 0 && (
@@ -198,7 +198,7 @@ export const PricingView = ({
                             component={Link}
                             to={paths.contact}
                         >
-                            Contact us
+                            Contact me
                         </Button>
                     </div>
                 </div>

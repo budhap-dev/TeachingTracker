@@ -3387,6 +3387,38 @@ a.home-highlight-tile {
     }
 }
 
+/* The Offerings services checklist: two columns on wide screens. */
+.offerings-services-heading {
+    margin-top: 18px;
+}
+
+.offerings-services {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+
+    @media (min-width: 701px) {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    li {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        font-size: 0.93rem;
+        font-weight: 600;
+        line-height: 1.35;
+
+        svg {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+    }
+}
+
 /* The published subjects, one tap from the door. */
 .home-subject-chips {
     display: flex;

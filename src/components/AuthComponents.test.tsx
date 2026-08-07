@@ -145,7 +145,7 @@ describe('Sidebar', () => {
         ).not.toBeInTheDocument()
         expect(publicItem()).toBeInTheDocument()
         expect(
-            screen.getByRole('button', { name: /contact us/i })
+            screen.getByRole('button', { name: /contact me/i })
         ).toBeInTheDocument()
         // With only the public group left there's no split to label, so the
         // "External" heading is dropped rather than captioning everything.

@@ -44,7 +44,7 @@ export const EnquireView = ({
 }: EnquireViewProps) => {
     useDocumentMeta(
         'Enquire about tutoring — AbhiTutor',
-        'Tell us the subject, year and what your child wants from tutoring, and we will come back to you — usually within a day.'
+        'Tell me the subject, year and what your child wants from tutoring, and I will come back to you — usually within a day.'
     )
     const [parentName, setParentName] = useState('')
     const [email, setEmail] = useState('')
@@ -105,7 +105,7 @@ export const EnquireView = ({
                     />
                     <h3>Thank you — your enquiry is in.</h3>
                     <p>
-                        We usually reply within a day, and the first step is a
+                        I usually reply within a day, and the first step is a
                         free, no-obligation assessment session.
                     </p>
                 </div>
@@ -123,8 +123,8 @@ export const EnquireView = ({
                             Enquire about tutoring
                         </h3>
                         <p className="section-subtitle">
-                            Tell us a little about your child and what you are
-                            looking for — we usually reply within a day.
+                            Tell me a little about your child and what you are
+                            looking for — I usually reply within a day.
                         </p>
                     </div>
                 </div>
@@ -173,7 +173,7 @@ export const EnquireView = ({
                         }
                         helperText={
                             attempted && contactMissing
-                                ? 'Give us an email or a phone number.'
+                                ? 'Give me an email or a phone number.'
                                 : attempted && emailInvalid
                                   ? 'Enter a valid email address, like name@example.com.'
                                   : 'Either email or phone is fine.'
@@ -285,9 +285,9 @@ export const EnquireView = ({
                         {saving ? 'Sending…' : 'Send enquiry'}
                     </Button>
                     <p className="enquire-consent">
-                        We only use these details to reply about tutoring —
-                        nothing else, and never shared. See our{' '}
-                        <a href={paths.privacy}>privacy policy</a> for what we
+                        I only use these details to reply about tutoring —
+                        nothing else, and never shared. See my{' '}
+                        <a href={paths.privacy}>privacy policy</a> for what I
                         keep and for how long.
                     </p>
                 </Box>

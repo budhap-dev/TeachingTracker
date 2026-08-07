@@ -252,7 +252,9 @@ describe('SiteEditorView', () => {
         const user = userEvent.setup()
         renderEditor()
 
-        fireEvent.change(screen.getByLabelText(/^headline/i), {
+        // The availability line — the hero's headline no longer renders
+        // on Offerings (owner call, 2026-08-07), but availability does.
+        fireEvent.change(screen.getByLabelText(/availability/i), {
             target: { value: 'Preview me before anyone else.' },
         })
         await user.click(screen.getByRole('tab', { name: /preview/i }))
@@ -269,7 +271,7 @@ describe('SiteEditorView', () => {
 
         // And back: the edit survives the round trip through the tabs.
         await user.click(screen.getByRole('tab', { name: /edit/i }))
-        expect(screen.getByLabelText(/^headline/i)).toHaveValue(
+        expect(screen.getByLabelText(/availability/i)).toHaveValue(
             'Preview me before anyone else.'
         )
     })

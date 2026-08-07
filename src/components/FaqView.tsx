@@ -114,7 +114,7 @@ export const FaqView = ({
 
                 {content.faq.length === 0 && !canEdit && (
                     <p className="section-subtitle">
-                        No questions published yet — ask us directly below.
+                        No questions published yet — ask me directly below.
                     </p>
                 )}
                 {content.faq.length > 0 && (
@@ -134,7 +134,7 @@ export const FaqView = ({
                         component={Link}
                         to={paths.enquire}
                     >
-                        Ask us — request a free assessment
+                        Ask me — request a free assessment
                     </Button>
                 </div>
             </div>

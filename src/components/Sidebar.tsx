@@ -123,7 +123,7 @@ const navItems: NavItem[] = [
         isActive: (pathname) => pathname.startsWith(paths.enquire),
     },
     {
-        label: 'Contact us',
+        label: 'Contact me',
         path: paths.contact,
         icon: <MailOutlineRoundedIcon fontSize="small" />,
         isActive: (pathname) => pathname.startsWith(paths.contact),
