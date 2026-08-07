@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useIsAuthenticated } from '@azure/msal-react'
@@ -21,6 +21,8 @@ import PrivacyTipOutlinedIcon from '@mui/icons-material/PrivacyTipOutlined'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import { isAuthConfigured } from '../auth/msal'
+import { useAppDispatch, useAppSelector } from '../hooks'
+import { fetchContactRequested } from '../store/store'
 import { appVersion, isProdBuild } from '../version'
 import { paths } from '../paths'
 import { BrandLogo } from './BrandLogo'
@@ -28,6 +30,10 @@ import { BrandBadge } from './BrandBadge'
 
 type NavItem = {
     label: string
+    /** Hidden from visitors while the published contact details are all
+        blank — an empty Contact page is a dead end (owner call,
+        2026-08-07). The teacher always sees it, to fill it in. */
+    needsContact?: boolean
     path: string
     /** A leading glyph for the menu row. */
     icon: ReactNode
@@ -124,6 +130,7 @@ const navItems: NavItem[] = [
     },
     {
         label: 'Contact me',
+        needsContact: true,
         path: paths.contact,
         icon: <MailOutlineRoundedIcon fontSize="small" />,
         isActive: (pathname) => pathname.startsWith(paths.contact),
@@ -177,12 +184,24 @@ const SidebarContent = ({
     const navigate = useNavigate()
     const { pathname } = useLocation()
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+    const dispatch = useAppDispatch()
+    // The menu needs the published contact details to decide whether the
+    // Contact entry earns its place; the page itself fetches too — the
+    // GET is idempotent and silent on failure.
+    const contact = useAppSelector((state) => state.students.contact)
+    useEffect(() => {
+        dispatch(fetchContactRequested())
+    }, [dispatch])
+    const contactPublished = Boolean(contact.email || contact.phone)
 
-    const visibleItems = navItems.filter((item) =>
-        showTeacherItems
-            ? !item.visitorOnly
-            : !item.teacherOnly
-    )
+    const visibleItems = navItems
+        .filter((item) =>
+            showTeacherItems ? !item.visitorOnly : !item.teacherOnly
+        )
+        .filter(
+            (item) =>
+                !item.needsContact || showTeacherItems || contactPublished
+        )
 
     // Two menu groups: the teacher's private workspace and the public-facing
     // site. An empty group is skipped, so signed-out visitors get just the

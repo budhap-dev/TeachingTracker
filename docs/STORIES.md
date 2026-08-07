@@ -90,12 +90,12 @@ XS is an afternoon, XL is a project.
 | 16 | ✅ | [REQ-017 — How it works, as a numbered journey](#req-017--how-it-works-as-a-numbered-journey) | XS | frontend | — |
 | 17 | ✅ | [REQ-018 — Public enquiry form](#req-018--public-enquiry-form) | M | both | REQ-009 (shipped 2026-07-25) |
 | 18 | ✅ | [REQ-019 — Leads inbox](#req-019--leads-inbox) | M | both | REQ-018 (shipped 2026-07-25) |
-| 19 | 🔲 | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | REQ-008, REQ-009 |
-| 20 | 🔲 | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | REQ-008 |
-| 21 | 🚧 | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | — (unparked 2026-08-04: from £20/hr/student; own page, FAQ pattern) |
+| 19 | ✅ | [REQ-020 — Testimonials and outcomes](#req-020--testimonials-and-outcomes) | M | both | — (landed as the reviews pages + hero trust chips; numeric tallies dropped by owner 2026-08-04) |
+| 20 | ✅ | [REQ-021 — Tutor bio and safeguarding](#req-021--tutor-bio-and-safeguarding) | S | both | — (landed inside the About page: bio, owner-set DBS badge, safeguarding line) |
+| 21 | ✅ | [REQ-022 — Transparent pricing](#req-022--transparent-pricing) | S | both | — (pricing page shipped: per-level rates, edited in place — PR #75) |
 | 22 | ✅ | [REQ-023 — Public pages are discoverable (SEO / OG)](#req-023--public-pages-are-discoverable-seo--og) | M | frontend | — (static meta + per-route titles + sitemap/robots; prerender deferred) |
 | 23 | ✅ | [REQ-024 — Public Home landing page](#req-024--public-home-landing-page) | M | frontend | REQ-003 |
-| 24 | 🔲 | [REQ-025 — FAQ](#req-025--faq) | S | both | REQ-008 |
+| 24 | ✅ | [REQ-025 — FAQ](#req-025--faq) | S | both | — (its own menu page, inline teacher editing) |
 | 25 | ❌ | [REQ-026 — Refer a family](#req-026--refer-a-family) | S | both | — (dropped 2026-08-02, owner: not needed) |
 | 26 | ✅ | [REQ-027 — Families submit testimonials; teacher moderates](#req-027--families-submit-testimonials-teacher-moderates-approved-show-as-cards) | L | both | REQ-009 |
 | 27 | ✅ | [REQ-028 — Profanity screen flags reviews for moderation](#req-028--profanity-screen-flags-reviews-for-moderation) | S | both | REQ-027 (backend screen merged 2026-07-24) |
@@ -110,9 +110,17 @@ XS is an afternoon, XL is a project.
 | 34 | ✅ | [REQ-012 — Planner subject multi-select](#req-012--class-planner-subject-is-a-multi-select) | S | frontend | — (shipped with the planner UX pack; see deviations in the story) |
 | 35 | ✅ | [REQ-035 — Custom domain for the production app](#req-035--custom-domain-for-the-production-app) | S | infra + both | — (LIVE 2026-08-04: https://abhitutor.co.uk, registered → padlock same day) |
 | 36 | ⏸️ | [REQ-036 — "Ask us": a grounded FAQ chat box](#req-036--ask-us-a-grounded-faq-chat-box) | M | both | — (parked by owner 2026-08-04; accordion stays the source of truth) |
-| 37 | 🔲 | [REQ-037 — "About the teacher": a CV-style public page, edited in place](#req-037--about-the-teacher-a-cv-style-public-page-edited-in-place) | M | both | — (builds on REQ-021's bio; follows the FAQ-page pattern) |
+| 37 | ✅ | [REQ-037 — "About the teacher": a CV-style public page, edited in place](#req-037--about-the-teacher-a-cv-style-public-page-edited-in-place) | M | both | — (shipped PR #76 + polish arc: icons, photo crop, live preview) |
 | 38 | ✅ | [REQ-038 — Hero highlights: the selling points that close](#req-038--hero-highlights-the-selling-points-that-close) | S | both | — |
 | 39 | ✅ | [REQ-039 — The teacher door: sign-in behind five taps](#req-039--the-teacher-door-sign-in-behind-five-taps) | XS | frontend | — |
+| 40 | 🔲 | [REQ-040 — Security hardening: headers, rate limits, dependency alerts](#req-040--security-hardening-headers-rate-limits-dependency-alerts) | S | both + infra | — (review recommendations, 2026-08-07) |
+| 41 | 🔲 | [REQ-041 — Student and payment edits persist via the API](#req-041--student-and-payment-edits-persist-via-the-api) | M | both | — (closes the known wiring gap) |
+| 42 | 🔲 | [REQ-042 — Keyboard-accessible subject cards](#req-042--keyboard-accessible-subject-cards) | XS | frontend | — |
+| 43 | 🔲 | [REQ-043 — LocalBusiness structured data for search](#req-043--localbusiness-structured-data-for-search) | S | frontend | — |
+| 44 | 🔲 | [REQ-044 — The installed app degrades gracefully offline](#req-044--the-installed-app-degrades-gracefully-offline) | M | frontend | — |
+| 45 | 🔲 | [REQ-045 — Default-content drift check between the repos](#req-045--default-content-drift-check-between-the-repos) | S | both | — (the emoji copy drifted 2026-08-06; make it structural) |
+| 46 | 🔲 | [REQ-046 — One edited-in-place hook for About, FAQ and Pricing](#req-046--one-edited-in-place-hook-for-about-faq-and-pricing) | M | frontend | — (the dirty-check bug was fixed three times on 2026-08-06) |
+| 47 | 🔲 | [REQ-047 — Split the stylesheet and route monoliths](#req-047--split-the-stylesheet-and-route-monoliths) | S | frontend | — |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -1895,3 +1903,158 @@ taps/clicks on the hero badge (the Android developer-mode pattern).
       auto-popup of the Microsoft window).
 - [x] Reveal survives navigation within the session.
 - [x] Works identically in the installed PWA.
+
+## REQ-040 — Security hardening: headers, rate limits, dependency alerts
+
+**Status:** 🔲 Not started · **Impact:** both + infra · **Effort:** S
+_(from the improvement review, 2026-08-07)_
+
+**Story**
+As the owner, I want the site hardened beyond its defaults, so the public
+surface resists abuse and the stack tells me when a dependency turns bad.
+
+**Scope (three independent pieces — ship in any order)**
+1. **Security headers** on the Static Web App: `globalHeaders` in
+   `staticwebapp.config.json` — Content-Security-Policy, X-Frame-Options
+   DENY, X-Content-Type-Options nosniff, Referrer-Policy, HSTS. No code
+   changes; verify the teacher portal (MSAL popups) still works under the
+   CSP before promoting.
+2. **Rate limits** on the anonymous POST endpoints (`/api/reviews`,
+   `/api/leads`): the honeypot stops dumb bots, nothing stops a patient
+   one from flooding moderation. Cheapest: Cloudflare WAF rate rules —
+   the domain already fronts through Cloudflare; zero code.
+3. **Dependency alerts**: `dependabot.yml` in both repos plus
+   `npm audit --audit-level=high` as a CI step.
+
+**Acceptance criteria**
+- [ ] securityheaders.com grades the site A (or the misses are recorded
+      as deliberate).
+- [ ] A scripted 100-request burst to /api/reviews is throttled; a normal
+      submitter is not.
+- [ ] Dependabot opens PRs in both repos; CI fails on a high-severity
+      audit finding.
+- [ ] Teacher sign-in and publishing still work under the CSP.
+
+## REQ-041 — Student and payment edits persist via the API
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+
+**Story**
+As the teacher, when I add or edit a student or correct a payment, I want
+that saved to the server — today only class scheduling POSTs; student and
+payment edits update Redux alone and silently revert on reload (the known
+wiring gap, recorded in the verify skill).
+
+**Shape**
+- Wire the existing student endpoints (`POST /api/students`,
+  `PUT /api/students/:id`) through sagas from the add/edit forms; add the
+  missing payment write path end to end (API + storage + saga).
+- Optimistic UI with rollback on failure, matching the scheduling flow.
+- The verify skill's "known gap" note is deleted the day this ships.
+
+**Acceptance criteria**
+- [ ] Add a student, reload: still there (server-side, not Redux).
+- [ ] Edit a payment, reload: the correction and month totals hold.
+- [ ] A failed save surfaces a toast and rolls the screen back.
+- [ ] Coverage holds in both repos.
+
+## REQ-042 — Keyboard-accessible subject cards
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** XS
+
+**Story**
+As a keyboard or switch user on Offerings, I want to flip a subject card
+without a mouse — the flip is currently a plain `div onClick` with no
+role, no tabIndex, no key handler, so the back face is unreachable.
+
+**Acceptance criteria**
+- [ ] Cards are focusable in DOM order and flip on Enter/Space.
+- [ ] The flip state is announced (aria-pressed or equivalent).
+- [ ] Hover behaviour for mouse users is unchanged.
+
+## REQ-043 — LocalBusiness structured data for search
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+
+**Story**
+As the owner, I want Google to understand AbhiTutor as a local tutoring
+business — name, area served, and the published review rating — so
+results can carry stars and rich details. One JSON-LD block, fed from the
+same published content the pages render (never-invent applies: emit only
+what is actually published — rating markup only from real reviews).
+
+**Acceptance criteria**
+- [ ] Google's Rich Results test passes for LocalBusiness.
+- [ ] Rating markup appears only when approved reviews exist and matches
+      the visible average exactly.
+- [ ] No hardcoded claims — the block derives from the site document.
+
+## REQ-044 — The installed app degrades gracefully offline
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+
+**Story**
+As a phone user who installed the app, I want opening it offline to show
+the shell and an honest "you're offline" line instead of a blank error —
+the manifest-only PWA has no service worker today.
+
+**Cautions (why this is M, not S)**
+- A service worker caching the shell must never serve a stale deploy:
+  version.json is the freshness signal; cache-bust on it.
+- The dev/prod identity split (yellow-ringed icons) must survive caching.
+
+**Acceptance criteria**
+- [ ] Offline launch renders the shell + offline notice, no white screen.
+- [ ] Deploys reach clients within one reload once back online.
+- [ ] Lighthouse PWA audit passes; dev/prod icons stay distinct.
+
+## REQ-045 — Default-content drift check between the repos
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** S
+
+**Story**
+As the maintainers, we want the mirrored `defaultSiteContent` in the two
+repos to be provably in sync — the emoji copy drifted on 2026-08-06 and
+cost a debugging session; today the mirror is discipline, not structure.
+
+**Shape (pick at build time)**
+- Either a CI job in each repo that renders both defaults to JSON and
+  fails on any difference, or a single checked-in JSON both repos import.
+
+**Acceptance criteria**
+- [ ] An intentional one-character drift fails CI in whichever repo
+      changes second.
+- [ ] The check covers every shared field, not a hand-kept list.
+
+## REQ-046 — One edited-in-place hook for About, FAQ and Pricing
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+
+**Story**
+As the next person adding an editable page, I want the edited-in-place
+machinery — adopt-until-edited draft, canonicalised dirty check, publish
+assembly — in one `useDraftSection` hook. It is currently hand-rolled
+three times, and the 2026-08-06 Publish-always-lit bug had to be fixed in
+all three places.
+
+**Acceptance criteria**
+- [ ] About, FAQ and Pricing all consume the shared hook; behaviour is
+      pixel-identical (existing suites pass unchanged).
+- [ ] The canonicalised dirty comparison lives in exactly one place.
+- [ ] A new editable page needs only its assemble/toDraft pair.
+
+## REQ-047 — Split the stylesheet and route monoliths
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+
+**Story**
+As the maintainers, we want `_components.scss` (4,800+ lines) split into
+per-feature partials and `ROUTE.tsx` (900+ lines) split into per-page
+connected components — pure moves, no rule or behaviour changes, so
+finding code stops being scroll-archaeology.
+
+**Acceptance criteria**
+- [ ] No visual diff (spot screenshots) and no test changes needed.
+- [ ] Each partial/page file owns one feature area; imports stay ordered
+      so the cascade is unchanged.
+- [ ] The build output is byte-comparable ignoring hashes.

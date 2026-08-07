@@ -129,6 +129,9 @@ type AboutViewProps = {
     canEdit: boolean
     publishing: boolean
     onPublish: (content: SiteContent) => void
+    /** False hides the Contact-me door — all contact fields are blank
+        (owner call, 2026-08-07). Defaults open for bare renders. */
+    contactPublished?: boolean
 }
 
 /** The API stores the photo inline in the single-property document and
@@ -291,6 +294,7 @@ export const AboutView = ({
     canEdit,
     publishing,
     onPublish,
+    contactPublished = true,
 }: AboutViewProps) => {
     useDocumentMeta(
         'About the teacher — AbhiTutor',
@@ -618,13 +622,15 @@ export const AboutView = ({
                     >
                         Request a free assessment
                     </Button>
-                    <Button
-                        variant="outlined"
-                        component={Link}
-                        to={paths.contact}
-                    >
-                        Contact me
-                    </Button>
+                    {contactPublished && (
+                        <Button
+                            variant="outlined"
+                            component={Link}
+                            to={paths.contact}
+                        >
+                            Contact me
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -1051,6 +1057,8 @@ const AboutConnected = ({ canEdit }: { canEdit: boolean }) => {
     const loaded = useAppSelector(
         (state) => state.students.siteContentLoaded
     )
+    // The Sidebar fetches the published contact app-wide; this only reads.
+    const contact = useAppSelector((state) => state.students.contact)
     useEffect(() => {
         dispatch(fetchSiteContentRequested())
     }, [dispatch])
@@ -1065,6 +1073,7 @@ const AboutConnected = ({ canEdit }: { canEdit: boolean }) => {
             content={content}
             canEdit={canEdit}
             publishing={publishing}
+            contactPublished={Boolean(contact.email || contact.phone)}
             onPublish={(next) => dispatch(publishSiteContentRequested(next))}
         />
     )
