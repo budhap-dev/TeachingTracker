@@ -63,6 +63,9 @@ type PricingViewProps = {
     canEdit: boolean
     publishing: boolean
     onPublish: (content: SiteContent) => void
+    /** False hides the Contact-me door — all contact fields are blank
+        (owner call, 2026-08-07). Defaults open for bare renders. */
+    contactPublished?: boolean
 }
 
 /**
@@ -75,6 +78,7 @@ export const PricingView = ({
     canEdit,
     publishing,
     onPublish,
+    contactPublished = true,
 }: PricingViewProps) => {
     useDocumentMeta(
         'Pricing — AbhiTutor',
@@ -193,13 +197,15 @@ export const PricingView = ({
                         >
                             Get your exact rate — free assessment
                         </Button>
-                        <Button
-                            variant="outlined"
-                            component={Link}
-                            to={paths.contact}
-                        >
-                            Contact me
-                        </Button>
+                        {contactPublished && (
+                            <Button
+                                variant="outlined"
+                                component={Link}
+                                to={paths.contact}
+                            >
+                                Contact me
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -412,6 +418,8 @@ const PricingConnected = ({ canEdit }: { canEdit: boolean }) => {
     const loaded = useAppSelector(
         (state) => state.students.siteContentLoaded
     )
+    // The Sidebar fetches the published contact app-wide; this only reads.
+    const contact = useAppSelector((state) => state.students.contact)
     useEffect(() => {
         dispatch(fetchSiteContentRequested())
     }, [dispatch])
@@ -426,6 +434,7 @@ const PricingConnected = ({ canEdit }: { canEdit: boolean }) => {
             content={content}
             canEdit={canEdit}
             publishing={publishing}
+            contactPublished={Boolean(contact.email || contact.phone)}
             onPublish={(next) => dispatch(publishSiteContentRequested(next))}
         />
     )

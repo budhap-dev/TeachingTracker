@@ -10,6 +10,7 @@ const renderPricing = (overrides?: {
     content?: SiteContent
     canEdit?: boolean
     onPublish?: ReturnType<typeof vi.fn>
+    contactPublished?: boolean
 }) => {
     const onPublish = overrides?.onPublish ?? vi.fn()
     const utils = render(
@@ -18,6 +19,7 @@ const renderPricing = (overrides?: {
                 content={overrides?.content ?? defaultSiteContent}
                 canEdit={overrides?.canEdit ?? false}
                 publishing={false}
+                contactPublished={overrides?.contactPublished ?? true}
                 onPublish={onPublish}
             />
         </MemoryRouter>
@@ -26,6 +28,16 @@ const renderPricing = (overrides?: {
 }
 
 describe('PricingView', () => {
+    it('drops the Contact-me door when contact is unpublished', () => {
+        renderPricing({ contactPublished: false })
+        expect(
+            screen.queryByRole('link', { name: /contact me/i })
+        ).not.toBeInTheDocument()
+        expect(
+            screen.getByRole('link', { name: /free assessment/i })
+        ).toBeInTheDocument()
+    })
+
     it('shows the per-level from-rates, factors and the honest close (REQ-022)', () => {
         renderPricing()
 

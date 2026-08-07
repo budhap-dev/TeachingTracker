@@ -4,6 +4,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { RequireTeacher } from './RequireTeacher'
+import { Provider } from 'react-redux'
 import { Sidebar } from './Sidebar'
 import {
     TeacherName,
@@ -18,6 +19,7 @@ import {
 } from '../auth/msal'
 import {
     store,
+    fetchContactSucceeded,
     fetchSessionsRequested,
     fetchStudentsRequested,
     initialLoadSkipped,
@@ -120,9 +122,11 @@ describe('RequireTeacher', () => {
 describe('Sidebar', () => {
     const renderSidebar = () =>
         render(
-            <MemoryRouter>
-                <Sidebar sidebarBackground="none" />
-            </MemoryRouter>
+            <Provider store={store}>
+                <MemoryRouter>
+                    <Sidebar sidebarBackground="none" />
+                </MemoryRouter>
+            </Provider>
         )
     const teacherItem = () =>
         screen.queryByRole('button', { name: /payment tracker/i })
@@ -138,19 +142,42 @@ describe('Sidebar', () => {
 
     it('hides teacher items from signed-out visitors', () => {
         mockAccount = null
+        // The singleton store may hold contact details from earlier App
+        // renders in this file — this test needs them blank.
+        store.dispatch(fetchContactSucceeded({}))
         renderSidebar()
         expect(teacherItem()).not.toBeInTheDocument()
         expect(
             screen.queryByRole('button', { name: /dashboard/i })
         ).not.toBeInTheDocument()
         expect(publicItem()).toBeInTheDocument()
+        // All contact fields blank: the Contact entry is a dead end, so
+        // visitors don't get it (owner call, 2026-08-07)…
         expect(
-            screen.getByRole('button', { name: /contact me/i })
-        ).toBeInTheDocument()
+            screen.queryByRole('button', { name: /contact me/i })
+        ).not.toBeInTheDocument()
         // With only the public group left there's no split to label, so the
         // "External" heading is dropped rather than captioning everything.
         expect(screen.queryByText('External')).not.toBeInTheDocument()
         expect(screen.queryByText('Teacher')).not.toBeInTheDocument()
+    })
+
+    it('offers Contact to visitors only once details are published', () => {
+        mockAccount = null
+        store.dispatch(fetchContactSucceeded({ email: 'a@b.co.uk' }))
+        renderSidebar()
+        expect(
+            screen.getByRole('button', { name: /contact me/i })
+        ).toBeInTheDocument()
+        // Reset the singleton store for the tests that follow.
+        store.dispatch(fetchContactSucceeded({}))
+    })
+
+    it('always shows Contact to the teacher, even while blank', () => {
+        renderSidebar()
+        expect(
+            screen.getByRole('button', { name: /contact me/i })
+        ).toBeInTheDocument()
     })
 
     it('shows the whole menu once signed in', () => {

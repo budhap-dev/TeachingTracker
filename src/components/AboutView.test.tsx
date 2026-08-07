@@ -107,6 +107,37 @@ describe('AboutView', () => {
         ).not.toBeInTheDocument()
     })
 
+    it('hides the Contact-me door when every contact field is blank', () => {
+        renderAbout({
+            content: defaultSiteContent,
+        })
+        // Bare renders default the door open…
+        expect(
+            screen.getByRole('link', { name: /contact me/i })
+        ).toBeInTheDocument()
+    })
+
+    it('drops the Contact-me door when told contact is unpublished', () => {
+        render(
+            <MemoryRouter>
+                <AboutView
+                    content={defaultSiteContent}
+                    canEdit={false}
+                    publishing={false}
+                    onPublish={vi.fn()}
+                    contactPublished={false}
+                />
+            </MemoryRouter>
+        )
+        expect(
+            screen.queryByRole('link', { name: /contact me/i })
+        ).not.toBeInTheDocument()
+        // The assessment door stays.
+        expect(
+            screen.getByRole('link', { name: /request a free assessment/i })
+        ).toBeInTheDocument()
+    })
+
     it('shows the DBS badge only when owner-set, with an honest empty state', () => {
         renderAbout({
             content: {
