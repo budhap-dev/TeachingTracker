@@ -40,7 +40,7 @@ describe('public pages', () => {
         render(<App />)
 
         expect(
-            await screen.findByRole('heading', { name: /contact us/i })
+            await screen.findByRole('heading', { name: /contact me/i })
         ).toBeInTheDocument()
         expect(
             screen.getByRole('link', { name: 'hello@example.com' })
@@ -81,9 +81,6 @@ describe('public pages', () => {
 
         expect(
             screen.getByRole('heading', { name: /offerings/i })
-        ).toBeInTheDocument()
-        expect(
-            screen.getByText(defaultSiteContent.hero.headline)
         ).toBeInTheDocument()
         expect(
             screen.getByRole('heading', {
@@ -135,11 +132,11 @@ describe('public pages', () => {
 
         const navigation = screen.getByRole('navigation')
         await user.click(
-            within(navigation).getByRole('button', { name: /contact us/i })
+            within(navigation).getByRole('button', { name: /contact me/i })
         )
 
         expect(
-            screen.getByRole('heading', { name: /contact us/i })
+            screen.getByRole('heading', { name: /contact me/i })
         ).toBeInTheDocument()
     })
 })

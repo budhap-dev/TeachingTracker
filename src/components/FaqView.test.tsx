@@ -39,7 +39,7 @@ describe('FaqView', () => {
             screen.getByText(defaultSiteContent.faq[0].answer)
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('link', { name: /ask us — request a free/i })
+            screen.getByRole('link', { name: /ask me — request a free/i })
         ).toHaveAttribute('href', '/enquire')
         // A visitor gets no editing chrome.
         expect(

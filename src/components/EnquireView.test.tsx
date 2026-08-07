@@ -99,7 +99,7 @@ describe('EnquireView', () => {
         expect(onSubmit).not.toHaveBeenCalled()
         expect(screen.getByText(/your name is required/i)).toBeInTheDocument()
         expect(
-            screen.getByText(/give us an email or a phone number/i)
+            screen.getByText(/give me an email or a phone number/i)
         ).toBeInTheDocument()
         expect(
             screen.getByText(/child's year is required/i)

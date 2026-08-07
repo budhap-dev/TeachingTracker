@@ -60,15 +60,15 @@ export const PrivacyView = () => {
                 </h3>
                 <p className="section-subtitle">
                     How AbhiTutor handles your family&apos;s
-                    details. Short version: we collect only what tutoring
-                    needs, we never sell or share it for marketing, and you
+                    details. Short version: I collect only what tutoring
+                    needs, I never sell or share it for marketing, and you
                     can ask for it — or ask for it to be gone — at any time.
                 </p>
                 <p className="privacy-updated">Last updated: 31 July 2026</p>
             </div>
 
             <div className="card">
-                <h4 className="offerings-heading">Who we are</h4>
+                <h4 className="offerings-heading">Who I am</h4>
                 <p>
                     AbhiTutor is a small, single-tutor teaching
                     practice, and the tutor is the data controller for
@@ -80,7 +80,7 @@ export const PrivacyView = () => {
 
             <div className="card">
                 <h4 className="offerings-heading">
-                    What we collect, and why
+                    What I collect, and why
                 </h4>
                 <div className="privacy-table-scroll">
                     <table className="privacy-table">
@@ -88,7 +88,7 @@ export const PrivacyView = () => {
                             <tr>
                                 <th>What</th>
                                 <th>Where it comes from</th>
-                                <th>Why we have it</th>
+                                <th>Why I have it</th>
                                 <th>Lawful basis</th>
                             </tr>
                         </thead>
@@ -99,7 +99,7 @@ export const PrivacyView = () => {
                                     <td data-label="Where it comes from">
                                         {row.source}
                                     </td>
-                                    <td data-label="Why we have it">
+                                    <td data-label="Why I have it">
                                         {row.why}
                                     </td>
                                     <td data-label="Lawful basis">
@@ -122,8 +122,8 @@ export const PrivacyView = () => {
                     Children&apos;s information
                 </h4>
                 <p>
-                    Most of what we hold is about children — that is what
-                    tutoring records are. It is always given to us by a
+                    Most of what I hold is about children — that is what
+                    tutoring records are. It is always given to me by a
                     parent or guardian; this site never collects anything
                     from a child directly, and there are no accounts, forms
                     or messages aimed at children. Please keep health or
@@ -134,7 +134,7 @@ export const PrivacyView = () => {
             </div>
 
             <div className="card">
-                <h4 className="offerings-heading">How long we keep it</h4>
+                <h4 className="offerings-heading">How long I keep it</h4>
                 <ul className="privacy-list">
                     <li>
                         <strong>Enquiries</strong> — twelve months, or six
@@ -154,14 +154,14 @@ export const PrivacyView = () => {
                     </li>
                     <li>
                         <strong>Reviews</strong> — while published; removed
-                        on request at any time. Reviews we do not publish are
+                        on request at any time. Reviews I do not publish are
                         deleted.
                     </li>
                 </ul>
                 <p>
-                    We check these dates and clear out what is past them every
-                    three months. One honest detail: we keep a monthly private
-                    copy of our records in case something breaks, so a deleted
+                    I check these dates and clear out what is past them every
+                    three months. One honest detail: I keep a monthly private
+                    copy of my records in case something breaks, so a deleted
                     record can linger in those copies for up to a year before
                     they are rotated out.
                 </p>
@@ -177,7 +177,7 @@ export const PrivacyView = () => {
                     served over HTTPS. The teacher&apos;s area of this site
                     sits behind Microsoft Entra sign-in, and the tutor is the
                     only person with access. Microsoft processes this data as
-                    our hosting provider under Microsoft&apos;s standard data
+                    my hosting provider under Microsoft&apos;s standard data
                     protection terms. No other company receives it — there
                     are no analytics, advertising or email-marketing
                     providers.
@@ -191,7 +191,7 @@ export const PrivacyView = () => {
                     there is no cookie banner to click. The only browser
                     storage used is what Microsoft&apos;s sign-in needs when
                     the <em>teacher</em> logs in — strictly necessary, and
-                    never used to track visitors. If that ever changes, we
+                    never used to track visitors. If that ever changes, I
                     will ask for consent first.
                 </p>
             </div>
@@ -199,12 +199,12 @@ export const PrivacyView = () => {
             <div className="card">
                 <h4 className="offerings-heading">Your rights</h4>
                 <p>
-                    You can ask us at any time to <strong>see</strong> what we
+                    You can ask me at any time to <strong>see</strong> what I
                     hold about you or your child, to <strong>correct</strong>{' '}
                     it, to <strong>delete</strong> it, to{' '}
                     <strong>receive a copy</strong> to take elsewhere, or to{' '}
                     <strong>object</strong> to how it is used. Ask via the{' '}
-                    <a href={paths.contact}>Contact page</a> and we will
+                    <a href={paths.contact}>Contact page</a> and I will
                     respond within a month. Deleting a student&apos;s record
                     removes their lessons and their payment history with it.
                 </p>

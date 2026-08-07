@@ -65,6 +65,8 @@ type Draft = {
     pricing: SiteContent['pricing']
     /** Highlights pass through untouched (REQ-038). */
     highlights: SiteContent['highlights']
+    /** The Offerings services checklist, one line per service. */
+    servicesText: string
     freeform: SiteContent['freeform']
     sectionOrder: SectionKey[]
 }
@@ -88,6 +90,7 @@ const toDraft = (content: SiteContent): Draft => ({
     bio: content.bio,
     pricing: content.pricing,
     highlights: content.highlights,
+    servicesText: content.services.join('\n'),
     faq: content.faq.map((item) => ({
         key: newRowKey(),
         title: item.question,
@@ -136,6 +139,10 @@ const assemble = (draft: Draft): SiteContent => ({
     bio: draft.bio,
     pricing: draft.pricing,
     highlights: draft.highlights,
+    services: draft.servicesText
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean),
     // Both halves required: the API rejects a question without an answer,
     // so an incomplete row is dropped rather than failing the publish.
     faq: draft.faq
@@ -655,6 +662,26 @@ export const SiteEditorView = ({
                         'The selling points, each a short claim with the detail behind it.',
                         'selling point'
                     )}
+
+                    <div className="card">
+                        <h4 className="offerings-heading">What we offer</h4>
+                        <p className="section-subtitle">
+                            The services checklist on the Offerings page —
+                            one per line, ticks added automatically.
+                        </p>
+                        <TextField
+                            label="Services — one per line"
+                            size="small"
+                            multiline
+                            minRows={6}
+                            value={draft.servicesText}
+                            onChange={(event) =>
+                                edit((next) => {
+                                    next.servicesText = event.target.value
+                                })
+                            }
+                        />
+                    </div>
 
                     <div className="card">
                         <h4 className="offerings-heading">

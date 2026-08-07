@@ -356,7 +356,7 @@ export const ReviewsView = ({
                     <p className="review-consent">
                         By submitting, you agree your words and name may be
                         shown on this site once approved. You can ask for a
-                        published review to be removed at any time — see our{' '}
+                        published review to be removed at any time — see my{' '}
                         <a href={paths.privacy}>privacy policy</a>.
                     </p>
                 </Box>

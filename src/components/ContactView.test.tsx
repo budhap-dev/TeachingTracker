@@ -23,7 +23,7 @@ describe('ContactView', () => {
         renderView()
 
         expect(
-            screen.getByRole('heading', { name: /contact us/i })
+            screen.getByRole('heading', { name: /contact me/i })
         ).toBeInTheDocument()
 
         const email = screen.getByRole('link', { name: 'tutor@example.com' })

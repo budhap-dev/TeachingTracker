@@ -10,6 +10,7 @@ import {
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import App from './App'
+import { teacherQuotes } from './utils/constants'
 import type { ScheduledSession } from './data/students'
 import {
     fetchPaymentsSucceeded,
@@ -234,16 +235,25 @@ describe('Teaching Tracker app', () => {
         ).toBeInTheDocument()
     })
 
-    it('shows a quotation below the welcome message on load', () => {
-        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
-
+    it('shows the daily quotation below the welcome message on load', () => {
         render(<App />)
 
+        // Deterministic by date since 2026-08-07 (the header height fix):
+        // derive today's expected quote exactly as the Topbar does.
+        const today = new Date()
+        const dayOfYear = Math.floor(
+            (today.getTime() -
+                new Date(today.getFullYear(), 0, 0).getTime()) /
+                86400000
+        )
+        const expected =
+            teacherQuotes[dayOfYear % teacherQuotes.length]
+        const escaped = expected
+            .slice(0, 25)
+            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         expect(
-            screen.getByText(/a teacher affects eternity/i)
+            screen.getByText(new RegExp(escaped, 'i'))
         ).toBeInTheDocument()
-
-        randomSpy.mockRestore()
     })
 
     it('opens a planner day straight from a dashboard week bar', async () => {

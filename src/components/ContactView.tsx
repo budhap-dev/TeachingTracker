@@ -150,11 +150,11 @@ export const ContactView = ({
                     <div>
                         <h3 className="page-heading">
                             <MailOutlineRoundedIcon fontSize="small" />
-                            Contact us
+                            Contact me
                         </h3>
                         <p className="section-subtitle">
                             Questions about tutoring, availability, or a
-                            particular subject? Get in touch and we&apos;ll come
+                            particular subject? Get in touch and I&apos;ll come
                             back to you.
                         </p>
                     </div>
@@ -210,7 +210,7 @@ export const ContactView = ({
                         <TextField
                             label="Email availability"
                             size="small"
-                            placeholder="e.g. Anytime — we reply within a day"
+                            placeholder="e.g. Anytime — I reply within a day"
                             value={notes.email}
                             onChange={(event) =>
                                 setNotes((current) => ({
@@ -342,7 +342,7 @@ export const ContactView = ({
 
                 {!editing && (
                     <p className="contact-note">
-                        We usually reply within a day. Lessons run in person or
+                        I usually reply within a day. Lessons run in person or
                         online.
                     </p>
                 )}

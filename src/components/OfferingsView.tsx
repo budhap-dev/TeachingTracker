@@ -55,39 +55,20 @@ export const OfferingsView = ({
     // this makes the flip work on touch too, just for fun.
     const [flipped, setFlipped] = useState<string | null>(null)
 
+    /* One container (owner calls, 2026-08-07): no headline/subhead (the
+       pitch is Home's), no doors up top (the closing card has the
+       button) — the Offerings card holds the subject cards directly. */
     const heroSection = (
-            <div className="card offerings-hero">
+            <div className="card offerings-hero" id="offerings-subjects">
                 <h3 className="page-heading">
                     <LocalOfferOutlinedIcon fontSize="small" />
                     Offerings
                 </h3>
-                <p className="offerings-hero-headline">{hero.headline}</p>
-                <p className="offerings-hero-subhead">{hero.subhead}</p>
                 {hero.availability && (
                     <p className="offerings-availability">
                         {hero.availability}
                     </p>
                 )}
-                <div className="offerings-cta">
-                    <Button
-                        variant="contained"
-                        endIcon={<ArrowForwardRoundedIcon />}
-                        onClick={onBookAssessment}
-                    >
-                        Request a free assessment
-                    </Button>
-                    <a
-                        className="offerings-cta-secondary"
-                        href="#offerings-subjects"
-                    >
-                        See subjects
-                    </a>
-                </div>
-            </div>
-    )
-
-    const subjectsSection = (
-            <div className="card" id="offerings-subjects">
                 <h4 className="offerings-heading">Subjects taught</h4>
                 {subjects.length > 0 ? (
                     <div className="offerings-subject-grid">
@@ -164,6 +145,26 @@ export const OfferingsView = ({
                         Subject list coming soon — please get in touch.
                     </p>
                 )}
+                {/* The services checklist (owner list, 2026-08-07) —
+                    published content, ticks supplied here. */}
+                {content.services.length > 0 && (
+                    <>
+                        <h4 className="offerings-heading offerings-services-heading">
+                            What I offer
+                        </h4>
+                        <ul className="offerings-services">
+                            {content.services.map((line) => (
+                                <li key={line}>
+                                    <CheckCircleRoundedIcon
+                                        className="offerings-point-tick"
+                                        fontSize="small"
+                                    />
+                                    {line}
+                                </li>
+                            ))}
+                        </ul>
+                    </>
+                )}
             </div>
     )
 
@@ -229,7 +230,9 @@ export const OfferingsView = ({
 
     const sections = {
         hero: heroSection,
-        subjects: subjectsSection,
+        // Folded into the Offerings card above (owner call, 2026-08-07);
+        // 'subjects' stays a valid sectionOrder key.
+        subjects: null,
         journey: journeySection,
         approach: approachSection,
         bio: bioSection,
@@ -239,17 +242,19 @@ export const OfferingsView = ({
 
     return (
         <section className="content-stack">
-            {content.sectionOrder.map((key) => (
-                <div key={key} className="offerings-section">
-                    {sections[key]}
-                </div>
-            ))}
+            {content.sectionOrder.map((key) =>
+                sections[key] ? (
+                    <div key={key} className="offerings-section">
+                        {sections[key]}
+                    </div>
+                ) : null
+            )}
 
             <div className="card offerings-closing">
                 <div>
                     <h4 className="offerings-heading">Ready to start?</h4>
                     <p className="section-subtitle">
-                        Request a free assessment and we’ll take it from there.
+                        Request a free assessment and I’ll take it from there.
                     </p>
                 </div>
                 <Button

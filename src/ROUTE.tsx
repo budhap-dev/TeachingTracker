@@ -679,8 +679,8 @@ const SiteEditorRoute = () => {
 const ContactRouteInner = ({ canEdit }: { canEdit: boolean }) => {
     const dispatch = useAppDispatch()
     useDocumentMeta(
-        'Contact us — AbhiTutor',
-        'Ask about tutoring availability, subjects or a free first assessment — by email, phone or WhatsApp. We usually reply within a day.'
+        'Contact me — AbhiTutor',
+        'Ask about tutoring availability, subjects or a free first assessment — by email, phone or WhatsApp. I usually reply within a day.'
     )
     const contact = useAppSelector((state) => state.students.contact)
     const loading = useAppSelector((state) => state.students.contactLoading)
