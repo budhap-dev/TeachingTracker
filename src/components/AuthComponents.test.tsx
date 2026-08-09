@@ -204,7 +204,7 @@ describe('TopbarGreeting', () => {
         expect(screen.getByText('Keep going')).toBeInTheDocument()
     })
 
-    it('shows the site identity to signed-out visitors — no greeting, no quote', () => {
+    it('shows visitors the site identity and the daily quote, no greeting', () => {
         mockAccount = null
         render(<TopbarGreeting quote="Keep going" />)
         expect(
@@ -214,7 +214,9 @@ describe('TopbarGreeting', () => {
             screen.getByText(/maths & sciences · years 7 to 13/i)
         ).toBeInTheDocument()
         expect(screen.queryByText(anyGreeting)).not.toBeInTheDocument()
-        expect(screen.queryByText('Keep going')).not.toBeInTheDocument()
+        // The quote goes public too (owner call, 2026-08-09) — it speaks
+        // to parents just as well as to the teacher.
+        expect(screen.getByText('Keep going')).toBeInTheDocument()
     })
 
     it('keeps the teacher greeting in auth-less mode', () => {
