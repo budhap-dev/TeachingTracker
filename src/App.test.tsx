@@ -235,25 +235,20 @@ describe('Teaching Tracker app', () => {
         ).toBeInTheDocument()
     })
 
-    it('shows the daily quotation below the welcome message on load', () => {
+    it('shows a rotating quotation below the welcome message on load', () => {
+        // Rotation is random per screen again (2026-08-09); pin the roll.
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
+
         render(<App />)
 
-        // Deterministic by date since 2026-08-07 (the header height fix):
-        // derive today's expected quote exactly as the Topbar does.
-        const today = new Date()
-        const dayOfYear = Math.floor(
-            (today.getTime() -
-                new Date(today.getFullYear(), 0, 0).getTime()) /
-                86400000
-        )
-        const expected =
-            teacherQuotes[dayOfYear % teacherQuotes.length]
-        const escaped = expected
+        const escaped = teacherQuotes[0]
             .slice(0, 25)
             .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         expect(
             screen.getByText(new RegExp(escaped, 'i'))
         ).toBeInTheDocument()
+
+        randomSpy.mockRestore()
     })
 
     it('opens a planner day straight from a dashboard week bar', async () => {
