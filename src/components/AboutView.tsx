@@ -26,6 +26,7 @@ import HandshakeOutlinedIcon from '@mui/icons-material/HandshakeOutlined'
 import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined'
 import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
 import AddAPhotoOutlinedIcon from '@mui/icons-material/AddAPhotoOutlined'
+import EditRoundedIcon from '@mui/icons-material/EditRounded'
 import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded'
 import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded'
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded'
@@ -44,6 +45,7 @@ import { defaultSiteContent } from '../data/siteContent'
 import type { BioSection, CvEntry, SiteContent } from '../data/siteContent'
 import { paths } from '../paths'
 import { PageLoading } from './PageLoading'
+import { RichTextEditor } from './RichTextEditor'
 
 /** Editable CV rows, keyed like every list editor in the app. */
 type CvRow = CvEntry & { key: string }
@@ -235,23 +237,27 @@ const sectionIcon = (heading: string) => {
     return NotesOutlinedIcon
 }
 
-/** A bordered section panel: icon + heading, then its content. */
+/** A bordered section panel: icon + heading, then its content. The
+    action slot carries the teacher's edit pencil (owner ask, 2026-08-09). */
 const AboutBlock = ({
     icon: Icon,
     heading,
     children,
     tone = '',
+    action,
 }: {
     icon: typeof NotesOutlinedIcon
     heading: string
     children: React.ReactNode
     /** 'gold' dresses a block as an achievement showcase. */
     tone?: string
+    action?: React.ReactNode
 }) => (
     <div className={`about-block ${tone}`.trim()}>
         <h4 className="about-block-heading">
             <Icon fontSize="small" aria-hidden />
             {heading}
+            {action}
         </h4>
         {children}
     </div>
@@ -262,13 +268,17 @@ const CvList = ({
     heading,
     entries,
     icon,
+    action,
+    children,
 }: {
     heading: string
     entries: CvEntry[]
     icon: typeof NotesOutlinedIcon
+    action?: React.ReactNode
+    children?: React.ReactNode
 }) =>
-    entries.length > 0 ? (
-        <AboutBlock icon={icon} heading={heading}>
+    entries.length > 0 || action ? (
+        <AboutBlock icon={icon} heading={heading} action={action}>
             <ol className="about-cv-list">
                 {entries.map((entry) => (
                     <li key={`${entry.years}-${entry.title}`}>
@@ -281,6 +291,7 @@ const CvList = ({
                     </li>
                 ))}
             </ol>
+            {children}
         </AboutBlock>
     ) : null
 
@@ -332,6 +343,10 @@ export const AboutView = ({
         }
     }
     const [edited, setEdited] = useState(false)
+    // One inline editor open at a time; the pencil toggles it
+    // (owner ask, 2026-08-09 — editors beside their sections, not a
+    // monolith at the foot of the page).
+    const [editingSection, setEditingSection] = useState<string | null>(null)
     useEffect(() => {
         if (!edited) {
             setDraft(toDraft(bio))
@@ -447,6 +462,26 @@ export const AboutView = ({
         </div>
     )
 
+    const pencil = (id: string, label: string) =>
+        canEdit ? (
+            <IconButton
+                size="small"
+                className={`about-edit-pencil ${editingSection === id ? 'on' : ''}`}
+                aria-label={label}
+                onClick={() =>
+                    setEditingSection((current) =>
+                        current === id ? null : id
+                    )
+                }
+            >
+                <EditRoundedIcon fontSize="small" />
+            </IconButton>
+        ) : null
+    const panel = (id: string, children: React.ReactNode) =>
+        canEdit && editingSection === id ? (
+            <div className="about-inline-editor">{children}</div>
+        ) : null
+
     return (
         <section className="content-stack about-page">
             <div className="card">
@@ -455,12 +490,24 @@ export const AboutView = ({
                         <h3 className="page-heading">
                             <PersonOutlineRoundedIcon fontSize="small" />
                             {view.heading || 'About the teacher'}
+                            {pencil('lead', 'Edit introduction')}
                         </h3>
                     </div>
                     {canEdit && dirty && (
                         <span className="about-preview-hint">
                             Previewing unsaved changes
                         </span>
+                    )}
+                    {canEdit && (
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() =>
+                                edit(() => toDraft(defaultSiteContent.bio))
+                            }
+                        >
+                            Load the prepared content
+                        </Button>
                     )}
                     {canEdit && (
                         <Button
@@ -499,165 +546,9 @@ export const AboutView = ({
                         )}
                     </div>
                 )}
-
-                {/* The trust row: strictly owner-set signals. */}
-                {(bio.dbsChecked ||
-                    bio.safeguarding ||
-                    (hero.experienceYears ?? 0) > 0) && (
-                    <div className="about-trust-row">
-                        {bio.dbsChecked && (
-                            <span className="about-dbs-badge">
-                                <CheckCircleRoundedIcon fontSize="small" />
-                                Enhanced DBS checked
-                            </span>
-                        )}
-                        {(hero.experienceYears ?? 0) > 0 && (
-                            <span className="about-trust-chip">
-                                {hero.experienceYears}+ years teaching
-                            </span>
-                        )}
-                        {bio.safeguarding && (
-                            <span className="about-safeguarding">
-                                {bio.safeguarding}
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                {/* Desktop uses the width as a CV would: the story runs
-                    down the main column, credentials sit in the rail. On
-                    phones the rail stacks first — solid points early. */}
-                <div className="about-columns">
-                    <div className="about-rail">
-                        {bio.qualifications.length > 0 && (
-                            <AboutBlock
-                                icon={WorkspacePremiumOutlinedIcon}
-                                heading="Qualifications"
-                            >
-                                <div className="about-quals">
-                                    {bio.qualifications.map(
-                                        (line, index) => {
-                                            const { Icon, tone } =
-                                                qualIcons[
-                                                    index % qualIcons.length
-                                                ]
-                                            return (
-                                                <span
-                                                    key={line}
-                                                    className="about-qual-pill"
-                                                >
-                                                    <Icon
-                                                        className={tone}
-                                                        fontSize="small"
-                                                        aria-hidden
-                                                    />
-                                                    {line}
-                                                </span>
-                                            )
-                                        }
-                                    )}
-                                </div>
-                            </AboutBlock>
-                        )}
-                        {bio.expectations.length > 0 && (
-                            <AboutBlock
-                                icon={FactCheckOutlinedIcon}
-                                heading="What you can expect"
-                            >
-                                <ul className="about-expectations">
-                                    {bio.expectations.map((line, index) => {
-                                        const { Icon, tone } =
-                                            expectationIcons[
-                                                index %
-                                                    expectationIcons.length
-                                            ]
-                                        return (
-                                            <li key={line}>
-                                                <Icon
-                                                    className={tone}
-                                                    fontSize="small"
-                                                    aria-hidden
-                                                />
-                                                {line}
-                                            </li>
-                                        )
-                                    })}
-                                </ul>
-                            </AboutBlock>
-                        )}
-                    </div>
-                    <div className="about-main">
-                        <CvList
-                            heading="Teaching experience"
-                            entries={bio.experience}
-                            icon={WorkOutlineRoundedIcon}
-                        />
-                        <CvList
-                            heading="Education"
-                            entries={bio.education}
-                            icon={SchoolOutlinedIcon}
-                        />
-                        {bio.sections.map((section) => {
-                            const Icon = sectionIcon(section.heading)
-                            return (
-                                <AboutBlock
-                                    key={section.heading}
-                                    icon={Icon}
-                                    heading={section.heading}
-                                >
-                                    <div className="about-section-body">
-                                        {renderMarkdown(section.markdown)}
-                                    </div>
-                                </AboutBlock>
-                            )
-                        })}
-                    </div>
-                </div>
-
-                <div className="pricing-cta-actions about-cta">
-                    <Button
-                        variant="contained"
-                        component={Link}
-                        to={paths.enquire}
-                    >
-                        Request a free assessment
-                    </Button>
-                    {contactPublished && (
-                        <Button
-                            variant="outlined"
-                            component={Link}
-                            to={paths.contact}
-                        >
-                            Contact me
-                        </Button>
-                    )}
-                </div>
-            </div>
-
-            {canEdit && (
-                <div className="card">
-                    <div className="section-header">
-                        <div>
-                            <h4 className="offerings-heading">
-                                Edit the About page
-                            </h4>
-                            <p className="section-subtitle">
-                                Changes publish from this page. CV rows
-                                missing a title are left out when you
-                                publish.
-                            </p>
-                        </div>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() =>
-                                edit(() => toDraft(defaultSiteContent.bio))
-                            }
-                        >
-                            Load the prepared content
-                        </Button>
-                    </div>
-                    <div className="site-editor-fields">
+                {panel(
+                    'lead',
+                    <>
                         <TextField
                             label="Page heading"
                             size="small"
@@ -669,193 +560,134 @@ export const AboutView = ({
                                 }))
                             }
                         />
-                        <div className="about-block about-photo-block">
-                            <h4 className="about-block-heading">
-                                <AddAPhotoOutlinedIcon
-                                    fontSize="small"
-                                    aria-hidden
+                        <div className="about-photo-editor">
+                            {draft.photo ? (
+                                <img
+                                    className="about-photo small"
+                                    src={draft.photo}
+                                    alt="Profile photo preview"
                                 />
-                                Profile photo
-                            </h4>
-                            <div className="about-photo-editor">
-                                {draft.photo ? (
-                                    <img
-                                        className="about-photo small"
-                                        src={draft.photo}
-                                        alt="Profile photo preview"
-                                    />
-                                ) : (
-                                    <span className="section-subtitle">
-                                        No photo yet — it shows beside your
-                                        introduction. Any image works; it
-                                        is resized automatically.
-                                    </span>
-                                )}
-                                {/* A plain button opening the picker
-                                    programmatically — label-forwarding to
-                                    a clipped input proved unreliable on
-                                    the owner's devices (2026-08-06). */}
+                            ) : (
+                                <span className="section-subtitle">
+                                    <AddAPhotoOutlinedIcon
+                                        fontSize="small"
+                                        aria-hidden
+                                    />{' '}
+                                    No photo yet — it shows beside your
+                                    introduction. Any image works; it is
+                                    resized automatically.
+                                </span>
+                            )}
+                            {/* A plain button opening the picker
+                                programmatically — label-forwarding to a
+                                clipped input proved unreliable on the
+                                owner's devices (2026-08-06). */}
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => photoInput.current?.click()}
+                            >
+                                {draft.photo
+                                    ? 'Replace photo'
+                                    : 'Add profile photo'}
+                            </Button>
+                            <input
+                                ref={photoInput}
+                                type="file"
+                                accept="image/*"
+                                className="visually-hidden-input"
+                                onChange={(event) => {
+                                    const file = event.target.files?.[0]
+                                    // Same-file re-picks must fire.
+                                    event.target.value = ''
+                                    if (!file) {
+                                        return
+                                    }
+                                    setPhotoError(null)
+                                    readImage(file).then(
+                                        (img) => {
+                                            setCropSource(img)
+                                            setCrop({ x: 0, y: 0 })
+                                            setZoom(1)
+                                            setCropArea(null)
+                                            setCropOpen(true)
+                                        },
+                                        () =>
+                                            setPhotoError(
+                                                'That image could not be read — HEIC photos from iPhones sometimes fail; a JPG or PNG will work.'
+                                            )
+                                    )
+                                }}
+                            />
+                            {cropSource && draft.photo && (
                                 <Button
                                     size="small"
-                                    variant="outlined"
-                                    onClick={() =>
-                                        photoInput.current?.click()
-                                    }
+                                    onClick={() => setCropOpen(true)}
                                 >
-                                    {draft.photo
-                                        ? 'Replace photo'
-                                        : 'Add profile photo'}
+                                    Adjust crop
                                 </Button>
-                                <input
-                                    ref={photoInput}
-                                    type="file"
-                                    accept="image/*"
-                                    className="visually-hidden-input"
-                                    onChange={(event) => {
-                                        const file = event.target.files?.[0]
-                                        // Same-file re-picks must fire.
-                                        event.target.value = ''
-                                        if (!file) {
-                                            return
-                                        }
-                                        setPhotoError(null)
-                                        readImage(file).then(
-                                            (img) => {
-                                                setCropSource(img)
-                                                setCrop({ x: 0, y: 0 })
-                                                setZoom(1)
-                                                setCropArea(null)
-                                                setCropOpen(true)
-                                            },
-                                            () =>
-                                                setPhotoError(
-                                                    'That image could not be read — HEIC photos from iPhones sometimes fail; a JPG or PNG will work.'
-                                                )
-                                        )
-                                    }}
-                                />
-                                {cropSource && draft.photo && (
-                                    <Button
-                                        size="small"
-                                        onClick={() => setCropOpen(true)}
-                                    >
-                                        Adjust crop
-                                    </Button>
-                                )}
-                                {draft.photo && (
-                                    <Button
-                                        size="small"
-                                        onClick={() => {
-                                            setCropSource(null)
-                                            edit((next) => ({
-                                                ...next,
-                                                photo: '',
-                                            }))
-                                        }}
-                                    >
-                                        Remove photo
-                                    </Button>
-                                )}
-                            </div>
-                            {photoError && (
-                                <p className="review-field-error">
-                                    {photoError}
-                                </p>
                             )}
-                            <Dialog
-                                open={cropOpen && Boolean(cropSource)}
-                                onClose={() => setCropOpen(false)}
-                                fullWidth
-                                maxWidth="xs"
-                            >
-                                <DialogTitle>
-                                    Position your photo
-                                </DialogTitle>
-                                <DialogContent>
-                                    <div className="about-crop-area">
-                                        {cropSource && (
-                                            <Cropper
-                                                image={cropSource.src}
-                                                crop={crop}
-                                                zoom={zoom}
-                                                aspect={1}
-                                                cropShape="round"
-                                                showGrid={false}
-                                                onCropChange={setCrop}
-                                                onZoomChange={setZoom}
-                                                onCropComplete={(
-                                                    croppedArea,
-                                                    croppedAreaPixels
-                                                ) => {
-                                                    void croppedArea
-                                                    setCropArea(
-                                                        croppedAreaPixels
-                                                    )
-                                                }}
-                                            />
-                                        )}
-                                    </div>
-                                    <div className="about-crop-zoom">
-                                        <span>Zoom</span>
-                                        <Slider
-                                            size="small"
-                                            min={1}
-                                            max={4}
-                                            step={0.05}
-                                            value={zoom}
-                                            onChange={(sliderEvent, value) => {
-                                                void sliderEvent
-                                                setZoom(value as number)
-                                            }}
-                                            aria-label="Zoom"
-                                        />
-                                    </div>
-                                    <p className="section-subtitle">
-                                        Drag to reposition — pinch or use
-                                        the slider to zoom. The circle is
-                                        what the page shows.
-                                    </p>
-                                </DialogContent>
-                                <DialogActions>
-                                    <Button
-                                        onClick={() => setCropOpen(false)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        onClick={applyCrop}
-                                    >
-                                        Use photo
-                                    </Button>
-                                </DialogActions>
-                            </Dialog>
+                            {draft.photo && (
+                                <Button
+                                    size="small"
+                                    onClick={() => {
+                                        setCropSource(null)
+                                        edit((next) => ({
+                                            ...next,
+                                            photo: '',
+                                        }))
+                                    }}
+                                >
+                                    Remove photo
+                                </Button>
+                            )}
                         </div>
-                        <TextField
-                            label="Introduction (Markdown)"
-                            size="small"
-                            multiline
-                            minRows={5}
+                        {photoError && (
+                            <p className="review-field-error">
+                                {photoError}
+                            </p>
+                        )}
+                        <RichTextEditor
                             value={draft.body}
-                            onChange={(event) =>
+                            onChange={(markdown) =>
                                 edit((next) => ({
                                     ...next,
-                                    body: event.target.value,
+                                    body: markdown,
                                 }))
                             }
+                            ariaLabel="Introduction"
                         />
-                        <TextField
-                            label="Qualifications — one per line"
-                            size="small"
-                            multiline
-                            value={draft.qualificationsText}
-                            onChange={(event) =>
-                                edit((next) => ({
-                                    ...next,
-                                    qualificationsText: event.target.value,
-                                }))
-                            }
-                        />
+                    </>
+                )}
+
+                {/* The trust row: strictly owner-set signals. */}
+                {(view.dbsChecked ||
+                    view.safeguarding ||
+                    (hero.experienceYears ?? 0) > 0 ||
+                    canEdit) && (
+                    <div className="about-trust-row">
+                        {view.dbsChecked && (
+                            <span className="about-dbs-badge">
+                                <CheckCircleRoundedIcon fontSize="small" />
+                                Enhanced DBS checked
+                            </span>
+                        )}
+                        {(hero.experienceYears ?? 0) > 0 && (
+                            <span className="about-trust-chip">
+                                {hero.experienceYears}+ years teaching
+                            </span>
+                        )}
+                        {view.safeguarding && (
+                            <span className="about-safeguarding">
+                                {view.safeguarding}
+                            </span>
+                        )}
+                        {pencil('trust', 'Edit safeguarding and DBS')}
+                    </div>
+                )}
+                {panel(
+                    'trust',
+                    <>
                         <FormControlLabel
                             control={
                                 <Checkbox
@@ -882,168 +714,408 @@ export const AboutView = ({
                                 }))
                             }
                         />
-                    </div>
+                    </>
+                )}
 
-                    <div className="section-header pricing-factors-header">
-                        <h4 className="offerings-heading">
-                            Teaching experience
-                        </h4>
-                        <Button
-                            size="small"
-                            startIcon={<AddRoundedIcon fontSize="small" />}
-                            onClick={() =>
-                                edit((next) => ({
-                                    ...next,
-                                    experience: [
-                                        ...next.experience,
-                                        {
-                                            key: newRowKey(),
-                                            years: '',
-                                            title: '',
-                                            place: '',
-                                            detail: '',
-                                        },
-                                    ],
-                                }))
-                            }
-                        >
-                            Add entry
-                        </Button>
-                    </div>
-                    {cvRowEditor('experience', draft.experience)}
-
-                    <div className="section-header pricing-factors-header">
-                        <h4 className="offerings-heading">Education</h4>
-                        <Button
-                            size="small"
-                            startIcon={<AddRoundedIcon fontSize="small" />}
-                            onClick={() =>
-                                edit((next) => ({
-                                    ...next,
-                                    education: [
-                                        ...next.education,
-                                        {
-                                            key: newRowKey(),
-                                            years: '',
-                                            title: '',
-                                            place: '',
-                                            detail: '',
-                                        },
-                                    ],
-                                }))
-                            }
-                        >
-                            Add entry
-                        </Button>
-                    </div>
-                    {cvRowEditor('education', draft.education)}
-
-                    <div className="site-editor-fields pricing-factors-header">
-                        <TextField
-                            label="What you can expect — one per line"
-                            size="small"
-                            multiline
-                            value={draft.expectationsText}
-                            onChange={(event) =>
-                                edit((next) => ({
-                                    ...next,
-                                    expectationsText: event.target.value,
-                                }))
-                            }
-                        />
-                    </div>
-
-                    <div className="section-header pricing-factors-header">
-                        <h4 className="offerings-heading">Extra sections</h4>
-                        <Button
-                            size="small"
-                            startIcon={<AddRoundedIcon fontSize="small" />}
-                            onClick={() =>
-                                edit((next) => ({
-                                    ...next,
-                                    sections: [
-                                        ...next.sections,
-                                        {
-                                            key: newRowKey(),
-                                            heading: '',
-                                            markdown: '',
-                                        },
-                                    ],
-                                }))
-                            }
-                        >
-                            Add section
-                        </Button>
-                    </div>
-                    <div className="sortable-rows">
-                        {draft.sections.map((row) => (
-                            <div
-                                key={row.key}
-                                className="site-editor-point-row"
+                {/* Desktop uses the width as a CV would: the story runs
+                    down the main column, credentials sit in the rail. On
+                    phones the rail stacks first — solid points early. */}
+                <div className="about-columns">
+                    <div className="about-rail">
+                        {(view.qualifications.length > 0 || canEdit) && (
+                            <AboutBlock
+                                icon={WorkspacePremiumOutlinedIcon}
+                                heading="Qualifications"
+                                action={pencil(
+                                    'qualifications',
+                                    'Edit qualifications'
+                                )}
                             >
-                                <TextField
-                                    label="Heading"
-                                    size="small"
-                                    value={row.heading}
-                                    onChange={(event) =>
-                                        edit((next) => ({
-                                            ...next,
-                                            sections: next.sections.map(
-                                                (item) =>
-                                                    item.key === row.key
-                                                        ? {
-                                                              ...item,
-                                                              heading:
-                                                                  event.target
-                                                                      .value,
-                                                          }
-                                                        : item
-                                            ),
-                                        }))
-                                    }
-                                />
-                                <TextField
-                                    label="Body (Markdown)"
-                                    size="small"
-                                    multiline
-                                    value={row.markdown}
-                                    onChange={(event) =>
-                                        edit((next) => ({
-                                            ...next,
-                                            sections: next.sections.map(
-                                                (item) =>
-                                                    item.key === row.key
-                                                        ? {
-                                                              ...item,
-                                                              markdown:
-                                                                  event.target
-                                                                      .value,
-                                                          }
-                                                        : item
-                                            ),
-                                        }))
-                                    }
-                                />
-                                <IconButton
-                                    size="small"
-                                    aria-label={`Remove ${row.heading || 'new section'}`}
-                                    onClick={() =>
-                                        edit((next) => ({
-                                            ...next,
-                                            sections: next.sections.filter(
-                                                (item) =>
-                                                    item.key !== row.key
-                                            ),
-                                        }))
-                                    }
-                                >
-                                    <DeleteOutlineRoundedIcon fontSize="small" />
-                                </IconButton>
-                            </div>
-                        ))}
+                                <div className="about-quals">
+                                    {view.qualifications.map(
+                                        (line, index) => {
+                                            const { Icon, tone } =
+                                                qualIcons[
+                                                    index % qualIcons.length
+                                                ]
+                                            return (
+                                                <span
+                                                    key={line}
+                                                    className="about-qual-pill"
+                                                >
+                                                    <Icon
+                                                        className={tone}
+                                                        fontSize="small"
+                                                        aria-hidden
+                                                    />
+                                                    {line}
+                                                </span>
+                                            )
+                                        }
+                                    )}
+                                </div>
+                                {panel(
+                                    'qualifications',
+                                    <TextField
+                                        label="Qualifications — one per line"
+                                        size="small"
+                                        multiline
+                                        value={draft.qualificationsText}
+                                        onChange={(event) =>
+                                            edit((next) => ({
+                                                ...next,
+                                                qualificationsText:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                    />
+                                )}
+                            </AboutBlock>
+                        )}
+                        {(view.expectations.length > 0 || canEdit) && (
+                            <AboutBlock
+                                icon={FactCheckOutlinedIcon}
+                                heading="What you can expect"
+                                action={pencil(
+                                    'expectations',
+                                    'Edit what you can expect'
+                                )}
+                            >
+                                <ul className="about-expectations">
+                                    {view.expectations.map((line, index) => {
+                                        const { Icon, tone } =
+                                            expectationIcons[
+                                                index %
+                                                    expectationIcons.length
+                                            ]
+                                        return (
+                                            <li key={line}>
+                                                <Icon
+                                                    className={tone}
+                                                    fontSize="small"
+                                                    aria-hidden
+                                                />
+                                                {line}
+                                            </li>
+                                        )
+                                    })}
+                                </ul>
+                                {panel(
+                                    'expectations',
+                                    <TextField
+                                        label="What you can expect — one per line"
+                                        size="small"
+                                        multiline
+                                        value={draft.expectationsText}
+                                        onChange={(event) =>
+                                            edit((next) => ({
+                                                ...next,
+                                                expectationsText:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                    />
+                                )}
+                            </AboutBlock>
+                        )}
+                    </div>
+                    <div className="about-main">
+                        <CvList
+                            heading="Teaching experience"
+                            entries={view.experience}
+                            icon={WorkOutlineRoundedIcon}
+                            action={pencil(
+                                'experience',
+                                'Edit teaching experience'
+                            )}
+                        >
+                            {panel(
+                                'experience',
+                                <>
+                                    {cvRowEditor(
+                                        'experience',
+                                        draft.experience
+                                    )}
+                                    <Button
+                                        size="small"
+                                        startIcon={
+                                            <AddRoundedIcon fontSize="small" />
+                                        }
+                                        onClick={() =>
+                                            edit((next) => ({
+                                                ...next,
+                                                experience: [
+                                                    ...next.experience,
+                                                    {
+                                                        key: newRowKey(),
+                                                        years: '',
+                                                        title: '',
+                                                        place: '',
+                                                        detail: '',
+                                                    },
+                                                ],
+                                            }))
+                                        }
+                                    >
+                                        Add entry
+                                    </Button>
+                                </>
+                            )}
+                        </CvList>
+                        <CvList
+                            heading="Education"
+                            entries={view.education}
+                            icon={SchoolOutlinedIcon}
+                            action={pencil('education', 'Edit education')}
+                        >
+                            {panel(
+                                'education',
+                                <>
+                                    {cvRowEditor(
+                                        'education',
+                                        draft.education
+                                    )}
+                                    <Button
+                                        size="small"
+                                        startIcon={
+                                            <AddRoundedIcon fontSize="small" />
+                                        }
+                                        onClick={() =>
+                                            edit((next) => ({
+                                                ...next,
+                                                education: [
+                                                    ...next.education,
+                                                    {
+                                                        key: newRowKey(),
+                                                        years: '',
+                                                        title: '',
+                                                        place: '',
+                                                        detail: '',
+                                                    },
+                                                ],
+                                            }))
+                                        }
+                                    >
+                                        Add entry
+                                    </Button>
+                                </>
+                            )}
+                        </CvList>
+                        {/* The teacher edits the DRAFT rows (keyed, blanks
+                            visible while typing); visitors see published
+                            sections only. */}
+                        {(canEdit ? draft.sections : bio.sections).map(
+                            (section, index) => {
+                                const key =
+                                    'key' in section
+                                        ? (section as SectionRow).key
+                                        : `${section.heading}-${index}`
+                                const Icon = sectionIcon(section.heading)
+                                return (
+                                    <AboutBlock
+                                        key={key}
+                                        icon={Icon}
+                                        heading={
+                                            section.heading ||
+                                            (canEdit ? 'New section' : '')
+                                        }
+                                        action={pencil(
+                                            `section-${key}`,
+                                            `Edit ${section.heading || 'new section'}`
+                                        )}
+                                    >
+                                        <div className="about-section-body">
+                                            {renderMarkdown(
+                                                section.markdown
+                                            )}
+                                        </div>
+                                        {panel(
+                                            `section-${key}`,
+                                            <>
+                                                <TextField
+                                                    label="Heading"
+                                                    size="small"
+                                                    value={section.heading}
+                                                    onChange={(event) =>
+                                                        edit((next) => ({
+                                                            ...next,
+                                                            sections:
+                                                                next.sections.map(
+                                                                    (item) =>
+                                                                        item.key ===
+                                                                        key
+                                                                            ? {
+                                                                                  ...item,
+                                                                                  heading:
+                                                                                      event
+                                                                                          .target
+                                                                                          .value,
+                                                                              }
+                                                                            : item
+                                                                ),
+                                                        }))
+                                                    }
+                                                />
+                                                <TextField
+                                                    label="Body (Markdown)"
+                                                    size="small"
+                                                    multiline
+                                                    minRows={4}
+                                                    value={section.markdown}
+                                                    onChange={(event) =>
+                                                        edit((next) => ({
+                                                            ...next,
+                                                            sections:
+                                                                next.sections.map(
+                                                                    (item) =>
+                                                                        item.key ===
+                                                                        key
+                                                                            ? {
+                                                                                  ...item,
+                                                                                  markdown:
+                                                                                      event
+                                                                                          .target
+                                                                                          .value,
+                                                                              }
+                                                                            : item
+                                                                ),
+                                                        }))
+                                                    }
+                                                />
+                                                <Button
+                                                    size="small"
+                                                    color="error"
+                                                    startIcon={
+                                                        <DeleteOutlineRoundedIcon fontSize="small" />
+                                                    }
+                                                    onClick={() => {
+                                                        setEditingSection(
+                                                            null
+                                                        )
+                                                        edit((next) => ({
+                                                            ...next,
+                                                            sections:
+                                                                next.sections.filter(
+                                                                    (item) =>
+                                                                        item.key !==
+                                                                        key
+                                                                ),
+                                                        }))
+                                                    }}
+                                                >
+                                                    Remove section
+                                                </Button>
+                                            </>
+                                        )}
+                                    </AboutBlock>
+                                )
+                            }
+                        )}
+                        {canEdit && (
+                            <Button
+                                size="small"
+                                startIcon={<AddRoundedIcon fontSize="small" />}
+                                onClick={() => {
+                                    const key = newRowKey()
+                                    edit((next) => ({
+                                        ...next,
+                                        sections: [
+                                            ...next.sections,
+                                            {
+                                                key,
+                                                heading: '',
+                                                markdown: '',
+                                            },
+                                        ],
+                                    }))
+                                    setEditingSection(`section-${key}`)
+                                }}
+                            >
+                                Add section
+                            </Button>
+                        )}
                     </div>
                 </div>
-            )}
+
+                <div className="pricing-cta-actions about-cta">
+                    <Button
+                        variant="contained"
+                        component={Link}
+                        to={paths.enquire}
+                    >
+                        Request a free assessment
+                    </Button>
+                    {contactPublished && (
+                        <Button
+                            variant="outlined"
+                            component={Link}
+                            to={paths.contact}
+                        >
+                            Contact me
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* The crop dialog serves the lead panel's photo picker. */}
+            <Dialog
+                open={cropOpen && Boolean(cropSource)}
+                onClose={() => setCropOpen(false)}
+                fullWidth
+                maxWidth="xs"
+            >
+                <DialogTitle>Position your photo</DialogTitle>
+                <DialogContent>
+                    <div className="about-crop-area">
+                        {cropSource && (
+                            <Cropper
+                                image={cropSource.src}
+                                crop={crop}
+                                zoom={zoom}
+                                aspect={1}
+                                cropShape="round"
+                                showGrid={false}
+                                onCropChange={setCrop}
+                                onZoomChange={setZoom}
+                                onCropComplete={(
+                                    croppedArea,
+                                    croppedAreaPixels
+                                ) => {
+                                    void croppedArea
+                                    setCropArea(croppedAreaPixels)
+                                }}
+                            />
+                        )}
+                    </div>
+                    <div className="about-crop-zoom">
+                        <span>Zoom</span>
+                        <Slider
+                            size="small"
+                            min={1}
+                            max={4}
+                            step={0.05}
+                            value={zoom}
+                            onChange={(sliderEvent, value) => {
+                                void sliderEvent
+                                setZoom(value as number)
+                            }}
+                            aria-label="Zoom"
+                        />
+                    </div>
+                    <p className="section-subtitle">
+                        Drag to reposition — pinch or use the slider to
+                        zoom. The circle is what the page shows.
+                    </p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCropOpen(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="contained" onClick={applyCrop}>
+                        Use photo
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </section>
     )
 }

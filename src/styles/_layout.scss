@@ -164,15 +164,22 @@
     min-width: 0;
 }
 
-/* A quiet italic line under the greeting — decoration, not a card. Wraps to
-   as many lines as the quote needs rather than truncating a long one. */
+/* A quiet italic line under the greeting — decoration, not a card. The
+   block reserves EXACTLY three lines (min-height + clamp), so rotating
+   quotes of any length never resize the header (2026-08-09). */
 .welcome-quote {
     margin: 6px 0 0;
     font-style: italic;
     font-size: 0.9rem;
+    line-height: 1.45;
     max-width: 46rem;
     color: var(--sidebar-muted);
     text-wrap: pretty;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    min-height: calc(3 * 1.45em);
 }
 
 .eyebrow {

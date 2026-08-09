@@ -144,11 +144,10 @@
         gap: 12px;
     }
 
-    /* On the stacked column the one-line ellipsis truncates the daily quote —
-       let it wrap so the whole thing reads on a phone. */
+    /* Phones keep the same fixed three-line slot as desktop — the clamp
+       in _layout.scss already lets quotes wrap without resizing. */
     .welcome-quote {
         white-space: normal;
-        overflow: visible;
         max-width: none;
     }
 

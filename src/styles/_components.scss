@@ -4760,6 +4760,71 @@ a.home-highlight-tile {
     border: 0;
 }
 
+/* The per-section edit pencils (owner ask, 2026-08-09): quiet until
+   hovered; lit while their inline editor is open. */
+.about-edit-pencil.about-edit-pencil {
+    margin-left: auto;
+    color: var(--muted);
+
+    &.on,
+    &:hover {
+        color: var(--accent);
+    }
+}
+
+/* The heading row hosts the pencil at its right edge. */
+.page-heading .about-edit-pencil {
+    margin-left: 6px;
+}
+
+/* An inline editor unfolds beneath its section: dashed accent border so
+   draft chrome never reads as published content. */
+.about-inline-editor {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 14px;
+    border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+/* The rich-text intro editor (TipTap): a bordered surface with a small
+   toolbar; the document stores Markdown either way. */
+.rich-text-editor {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+
+.rich-text-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border);
+
+    .on {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+}
+
+.rich-text-surface {
+    min-height: 140px;
+    padding: 10px 12px;
+    outline: none;
+
+    p {
+        margin: 0 0 8px;
+    }
+
+    ul,
+    ol {
+        margin: 0 0 8px;
+        padding-left: 22px;
+    }
+}
+
 /* The crop dialog: react-easy-crop needs a positioned box to fill. */
 .about-crop-area {
     position: relative;

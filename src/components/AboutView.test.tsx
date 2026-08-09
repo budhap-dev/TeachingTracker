@@ -6,6 +6,26 @@ import { defaultSiteContent, emptyBio } from '../data/siteContent'
 import type { SiteContent } from '../data/siteContent'
 import { AboutView } from './AboutView'
 
+// TipTap needs real contentEditable — the mock is a plain textarea over
+// the same Markdown value.
+vi.mock('./RichTextEditor', () => ({
+    RichTextEditor: ({
+        value,
+        onChange,
+        ariaLabel,
+    }: {
+        value: string
+        onChange: (markdown: string) => void
+        ariaLabel: string
+    }) => (
+        <textarea
+            aria-label={ariaLabel}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+        />
+    ),
+}))
+
 // react-easy-crop needs real layout/ResizeObserver — jsdom has neither.
 // The mock exposes a button that reports a crop/zoom back, the way the
 // real widget does after a drag.
@@ -162,6 +182,10 @@ describe('AboutView', () => {
         await user.click(
             screen.getByRole('button', { name: /load the prepared content/i })
         )
+        // The heading is edited in the lead panel behind its pencil now.
+        await user.click(
+            screen.getByRole('button', { name: /edit introduction/i })
+        )
         expect(screen.getByLabelText(/page heading/i)).toHaveValue('About me')
 
         // Tweak the heading, add a titleless CV row (dropped at publish).
@@ -169,7 +193,10 @@ describe('AboutView', () => {
             target: { value: 'Meet your tutor' },
         })
         await user.click(
-            screen.getAllByRole('button', { name: /add entry/i })[0]
+            screen.getByRole('button', { name: /edit teaching experience/i })
+        )
+        await user.click(
+            screen.getByRole('button', { name: /add entry/i })
         )
 
         await user.click(
@@ -208,7 +235,10 @@ describe('AboutView', () => {
         const user = userEvent.setup()
         const { onPublish } = renderAbout({ canEdit: true })
 
-        // Text fields, one change each (single events — repo precedent).
+        // The lead panel: heading + rich-text intro behind one pencil.
+        await user.click(
+            screen.getByRole('button', { name: /edit introduction/i })
+        )
         fireEvent.change(screen.getByLabelText(/page heading/i), {
             target: { value: 'Meet the tutor' },
         })
@@ -220,22 +250,40 @@ describe('AboutView', () => {
         expect(
             screen.getByText(/previewing unsaved changes/i)
         ).toBeInTheDocument()
-        fireEvent.change(screen.getByLabelText(/introduction \(markdown\)/i), {
+        fireEvent.change(screen.getByLabelText('Introduction'), {
             target: { value: '**Hello there.**' },
         })
-        fireEvent.change(screen.getByLabelText(/qualifications — one per/i), {
-            target: { value: 'Line one\n  \nLine two' },
-        })
+
+        // Trust panel: DBS + safeguarding.
+        await user.click(
+            screen.getByRole('button', {
+                name: /edit safeguarding and dbs/i,
+            })
+        )
+        await user.click(screen.getByRole('checkbox'))
         fireEvent.change(screen.getByLabelText(/safeguarding statement/i), {
             target: { value: ' Safeguarding comes first. ' },
         })
+
+        // The rail panels.
+        await user.click(
+            screen.getByRole('button', { name: /edit qualifications/i })
+        )
+        fireEvent.change(screen.getByLabelText(/qualifications — one per/i), {
+            target: { value: 'Line one\n  \nLine two' },
+        })
+        await user.click(
+            screen.getByRole('button', { name: /edit what you can expect/i })
+        )
         fireEvent.change(
             screen.getByLabelText(/what you can expect — one per/i),
             { target: { value: 'Expect one\nExpect two' } }
         )
-        await user.click(screen.getByRole('checkbox'))
 
-        // First experience row, every column.
+        // Experience rows, every column; a blank row removed by hand.
+        await user.click(
+            screen.getByRole('button', { name: /edit teaching experience/i })
+        )
         fireEvent.change(screen.getAllByLabelText('Years')[0], {
             target: { value: ' 2020 — ' },
         })
@@ -248,34 +296,37 @@ describe('AboutView', () => {
         fireEvent.change(screen.getAllByLabelText('Detail')[0], {
             target: { value: 'One to one.' },
         })
-
-        // Blank CV rows in both lists: one removed by hand, the other
-        // dropped at publish (titleless rows are left out).
-        const addEntryButtons = screen.getAllByRole('button', {
-            name: /add entry/i,
-        })
-        await user.click(addEntryButtons[0])
-        await user.click(addEntryButtons[1])
         await user.click(
-            screen.getAllByRole('button', { name: /remove new entry/i })[0]
+            screen.getByRole('button', { name: /add entry/i })
+        )
+        await user.click(
+            screen.getByRole('button', { name: /remove new entry/i })
         )
 
-        // Extra sections: fill one, remove the other blank one.
-        const addSection = screen.getByRole('button', {
-            name: /add section/i,
-        })
-        await user.click(addSection)
-        await user.click(addSection)
-        const headings = screen.getAllByLabelText('Heading')
-        fireEvent.change(headings[headings.length - 2], {
+        // Education: a titleless row, dropped at publish.
+        await user.click(
+            screen.getByRole('button', { name: /edit education/i })
+        )
+        await user.click(
+            screen.getByRole('button', { name: /add entry/i })
+        )
+
+        // Extra sections: Add opens the new section's own panel; fill one,
+        // add-and-remove another.
+        await user.click(
+            screen.getByRole('button', { name: /add section/i })
+        )
+        fireEvent.change(screen.getByLabelText('Heading'), {
             target: { value: 'A closing note' },
         })
-        const bodies = screen.getAllByLabelText(/body \(markdown\)/i)
-        fireEvent.change(bodies[bodies.length - 2], {
+        fireEvent.change(screen.getByLabelText(/body \(markdown\)/i), {
             target: { value: 'Thanks for reading.' },
         })
         await user.click(
-            screen.getByRole('button', { name: /remove new section/i })
+            screen.getByRole('button', { name: /add section/i })
+        )
+        await user.click(
+            screen.getByRole('button', { name: /remove section/i })
         )
 
         await user.click(
@@ -335,7 +386,11 @@ describe('AboutView profile photo', () => {
         vi.stubGlobal('Image', StubImage)
     }
 
-    const pickPhoto = (type: string) => {
+    /** Opens the lead panel (where the picker lives) and picks a file. */
+    const pickPhoto = async (type: string) => {
+        fireEvent.click(
+            screen.getByRole('button', { name: /edit introduction/i })
+        )
         const input = document.querySelector('input[type="file"]')!
         fireEvent.change(input, {
             target: {
@@ -360,7 +415,7 @@ describe('AboutView profile photo', () => {
         const user = userEvent.setup()
         renderAbout({ canEdit: true })
 
-        pickPhoto('image/jpeg')
+        await pickPhoto('image/jpeg')
         // The crop dialog opens first (owner ask, 2026-08-06): position,
         // zoom, then confirm.
         await screen.findByText(/position your photo/i)
@@ -417,7 +472,7 @@ describe('AboutView profile photo', () => {
         const user = userEvent.setup()
         renderAbout({ canEdit: true })
 
-        pickPhoto('image/jpeg')
+        await pickPhoto('image/jpeg')
         await screen.findByText(/position your photo/i)
         await user.click(
             screen.getByRole('button', { name: /use photo/i })
@@ -434,7 +489,7 @@ describe('AboutView profile photo', () => {
         const user = userEvent.setup()
         renderAbout({ canEdit: true })
 
-        pickPhoto('image/jpeg')
+        await pickPhoto('image/jpeg')
         await screen.findByText(/position your photo/i)
         await user.click(screen.getByRole('button', { name: /cancel/i }))
         expect(
@@ -446,7 +501,7 @@ describe('AboutView profile photo', () => {
         stubImage('error')
         renderAbout({ canEdit: true })
 
-        pickPhoto('image/heic')
+        await pickPhoto('image/heic')
         expect(
             await screen.findByText(/HEIC photos from iPhones sometimes fail/i)
         ).toBeInTheDocument()
