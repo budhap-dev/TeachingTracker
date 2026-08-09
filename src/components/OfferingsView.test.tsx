@@ -56,6 +56,7 @@ const buildContent = (overrides: Partial<SiteContent> = {}): SiteContent => ({
         sections: [],
     },
     faq: [],
+    modesLabel: 'Delivery',
     services: [
         'One-to-One Personalised Tutoring',
         'Flexible In-Person and Online Sessions',
@@ -110,6 +111,14 @@ describe('OfferingsView', () => {
         expect(
             screen.getByText('Flexible In-Person and Online Sessions')
         ).toBeInTheDocument()
+    })
+
+    it('renders the third tag under the owner-picked label', () => {
+        renderView({ modesLabel: 'Experience' })
+
+        // Every subject card's third tag wears the renamed label…
+        expect(screen.getAllByText('Experience').length).toBeGreaterThan(0)
+        expect(screen.queryByText('Delivery')).not.toBeInTheDocument()
     })
 
     it('shows subjects as cards, with levels and boards where given', () => {

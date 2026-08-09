@@ -125,7 +125,7 @@ describe('HomeView', () => {
         expect(chips).toHaveTextContent('KS3 · GCSE · A-level')
         expect(chips).toHaveTextContent('AQA · Edexcel · OCR')
         // The price chip anchors on the cheapest published rate (REQ-022).
-        expect(chips).toHaveTextContent('From £20/hr')
+        expect(chips).toHaveTextContent('From £20/session')
     })
 
     it('hides chips with nothing to say, and the whole row when empty', () => {
