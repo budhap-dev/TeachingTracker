@@ -38,9 +38,10 @@ const TeacherGreeting = ({ quote }: { quote: string }) => (
 )
 
 /** Visitors get the site's identity — the signed AbhiTutor lockup as the
-    headline, the offer as the eyebrow. It is not their portal, and the
-    daily quote talks to the teacher, so it stays out too. */
-const VisitorGreeting = () => (
+    headline, the offer as the eyebrow — and the same daily teaching
+    quote the teacher sees (owner call, 2026-08-09): it speaks to
+    parents just as well. */
+const VisitorGreeting = ({ quote }: { quote: string }) => (
     <div className="topbar-greeting">
         <h2 aria-label="AbhiTutor">
             <BrandLogo />
@@ -48,6 +49,7 @@ const VisitorGreeting = () => (
         <p className="eyebrow visitor-offer-line">
             Maths &amp; sciences · Years 7 to 13
         </p>
+        <p className="welcome-quote">{quote}</p>
     </div>
 )
 
@@ -55,7 +57,7 @@ const TopbarGreetingInner = ({ quote }: { quote: string }) =>
     useIsAuthenticated() ? (
         <TeacherGreeting quote={quote} />
     ) : (
-        <VisitorGreeting />
+        <VisitorGreeting quote={quote} />
     )
 
 /** The topbar's left block: teacher welcome when signed in (or auth-less),
