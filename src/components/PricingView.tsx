@@ -82,7 +82,7 @@ export const PricingView = ({
 }: PricingViewProps) => {
     useDocumentMeta(
         'Pricing — AbhiTutor',
-        'Clear tutoring rates: lessons generally start from £20 per hour per student at GCSE, with the exact rate agreed at a free assessment.'
+        'Clear tutoring rates: lessons generally start from £20 per session per student at GCSE, with the exact rate agreed at a free assessment.'
     )
     const { pricing } = content
     const [rates, setRates] = useState<RateRow[]>(() => toRateRows(pricing))
@@ -123,7 +123,7 @@ export const PricingView = ({
                             Clear, simple pricing
                         </h3>
                         <p className="section-subtitle">
-                            Per hour, per student — and always agreed with
+                            Per session, per student — and always agreed with
                             you before lessons begin.
                         </p>
                     </div>
@@ -156,7 +156,7 @@ export const PricingView = ({
                                 </span>
                                 <span className="pricing-rate-price">
                                     from £{rate.fromPerHour}
-                                    <small>/hour · per student</small>
+                                    <small>/session · per student</small>
                                 </span>
                             </li>
                         ))}
@@ -186,7 +186,7 @@ export const PricingView = ({
                 <div className="pricing-cta">
                     <p className="pricing-cta-line">
                         {minRate > 0
-                            ? `Lessons generally start from £${minRate}/hour — let's have a chat to get a clearer picture of what your child needs.`
+                            ? `Lessons generally start from £${minRate}/session — let's have a chat to get a clearer picture of what your child needs.`
                             : "Let's have a chat to get a clearer picture of what your child needs."}
                     </p>
                     <div className="pricing-cta-actions">
@@ -218,7 +218,7 @@ export const PricingView = ({
                                 Edit the pricing
                             </h4>
                             <p className="section-subtitle">
-                                Rates are whole pounds per hour per student.
+                                Rates are whole pounds per session per student.
                                 A row missing its level or price is left out
                                 when you publish.
                             </p>
@@ -264,7 +264,7 @@ export const PricingView = ({
                                     helperText="e.g. GCSE, A-level, KS3"
                                 />
                                 <TextField
-                                    label="From £/hour"
+                                    label="From £/session"
                                     size="small"
                                     type="number"
                                     slotProps={{

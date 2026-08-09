@@ -238,7 +238,7 @@ export const HomeView = ({
                         )}
                         {levels && <li>{levels}</li>}
                         {boards && <li>{boards}</li>}
-                        {fromPrice > 0 && <li>From £{fromPrice}/hr</li>}
+                        {fromPrice > 0 && <li>From £{fromPrice}/session</li>}
                     </ul>
                 )}
             </div>

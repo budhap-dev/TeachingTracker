@@ -67,6 +67,8 @@ type Draft = {
     highlights: SiteContent['highlights']
     /** The Offerings services checklist, one line per service. */
     servicesText: string
+    /** The subject cards' third tag label (default "Delivery"). */
+    modesLabel: string
     freeform: SiteContent['freeform']
     sectionOrder: SectionKey[]
 }
@@ -91,6 +93,7 @@ const toDraft = (content: SiteContent): Draft => ({
     pricing: content.pricing,
     highlights: content.highlights,
     servicesText: content.services.join('\n'),
+    modesLabel: content.modesLabel,
     faq: content.faq.map((item) => ({
         key: newRowKey(),
         title: item.question,
@@ -143,6 +146,7 @@ const assemble = (draft: Draft): SiteContent => ({
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean),
+    modesLabel: draft.modesLabel.trim() || 'Delivery',
     // Both halves required: the API rejects a question without an answer,
     // so an incomplete row is dropped rather than failing the publish.
     faq: draft.faq
@@ -532,9 +536,8 @@ export const SiteEditorView = ({
                                     Subjects taught
                                 </h4>
                                 <p className="section-subtitle">
-                                    Levels, exam boards and delivery are
-                                    comma-separated. A subject with no name is
-                                    dropped when you publish.
+                                    Tag values are comma-separated. A subject
+                                    with no name is dropped when you publish.
                                 </p>
                             </div>
                             <Button
@@ -554,6 +557,22 @@ export const SiteEditorView = ({
                             >
                                 Add subject
                             </Button>
+                        </div>
+                        <div className="site-editor-fields">
+                            {/* The third tag's NAME is the owner's to pick
+                                (2026-08-09) — "Delivery" today,
+                                "Experience" tomorrow, without a deploy. */}
+                            <TextField
+                                label="Third tag label"
+                                size="small"
+                                value={draft.modesLabel}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.modesLabel = event.target.value
+                                    })
+                                }
+                                helperText='Names the third tag on every subject card — e.g. "Delivery" or "Experience". Blank falls back to "Delivery".'
+                            />
                         </div>
                         <SortableList
                             ids={draft.subjects.map((row) => row.key)}
@@ -615,7 +634,10 @@ export const SiteEditorView = ({
                                                 }
                                             />
                                             <TextField
-                                                label="Delivery"
+                                                label={
+                                                    draft.modesLabel.trim() ||
+                                                    'Delivery'
+                                                }
                                                 size="small"
                                                 placeholder="Online, In person"
                                                 value={row.modes}

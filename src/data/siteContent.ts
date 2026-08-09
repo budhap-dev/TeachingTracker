@@ -95,11 +95,13 @@ export type AboutSection = {
     markdown: string
 }
 
-/** One per-level from-rate (REQ-022), e.g. GCSE from £20/hr. */
+/** One per-level from-rate (REQ-022), e.g. GCSE from £20/session. */
 export type PricingRate = {
     /** The level the rate anchors, e.g. "GCSE", "A-level". */
     label: string
-    /** Whole pounds per hour, per student. */
+    /** Whole pounds per session, per student. The stored field name
+        stays `fromPerHour` for published-document compatibility — the
+        pages say "per session" (owner call, 2026-08-09). */
     fromPerHour: number
 }
 
@@ -111,7 +113,7 @@ export type PricingFactor = {
 
 /**
  * Transparent pricing (REQ-022). Rates vary by level (owner 2026-08-04:
- * generally from GCSE £20/hr and A-level £30/hr, per student); factors
+ * generally from GCSE £20/session and A-level £30/session, per student); factors
  * are NAMED, never fake-quantified. No rates = pricing not published.
  */
 export type PricingSection = {
@@ -158,6 +160,9 @@ export type SiteContent = {
     highlights: string[]
     /** The services checklist on Offerings (owner list, 2026-08-07). */
     services: string[]
+    /** The subject cards' third tag label — "Delivery" by default, the
+        owner can rename it (e.g. "Experience") (2026-08-09). */
+    modesLabel: string
     freeform: FreeformSection
     sectionOrder: SectionKey[]
 }
@@ -199,6 +204,7 @@ export const normaliseSiteContent = (
     // Owner-approved by provision (2026-08-05), like the About copy.
     highlights: content.highlights ?? defaultSiteContent.highlights,
     services: content.services ?? defaultSiteContent.services,
+    modesLabel: content.modesLabel || 'Delivery',
     sectionOrder: [
         ...content.sectionOrder,
         ...sectionKeys.filter((key) => !content.sectionOrder.includes(key)),
@@ -372,7 +378,7 @@ export const defaultSiteContent: SiteContent = {
         factors: [
             {
                 title: 'One-to-one or small group',
-                detail: 'Group lessons share the hour — and the rate — between students.',
+                detail: 'Group lessons share the session — and the rate — between students.',
             },
             {
                 title: 'Online or in person',
@@ -392,6 +398,8 @@ export const defaultSiteContent: SiteContent = {
         'Exam and assessment preparation',
         'Proven results',
     ],
+    // The subject cards' third tag label — renameable by the owner.
+    modesLabel: 'Delivery',
     // The Offerings services checklist — the owner's list, verbatim
     // (2026-08-07); the view supplies the ticks.
     services: [

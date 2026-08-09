@@ -47,7 +47,7 @@ describe('PricingView', () => {
         expect(rates).toHaveTextContent('from £20')
         expect(rates).toHaveTextContent('A-level')
         expect(rates).toHaveTextContent('from £30')
-        expect(rates).toHaveTextContent('/hour · per student')
+        expect(rates).toHaveTextContent('/session · per student')
 
         expect(
             screen.getByText('One-to-one or small group')
@@ -57,7 +57,7 @@ describe('PricingView', () => {
         ).toBeInTheDocument()
         // The chat line and both doors: assessment and plain contact.
         expect(
-            screen.getByText(/generally start from £20\/hour — let's have a chat/i)
+            screen.getByText(/generally start from £20\/session — let's have a chat/i)
         ).toBeInTheDocument()
         expect(
             screen.getByRole('link', {
@@ -98,7 +98,7 @@ describe('PricingView', () => {
         expect(publish).toBeDisabled()
 
         // Raise the GCSE anchor…
-        fireEvent.change(screen.getAllByLabelText(/from £\/hour/i)[0], {
+        fireEvent.change(screen.getAllByLabelText(/from £\/session/i)[0], {
             target: { value: '22' },
         })
         // …and add a half row that must be dropped, not a blocker.

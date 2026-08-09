@@ -105,7 +105,9 @@ export const OfferingsView = ({
                                                     values={subject.examBoards}
                                                 />
                                                 <SpecRow
-                                                    label="Delivery"
+                                                    label={
+                                                        content.modesLabel
+                                                    }
                                                     values={subject.modes}
                                                 />
                                             </dl>
