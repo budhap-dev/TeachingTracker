@@ -10,7 +10,7 @@
 | Actor | Access |
 |---|---|
 | **Teacher** (email in the Key Vault allow-list) | Full app: all screens, all API endpoints. |
-| **Visitor** (signed-out) | Public pages only: `/offerings`, `/contact`. Teacher routes redirect to sign-in. |
+| **Visitor** (signed-out) | The public site: `/` (Home landing), `/about`, `/offerings`, `/enquire`, `/contact`*, `/reviews`, `/faq`, `/pricing`, `/privacy`. Teacher routes redirect to sign-in; the sign-in line itself hides behind five taps on the hero badge (REQ-039). *Contact (menu + page CTAs) only shows once contact details are published. |
 
 **Gating.** Client: `RequireTeacher` wraps teacher routes; signed-out visitors are redirected to `/` and shown `SignInView`; the sidebar hides `teacherOnly` items (`RequireTeacher.tsx:16-42`, `Sidebar.tsx:101-103`). Server: every data endpoint calls `requireTeacher` (JWT + `access_as_teacher` scope + email allow-list). When `AUTH_ENFORCED=false` the verdict is logged but not enforced (`auth.ts:155-164`).
 
@@ -74,9 +74,18 @@ Records grouped by month with totals. → `200 MonthlyPaymentGroup[]` (ascending
 #### `POST /payments`
 Record settlement(s). Body single or array `PaymentInput`. Omit `amountPaid` to **settle in full**; omitted `notes` preserves the existing note. → `200 PaymentRecord[]` · `400` empty/validation. (`savePayments.ts`)
 
-### 2.4 Docs (public, ungated)
+### 2.4 Public + content endpoints (added with the public-site epic)
+
+> Full request/response shapes live in the OpenAPI spec (`GET /api/docs`) — kept in step with the services; summaries only here.
+
+- **Reviews** — `GET /testimonials` (public: Approved only; teacher: all + Pending), `POST /testimonials` (public, honeypot + profanity flag → Pending; rating required for Parent/Student, rejected for Professional/Personal recommendations), `PUT /testimonials/{id}` (moderation), `DELETE /testimonials/{id}`.
+- **Site content** — `GET /site-content` (public), `PUT /site-content` (teacher): the whole public site as one validated JSON document — hero, subjects, journey, approach, bio/CV + photo, pricing, highlights, services, FAQ, freeform, sectionOrder.
+- **Leads** — `POST /leads` (public enquiry, honeypot), `GET /leads`, `PUT /leads/{id}` (teacher works New → Contacted → Converted), `DELETE /leads/{id}` (GDPR).
+- **Contact** — `GET /contact` (public), `PUT /contact` (teacher): the published email/phone/availability/preferred channel.
+
+### 2.5 Docs (public, ungated)
 - `GET /api/docs` → Scalar UI (HTML). `GET /api/openapi.json` → OpenAPI 3.0.3 document.
-- **Spec gaps to fix:** missing `DELETE /sessions/{id}`, `POST /sessions/{id}/members`; `Student` lacks `datedNotes`; `by-month` says `totalExpected` vs code `totalDue`.
+- Spec drift closed 2026-08-09 (session delete/members, datedNotes, content-era schemas). REQ-045 proposes a CI check so drift fails builds instead of lingering.
 
 ---
 
@@ -133,8 +142,11 @@ Common states: a **BusyBar** shows while any load/save flag is set; a **NoticeTo
 | **Alumni** | `/alumni` | Archived students | Teacher-only table of `isArchived` students; open → restore. |
 | **Payment Tracker** | `/payments` | Monthly billing | Month selector; per-row **amount box + Save** (commits only on Save/Enter, never on keystroke/blur; Save disabled until dirty); notes; summary cards `Received / Yet to be paid / Due / status tally`, all **summed from the visible (active) rows**. |
 | **Class Scheduling** | `/scheduling` | Planner | Month calendar; day modal to book (multi-select ⇒ group), edit, add member, cancel, or delete a class; duration 30/60/90/120. |
-| **Offerings / Contact** | `/offerings`, `/contact` | Public marketing | Static content from `siteContent`; reachable signed-out. |
-| **Sign in** | (gate) | Signed-out landing | Visitor CTAs + "Sign in with Microsoft" (`loginRedirect`). |
+| **Leads** | `/leads` | Enquiry pipeline | Teacher-only; New → Contacted → Converted; GDPR delete. |
+| **Review moderation** | `/reviews/moderation` | Approve/reject | Teacher-only; Pending queue with profanity flags; approve/reject/delete. |
+| **Site editor** | `/site-editor` | Publish the public site | Edit/Preview tabs over the whole document; sortable sections; publishes atomically. About/FAQ/Pricing are edited on their own pages instead. |
+| **Public site** | `/`, `/about`, `/offerings`, `/enquire`, `/contact`, `/reviews`, `/faq`, `/pricing`, `/privacy` | Marketing + enquiries | All render the published `siteContent` document (never bundled defaults once published); About/FAQ/Pricing become their own editors for the signed-in teacher; Enquire/Reviews accept public submissions (honeypot-guarded); Contact hides everywhere until details are published. |
+| **Sign in** | (hidden) | Teacher door | Home's "Sign in with Microsoft" line appears after five quick taps on the hero badge (REQ-039), then `loginRedirect`. |
 
 ---
 

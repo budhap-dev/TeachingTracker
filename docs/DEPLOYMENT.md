@@ -15,7 +15,7 @@ Frontend (Static Web App)                API (Function App)
 
 | Env      | Frontend (open this)                                            | API base URL                                                    |
 | -------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
-| **dev**  | https://delightful-water-09b7c480f.7.azurestaticapps.net         | https://func-teachtracker-dev-pjlmrq.azurewebsites.net/api       |
+| **dev**  | https://kind-sea-093f96a0f.7.azurestaticapps.net         | https://func-teachtracker-dev-pjlmrq.azurewebsites.net/api       |
 | **prod** | https://abhitutor.co.uk (custom, REQ-035; azurestaticapps URL stays as secondary) | https://func-teachtracker-prod-gjvecw.azurewebsites.net/api      |
 
 Each environment serves a **different dataset**, so you can tell them apart at a
@@ -62,7 +62,7 @@ in the API repo's `infra/terraform/variables.tf`:
 
 | Env  | Function App allows |
 | ---- | ------------------- |
-| dev  | `https://delightful-water-09b7c480f.7.azurestaticapps.net` |
+| dev  | `https://kind-sea-093f96a0f.7.azurestaticapps.net` |
 | prod | `https://nice-sea-095463c0f.7.azurestaticapps.net`         |
 
 Cross-env calls are refused (dev's origin cannot call the prod API). To verify:

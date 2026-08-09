@@ -10,7 +10,7 @@ API and loaded through **redux-saga** — the frontend ships no data of its own.
 
 | Env      | Frontend                                                 | API base URL                                                | Data          |
 | -------- | -------------------------------------------------------- | ----------------------------------------------------------- | ------------- |
-| **dev**  | https://delightful-water-09b7c480f.7.azurestaticapps.net  | https://func-teachtracker-dev-pjlmrq.azurewebsites.net/api   | 5 students    |
+| **dev**  | https://kind-sea-093f96a0f.7.azurestaticapps.net  | https://func-teachtracker-dev-pjlmrq.azurewebsites.net/api   | 5 students    |
 | **prod** | https://nice-sea-095463c0f.7.azurestaticapps.net          | https://func-teachtracker-prod-gjvecw.azurewebsites.net/api  | empty (live roster) |
 
 Each environment has its own Static Web App wired to its own Function App, and

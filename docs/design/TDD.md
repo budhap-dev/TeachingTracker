@@ -88,7 +88,7 @@ graph LR
 Initial data: `InitialDataBoundary` (`App.tsx:65-66`) chooses between firing all three fetches immediately (auth-less) and `AuthGatedInitialData`, which waits for the MSAL handshake (`InteractionStatus.None`) and an account before dispatching `fetchStudentsRequested / fetchPaymentsRequested / fetchSessionsRequested`; if settled-and-signed-out it dispatches `initialLoadSkipped()` so the busy bar stops.
 
 ### 3.2 Routing (`src/ROUTE.tsx`, `src/paths.ts`)
-Ten routes; eight teacher-gated via `teacher(page) = <RequireTeacher>{page}</RequireTeacher>` (`ROUTE.tsx:585`); `/offerings` and `/contact` are public. Unknown paths redirect to the dashboard. Each route *wrapper* filters archived students out of active surfaces (`isArchived`), and the dashboard/scheduling wrappers additionally strip sessions belonging to archived students (`ROUTE.tsx:88-97, 520-529`). The student page is one component with two deep-linkable tabs:
+Nineteen routes. Public (no sign-in): `/` (Home landing for visitors), `/about`, `/offerings`, `/enquire`, `/contact`, `/reviews`, `/faq`, `/pricing`, `/privacy`. Teacher-gated via `teacher(page) = <RequireTeacher>{page}</RequireTeacher>`: the dashboard (same `/`, auth-aware), `/students` (+detail/diary), `/scheduling`, `/payments`, `/study-snapshot`, `/alumni`, `/leads`, `/reviews/moderation`, `/site-editor`. Unknown paths redirect to `/`. The public "Sign in with Microsoft" line is hidden behind five quick taps on the hero badge (REQ-039). Each route *wrapper* filters archived students out of active surfaces (`isArchived`), and the dashboard/scheduling wrappers additionally strip sessions belonging to archived students (`ROUTE.tsx:88-97, 520-529`). The student page is one component with two deep-linkable tabs:
 
 ```mermaid
 graph LR
@@ -119,6 +119,9 @@ Thin adapters registered with `app.http(...)`, `authLevel: 'anonymous'`. Each da
 ### 4.2 Services
 - **studentService** — `upsertStudent` merges `{...existing, ...sanitize(input)}` (undefined-stripped so a patch never clobbers), reconciles blended progress from `progressBySubject` (REQ-014), and **refreshes denormalised session names** on any save; `archiveStudent` cancels (never deletes) future non-cancelled classes and stamps `isArchived/archivedOn/archiveNotes`; validation lives in `validateStudentInput`.
 - **sessionService** — group classes are **N rows sharing `groupId = grp-<firstId>`**; ids are reserved as a contiguous block; `addSessionMember` promotes a solo class to a group and restores a cancelled member row rather than duplicating; edits/cancels can fan out across the group via `applyToGroup`.
+- **siteContentService** — the whole public site as ONE JSON document (hero, subjects, journey, approach, bio/CV incl. photo data-URI, pricing, highlights, services, FAQ, freeform, sectionOrder). Read-side normalisation fills absent fields EMPTY — except owner-approved prepared defaults (About copy, highlights, services). Write-side sanitises (HTML stripped, caps enforced) and validates every section; `sectionOrder` must hold each key exactly once.
+- **testimonialService** — public submissions land Pending behind a honeypot + profanity flagger; only Approved return publicly. Roles `Parent|Student` carry a 1–5 rating; `Professional|Personal` are star-free recommendations (a rating is rejected).
+- **leadService / contactService** — enquiries (worked New → Contacted → Converted) and the single published contact row (email/phone/per-channel availability/preferred).
 - **paymentService** — **bills are derived, never stored.** For each student × billable month it computes `sessionsHeld` (held = not-Cancelled and date ≤ today), `amountDue = sessionsHeld × fees`, then overlays the stored `PaymentSettlement` (`amountPaid`, `notes`) to produce a `PaymentRecord`. Only settlements persist.
 
 ### 4.3 Persistence (`src/data/*`)
@@ -132,7 +135,7 @@ graph TD
 ```
 
 - **MemoryStore** seeds from `buildSeedForEnv(ENVIRONMENT)` at construction; not durable (resets on restart/scale-out). Used for tests and local `func start`.
-- **TableStore** — four tables, single partition each; row keys are zero-padded ids (students width 6, sessions width 8); settlements use a **composite key** `${pad(studentId,6)}_${month}`. Table Storage has no array/object columns, so `subjects`, `progressBySubject`, and **`datedNotes`** ride as JSON strings (`*Json` columns, written only when present). Ids are handed out by an **ETag-guarded counter** (`reserveIds`, optimistic `If-Match` with retry). Auth is `DefaultAzureCredential` (managed identity in Azure; `az login` locally); the four tables are **not** created by Terraform — a one-off seeder creates them over AAD.
+- **TableStore** — eight tables (`students`, `sessions`, `settlements`, `testimonials`, `leads`, `sitecontent`, `contact`, `counters`), single partition each; row keys are zero-padded ids (students width 6, sessions width 8); settlements use a **composite key** `${pad(studentId,6)}_${month}`. Table Storage has no array/object columns, so `subjects`, `progressBySubject`, and **`datedNotes`** ride as JSON strings (`*Json` columns, written only when present). Ids are handed out by an **ETag-guarded counter** (`reserveIds`, optimistic `If-Match` with retry). Auth is `DefaultAzureCredential` (managed identity in Azure; `az login` locally); the tables are **not** created by Terraform — a one-off seeder creates them over AAD.
 - **Store factory** (`store.ts`): `environmentName` from `ENVIRONMENT`; `dataStore` from `DATA_STORE` (`memory` | `tables`, else throw). The module-level singleton is created once at import — hence a **config flip requires a process restart** to take effect (see [§10 risks](#10-known-gaps-risks--tech-debt)).
 
 ### 4.4 Server-side auth (`src/shared/auth.ts`)
@@ -190,6 +193,12 @@ erDiagram
 ```
 
 **Derived, not stored:** `PaymentRecord` / `MonthlyPaymentGroup` (bills) are computed per request from students × months × held-sessions × settlements. `sessionsHeld`, `amountDue`, `outstanding`, `status` are all derived. See the [IFDD data dictionary](./IFDD.md#3-data-dictionary).
+
+**Public-site entities** (beyond the tracker core above):
+- **TESTIMONIAL** — `id, authorName, role (Parent|Student|Professional|Personal), subject?, year?, rating? (absent for Professional/Personal), quote, status (Pending|Approved|Rejected), flagged, submittedOn, moderatedOn?`. Moderation-first: only Approved are ever served publicly.
+- **LEAD** — `id, parentName, email?/phone? (≥1), year?, subjects?, message?, status (New|Contacted|Converted), receivedOn` — public enquiries, honeypot-guarded.
+- **SITE_CONTENT** — one row, one JSON property (Table Storage 64KB/property is the ceiling — which is why the bio photo is capped at 16k base64 chars). Full shape in the OpenAPI `SiteContent` schema (`/api/docs`).
+- **CONTACT** — one row: `email?, phone?, availability (per channel), preferred?`. All-blank contact hides every public "Contact me" door (menu + page CTAs).
 
 ---
 
@@ -283,9 +292,10 @@ graph LR
 
 | Area | Finding | Impact |
 |---|---|---|
-| **OpenAPI drift** | Spec omits `DELETE /sessions/{id}`, `POST /sessions/{id}/members`; `Student` schema lacks `datedNotes`; `by-month` doc says `totalExpected` vs code `totalDue`. | Consumers/docs mislead. Regenerate/extend the spec. |
+| **OpenAPI drift** | ~~Spec omitted session delete/members, `datedNotes`, and the content-era schemas.~~ Closed 2026-08-09: spec now covers all endpoints, the full `SiteContent` shape (pricing/highlights/services/CV/photo) and recommendation-role rating rules. Watch for new drift — REQ-045's CI check is the structural fix. | — |
 | **Config reload** | `dataStore` is a module singleton read at import; an app-setting flip needs a restart/redeploy to take effect (observed during the prod cutover). | Operational gotcha — always restart after flipping `DATA_STORE`. |
-| **Prod auth (pending)** | `auth_enforced = false` in prod — the API logs but does not reject unauthenticated calls. | Anyone with the URL can read/write prod data. Fix queued: PR #26 flips it to `true` (sign-in already verified end-to-end); apply pending. |
+| **Prod auth** | ~~Was log-only.~~ Done: `auth_enforced = true` in BOTH environments (terraform `variables.tf`; enforced since 2026-07-17). | — |
+| **Frontend persistence gap** | Only class scheduling POSTs to the API; student add/edit and payment edits update Redux only and silently revert on reload. | Real data typed into those forms is lost. Queued as REQ-041. |
 | **Local TF state** | State is local (gitignored) and holds secrets (storage key, vault values). | Workstation-bound trust boundary; single-operator risk. Consider a remote encrypted backend. |
 | **Shared-key on data account** | `shared_access_key_enabled = true` (provider data-plane reads). | Hardening deferral toward GDPR §10.4. |
 | **Denormalised names** | Session rows cache student name/year; healed on save via `refreshSessionNames`. | Acceptable; documented self-healing. |
