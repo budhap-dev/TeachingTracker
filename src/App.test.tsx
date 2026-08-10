@@ -127,16 +127,20 @@ describe('Teaching Tracker app', () => {
         )
         render(<App />)
 
-        expect(
-            screen.queryByRole('button', { name: /select winter theme/i })
-        ).not.toBeInTheDocument()
+        // The drawer's always-mounted (CSS-hidden) swatch row also matches,
+        // so the collapsed assertion scopes to the topbar popover itself.
+        expect(document.querySelector('.theme-swatches')).toBeNull()
 
         await user.click(
             screen.getByRole('button', { name: /show theme options/i })
         )
 
+        const popover = document.querySelector('.theme-swatches')
+        expect(popover).not.toBeNull()
         expect(
-            screen.getByRole('button', { name: /select winter theme/i })
+            within(popover as HTMLElement).getByRole('button', {
+                name: /select winter theme/i,
+            })
         ).toBeInTheDocument()
 
         // The swatches sit on three labelled shelves.
@@ -144,10 +148,14 @@ describe('Teaching Tracker app', () => {
         expect(screen.getByText('Dark')).toBeInTheDocument()
         expect(screen.getByText('Metallic')).toBeInTheDocument()
         expect(
-            screen.getByRole('button', { name: /select deep sea theme/i })
+            within(popover as HTMLElement).getByRole('button', {
+                name: /select deep sea theme/i,
+            })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('button', { name: /select rose gold theme/i })
+            within(popover as HTMLElement).getByRole('button', {
+                name: /select rose gold theme/i,
+            })
         ).toBeInTheDocument()
     })
 
@@ -159,7 +167,9 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('button', { name: /show theme options/i })
         )
         await user.click(
-            screen.getByRole('button', { name: /select gold theme/i })
+            screen.getAllByRole('button', {
+                name: /select gold theme/i,
+            })[0]
         )
 
         expect(document.documentElement.getAttribute('data-theme')).toBe(
@@ -175,7 +185,9 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('button', { name: /show theme options/i })
         )
         await user.click(
-            screen.getByRole('button', { name: /select graphite theme/i })
+            screen.getAllByRole('button', {
+                name: /select graphite theme/i,
+            })[0]
         )
 
         expect(document.documentElement.getAttribute('data-theme')).toBe(
@@ -192,9 +204,9 @@ describe('Teaching Tracker app', () => {
         })
         await user.click(toggleButton)
 
-        const winterButton = screen.getByRole('button', {
+        const winterButton = screen.getAllByRole('button', {
             name: /select winter theme/i,
-        })
+        })[0]
         await user.click(winterButton)
 
         expect(document.documentElement.getAttribute('data-theme')).toBe(

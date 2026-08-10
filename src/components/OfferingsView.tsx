@@ -5,7 +5,6 @@ import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
 import type { SiteContent } from '../data/siteContent'
-import { renderMarkdown } from '../utils/markdown'
 import { subjectIcon } from '../utils/subjectIcons'
 
 
@@ -50,7 +49,7 @@ export const OfferingsView = ({
     content,
     onBookAssessment,
 }: OfferingsViewProps) => {
-    const { hero, subjects, approach, freeform } = content
+    const { hero, subjects, approach } = content
     // Which subject card is flipped (tapped). Hover flips on its own via CSS;
     // this makes the flip work on touch too, just for fun.
     const [flipped, setFlipped] = useState<string | null>(null)
@@ -221,21 +220,10 @@ export const OfferingsView = ({
     // The free-form section (REQ-008): rendered from Markdown to React nodes
     // — never raw HTML — and skipped entirely while the teacher hasn't
     // written one.
-    const freeformSection =
-        freeform.heading || freeform.markdown ? (
-            <div className="card offerings-freeform">
-                {/* The pinned note on the corkboard — the wrapper is what
-                    sways, carries the pin and wears the paper. */}
-                <div className="freeform-note">
-                    {freeform.heading && (
-                        <h4 className="offerings-heading">
-                            {freeform.heading}
-                        </h4>
-                    )}
-                    {renderMarkdown(freeform.markdown)}
-                </div>
-            </div>
-        ) : null
+    // The pinned note renders at the top of Home now (owner call,
+    // 2026-08-10) — announcements belong on the front door. 'freeform'
+    // stays a valid sectionOrder key; it just draws nothing here.
+    const freeformSection = null
 
     // The bio renders on the About page now (REQ-037, owner content
     // received 2026-08-04). 'bio' stays valid in sectionOrder.

@@ -108,11 +108,6 @@ export const PricingView = ({
         JSON.stringify(
             assemble(toRateRows(pricing), toFactorRows(pricing), pricing.note)
         )
-    // The chat line anchors on the cheapest published rate.
-    const minRate = pricing.rates.length
-        ? Math.min(...pricing.rates.map((rate) => rate.fromPerHour))
-        : 0
-
     return (
         <section className="content-stack pricing-page">
             <div className="card">
@@ -184,10 +179,12 @@ export const PricingView = ({
                 )}
 
                 <div className="pricing-cta">
+                    {/* The rate cards above already say the numbers —
+                        this line is just the door (owner call,
+                        2026-08-10). */}
                     <p className="pricing-cta-line">
-                        {minRate > 0
-                            ? `Lessons generally start from £${minRate}/session — let's have a chat to get a clearer picture of what your child needs.`
-                            : "Let's have a chat to get a clearer picture of what your child needs."}
+                        Let&apos;s have a chat to get a clearer picture of
+                        what your child needs.
                     </p>
                     <div className="pricing-cta-actions">
                         <Button

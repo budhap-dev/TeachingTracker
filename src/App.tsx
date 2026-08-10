@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { Provider } from 'react-redux'
@@ -23,6 +23,7 @@ import { BusyBar } from './components/BusyBar'
 import { NoticeToast } from './components/NoticeToast'
 import { Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
+import { MobileTabBar } from './components/MobileTabBar'
 import { AppRoutes } from './ROUTE'
 import './styles.scss'
 
@@ -67,6 +68,9 @@ const InitialDataBoundary = () =>
 
 const AppShell = () => {
     const { theme, setTheme, activeTheme, muiTheme } = useTheme()
+    // The mobile drawer opens from the Sidebar's own hamburger (teacher)
+    // OR the visitor tab bar's Menu tab — so the state lives here.
+    const [drawerOpen, setDrawerOpen] = useState(false)
 
     return (
         <ThemeProvider theme={muiTheme}>
@@ -75,7 +79,13 @@ const AppShell = () => {
             {/* Outside .app-shell: it must never join the layout grid. */}
             <BusyBar />
             <div className="app-shell">
-                <Sidebar sidebarBackground={activeTheme.sidebar} />
+                <Sidebar
+                    sidebarBackground={activeTheme.sidebar}
+                    theme={theme}
+                    onSelectTheme={setTheme}
+                    mobileNavOpen={drawerOpen}
+                    onMobileNavChange={setDrawerOpen}
+                />
                 <main className="main-content">
                     <Topbar
                         theme={theme}
@@ -84,6 +94,13 @@ const AppShell = () => {
                     />
                     <AppRoutes />
                 </main>
+                {/* Visitors' bottom tab bar (REQ-049, Option C): its Menu
+                    tab is the drawer's only mobile trigger for them. */}
+                <MobileTabBar
+                    onMenu={() => setDrawerOpen(!drawerOpen)}
+                    menuOpen={drawerOpen}
+                    onMenuClose={() => setDrawerOpen(false)}
+                />
                 <NoticeToast />
             </div>
         </ThemeProvider>

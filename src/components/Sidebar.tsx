@@ -27,6 +27,13 @@ import { appVersion, isProdBuild } from '../version'
 import { paths } from '../paths'
 import { BrandLogo } from './BrandLogo'
 import { BrandBadge } from './BrandBadge'
+import { TopbarAuth } from './TopbarAuth'
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined'
+import {
+    themePresets,
+    type ThemeName,
+    type ThemePreset,
+} from '../utils/constants'
 
 type NavItem = {
     label: string
@@ -171,6 +178,15 @@ const navItems: NavItem[] = [
 
 type SidebarProps = {
     sidebarBackground: string
+    /** Present when the drawer should carry the theme picker — phones
+        hide the greeting band off-Home (owner call, 2026-08-10), so its
+        tools live here. */
+    theme?: ThemeName
+    onSelectTheme?: (theme: ThemeName) => void
+    /** Controlled drawer state (REQ-049): the visitor tab bar's Menu tab
+        needs to open the drawer from outside. Omitted = uncontrolled. */
+    mobileNavOpen?: boolean
+    onMobileNavChange?: (open: boolean) => void
 }
 
 type SidebarContentProps = SidebarProps & {
@@ -180,10 +196,28 @@ type SidebarContentProps = SidebarProps & {
 const SidebarContent = ({
     sidebarBackground,
     showTeacherItems,
+    theme,
+    onSelectTheme,
+    mobileNavOpen,
+    onMobileNavChange,
 }: SidebarContentProps) => {
     const navigate = useNavigate()
     const { pathname } = useLocation()
-    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+    const [internalNavOpen, setInternalNavOpen] = useState(false)
+    // Controlled when the app supplies the pair; internal otherwise.
+    const isMobileNavOpen = mobileNavOpen ?? internalNavOpen
+    const setIsMobileNavOpen = (
+        next: boolean | ((current: boolean) => boolean)
+    ) => {
+        const value =
+            typeof next === 'function' ? next(isMobileNavOpen) : next
+        setInternalNavOpen(value)
+        onMobileNavChange?.(value)
+    }
+    // The drawer's theme section stays collapsed behind the same quiet
+    // palette toggle as the topbar (owner call, 2026-08-10 — a wall of
+    // swatches always open was worse).
+    const [isThemeOpen, setIsThemeOpen] = useState(false)
     const dispatch = useAppDispatch()
     // The menu needs the published contact details to decide whether the
     // Contact entry earns its place; the page itself fetches too — the
@@ -240,7 +274,7 @@ const SidebarContent = ({
                 </div>
                 <button
                     type="button"
-                    className="mobile-nav-toggle"
+                    className={`mobile-nav-toggle ${showTeacherItems ? '' : 'visitor-hidden'}`.trim()}
                     onClick={() => setIsMobileNavOpen((current) => !current)}
                     aria-label={
                         isMobileNavOpen ? 'Close navigation' : 'Open navigation'
@@ -289,12 +323,69 @@ const SidebarContent = ({
                     </div>
                 ))}
             </nav>
+            {/* Phone-only drawer tools: the theme swatches and sign-out
+                that the hidden off-Home topbar would have carried. */}
+            {onSelectTheme && theme && (
+                <div className="sidebar-mobile-tools">
+                    <button
+                        type="button"
+                        className="theme-toggle sidebar-theme-toggle"
+                        onClick={() => setIsThemeOpen((current) => !current)}
+                        aria-expanded={isThemeOpen}
+                        aria-label={
+                            isThemeOpen ? 'Hide themes' : 'Choose a theme'
+                        }
+                    >
+                        <PaletteOutlinedIcon fontSize="small" />
+                        <span
+                            className="theme-toggle-dot"
+                            style={{
+                                background: `linear-gradient(135deg, ${themePresets[theme].accent} 50%, ${themePresets[theme].accentAlt} 50%)`,
+                            }}
+                        />
+                        Theme
+                    </button>
+                    {isThemeOpen && (
+                    <div className="sidebar-theme-row">
+                        {(
+                            Object.entries(themePresets) as [
+                                ThemeName,
+                                ThemePreset,
+                            ][]
+                        ).map(([themeKey, preset]) => (
+                            <button
+                                key={themeKey}
+                                type="button"
+                                className={`theme-swatch ${theme === themeKey ? 'active' : ''}`}
+                                onClick={() => onSelectTheme(themeKey)}
+                                aria-label={`Select ${preset.label} theme`}
+                                title={preset.label}
+                            >
+                                <span
+                                    className="swatch-accent"
+                                    style={{ background: preset.accent }}
+                                />
+                                <span
+                                    className="swatch-accent-alt"
+                                    style={{
+                                        background: preset.accentAlt,
+                                    }}
+                                />
+                            </button>
+                        ))}
+                    </div>
+                    )}
+                </div>
+            )}
+            {/* The footer row: version left, sign-out beside it (owner
+                call, 2026-08-10) — nothing renders signed-out/auth-less. */}
             <footer className="sidebar-footer">
                 {/* Non-prod names itself, like the badge's yellow ring. */}
                 <span>
                     Version {appVersion}
                     {!isProdBuild && ' (dev)'}
                 </span>
+                <TopbarAuth />
             </footer>
             </div>
         </aside>

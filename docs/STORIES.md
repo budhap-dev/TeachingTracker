@@ -121,6 +121,7 @@ XS is an afternoon, XL is a project.
 | 45 | 🔲 | [REQ-045 — Default-content drift check between the repos](#req-045--default-content-drift-check-between-the-repos) | S | both | — (the emoji copy drifted 2026-08-06; make it structural) |
 | 46 | 🔲 | [REQ-046 — One edited-in-place hook for About, FAQ and Pricing](#req-046--one-edited-in-place-hook-for-about-faq-and-pricing) | M | frontend | — (the dirty-check bug was fixed three times on 2026-08-06) |
 | 47 | 🔲 | [REQ-047 — Split the stylesheet and route monoliths](#req-047--split-the-stylesheet-and-route-monoliths) | S | frontend | — |
+| 49 | ✅ | [REQ-049 — The visitors' phone tab bar](#req-049--the-visitors-phone-tab-bar) | M | both | — (Option C picked from design candidates, 2026-08-10) |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -2079,3 +2080,36 @@ finding code stops being scroll-archaeology.
 - [ ] Each partial/page file owns one feature area; imports stay ordered
       so the cascade is unchanged.
 - [ ] The build output is byte-comparable ignoring hashes.
+
+## REQ-049 — The visitors' phone tab bar
+
+**Status:** ✅ Built (2026-08-10) · **Impact:** both · **Effort:** M
+
+**Story**
+As a phone visitor, I want the site's key pages visible without knowing
+the hamburger convention — parents weren't discovering Pricing/Reviews/
+FAQ behind the bare icon.
+
+**How it landed** — the owner chose Option C from three mocked design
+candidates (labelled hamburger / flat tab bar / raised-spotlight bar):
+- A fixed bottom bar on phones, visitors only: three flat slots, one
+  **raised spotlight** (brand green→sky, ringed in the page ground),
+  then Menu — which opens the existing drawer. The visitor's top
+  hamburger retired; the teacher keeps drawer + hamburger (eleven work
+  screens don't fit tabs).
+- **Owner-configurable** (the ask): `mobileNav { items[≤3], spotlight }`
+  on the site document — page keys from home/offerings/pricing/enquire/
+  about/reviews/faq/contact, edited in the site editor's "Phone tab
+  bar" card. Unknown keys drop on write; contact hides itself while no
+  contact details are published. Defaults: home·offerings·pricing,
+  spotlight enquire.
+- Safe-area padded (`viewport-fit=cover` + `env(safe-area-inset-bottom)`);
+  the layout pads under the bar; active tab follows the route.
+
+**Acceptance criteria**
+- [x] Visitors on phones see the bar on every public page; teacher never
+      does; desktop never does.
+- [x] Menu tab opens the drawer; the visitor hamburger is gone.
+- [x] Bar contents/order/spotlight follow the published document.
+- [x] Verified in a real phone-sized browser: tabs, active state,
+      drawer, config, contact gating.

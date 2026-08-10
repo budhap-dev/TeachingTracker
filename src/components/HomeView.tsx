@@ -10,6 +10,7 @@ import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { signIn } from '../auth/msal'
 import { BrandBadge } from './BrandBadge'
 import { subjectIcon } from '../utils/subjectIcons'
+import { renderMarkdown } from '../utils/markdown'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined'
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
@@ -181,6 +182,23 @@ export const HomeView = ({
 
     return (
         <section className="content-stack home-view">
+            {/* The pinned note (the freeform section) leads the page when
+                written (owner call, 2026-08-10) — announcements sit
+                between the header and the band, impossible to miss. */}
+            {contentLoaded &&
+                (content.freeform.heading || content.freeform.markdown) && (
+                    <div className="card offerings-freeform">
+                        <div className="freeform-note">
+                            {content.freeform.heading && (
+                                <h4 className="offerings-heading">
+                                    {content.freeform.heading}
+                                </h4>
+                            )}
+                            {renderMarkdown(content.freeform.markdown)}
+                        </div>
+                    </div>
+                )}
+
             {/* D1 "the Brand Band" (owner pick, 2026-08-04): the hero is a
                 sweep of the brand gradient — badge, promise, ONE call to
                 action and the trust chips all inside the first viewport.

@@ -57,7 +57,7 @@ describe('PricingView', () => {
         ).toBeInTheDocument()
         // The chat line and both doors: assessment and plain contact.
         expect(
-            screen.getByText(/generally start from £20\/session — let's have a chat/i)
+            screen.getByText(/let's have a chat to get a clearer picture/i)
         ).toBeInTheDocument()
         expect(
             screen.getByRole('link', {

@@ -163,6 +163,9 @@ export type SiteContent = {
     /** The subject cards' third tag label — "Delivery" by default, the
         owner can rename it (e.g. "Experience") (2026-08-09). */
     modesLabel: string
+    /** The phone tab bar (REQ-049): three flat slots + the raised
+        spotlight, all owner-configurable page keys. */
+    mobileNav: { items: string[]; spotlight: string }
     freeform: FreeformSection
     sectionOrder: SectionKey[]
 }
@@ -205,6 +208,7 @@ export const normaliseSiteContent = (
     highlights: content.highlights ?? defaultSiteContent.highlights,
     services: content.services ?? defaultSiteContent.services,
     modesLabel: content.modesLabel || 'Delivery',
+    mobileNav: content.mobileNav ?? defaultSiteContent.mobileNav,
     sectionOrder: [
         ...content.sectionOrder,
         ...sectionKeys.filter((key) => !content.sectionOrder.includes(key)),
@@ -400,6 +404,12 @@ export const defaultSiteContent: SiteContent = {
     ],
     // The subject cards' third tag label — renameable by the owner.
     modesLabel: 'Delivery',
+    // The phone tab bar (REQ-049): Option C — flat, flat, raised
+    // spotlight, flat, then Menu (always last).
+    mobileNav: {
+        items: ['home', 'offerings', 'pricing'],
+        spotlight: 'enquire',
+    },
     // The Offerings services checklist — the owner's list, verbatim
     // (2026-08-07); the view supplies the ticks.
     services: [
