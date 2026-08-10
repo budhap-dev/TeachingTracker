@@ -26,6 +26,13 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
+            # REQ-040: fail the build on known-vulnerable dependencies.
+            # Shipped dependencies only: dev-tooling advisories (e.g. the
+            # esbuild dev-server one) can't reach production and their fixes
+            # are major-version churn — Dependabot still surfaces them.
+            - name: Audit shipped dependencies (high+)
+              run: npm audit --audit-level=high --omit=dev
+
             - name: Run lint
               run: npm run lint
 

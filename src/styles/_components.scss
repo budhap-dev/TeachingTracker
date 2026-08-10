@@ -3387,6 +3387,14 @@ a.home-highlight-tile {
     }
 }
 
+/* Keyboard focus on the flip cards (REQ-042): a visible ring, only for
+   keyboard/switch focus — mouse clicks stay clean. */
+.offerings-subject-card:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 12px;
+}
+
 /* The Offerings services checklist: two columns on wide screens. */
 .offerings-services-heading {
     margin-top: 18px;

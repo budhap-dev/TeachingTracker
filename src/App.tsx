@@ -95,9 +95,9 @@ const App = () => {
         <Provider store={store}>
             {/* future flags: opt in to v7 behaviour now, silencing the two
                 upgrade warnings the router prints in the console. */}
-            <BrowserRouter
-                future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-            >
+            {/* react-router 7 (REQ-040 audit fix): the v7 future flags are
+                the defaults now, so the prop is gone. */}
+            <BrowserRouter>
                 <AppShell />
             </BrowserRouter>
         </Provider>

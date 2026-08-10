@@ -20,6 +20,10 @@ import { paths } from '../paths'
 type ReviewsViewProps = {
     testimonials: Testimonial[]
     saving: boolean
+    /** The published subjects drive the picker (owner report,
+        2026-08-10 — the hardcoded list offered subjects not taught);
+        empty falls back to the bundled defaults. */
+    subjectChoices?: string[]
     onSubmit: (input: TestimonialInput) => void
 }
 
@@ -38,6 +42,7 @@ export const ReviewsView = ({
     testimonials,
     saving,
     onSubmit,
+    subjectChoices = subjectOptions,
 }: ReviewsViewProps) => {
     const [authorName, setAuthorName] = useState('')
     const [role, setRole] = useState<TestimonialRole>('Parent')
@@ -246,7 +251,7 @@ export const ReviewsView = ({
                         }
                         fullWidth
                     >
-                        {subjectOptions.map((option) => (
+                        {subjectChoices.map((option) => (
                             <MenuItem key={option} value={option}>
                                 <Checkbox
                                     checked={subjects.includes(option)}

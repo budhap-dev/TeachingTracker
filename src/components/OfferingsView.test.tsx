@@ -121,6 +121,21 @@ describe('OfferingsView', () => {
         expect(screen.queryByText('Delivery')).not.toBeInTheDocument()
     })
 
+    it('flips a subject card from the keyboard (REQ-042)', async () => {
+        const user = userEvent.setup()
+        renderView()
+
+        const card = screen.getByRole('button', {
+            name: /mathematics card/i,
+        })
+        expect(card).toHaveAttribute('aria-pressed', 'false')
+        card.focus()
+        await user.keyboard('{Enter}')
+        expect(card).toHaveAttribute('aria-pressed', 'true')
+        await user.keyboard(' ')
+        expect(card).toHaveAttribute('aria-pressed', 'false')
+    })
+
     it('shows subjects as cards, with levels and boards where given', () => {
         renderView()
 

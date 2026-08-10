@@ -57,6 +57,20 @@ describe('EnquireView', () => {
         })
     })
 
+    it('offers the published subjects, never unpublished ones', async () => {
+        const user = userEvent.setup()
+        renderView({ subjectChoices: ['Mathematics', 'Computer Science'] })
+
+        await user.click(screen.getByRole('combobox', { name: /subject/i }))
+        expect(
+            screen.getByRole('option', { name: 'Computer Science' })
+        ).toBeInTheDocument()
+        // English was never taught here (owner report, 2026-08-10).
+        expect(
+            screen.queryByRole('option', { name: 'English' })
+        ).not.toBeInTheDocument()
+    })
+
     it('accepts phone as the only contact, with a chosen mode', async () => {
         const user = userEvent.setup()
         const { onSubmit } = renderView()
@@ -72,7 +86,7 @@ describe('EnquireView', () => {
         )
         await user.click(screen.getByRole('option', { name: 'Year 8' }))
         await user.click(screen.getByRole('combobox', { name: /subject/i }))
-        await user.click(screen.getByRole('option', { name: 'English' }))
+        await user.click(screen.getByRole('option', { name: 'Chemistry' }))
         await user.keyboard('{Escape}')
         await user.type(
             screen.getByLabelText(/what would you like tutoring to achieve/i),
