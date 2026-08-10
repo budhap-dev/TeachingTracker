@@ -15,6 +15,12 @@ updates:
       # supports TS 7, then let Dependabot offer the major again.
       - dependency-name: typescript
         versions: ['>=7']
+      # The React-Compiler-era hooks rules (purity, set-state-in-effect)
+      # flag the app's deliberate adopt-until-edited draft pattern in ten
+      # places (#91). Adopting them is a scheduled refactor (REQ-050),
+      # not a dependency bump side effect.
+      - dependency-name: eslint-plugin-react-hooks
+        versions: ['>=6']
   - package-ecosystem: github-actions
     directory: /
     schedule:

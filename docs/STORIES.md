@@ -122,6 +122,7 @@ XS is an afternoon, XL is a project.
 | 46 | 🔲 | [REQ-046 — One edited-in-place hook for About, FAQ and Pricing](#req-046--one-edited-in-place-hook-for-about-faq-and-pricing) | M | frontend | — (the dirty-check bug was fixed three times on 2026-08-06) |
 | 47 | 🔲 | [REQ-047 — Split the stylesheet and route monoliths](#req-047--split-the-stylesheet-and-route-monoliths) | S | frontend | — |
 | 49 | ✅ | [REQ-049 — The visitors' phone tab bar](#req-049--the-visitors-phone-tab-bar) | M | both | — (Option C picked from design candidates, 2026-08-10) |
+| 50 | 🔲 | [REQ-050 — Adopt the React-Compiler-era hooks lint rules](#req-050--adopt-the-react-compiler-era-hooks-lint-rules) | M | frontend | — (plugin major held in dependabot.yml until this lands) |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -2113,3 +2114,33 @@ candidates (labelled hamburger / flat tab bar / raised-spotlight bar):
 - [x] Bar contents/order/spotlight follow the published document.
 - [x] Verified in a real phone-sized browser: tabs, active state,
       drawer, config, contact gating.
+
+## REQ-050 — Adopt the React-Compiler-era hooks lint rules
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+
+**Story**
+eslint-plugin-react-hooks ≥6 ships the React-Compiler-era rules
+(`react-hooks/purity`, `set-state-in-effect`, stricter `use-memo`), and
+its Dependabot bump (#91, 2026-08-10) failed lint with ten errors — six
+of them the deliberate **adopt-until-edited** draft pattern (a
+`useEffect` that `setDraft(toDraft(content))` while unedited) used by
+About, FAQ, Pricing and the student details form, plus the per-mount
+quote roll (`Math.random` in `useMemo`) and two `useMemo` shape nits.
+The plugin major is held in `dependabot.yml` until this story lands.
+
+**Shape**
+- Rework draft adoption to derive-from-props (key the editor subtree on
+  the published document, or compare-during-render) instead of
+  effect-synced state — pairs naturally with REQ-046's shared hook.
+- Move the quote roll out of render (lazy `useState` initialiser or
+  effect) keeping per-screen rotation and the fixed three-line slot.
+- Then lift the dependabot hold and let the plugin bump through.
+
+**Acceptance criteria**
+- [ ] Lint is clean under eslint-plugin-react-hooks ≥6 with the new
+      rules ON (no disables).
+- [ ] Draft adoption still works: refreshed content adopts until the
+      first edit on every edited-in-place page.
+- [ ] The quote still rotates per screen; headers stay fixed-height.
+- [ ] The dependabot hold is removed in the same PR.
