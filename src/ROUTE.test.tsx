@@ -115,7 +115,7 @@ describe('public pages', () => {
         window.history.pushState({}, '', '/')
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /offerings/i })
         )
@@ -130,7 +130,7 @@ describe('public pages', () => {
         window.history.pushState({}, '', '/')
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /contact me/i })
         )
@@ -193,7 +193,7 @@ describe('reviews (REQ-027)', () => {
         window.history.pushState({}, '', '/')
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /^reviews$/i })
         )
@@ -249,7 +249,7 @@ describe('reviews (REQ-027)', () => {
         window.history.pushState({}, '', '/')
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', {
                 name: /review moderation/i,
@@ -292,7 +292,7 @@ describe('privacy (REQ-031/032)', () => {
         window.history.pushState({}, '', '/')
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /^privacy$/i })
         )
@@ -341,7 +341,7 @@ describe('site editor (REQ-008)', () => {
         window.history.pushState({}, '', '/')
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /public site/i })
         )
@@ -477,7 +477,7 @@ describe('enquiries and leads (REQ-018/019)', () => {
         window.history.pushState({}, '', '/')
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /^leads$/i })
         )

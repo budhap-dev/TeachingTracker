@@ -110,6 +110,12 @@
         padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     }
 
+    /* Toasts must not cover the bar (they were intercepting taps) -
+       they stack just above it instead. */
+    body.has-tabbar .MuiSnackbar-anchorOriginBottomCenter {
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+
     /* The visitor's top hamburger retires - the bar's Menu tab is the
        drawer's trigger for them (the teacher keeps the hamburger). */
     .sidebar .mobile-nav-toggle.visitor-hidden {

@@ -166,6 +166,8 @@ export type SiteContent = {
     /** The phone tab bar (REQ-049): three flat slots + the raised
         spotlight, all owner-configurable page keys. */
     mobileNav: { items: string[]; spotlight: string }
+    /** The teacher's own bar (2026-08-10) — same shape, work-screen keys. */
+    mobileNavTeacher: { items: string[]; spotlight: string }
     freeform: FreeformSection
     sectionOrder: SectionKey[]
 }
@@ -209,6 +211,8 @@ export const normaliseSiteContent = (
     services: content.services ?? defaultSiteContent.services,
     modesLabel: content.modesLabel || 'Delivery',
     mobileNav: content.mobileNav ?? defaultSiteContent.mobileNav,
+    mobileNavTeacher:
+        content.mobileNavTeacher ?? defaultSiteContent.mobileNavTeacher,
     sectionOrder: [
         ...content.sectionOrder,
         ...sectionKeys.filter((key) => !content.sectionOrder.includes(key)),
@@ -409,6 +413,11 @@ export const defaultSiteContent: SiteContent = {
     mobileNav: {
         items: ['home', 'offerings', 'pricing'],
         spotlight: 'enquire',
+    },
+    // The teacher's own bar: the daily-driver screens.
+    mobileNavTeacher: {
+        items: ['dashboard', 'students', 'scheduling'],
+        spotlight: 'payments',
     },
     // The Offerings services checklist — the owner's list, verbatim
     // (2026-08-07); the view supplies the ticks.

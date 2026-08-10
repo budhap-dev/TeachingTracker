@@ -10,6 +10,15 @@ import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
 import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined'
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
+import SpaceDashboardRoundedIcon from '@mui/icons-material/SpaceDashboardRounded'
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded'
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded'
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded'
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded'
+import ContactPageOutlinedIcon from '@mui/icons-material/ContactPageOutlined'
+import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded'
+import ReviewsOutlinedIcon from '@mui/icons-material/ReviewsOutlined'
+import LanguageRoundedIcon from '@mui/icons-material/LanguageRounded'
 import { isAuthConfigured } from '../auth/msal'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import { fetchSiteContentRequested } from '../store/store'
@@ -47,6 +56,54 @@ const NAV_PAGES: Record<
     },
 }
 
+/** The teacher bar's vocabulary — the work screens (2026-08-10). */
+const TEACHER_NAV_PAGES: Record<
+    string,
+    { label: string; path: string; Icon: typeof HomeRoundedIcon }
+> = {
+    dashboard: {
+        label: 'Dashboard',
+        path: paths.dashboard,
+        Icon: SpaceDashboardRoundedIcon,
+    },
+    students: {
+        label: 'Students',
+        path: paths.students,
+        Icon: GroupsRoundedIcon,
+    },
+    scheduling: {
+        label: 'Classes',
+        path: paths.scheduling,
+        Icon: CalendarMonthRoundedIcon,
+    },
+    payments: {
+        label: 'Payments',
+        path: paths.payments,
+        Icon: PaymentsRoundedIcon,
+    },
+    snapshot: {
+        label: 'Snapshot',
+        path: paths.studySnapshot,
+        Icon: InsightsRoundedIcon,
+    },
+    leads: {
+        label: 'Leads',
+        path: paths.leads,
+        Icon: ContactPageOutlinedIcon,
+    },
+    alumni: { label: 'Alumni', path: paths.alumni, Icon: SchoolRoundedIcon },
+    moderation: {
+        label: 'Reviews',
+        path: paths.reviewsModeration,
+        Icon: ReviewsOutlinedIcon,
+    },
+    editor: {
+        label: 'Site',
+        path: paths.siteEditor,
+        Icon: LanguageRoundedIcon,
+    },
+}
+
 type MobileTabBarProps = {
     /** Opens the existing drawer — the bar's Menu tab is its only
         mobile trigger for visitors. */
@@ -63,12 +120,16 @@ const MobileTabBarInner = ({
     onMenu,
     menuOpen,
     onMenuClose,
-}: MobileTabBarProps) => {
+    teacher = false,
+}: MobileTabBarProps & { teacher?: boolean }) => {
     const dispatch = useAppDispatch()
     const { pathname } = useLocation()
-    const nav = useAppSelector(
-        (state) => state.students.siteContent.mobileNav
+    const nav = useAppSelector((state) =>
+        teacher
+            ? state.students.siteContent.mobileNavTeacher
+            : state.students.siteContent.mobileNav
     )
+    const pages = teacher ? TEACHER_NAV_PAGES : NAV_PAGES
     const contact = useAppSelector((state) => state.students.contact)
     useEffect(() => {
         dispatch(fetchSiteContentRequested())
@@ -92,9 +153,13 @@ const MobileTabBarInner = ({
 
     const contactPublished = Boolean(contact.email || contact.phone)
     const allowed = (key: string) =>
-        key in NAV_PAGES && (key !== 'contact' || contactPublished)
+        key in pages && (key !== 'contact' || contactPublished)
     const flat = nav.items.filter(allowed).slice(0, 3)
-    const spotlight = allowed(nav.spotlight) ? nav.spotlight : 'enquire'
+    const spotlight = allowed(nav.spotlight)
+        ? nav.spotlight
+        : teacher
+          ? 'payments'
+          : 'enquire'
     // Option C's slot order — spotlight holds the centre seat; the LIFT
     // travels with whichever tab is active (owner call, 2026-08-10).
     const slots: string[] = [
@@ -107,7 +172,7 @@ const MobileTabBarInner = ({
     return (
         <nav className="mobile-tabbar" aria-label="Quick navigation">
             {slots.map((key) => {
-                const page = NAV_PAGES[key]
+                const page = pages[key]
                 const active =
                     !menuOpen &&
                     (page.path === '/'
@@ -142,11 +207,16 @@ const MobileTabBarInner = ({
     )
 }
 
-/** Visitors only: the signed-in teacher keeps the drawer + hamburger
-    (eleven work screens don't fit in tabs). Auth-less local dev counts
-    as the teacher. */
-const MobileTabBarGate = (props: MobileTabBarProps) =>
-    useIsAuthenticated() ? null : <MobileTabBarInner {...props} />
+/** Everyone gets a bar on phones now (owner call, 2026-08-10): the
+    teacher's carries their configured work screens, visitors' the
+    public set. Auth-less local dev counts as the teacher. */
+const MobileTabBarGate = (props: MobileTabBarProps) => (
+    <MobileTabBarInner {...props} teacher={useIsAuthenticated()} />
+)
 
 export const MobileTabBar = (props: MobileTabBarProps) =>
-    isAuthConfigured() ? <MobileTabBarGate {...props} /> : null
+    isAuthConfigured() ? (
+        <MobileTabBarGate {...props} />
+    ) : (
+        <MobileTabBarInner {...props} teacher />
+    )

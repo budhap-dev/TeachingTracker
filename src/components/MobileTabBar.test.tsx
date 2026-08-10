@@ -11,9 +11,12 @@ import {
 } from '../store/store'
 import { defaultSiteContent } from '../data/siteContent'
 
-// The bar is for signed-out visitors under real auth config.
+// Auth-configured; the flag flips per test between visitor and teacher.
+let signedIn = false
 vi.mock('../auth/msal', () => ({ isAuthConfigured: () => true }))
-vi.mock('@azure/msal-react', () => ({ useIsAuthenticated: () => false }))
+vi.mock('@azure/msal-react', () => ({
+    useIsAuthenticated: () => signedIn,
+}))
 
 const renderBar = (onMenu = vi.fn()) => {
     render(
@@ -121,6 +124,28 @@ describe('MobileTabBar (REQ-049)', () => {
         await waitFor(() => expect(onMenuClose).toHaveBeenCalled(), {
             timeout: 1500,
         })
+    })
+
+    it('gives the signed-in teacher their own configured bar', () => {
+        signedIn = true
+        store.dispatch(fetchSiteContentSucceeded(defaultSiteContent))
+        renderBar()
+
+        const labels = screen
+            .getAllByRole('link')
+            .map((tab) => tab.textContent)
+        expect(labels).toEqual([
+            'Dashboard',
+            'Students',
+            'Payments',
+            'Classes',
+        ])
+        // Payments holds the spotlight seat; Dashboard (active on /)
+        // wears the lift.
+        expect(
+            screen.getByRole('link', { name: /dashboard/i })
+        ).toHaveClass('raised')
+        signedIn = false
     })
 
     it('opens the drawer from the Menu tab', async () => {

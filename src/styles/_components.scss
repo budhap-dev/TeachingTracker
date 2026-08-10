@@ -4768,6 +4768,61 @@ a.home-highlight-tile {
     border: 0;
 }
 
+/* The site editor's sections fold away (owner ask, 2026-08-10):
+   native details accordions, collapsed by default. Collapsed rows sit
+   tight - slimmer padding, and consecutive accordions close ranks
+   against the page's 16px stack gap. */
+.editor-accordion {
+    padding: 12px 18px;
+}
+
+.editor-accordion[open] {
+    padding: 18px;
+}
+
+.editor-accordion + .editor-accordion {
+    /* The flex gap can't shrink per-pair, so the accordion pulls
+       itself up instead. */
+    margin-top: -9px;
+}
+
+.editor-accordion > .editor-accordion-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    list-style: none;
+    margin: -4px 0;
+
+    &::-webkit-details-marker {
+        display: none;
+    }
+
+    h4 {
+        margin: 0;
+    }
+}
+
+.editor-accordion-chevron.editor-accordion-chevron {
+    margin-left: auto;
+    color: var(--muted);
+    transition: transform 0.2s ease;
+}
+
+.editor-accordion[open] > .editor-accordion-summary {
+    margin-bottom: 10px;
+
+    .editor-accordion-chevron {
+        transform: rotate(180deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .editor-accordion-chevron.editor-accordion-chevron {
+        transition: none;
+    }
+}
+
 /* The About page wears a theme frame (owner ask, 2026-08-10): a slim
    gradient border drawn from the active theme's own accent pair, so it
    re-dresses with every theme - light, dark and metallic alike. The
