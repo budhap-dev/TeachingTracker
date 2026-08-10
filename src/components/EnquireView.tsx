@@ -26,6 +26,10 @@ type EnquireViewProps = {
     saving: boolean
     /** True once this visit's enquiry has been accepted — shows the thanks. */
     submitted: boolean
+    /** The published subjects drive the picker (owner report,
+        2026-08-10 — the hardcoded list offered subjects not taught);
+        empty falls back to the bundled defaults. */
+    subjectChoices?: string[]
     onSubmit: (input: LeadInput) => void
 }
 
@@ -41,6 +45,7 @@ export const EnquireView = ({
     saving,
     submitted,
     onSubmit,
+    subjectChoices = subjectOptions,
 }: EnquireViewProps) => {
     useDocumentMeta(
         'Enquire about tutoring — AbhiTutor',
@@ -236,7 +241,7 @@ export const EnquireView = ({
                         )}
                         fullWidth
                     >
-                        {subjectOptions.map((option) => (
+                        {subjectChoices.map((option) => (
                             <MenuItem key={option} value={option}>
                                 <Checkbox checked={subjects.includes(option)} />
                                 <ListItemText primary={option} />

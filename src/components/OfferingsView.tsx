@@ -75,17 +75,33 @@ export const OfferingsView = ({
                         {subjects.map((subject) => {
                             const Icon = subjectIcon(subject.name)
                             const isFlipped = flipped === subject.name
+                            const toggleFlip = () =>
+                                setFlipped((current) =>
+                                    current === subject.name
+                                        ? null
+                                        : subject.name
+                                )
                             return (
                                 <div
                                     key={subject.name}
                                     className={`offerings-subject-card ${isFlipped ? 'flipped' : ''}`}
-                                    onClick={() =>
-                                        setFlipped((current) =>
-                                            current === subject.name
-                                                ? null
-                                                : subject.name
-                                        )
-                                    }
+                                    /* Keyboard/switch users flip too
+                                       (REQ-042): a real button role with
+                                       Enter/Space, announcing its state. */
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-pressed={isFlipped}
+                                    aria-label={`${subject.name} card`}
+                                    onClick={toggleFlip}
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.key === 'Enter' ||
+                                            event.key === ' '
+                                        ) {
+                                            event.preventDefault()
+                                            toggleFlip()
+                                        }
+                                    }}
                                 >
                                     <div className="subject-card-inner">
                                         <div className="subject-card-front">

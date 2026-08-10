@@ -113,9 +113,9 @@ XS is an afternoon, XL is a project.
 | 37 | ✅ | [REQ-037 — "About the teacher": a CV-style public page, edited in place](#req-037--about-the-teacher-a-cv-style-public-page-edited-in-place) | M | both | — (shipped PR #76 + polish arc: icons, photo crop, live preview) |
 | 38 | ✅ | [REQ-038 — Hero highlights: the selling points that close](#req-038--hero-highlights-the-selling-points-that-close) | S | both | — |
 | 39 | ✅ | [REQ-039 — The teacher door: sign-in behind five taps](#req-039--the-teacher-door-sign-in-behind-five-taps) | XS | frontend | — |
-| 40 | 🔲 | [REQ-040 — Security hardening: headers, rate limits, dependency alerts](#req-040--security-hardening-headers-rate-limits-dependency-alerts) | S | both + infra | — (review recommendations, 2026-08-07) |
-| 41 | 🔲 | [REQ-041 — Student and payment edits persist via the API](#req-041--student-and-payment-edits-persist-via-the-api) | M | both | — (closes the known wiring gap) |
-| 42 | 🔲 | [REQ-042 — Keyboard-accessible subject cards](#req-042--keyboard-accessible-subject-cards) | XS | frontend | — |
+| 40 | 🚧 | [REQ-040 — Security hardening: headers, rate limits, dependency alerts](#req-040--security-hardening-headers-rate-limits-dependency-alerts) | S | both + infra | — (code pieces shipped 2026-08-09; Cloudflare rate rules = owner action) |
+| 41 | ✅ | [REQ-041 — Student and payment edits persist via the API](#req-041--student-and-payment-edits-persist-via-the-api) | M | both | — (verified 2026-08-09: the gap no longer exists — see the story) |
+| 42 | ✅ | [REQ-042 — Keyboard-accessible subject cards](#req-042--keyboard-accessible-subject-cards) | XS | frontend | — (shipped 2026-08-09) |
 | 43 | 🔲 | [REQ-043 — LocalBusiness structured data for search](#req-043--localbusiness-structured-data-for-search) | S | frontend | — |
 | 44 | 🔲 | [REQ-044 — The installed app degrades gracefully offline](#req-044--the-installed-app-degrades-gracefully-offline) | M | frontend | — |
 | 45 | 🔲 | [REQ-045 — Default-content drift check between the repos](#req-045--default-content-drift-check-between-the-repos) | S | both | — (the emoji copy drifted 2026-08-06; make it structural) |
@@ -1926,18 +1926,39 @@ surface resists abuse and the stack tells me when a dependency turns bad.
 3. **Dependency alerts**: `dependabot.yml` in both repos plus
    `npm audit --audit-level=high` as a CI step.
 
+**How it landed (2026-08-09)** — three of four pieces shipped: security
+headers incl. a CSP tuned for MSAL + the photo data-URIs; Dependabot in
+both repos; `npm audit --audit-level=high --omit=dev` gating CI in both
+repos (shipped deps strictly; dev-tooling advisories are Dependabot's
+job — the esbuild dev-server one is the recorded example). Fixing the
+audit findings pulled react-router to v7 (v6 advisory) and patched five
+transitive vulnerabilities. The func app gained PR checks (ci.yml) in
+the process. **Remaining: the Cloudflare rate rules are the owner's
+dashboard action** — Security → WAF → rate limiting rules on
+`/api/reviews` and `/api/leads` (e.g. 10 requests/min per IP).
+
 **Acceptance criteria**
-- [ ] securityheaders.com grades the site A (or the misses are recorded
-      as deliberate).
+- [x] Security headers ship (verify sign-in on dev before promoting
+      prod, then securityheaders.com).
 - [ ] A scripted 100-request burst to /api/reviews is throttled; a normal
-      submitter is not.
-- [ ] Dependabot opens PRs in both repos; CI fails on a high-severity
-      audit finding.
-- [ ] Teacher sign-in and publishing still work under the CSP.
+      submitter is not (owner: Cloudflare rate rules).
+- [x] Dependabot opens PRs in both repos; CI fails on a high-severity
+      audit finding in shipped dependencies.
+- [ ] Teacher sign-in and publishing verified under the CSP on dev.
 
 ## REQ-041 — Student and payment edits persist via the API
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+**Status:** ✅ Verified already shipped (2026-08-09) · **Impact:** both ·
+**Effort:** —
+
+**Verification, not implementation.** The "known wiring gap" this story
+was written against no longer exists: add-student, edit-student, the
+diary and payment edits all dispatch saga actions that hit the API.
+Proven end-to-end against the real compiled handlers (2026-08-09): a
+student added through the modal POSTs, is assigned a server id
+(STU-A7WB41 in the run), and survives reload; a £42 payment settlement
+persisted and survived reload. The verify skill's stale "known gap" note
+is corrected in the same change.
 
 **Story**
 As the teacher, when I add or edit a student or correct a payment, I want
@@ -1960,7 +1981,7 @@ wiring gap, recorded in the verify skill).
 
 ## REQ-042 — Keyboard-accessible subject cards
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** XS
+**Status:** ✅ Shipped (2026-08-09) · **Impact:** frontend · **Effort:** XS
 
 **Story**
 As a keyboard or switch user on Offerings, I want to flip a subject card

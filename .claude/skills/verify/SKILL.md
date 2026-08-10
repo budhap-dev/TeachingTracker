@@ -66,8 +66,10 @@ const browser = await chromium.launch({ channel: 'chrome' })  // uses installed 
 - API down (`page.route('http://localhost:7071/**', r => r.abort())`) → app must
   still render the shell with zeroed stats, no uncaught errors.
 
-## Known gap (not a regression)
+## Formerly a known gap — now closed (verified 2026-08-09)
 
-Only **session creation** writes to the API. Student add/edit and payment edits
-update Redux only — no `POST /students` / `POST /payments` is ever sent, so they
-silently revert on reload. Don't report this as new breakage; it's a wiring gap.
+Student add/edit, diary notes and payment edits all persist via the API
+(`POST /students`, `POST /payments`) — verified end-to-end against the real
+compiled handlers. If a write appears not to stick, suspect the shim first:
+its route matcher must translate optional params (`students/{id?}`), or the
+POST 404s while the UI looks fine.

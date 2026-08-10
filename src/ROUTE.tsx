@@ -736,17 +736,22 @@ const ReviewsRoute = () => {
     const saving = useAppSelector(
         (state) => state.students.savingTestimonial
     )
+    // The published subjects drive the picker (owner report, 2026-08-10).
+    const content = useAppSelector((state) => state.students.siteContent)
     useEffect(() => {
         dispatch(fetchTestimonialsRequested())
+        dispatch(fetchSiteContentRequested())
     }, [dispatch])
 
     if (loading) {
         return <PageLoading />
     }
+    const subjectChoices = content.subjects.map((subject) => subject.name)
     return (
         <ReviewsView
             testimonials={testimonials}
             saving={saving}
+            {...(subjectChoices.length ? { subjectChoices } : {})}
             onSubmit={(input) => dispatch(submitTestimonialRequested(input))}
         />
     )
@@ -796,10 +801,17 @@ const EnquireRoute = () => {
     const dispatch = useAppDispatch()
     const saving = useAppSelector((state) => state.students.savingLead)
     const submitted = useAppSelector((state) => state.students.leadSubmitted)
+    // The published subjects drive the picker (owner report, 2026-08-10).
+    const content = useAppSelector((state) => state.students.siteContent)
+    useEffect(() => {
+        dispatch(fetchSiteContentRequested())
+    }, [dispatch])
+    const subjectChoices = content.subjects.map((subject) => subject.name)
     return (
         <EnquireView
             saving={saving}
             submitted={submitted}
+            {...(subjectChoices.length ? { subjectChoices } : {})}
             onSubmit={(input) => dispatch(submitLeadRequested(input))}
         />
     )
