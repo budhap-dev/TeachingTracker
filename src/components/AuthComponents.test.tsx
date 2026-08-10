@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -268,10 +268,27 @@ describe('TopbarAuth', () => {
         ).not.toBeInTheDocument()
     })
 
-    it('signs out', async () => {
+    it('asks before signing out, and stays put on cancel', async () => {
         const user = userEvent.setup()
         render(<TopbarAuth />)
         await user.click(screen.getByRole('button', { name: /sign out/i }))
+        // A confirmation, not an instant exit (owner ask, 2026-08-10).
+        expect(signOut).not.toHaveBeenCalled()
+        await user.click(
+            screen.getByRole('button', { name: /stay signed in/i })
+        )
+        expect(signOut).not.toHaveBeenCalled()
+    })
+
+    it('signs out once confirmed', async () => {
+        const user = userEvent.setup()
+        render(<TopbarAuth />)
+        await user.click(screen.getByRole('button', { name: /sign out/i }))
+        await user.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: /^sign out$/i,
+            })
+        )
         expect(signOut).toHaveBeenCalled()
     })
 })

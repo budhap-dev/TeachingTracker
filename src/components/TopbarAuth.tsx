@@ -1,5 +1,12 @@
-import { Button } from '@mui/material'
+import {
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+} from '@mui/material'
 import { useAccount, useIsAuthenticated, useMsal } from '@azure/msal-react'
+import { useState } from 'react'
 import { isAuthConfigured, signOut } from '../auth/msal'
 import { BrandLogo } from './BrandLogo'
 
@@ -73,6 +80,9 @@ const TopbarAuthInner = () => {
     const { accounts } = useMsal()
     const account = useAccount(accounts[0] ?? {})
     const isAuthenticated = useIsAuthenticated()
+    // A tap on Sign out asks first (owner ask, 2026-08-10) — it sits
+    // beside the version line where a scroll-flick can graze it.
+    const [confirming, setConfirming] = useState(false)
 
     if (!isAuthenticated || !account) {
         return null
@@ -87,10 +97,33 @@ const TopbarAuthInner = () => {
                 size="small"
                 variant="text"
                 title={`Signed in as ${account.username}`}
-                onClick={() => void signOut()}
+                onClick={() => setConfirming(true)}
             >
                 Sign out
             </Button>
+            <Dialog
+                open={confirming}
+                onClose={() => setConfirming(false)}
+                maxWidth="xs"
+            >
+                <DialogTitle>Sign out?</DialogTitle>
+                <DialogContent>
+                    You&apos;ll need your Microsoft sign-in to get back
+                    into the teacher portal.
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setConfirming(false)}>
+                        Stay signed in
+                    </Button>
+                    <Button
+                        color="error"
+                        variant="contained"
+                        onClick={() => void signOut()}
+                    >
+                        Sign out
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div>
     )
 }
