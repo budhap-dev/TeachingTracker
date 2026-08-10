@@ -112,6 +112,21 @@ describe('HomeView', () => {
         ).toBeInTheDocument()
     })
 
+    it('leads with the pinned note when one is written (owner call)', () => {
+        renderHome(reviews, {
+            ...defaultSiteContent,
+            freeform: {
+                heading: 'Term dates',
+                markdown: 'Starts **7 September**.',
+            },
+        })
+        expect(
+            screen.getByRole('heading', { name: 'Term dates' })
+        ).toBeInTheDocument()
+        expect(screen.getByText('7 September').tagName).toBe('STRONG')
+        // The default (empty) freeform renders nothing at all.
+    })
+
     it('carries the trust chips inside the band (REQ-020 as D1 chips)', () => {
         renderHome()
 

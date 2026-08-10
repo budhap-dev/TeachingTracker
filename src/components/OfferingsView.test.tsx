@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { OfferingsView } from './OfferingsView'
@@ -215,24 +215,17 @@ describe('OfferingsView', () => {
         ).toBeInTheDocument()
     })
 
-    it('renders the free-form section from Markdown when one is written', () => {
+    it('no longer renders the free-form note — it leads Home now', () => {
         renderView({
             freeform: {
                 heading: 'Term dates',
-                markdown: 'Starts **7 September**.\n\n- Mocks in December',
+                markdown: 'Starts **7 September**.',
             },
         })
+        // Moved to the Home screen (owner call, 2026-08-10).
         expect(
-            screen.getByRole('heading', { name: 'Term dates' })
-        ).toBeInTheDocument()
-        expect(screen.getByText('7 September').tagName).toBe('STRONG')
-        // Scoped: the journey renders list items of its own.
-        const card = screen
-            .getByRole('heading', { name: 'Term dates' })
-            .closest('.offerings-freeform') as HTMLElement
-        expect(within(card).getByRole('listitem')).toHaveTextContent(
-            'Mocks in December'
-        )
+            screen.queryByRole('heading', { name: 'Term dates' })
+        ).not.toBeInTheDocument()
     })
 
     it('renders sections in the teacher-chosen order', () => {

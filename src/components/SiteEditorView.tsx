@@ -69,6 +69,9 @@ type Draft = {
     servicesText: string
     /** The subject cards' third tag label (default "Delivery"). */
     modesLabel: string
+    /** The phone tab bar (REQ-049): three flat page keys + spotlight. */
+    mobileNavItemsText: string
+    mobileNavSpotlight: string
     freeform: SiteContent['freeform']
     sectionOrder: SectionKey[]
 }
@@ -94,6 +97,8 @@ const toDraft = (content: SiteContent): Draft => ({
     highlights: content.highlights,
     servicesText: content.services.join('\n'),
     modesLabel: content.modesLabel,
+    mobileNavItemsText: content.mobileNav.items.join('\n'),
+    mobileNavSpotlight: content.mobileNav.spotlight,
     faq: content.faq.map((item) => ({
         key: newRowKey(),
         title: item.question,
@@ -147,6 +152,15 @@ const assemble = (draft: Draft): SiteContent => ({
         .map((line) => line.trim())
         .filter(Boolean),
     modesLabel: draft.modesLabel.trim() || 'Delivery',
+    mobileNav: {
+        items: draft.mobileNavItemsText
+            .split('\n')
+            .map((key) => key.trim().toLowerCase())
+            .filter(Boolean)
+            .slice(0, 3),
+        spotlight:
+            draft.mobileNavSpotlight.trim().toLowerCase() || 'enquire',
+    },
     // Both halves required: the API rejects a question without an answer,
     // so an incomplete row is dropped rather than failing the publish.
     faq: draft.faq
@@ -707,6 +721,48 @@ export const SiteEditorView = ({
 
                     <div className="card">
                         <h4 className="offerings-heading">
+                            Phone tab bar
+                        </h4>
+                        <p className="section-subtitle">
+                            The bar visitors see along the bottom on phones
+                            (REQ-049). Three flat slots plus one raised
+                            spotlight; Menu is always the fifth tab. Page
+                            keys: home, offerings, pricing, enquire, about,
+                            reviews, faq, contact. Unknown keys are dropped
+                            when you publish; Contact hides itself while no
+                            contact details are published.
+                        </p>
+                        <div className="site-editor-fields">
+                            <TextField
+                                label="Flat slots — one page key per line (max 3)"
+                                size="small"
+                                multiline
+                                minRows={3}
+                                value={draft.mobileNavItemsText}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.mobileNavItemsText =
+                                            event.target.value
+                                    })
+                                }
+                            />
+                            <TextField
+                                label="Raised spotlight"
+                                size="small"
+                                value={draft.mobileNavSpotlight}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.mobileNavSpotlight =
+                                            event.target.value
+                                    })
+                                }
+                                helperText='The centre tab, raised in the brand green — "enquire" unless you have a better door.'
+                            />
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h4 className="offerings-heading">
                             About the teacher
                         </h4>
                         <p className="section-subtitle">
@@ -763,9 +819,10 @@ export const SiteEditorView = ({
                             Free-form section
                         </h4>
                         <p className="section-subtitle">
-                            For anything without a field of its own — an
-                            about, a notice, term dates. Leave both blank to
-                            hide the section.
+                            For anything without a field of its own — a
+                            notice, term dates. Shows as the pinned note at
+                            the top of the Home page (owner call,
+                            2026-08-10). Leave both blank to hide it.
                         </p>
                         <div className="site-editor-fields">
                             <TextField

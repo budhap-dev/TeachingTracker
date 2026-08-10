@@ -4768,6 +4768,28 @@ a.home-highlight-tile {
     border: 0;
 }
 
+/* The About page wears a theme frame (owner ask, 2026-08-10): a slim
+   gradient border drawn from the active theme's own accent pair, so it
+   re-dresses with every theme - light, dark and metallic alike. The
+   two-layer background keeps the card surface intact inside the frame. */
+.about-page .card {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(var(--surface), var(--surface)) padding-box,
+        linear-gradient(
+                135deg,
+                var(--accent),
+                color-mix(in srgb, var(--accent-alt) 70%, var(--accent)),
+                var(--accent-alt)
+            )
+            border-box;
+}
+
+/* The section blocks inside pick up a quieter tint of the same pair. */
+.about-page .about-block {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
 /* The per-section edit pencils (owner ask, 2026-08-09): quiet until
    hovered; lit while their inline editor is open. */
 .about-edit-pencil.about-edit-pencil {

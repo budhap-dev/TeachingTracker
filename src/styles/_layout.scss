@@ -123,6 +123,30 @@
     }
 }
 
+/* Desktop never shows the drawer tools - the topbar carries them. */
+.sidebar-mobile-tools {
+    display: none;
+}
+
+/* Nor the visitors' bottom tab bar (REQ-049) - phones only. */
+.mobile-tabbar {
+    display: none;
+}
+
+/* The footer row: version and sign-out share the line, quiet but
+   legible on the gradient. */
+.sidebar-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    .MuiButton-root {
+        color: inherit;
+        opacity: 0.85;
+    }
+}
+
 .main-content {
     padding: 24px;
     display: flex;

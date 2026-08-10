@@ -184,6 +184,11 @@ describe('Sidebar', () => {
         renderSidebar()
         expect(teacherItem()).toBeInTheDocument()
         expect(publicItem()).toBeInTheDocument()
+        // Sign out lives beside the version in the footer row — its only
+        // home since the topbar gave it up (owner calls, 2026-08-10).
+        expect(
+            screen.getByRole('button', { name: /sign out/i })
+        ).toBeInTheDocument()
         // Both groups render, so both headings label the split.
         expect(screen.getByText('Teacher')).toBeInTheDocument()
         expect(screen.getByText('External')).toBeInTheDocument()

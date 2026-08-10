@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined'
-import { TopbarAuth, TopbarGreeting } from './TopbarAuth'
+import { TopbarGreeting } from './TopbarAuth'
 import {
     teacherQuotes,
     themePresets,
@@ -16,6 +17,11 @@ type TopbarProps = {
 
 export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
     const [isThemePickerOpen, setIsThemePickerOpen] = useState(false)
+    // Phones show the greeting band on Home only (owner call, 2026-08-10
+    // - repeating it on every screen read as redundant); its tools live
+    // in the drawer there. Desktop keeps it everywhere.
+    const { pathname } = useLocation()
+    const secondary = pathname !== '/'
     // A fresh quote on every screen (owner ask, 2026-08-09 — the daily
     // pick felt static). Rotation is safe again because the quote block
     // reserves a fixed three-line slot (_layout.scss), so a long quote
@@ -29,7 +35,7 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
         // Wears the active theme's sidebar gradient, so the frame around the
         // content — left rail and top band — reads as one surface.
         <header
-            className="topbar"
+            className={`topbar ${secondary ? 'topbar-secondary' : ''}`.trim()}
             style={{ backgroundImage: activeTheme.sidebar }}
         >
             <TopbarGreeting quote={dailyQuote} />
@@ -133,7 +139,8 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
                 <div className="pill">
                     Active term • {new Date().getFullYear()}
                 </div>
-                <TopbarAuth />
+                {/* Sign out lives at the bottom of the menu now (owner
+                    call, 2026-08-10) — no auth chrome up here. */}
             </div>
         </header>
     )
