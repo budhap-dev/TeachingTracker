@@ -122,6 +122,18 @@
         padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     }
 
+    /* With the hamburger retired, the brand header centres on phones
+       (owner ask, 2026-08-10) - no dead space where the icon was. */
+    .sidebar .sidebar-header {
+        justify-content: center;
+    }
+
+    .sidebar .sidebar-brand {
+        text-align: center;
+        flex-direction: column;
+        align-items: center;
+    }
+
     /* The visitor's top hamburger retires - the bar's Menu tab is the
        drawer's trigger for them (the teacher keeps the hamburger). */
     .sidebar .mobile-nav-toggle.visitor-hidden {
