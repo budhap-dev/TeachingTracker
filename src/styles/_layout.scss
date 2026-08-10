@@ -134,16 +134,32 @@
 }
 
 /* The footer row: version and sign-out share the line, quiet but
-   legible on the gradient. */
+   legible on the gradient. Sign out wears the leaving-red and never
+   wraps (it was breaking onto two lines in the 280px rail —
+   owner report, 2026-08-10). */
 .sidebar-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
 
+    /* Out-ranks .topbar-auth's topbar-era styling (it loads later):
+       in the footer the pill frame goes and the button wears red. */
+    .topbar-auth {
+        background: none;
+        padding: 0;
+    }
+
+    .topbar-auth .MuiButton-root,
     .MuiButton-root {
-        color: inherit;
-        opacity: 0.85;
+        color: #f87171;
+        white-space: nowrap;
+        flex-shrink: 0;
+
+        &:hover {
+            color: #fca5a5;
+            background: rgba(248, 113, 113, 0.12);
+        }
     }
 }
 
