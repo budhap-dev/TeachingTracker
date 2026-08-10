@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
     Button,
+    Checkbox,
     IconButton,
+    ListItemText,
+    MenuItem,
     Tab,
     Tabs,
     TextField,
 } from '@mui/material'
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import { Link as RouterLink } from 'react-router-dom'
@@ -69,9 +73,12 @@ type Draft = {
     servicesText: string
     /** The subject cards' third tag label (default "Delivery"). */
     modesLabel: string
-    /** The phone tab bar (REQ-049): three flat page keys + spotlight. */
-    mobileNavItemsText: string
+    /** The phone tab bars (REQ-049): flat page keys + spotlight, one
+        pair for visitors, one for the teacher. */
+    mobileNavItems: string[]
     mobileNavSpotlight: string
+    mobileNavTeacherItems: string[]
+    mobileNavTeacherSpotlight: string
     freeform: SiteContent['freeform']
     sectionOrder: SectionKey[]
 }
@@ -97,8 +104,10 @@ const toDraft = (content: SiteContent): Draft => ({
     highlights: content.highlights,
     servicesText: content.services.join('\n'),
     modesLabel: content.modesLabel,
-    mobileNavItemsText: content.mobileNav.items.join('\n'),
+    mobileNavItems: [...content.mobileNav.items],
     mobileNavSpotlight: content.mobileNav.spotlight,
+    mobileNavTeacherItems: [...content.mobileNavTeacher.items],
+    mobileNavTeacherSpotlight: content.mobileNavTeacher.spotlight,
     faq: content.faq.map((item) => ({
         key: newRowKey(),
         title: item.question,
@@ -107,6 +116,29 @@ const toDraft = (content: SiteContent): Draft => ({
     freeform: { ...content.freeform },
     sectionOrder: [...content.sectionOrder],
 })
+
+/** The tab bars' vocabularies (REQ-049 + teacher bar, 2026-08-10). */
+const PUBLIC_NAV_OPTIONS: Array<{ key: string; label: string }> = [
+    { key: 'home', label: 'Home' },
+    { key: 'offerings', label: 'Offerings' },
+    { key: 'pricing', label: 'Pricing' },
+    { key: 'enquire', label: 'Enquire' },
+    { key: 'about', label: 'About' },
+    { key: 'reviews', label: 'Reviews' },
+    { key: 'faq', label: 'FAQ' },
+    { key: 'contact', label: 'Contact' },
+]
+const TEACHER_NAV_OPTIONS: Array<{ key: string; label: string }> = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'students', label: 'Students' },
+    { key: 'scheduling', label: 'Class scheduling' },
+    { key: 'payments', label: 'Payment tracker' },
+    { key: 'snapshot', label: 'Study snapshot' },
+    { key: 'leads', label: 'Leads' },
+    { key: 'alumni', label: 'Alumni' },
+    { key: 'moderation', label: 'Review moderation' },
+    { key: 'editor', label: 'Site editor' },
+]
 
 const splitList = (raw: string): string[] =>
     raw
@@ -153,13 +185,12 @@ const assemble = (draft: Draft): SiteContent => ({
         .filter(Boolean),
     modesLabel: draft.modesLabel.trim() || 'Delivery',
     mobileNav: {
-        items: draft.mobileNavItemsText
-            .split('\n')
-            .map((key) => key.trim().toLowerCase())
-            .filter(Boolean)
-            .slice(0, 3),
-        spotlight:
-            draft.mobileNavSpotlight.trim().toLowerCase() || 'enquire',
+        items: draft.mobileNavItems.slice(0, 3),
+        spotlight: draft.mobileNavSpotlight || 'enquire',
+    },
+    mobileNavTeacher: {
+        items: draft.mobileNavTeacherItems.slice(0, 3),
+        spotlight: draft.mobileNavTeacherSpotlight || 'payments',
     },
     // Both halves required: the API rejects a question without an answer,
     // so an incomplete row is dropped rather than failing the publish.
@@ -261,10 +292,14 @@ export const SiteEditorView = ({
             detail: 'Detail',
         }
     ) => (
-        <div className="card">
+        <details className="card editor-accordion">
+            <summary className="editor-accordion-summary">
+                <h4 className="offerings-heading">{heading}</h4>
+                <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+            </summary>
             <div className="section-header">
                 <div>
-                    <h4 className="offerings-heading">{heading}</h4>
+                    
                     <p className="section-subtitle">{subtitle}</p>
                 </div>
                 <Button
@@ -347,7 +382,7 @@ export const SiteEditorView = ({
                     ))}
                 </div>
             </SortableList>
-        </div>
+        </details>
     )
 
     return (
@@ -408,8 +443,12 @@ export const SiteEditorView = ({
                 </>
             ) : (
                 <>
-                    <div className="card">
-                        <h4 className="offerings-heading">Page sections</h4>
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">Page sections</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
+                        
                         <p className="section-subtitle">
                             Drag to choose the order sections appear on the
                             Offerings page.
@@ -457,12 +496,14 @@ export const SiteEditorView = ({
                                     ))}
                             </div>
                         </SortableList>
-                    </div>
+                    </details>
 
-                    <div className="card">
-                        <h4 className="offerings-heading">
-                            Site name &amp; hero
-                        </h4>
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">Site name &amp; hero</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
+                        
                         <div className="site-editor-fields">
                             <TextField
                                 label="Site name"
@@ -541,14 +582,16 @@ export const SiteEditorView = ({
                                 helperText="Shown on the Home page as “20+ years of tutoring experience”. Leave blank to hide it."
                             />
                         </div>
-                    </div>
+                    </details>
 
-                    <div className="card">
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">Subjects taught</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
                         <div className="section-header">
                             <div>
-                                <h4 className="offerings-heading">
-                                    Subjects taught
-                                </h4>
+                                
                                 <p className="section-subtitle">
                                     Tag values are comma-separated. A subject
                                     with no name is dropped when you publish.
@@ -684,7 +727,7 @@ export const SiteEditorView = ({
                                 ))}
                             </div>
                         </SortableList>
-                    </div>
+                    </details>
 
                     {pointsCard(
                         'journey',
@@ -699,8 +742,12 @@ export const SiteEditorView = ({
                         'selling point'
                     )}
 
-                    <div className="card">
-                        <h4 className="offerings-heading">What we offer</h4>
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">What we offer</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
+                        
                         <p className="section-subtitle">
                             The services checklist on the Offerings page —
                             one per line, ticks added automatically.
@@ -717,37 +764,77 @@ export const SiteEditorView = ({
                                 })
                             }
                         />
-                    </div>
+                    </details>
 
-                    <div className="card">
-                        <h4 className="offerings-heading">
-                            Phone tab bar
-                        </h4>
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">Phone tab bar — visitors</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
                         <p className="section-subtitle">
                             The bar visitors see along the bottom on phones
-                            (REQ-049). Three flat slots plus one raised
-                            spotlight; Menu is always the fifth tab. Page
-                            keys: home, offerings, pricing, enquire, about,
-                            reviews, faq, contact. Unknown keys are dropped
-                            when you publish; Contact hides itself while no
-                            contact details are published.
+                            (REQ-049). Up to three pages plus the raised
+                            spotlight; Menu is always the fifth tab.
+                            Contact hides itself while no contact details
+                            are published.
                         </p>
                         <div className="site-editor-fields">
                             <TextField
-                                label="Flat slots — one page key per line (max 3)"
+                                select
+                                label="Visitor pages (up to 3, in order)"
                                 size="small"
-                                multiline
-                                minRows={3}
-                                value={draft.mobileNavItemsText}
+                                value={draft.mobileNavItems}
+                                slotProps={{
+                                    select: {
+                                        multiple: true,
+                                        renderValue: (selected) =>
+                                            (selected as string[])
+                                                .map(
+                                                    (key) =>
+                                                        PUBLIC_NAV_OPTIONS.find(
+                                                            (option) =>
+                                                                option.key ===
+                                                                key
+                                                        )?.label ?? key
+                                                )
+                                                .join(', '),
+                                    },
+                                }}
                                 onChange={(event) =>
                                     edit((next) => {
-                                        next.mobileNavItemsText =
-                                            event.target.value
+                                        next.mobileNavItems = (
+                                            event.target
+                                                .value as unknown as string[]
+                                        ).slice(0, 3)
                                     })
                                 }
-                            />
+                            >
+                                {PUBLIC_NAV_OPTIONS.map((option) => (
+                                    <MenuItem
+                                        key={option.key}
+                                        value={option.key}
+                                        disabled={
+                                            draft.mobileNavItems.length >=
+                                                3 &&
+                                            !draft.mobileNavItems.includes(
+                                                option.key
+                                            )
+                                        }
+                                    >
+                                        <Checkbox
+                                            checked={draft.mobileNavItems.includes(
+                                                option.key
+                                            )}
+                                        />
+                                        <ListItemText
+                                            primary={option.label}
+                                        />
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                             <TextField
-                                label="Raised spotlight"
+                                select
+                                label="Visitor spotlight (raised centre tab)"
                                 size="small"
                                 value={draft.mobileNavSpotlight}
                                 onChange={(event) =>
@@ -756,15 +843,113 @@ export const SiteEditorView = ({
                                             event.target.value
                                     })
                                 }
-                                helperText='The centre tab, raised in the brand green — "enquire" unless you have a better door.'
-                            />
+                            >
+                                {PUBLIC_NAV_OPTIONS.map((option) => (
+                                    <MenuItem
+                                        key={option.key}
+                                        value={option.key}
+                                    >
+                                        {option.label}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                         </div>
-                    </div>
+                    </details>
 
-                    <div className="card">
-                        <h4 className="offerings-heading">
-                            About the teacher
-                        </h4>
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">Phone tab bar — teacher</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
+                        <p className="section-subtitle">
+                            Your own bar when signed in on a phone — the
+                            work screens you use most, with the drawer
+                            behind Menu for the rest.
+                        </p>
+                        <div className="site-editor-fields">
+                            <TextField
+                                select
+                                label="Teacher pages (up to 3, in order)"
+                                size="small"
+                                value={draft.mobileNavTeacherItems}
+                                slotProps={{
+                                    select: {
+                                        multiple: true,
+                                        renderValue: (selected) =>
+                                            (selected as string[])
+                                                .map(
+                                                    (key) =>
+                                                        TEACHER_NAV_OPTIONS.find(
+                                                            (option) =>
+                                                                option.key ===
+                                                                key
+                                                        )?.label ?? key
+                                                )
+                                                .join(', '),
+                                    },
+                                }}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.mobileNavTeacherItems = (
+                                            event.target
+                                                .value as unknown as string[]
+                                        ).slice(0, 3)
+                                    })
+                                }
+                            >
+                                {TEACHER_NAV_OPTIONS.map((option) => (
+                                    <MenuItem
+                                        key={option.key}
+                                        value={option.key}
+                                        disabled={
+                                            draft.mobileNavTeacherItems
+                                                .length >= 3 &&
+                                            !draft.mobileNavTeacherItems.includes(
+                                                option.key
+                                            )
+                                        }
+                                    >
+                                        <Checkbox
+                                            checked={draft.mobileNavTeacherItems.includes(
+                                                option.key
+                                            )}
+                                        />
+                                        <ListItemText
+                                            primary={option.label}
+                                        />
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            <TextField
+                                select
+                                label="Teacher spotlight (raised centre tab)"
+                                size="small"
+                                value={draft.mobileNavTeacherSpotlight}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.mobileNavTeacherSpotlight =
+                                            event.target.value
+                                    })
+                                }
+                            >
+                                {TEACHER_NAV_OPTIONS.map((option) => (
+                                    <MenuItem
+                                        key={option.key}
+                                        value={option.key}
+                                    >
+                                        {option.label}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </div>
+                    </details>
+
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">About the teacher</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
+                        
                         <p className="section-subtitle">
                             The bio, CV, expectations and safeguarding are
                             edited on the About page itself.
@@ -777,13 +962,17 @@ export const SiteEditorView = ({
                         >
                             Open the About page
                         </Button>
-                    </div>
+                    </details>
 
                     {/* FAQ editing moved to the FAQ page itself (owner
                         call, 2026-08-04) — publishes from here pass the
                         stored entries through untouched. */}
-                    <div className="card">
-                        <h4 className="offerings-heading">FAQ</h4>
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">FAQ</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
+                        
                         <p className="section-subtitle">
                             The FAQ is edited on its own page now — questions,
                             answers and publishing all live there.
@@ -796,10 +985,14 @@ export const SiteEditorView = ({
                         >
                             Open the FAQ page
                         </Button>
-                    </div>
+                    </details>
 
-                    <div className="card">
-                        <h4 className="offerings-heading">Pricing</h4>
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">Pricing</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
+                        
                         <p className="section-subtitle">
                             Rates, factors and the closing note are edited on
                             the pricing page itself.
@@ -812,12 +1005,14 @@ export const SiteEditorView = ({
                         >
                             Open the pricing page
                         </Button>
-                    </div>
+                    </details>
 
-                    <div className="card">
-                        <h4 className="offerings-heading">
-                            Free-form section
-                        </h4>
+                    <details className="card editor-accordion">
+                        <summary className="editor-accordion-summary">
+                            <h4 className="offerings-heading">Free-form section</h4>
+                            <ExpandMoreRoundedIcon className="editor-accordion-chevron" fontSize="small" />
+                        </summary>
+                        
                         <p className="section-subtitle">
                             For anything without a field of its own — a
                             notice, term dates. Shows as the pinned note at
@@ -851,7 +1046,7 @@ export const SiteEditorView = ({
                                 helperText="Markdown: ### headings, **bold**, *italic*, - lists and [links](https://…). Raw HTML is stripped when you publish."
                             />
                         </div>
-                    </div>
+                    </details>
                 </>
             )}
         </section>

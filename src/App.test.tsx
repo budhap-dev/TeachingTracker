@@ -218,7 +218,7 @@ describe('Teaching Tracker app', () => {
     it('renders the dashboard heading and navigation', async () => {
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
 
         expect(
             screen.getByRole('heading', { name: /abhitutor/i })
@@ -305,7 +305,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /payment tracker/i })
         )
@@ -372,7 +372,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', {
                 name: /class scheduling/i,
@@ -416,7 +416,7 @@ describe('Teaching Tracker app', () => {
         render(<App />)
 
         await user.click(
-            within(screen.getByRole('navigation')).getByRole('button', {
+            within(screen.getByRole('navigation', { name: /main menu/i })).getByRole('button', {
                 name: /class scheduling/i,
             })
         )
@@ -435,7 +435,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', {
                 name: /class scheduling/i,
@@ -551,7 +551,7 @@ describe('Teaching Tracker app', () => {
         render(<App />)
 
         await user.click(
-            within(screen.getByRole('navigation')).getByRole('button', {
+            within(screen.getByRole('navigation', { name: /main menu/i })).getByRole('button', {
                 name: /class scheduling/i,
             })
         )
@@ -666,7 +666,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', {
                 name: /class scheduling/i,
@@ -726,7 +726,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /^students$/i })
         )
@@ -782,7 +782,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /^students$/i })
         )
@@ -878,7 +878,7 @@ describe('Teaching Tracker app', () => {
 
         render(<App />)
         await user.click(
-            within(screen.getByRole('navigation')).getByRole('button', {
+            within(screen.getByRole('navigation', { name: /main menu/i })).getByRole('button', {
                 name: /^students$/i,
             })
         )
@@ -910,7 +910,7 @@ describe('Teaching Tracker app', () => {
         ).not.toBeInTheDocument()
 
         // …and appear under Alumni, gone from the active roster.
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /alumni/i })
         )
@@ -1022,7 +1022,7 @@ describe('Teaching Tracker app', () => {
 
         // Planner: no calendar chip carries the archived student.
         await user.click(
-            within(screen.getByRole('navigation')).getByRole('button', {
+            within(screen.getByRole('navigation', { name: /main menu/i })).getByRole('button', {
                 name: /class scheduling/i,
             })
         )
@@ -1043,7 +1043,7 @@ describe('Teaching Tracker app', () => {
 
         render(<App />)
         await user.click(
-            within(screen.getByRole('navigation')).getByRole('button', {
+            within(screen.getByRole('navigation', { name: /main menu/i })).getByRole('button', {
                 name: /alumni/i,
             })
         )
@@ -1088,7 +1088,7 @@ describe('Teaching Tracker app', () => {
         render(<App />)
 
         await user.click(
-            within(screen.getByRole('navigation')).getByRole('button', {
+            within(screen.getByRole('navigation', { name: /main menu/i })).getByRole('button', {
                 name: /^students$/i,
             })
         )
@@ -1250,7 +1250,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /^students$/i })
         )
@@ -1274,7 +1274,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /^students$/i })
         )
@@ -1290,7 +1290,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /study snapshot/i })
         )
@@ -1306,7 +1306,7 @@ describe('Teaching Tracker app', () => {
         const user = userEvent.setup()
         render(<App />)
 
-        const navigation = screen.getByRole('navigation')
+        const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
             within(navigation).getByRole('button', { name: /payment tracker/i })
         )

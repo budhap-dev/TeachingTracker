@@ -274,7 +274,7 @@ const SidebarContent = ({
                 </div>
                 <button
                     type="button"
-                    className={`mobile-nav-toggle ${showTeacherItems ? '' : 'visitor-hidden'}`.trim()}
+                    className="mobile-nav-toggle visitor-hidden"
                     onClick={() => setIsMobileNavOpen((current) => !current)}
                     aria-label={
                         isMobileNavOpen ? 'Close navigation' : 'Open navigation'
@@ -298,7 +298,7 @@ const SidebarContent = ({
             {/* display: contents on desktop — the drawer only materialises
                 as a fixed panel in the phone layout. */}
             <div className="sidebar-drawer">
-            <nav className="sidebar-nav">
+            <nav className="sidebar-nav" aria-label="Main menu">
                 {groups.map((group) => (
                     <div key={group.label} className="sidebar-nav-group">
                         {groups.length > 1 && (

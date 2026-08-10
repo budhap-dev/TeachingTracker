@@ -14,6 +14,15 @@
         position: sticky;
         top: 0;
         z-index: 10;
+        /* The band's bottom edge wears the same brand-sky rim as the
+           drawer's right edge, with the drawer's glow treatment under it
+           (owner asks, 2026-08-10) - a soft theme-dark drop plus a sky
+           halo, so the band reads as a lit panel over the page. */
+        border-bottom: 2px solid var(--brand-abhi);
+        border-radius: 0 0 16px 16px;
+        box-shadow:
+            0 3px 8px color-mix(in srgb, var(--sidebar-start) 75%, transparent),
+            0 1px 4px color-mix(in srgb, var(--brand-abhi) 45%, transparent);
     }
 
     /* Off-Home, phones drop the greeting band entirely (owner call,
@@ -108,6 +117,25 @@
     /* The bar occupies real height - the page makes room for it. */
     body.has-tabbar .main-content {
         padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Toasts must not cover the bar (they were intercepting taps) -
+       they stack just above it instead. */
+    body.has-tabbar .MuiSnackbar-anchorOriginBottomCenter {
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* The drawer's footer (version + sign out) must clear the bar too -
+       it was buried underneath (owner report, 2026-08-10). */
+    body.has-tabbar .sidebar .sidebar-drawer {
+        padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* With the hamburger retired, the brand header centres on phones
+       (owner ask, 2026-08-10) - badge and lockup stay on one line,
+       centred as a unit. */
+    .sidebar .sidebar-header {
+        justify-content: center;
     }
 
     /* The visitor's top hamburger retires - the bar's Menu tab is the
