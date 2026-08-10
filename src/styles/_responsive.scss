@@ -116,6 +116,12 @@
         bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     }
 
+    /* The drawer's footer (version + sign out) must clear the bar too -
+       it was buried underneath (owner report, 2026-08-10). */
+    body.has-tabbar .sidebar .sidebar-drawer {
+        padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+
     /* The visitor's top hamburger retires - the bar's Menu tab is the
        drawer's trigger for them (the teacher keeps the hamburger). */
     .sidebar .mobile-nav-toggle.visitor-hidden {
