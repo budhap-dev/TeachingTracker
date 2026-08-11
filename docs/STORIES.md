@@ -123,6 +123,8 @@ XS is an afternoon, XL is a project.
 | 47 | 🔲 | [REQ-047 — Split the stylesheet and route monoliths](#req-047--split-the-stylesheet-and-route-monoliths) | S | frontend | — |
 | 49 | ✅ | [REQ-049 — The visitors' phone tab bar](#req-049--the-visitors-phone-tab-bar) | M | both | — (Option C picked from design candidates, 2026-08-10) |
 | 50 | 🔲 | [REQ-050 — Adopt the React-Compiler-era hooks lint rules](#req-050--adopt-the-react-compiler-era-hooks-lint-rules) | M | frontend | — (plugin major held in dependabot.yml until this lands) |
+| 51 | 🔲 | [REQ-051 — Subject chips play on tap](#req-051--subject-chips-play-on-tap) | S | frontend | — (owner idea, 2026-08-11) |
+| 52 | 🔲 | [REQ-052 — Class notes, read date-wise](#req-052--class-notes-read-date-wise) | S | frontend | — (owner ask, 2026-08-11) |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -2144,3 +2146,69 @@ The plugin major is held in `dependabot.yml` until this story lands.
       first edit on every edited-in-place page.
 - [ ] The quote still rotates per screen; headers stay fixed-height.
 - [ ] The dependabot hold is removed in the same PR.
+
+## REQ-051 — Subject chips play on tap
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+
+**Story**
+As a visitor (often a child looking over a parent's shoulder), tapping a
+subject chip on Home should do something delightful and subject-flavoured
+— the chips just became non-navigating badges (2026-08-11), which frees
+the tap for play instead of a page change.
+
+**Ideas recorded (owner, 2026-08-11 — pick at build time)**
+- Reuse the per-subject emoji sets that already live on the Offerings
+  flip cards (`subjectImages`: 📐➗🔢 for Maths, ⚛️🔭🚀 for Physics,
+  🧪⚗️💥 for Chemistry, 🔬🧬🌱 for Biology) — a small burst/confetti of
+  them from the tapped chip that falls and fades.
+- Or the chip itself performs: a wobble + its icon spins/swaps through
+  the subject's emoji for a second before settling.
+- Keep it cheap: CSS/transform-only particles (the tab-bar lift
+  precedent — no layout shift), a handful of nodes created on tap and
+  removed on animationend.
+
+**Guard-rails**
+- `prefers-reduced-motion`: no burst — at most a gentle highlight.
+- No layout shift anywhere (transform/opacity only), and taps must not
+  navigate or steal focus.
+- Touch and mouse and keyboard (chips become buttons with aria-pressed
+  or plain decorative buttons — decide with the a11y hat on).
+
+**Acceptance criteria**
+- [ ] Tapping/clicking a chip plays a subject-flavoured animation
+      matching that subject's existing emoji set.
+- [ ] Zero layout shift; reduced-motion users get a quiet variant.
+- [ ] Works with touch, mouse and keyboard; screen readers are not
+      spammed (decorative, aria-hidden particles).
+- [ ] No regression to the "no navigation from chips" rule.
+
+## REQ-052 — Class notes, read date-wise
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+
+**Story**
+As the teacher, I write notes on classes while scheduling/editing them
+(the session `notes` field), but reading them back means opening each
+class one by one. I want to browse those class notes **separately,
+date-wise** — a chronological read of what was noted, independent of the
+per-student diary (which is its own thing, REQ-0xx dated notes).
+
+**Shape (decide at build)**
+- A "Class notes" view — either a tab/section within Class scheduling or
+  reachable from it — listing sessions that HAVE notes, grouped by date
+  (newest first), each row: date · time · student(s) · subject · the
+  note. Empty-noted sessions stay out.
+- Filters worth considering: by student (the planner already has one)
+  and a month picker matching the calendar.
+- Read-first: editing stays where it is (the class dialog); rows link
+  back to the class for edits.
+- Data is already loaded (sessions carry `notes`) — no API change.
+
+**Acceptance criteria**
+- [ ] All session notes readable in one place, grouped by date, newest
+      first; sessions without notes don't appear.
+- [ ] Each row identifies the class (date, time, student, subject) and
+      links back to it in the planner.
+- [ ] Works on phones (the scheduling area's mobile rows precedent).
+- [ ] No new API surface; coverage holds.

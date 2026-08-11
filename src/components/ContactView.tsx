@@ -210,7 +210,7 @@ export const ContactView = ({
                         <TextField
                             label="Email availability"
                             size="small"
-                            placeholder="e.g. Anytime — I reply within a day"
+                            placeholder="e.g. Anytime — I reply as soon as possible"
                             value={notes.email}
                             onChange={(event) =>
                                 setNotes((current) => ({
@@ -342,8 +342,8 @@ export const ContactView = ({
 
                 {!editing && (
                     <p className="contact-note">
-                        I usually reply within a day. Lessons run in person or
-                        online.
+                        I will reply or contact you as soon as possible.
+                        Lessons run in person or online.
                     </p>
                 )}
             </div>

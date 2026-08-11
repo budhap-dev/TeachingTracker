@@ -4,6 +4,16 @@ import { Button } from '@mui/material'
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded'
+import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded'
+import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
+import SelfImprovementRoundedIcon from '@mui/icons-material/SelfImprovementRounded'
+import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined'
+import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded'
+import WorkspacePremiumOutlinedIcon from '@mui/icons-material/WorkspacePremiumOutlined'
+import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded'
+import LaptopChromebookOutlinedIcon from '@mui/icons-material/LaptopChromebookOutlined'
 import type { SiteContent } from '../data/siteContent'
 import { subjectIcon } from '../utils/subjectIcons'
 
@@ -24,6 +34,63 @@ type OfferingsViewProps = {
     /** Starts the enquiry (REQ-018). */
     onBookAssessment: () => void
 }
+
+/** Each service line's glyph, matched by keyword (the highlights
+    pattern) — the tick stays as the fallback for unrecognised lines
+    (owner ask, 2026-08-11). */
+const serviceIcon = (line: string) => {
+    const lower = line.toLowerCase()
+    if (lower.includes('one-to-one') || lower.includes('personalis')) {
+        return PersonRoundedIcon
+    }
+    if (lower.includes('group')) {
+        return GroupsRoundedIcon
+    }
+    if (lower.includes('homework') || lower.includes('assignment')) {
+        return MenuBookRoundedIcon
+    }
+    if (lower.includes('exam') || lower.includes('revision')) {
+        return HistoryEduOutlinedIcon
+    }
+    if (lower.includes('confidence') || lower.includes('study skills')) {
+        return SelfImprovementRoundedIcon
+    }
+    if (
+        lower.includes('progress') ||
+        lower.includes('feedback') ||
+        lower.includes('parent')
+    ) {
+        return InsightsOutlinedIcon
+    }
+    if (
+        lower.includes('foundation') ||
+        lower.includes('intermediate') ||
+        lower.includes('advanced')
+    ) {
+        return TrendingUpRoundedIcon
+    }
+    if (
+        lower.includes('gcse') ||
+        lower.includes('igcse') ||
+        lower.includes('a-level')
+    ) {
+        return WorkspacePremiumOutlinedIcon
+    }
+    if (lower.includes('university') || lower.includes('scholarship')) {
+        return AccountBalanceRoundedIcon
+    }
+    if (
+        lower.includes('flexible') ||
+        lower.includes('online') ||
+        lower.includes('in-person')
+    ) {
+        return LaptopChromebookOutlinedIcon
+    }
+    return CheckCircleRoundedIcon
+}
+
+/** The About rail's three-tone cycle, reused so the page families match. */
+const serviceTones = ['qual-icon-blue', 'qual-icon-green', 'qual-icon-gold']
 
 /** One label/value row of the subject spec table — omitted when empty. */
 const SpecRow = ({ label, values }: { label: string; values?: string[] }) =>
@@ -170,15 +237,24 @@ export const OfferingsView = ({
                             What I offer
                         </h4>
                         <ul className="offerings-services">
-                            {content.services.map((line) => (
-                                <li key={line}>
-                                    <CheckCircleRoundedIcon
-                                        className="offerings-point-tick"
-                                        fontSize="small"
-                                    />
-                                    {line}
-                                </li>
-                            ))}
+                            {content.services.map((line, index) => {
+                                const Icon = serviceIcon(line)
+                                return (
+                                    <li key={line}>
+                                        <Icon
+                                            className={
+                                                serviceTones[
+                                                    index %
+                                                        serviceTones.length
+                                                ]
+                                            }
+                                            fontSize="small"
+                                            aria-hidden
+                                        />
+                                        {line}
+                                    </li>
+                                )
+                            })}
                         </ul>
                     </>
                 )}

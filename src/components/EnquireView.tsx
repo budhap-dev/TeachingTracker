@@ -49,7 +49,7 @@ export const EnquireView = ({
 }: EnquireViewProps) => {
     useDocumentMeta(
         'Enquire about tutoring — AbhiTutor',
-        'Tell me the subject, year and what your child wants from tutoring, and I will come back to you — usually within a day.'
+        'Tell me the subject, year and what your child wants from tutoring, and I will reply or contact you as soon as possible.'
     )
     const [parentName, setParentName] = useState('')
     const [email, setEmail] = useState('')
@@ -110,8 +110,9 @@ export const EnquireView = ({
                     />
                     <h3>Thank you — your enquiry is in.</h3>
                     <p>
-                        I usually reply within a day, and the first step is a
-                        free, no-obligation assessment session.
+                        I will reply or contact you as soon as possible —
+                        the first step is a free, no-obligation assessment
+                        session.
                     </p>
                 </div>
             </section>
@@ -128,8 +129,9 @@ export const EnquireView = ({
                             Enquire about tutoring
                         </h3>
                         <p className="section-subtitle">
-                            Tell me a little about your child and what you are
-                            looking for — I usually reply within a day.
+                            Tell me a little about your child and what you
+                            are looking for — I will reply or contact you as
+                            soon as possible.
                         </p>
                     </div>
                 </div>
