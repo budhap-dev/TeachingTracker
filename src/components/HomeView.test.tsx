@@ -62,13 +62,18 @@ describe('HomeView', () => {
         ).toHaveAttribute('href', '/offerings')
     })
 
-    it('surfaces the published subjects as chips linking onward', () => {
+    it('shows the subjects as plain badges — no navigation (owner call)', () => {
         renderHome()
 
-        const chips = screen.getAllByRole('link', { name: 'Mathematics' })
-        expect(chips[0]).toHaveAttribute('href', '/offerings')
+        // Visible, but not links (2026-08-11): the band's "Explore
+        // subjects" button is the door.
+        expect(screen.getByText('Mathematics')).toBeInTheDocument()
+        expect(screen.getByText('Physics')).toBeInTheDocument()
         expect(
-            screen.getByRole('link', { name: 'Physics' })
+            screen.queryByRole('link', { name: 'Mathematics' })
+        ).not.toBeInTheDocument()
+        expect(
+            screen.getByRole('link', { name: /explore subjects/i })
         ).toBeInTheDocument()
     })
 
@@ -221,11 +226,12 @@ describe('HomeLanding', () => {
             </Provider>
         )
 
-        // Hero renders immediately, without waiting on the fetch.
+        // The page waits for the published document (owner report,
+        // 2026-08-11 — the pinned note used to pop in late), then paints
+        // whole: hero and the ★ trust chip together.
         expect(
-            screen.getByText(defaultSiteContent.hero.headline)
+            await screen.findByText(defaultSiteContent.hero.headline)
         ).toBeInTheDocument()
-        // The mocked API's approved reviews arrive as the ★ trust chip.
         expect(await screen.findByText(/famil/i)).toBeInTheDocument()
     })
 })

@@ -135,7 +135,7 @@ export const StudentNotesSection = ({
                     label="Write an entry…"
                     size="small"
                     multiline
-                    minRows={2}
+                    minRows={4}
                     value={draftText}
                     onChange={(event) => setDraftText(event.target.value)}
                     slotProps={{

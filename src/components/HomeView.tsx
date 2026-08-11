@@ -9,7 +9,6 @@ import {
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { signIn } from '../auth/msal'
 import { BrandBadge } from './BrandBadge'
-import { subjectIcon } from '../utils/subjectIcons'
 import { renderMarkdown } from '../utils/markdown'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined'
@@ -21,7 +20,9 @@ import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded'
 import StarOutlineRoundedIcon from '@mui/icons-material/StarOutlineRounded'
 
+import { subjectIcon } from '../utils/subjectIcons'
 import { paths } from '../paths'
+import { PageLoading } from './PageLoading'
 import type { Testimonial } from '../data/students'
 import { recommendationRoles } from '../data/students'
 
@@ -91,6 +92,41 @@ export const HomeView = ({
     // hidden from visitors and revealed by five quick taps on the hero
     // badge — a UX tidy-up, not security; sign-in stays Microsoft-gated.
     // The reveal holds for the rest of the browser session.
+    // A published notice is the day's headline: when it exists, the
+    // page opens ON it (owner ask, 2026-08-11) — one scroll on load,
+    // then the pin-on animation plays where the visitor is looking.
+    const noticeRef = useRef<HTMLDivElement>(null)
+    const hasNotice = Boolean(
+        content.freeform.heading || content.freeform.markdown
+    )
+    // The pin waits for the auto-scroll to settle, so the oscillation
+    // happens where the visitor is already looking (owner refinement,
+    // 2026-08-11).
+    const [noticePinned, setNoticePinned] = useState(false)
+    useEffect(() => {
+        if (contentLoaded && hasNotice) {
+            // Scroll target (owner refinement, 2026-08-11): tuck the
+            // greeting's redundant AbhiTutor lockup under the sticky band
+            // - the view starts at the offer line + quote, notice below.
+            // Fall back to the notice itself if the anchor isn't there.
+            const anchor = document.querySelector('.visitor-offer-line')
+            const behavior = (window.matchMedia?.(
+                '(prefers-reduced-motion: reduce)'
+            ).matches ?? true)
+                ? ('auto' as const)
+                : ('smooth' as const)
+            if (anchor) {
+                anchor.scrollIntoView?.({ behavior, block: 'start' })
+            } else {
+                noticeRef.current?.scrollIntoView?.({
+                    behavior,
+                    block: 'nearest',
+                })
+            }
+            const timer = setTimeout(() => setNoticePinned(true), 550)
+            return () => clearTimeout(timer)
+        }
+    }, [contentLoaded, hasNotice])
     const [teacherDoor, setTeacherDoor] = useState(
         () => sessionStorage.getItem('teacher-door') === 'open'
     )
@@ -185,9 +221,11 @@ export const HomeView = ({
             {/* The pinned note (the freeform section) leads the page when
                 written (owner call, 2026-08-10) — announcements sit
                 between the header and the band, impossible to miss. */}
-            {contentLoaded &&
-                (content.freeform.heading || content.freeform.markdown) && (
-                    <div className="card offerings-freeform">
+            {contentLoaded && hasNotice && (
+                    <div
+                        className={`card offerings-freeform ${noticePinned ? 'pin-play' : 'pin-wait'}`}
+                        ref={noticeRef}
+                    >
                         <div className="freeform-note">
                             {content.freeform.heading && (
                                 <h4 className="offerings-heading">
@@ -261,7 +299,9 @@ export const HomeView = ({
                 )}
             </div>
 
-            {/* What we teach, without a click: the published subjects. */}
+            {/* What we teach, without a click — literally: the chips are
+                plain badges now (owner call, 2026-08-11); the band's
+                "Explore subjects" button is the door to the cards. */}
             {content.subjects.length > 0 && (
                 <div
                     className="home-subject-chips"
@@ -270,14 +310,13 @@ export const HomeView = ({
                     {content.subjects.map((subject) => {
                         const Icon = subjectIcon(subject.name)
                         return (
-                            <Link
+                            <span
                                 key={subject.name}
                                 className="home-subject-chip"
-                                to={paths.offerings}
                             >
                                 <Icon fontSize="small" aria-hidden />
                                 {subject.name}
-                            </Link>
+                            </span>
                         )
                     })}
                 </div>
@@ -329,9 +368,10 @@ export const HomeView = ({
 }
 
 /**
- * The connected Home: loads the approved reviews itself — a visitor's first
- * request lands here, before any teacher boot fetches — and never blocks on
- * them (the hero renders at once; proof fills in).
+ * The connected Home: loads the approved reviews and the published
+ * document, and waits for the document before painting — the pinned
+ * note used to pop in above the band mid-read (owner report,
+ * 2026-08-11), so the loader holds the page like Pricing/FAQ/About do.
  */
 export const HomeLanding = () => {
     const dispatch = useAppDispatch()
@@ -346,6 +386,9 @@ export const HomeLanding = () => {
         dispatch(fetchTestimonialsRequested())
         dispatch(fetchSiteContentRequested())
     }, [dispatch])
+    if (!contentLoaded) {
+        return <PageLoading />
+    }
     return (
         <HomeView
             testimonials={testimonials}

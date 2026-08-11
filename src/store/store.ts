@@ -580,7 +580,7 @@ const studentSlice = createSlice({
             state.notice = {
                 kind: 'success',
                 message:
-                    'Thank you — your enquiry is in. We usually reply within a day.',
+                    'Thank you — your enquiry is in. I will reply or contact you as soon as possible.',
             }
         },
         submitLeadFailed: (state, action: PayloadAction<string>) => {

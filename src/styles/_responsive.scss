@@ -119,6 +119,19 @@
         padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     }
 
+    /* The notice auto-scroll respects the fixed chrome: fully visible
+       above the tab bar, never tucked under the sticky band. */
+    .offerings-freeform {
+        scroll-margin-top: 128px;
+        scroll-margin-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* The notice auto-scroll's anchor: the offer line lands just under
+       the sticky band, hiding the greeting's duplicate lockup. */
+    .visitor-offer-line {
+        scroll-margin-top: 132px;
+    }
+
     /* Toasts must not cover the bar (they were intercepting taps) -
        they stack just above it instead. */
     body.has-tabbar .MuiSnackbar-anchorOriginBottomCenter {
@@ -279,6 +292,25 @@
 @media (max-width: 640px) {
     .main-content {
         padding: 16px;
+    }
+
+    /* Phones: the "Why AbhiTutor" highlights read one per line
+       (owner ask, 2026-08-11) - the 2-up tiles squeezed the longer
+       claims into awkward wraps. */
+    .home-highlights {
+        grid-template-columns: 1fr;
+    }
+
+    /* Phones: one field per line on the public forms, and the message
+       boxes get real room to write (owner ask, 2026-08-11). */
+    .enquire-form,
+    .review-form {
+        grid-template-columns: 1fr;
+    }
+
+    .enquire-goal textarea,
+    .review-quote textarea {
+        min-height: 4.5em;
     }
 
     /* Narrow screens: a header's action button must not get crushed beside

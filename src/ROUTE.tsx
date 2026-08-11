@@ -680,7 +680,7 @@ const ContactRouteInner = ({ canEdit }: { canEdit: boolean }) => {
     const dispatch = useAppDispatch()
     useDocumentMeta(
         'Contact me — AbhiTutor',
-        'Ask about tutoring availability, subjects or a free first assessment — by email, phone or WhatsApp. I usually reply within a day.'
+        'Ask about tutoring availability, subjects or a free first assessment — by email, phone or WhatsApp. I will reply or contact you as soon as possible.'
     )
     const contact = useAppSelector((state) => state.students.contact)
     const loading = useAppSelector((state) => state.students.contactLoading)
