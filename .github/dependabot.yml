@@ -21,6 +21,13 @@ updates:
       # not a dependency bump side effect.
       - dependency-name: eslint-plugin-react-hooks
         versions: ['>=6']
+      # …and the held plugin (v5) only accepts eslint ≤9 as a peer, so
+      # eslint 10 waits with it (#95 ERESOLVEd on the pair). Both holds
+      # lift together in REQ-050.
+      - dependency-name: eslint
+        versions: ['>=10']
+      - dependency-name: '@eslint/js'
+        versions: ['>=10']
   - package-ecosystem: github-actions
     directory: /
     schedule:
