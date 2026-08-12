@@ -1233,17 +1233,22 @@ describe('Teaching Tracker app', () => {
         ).toBeInTheDocument()
 
         // Remove an upcoming session, behind its confirm.
-        await user.click(
-            (
-                await screen.findAllByRole('button', {
-                    name: /remove (mathematics|chemistry) on/i,
-                })
-            )[0]
-        )
+        const removable = { name: /remove (mathematics|chemistry) on/i }
+        const before = (await screen.findAllByRole('button', removable))
+            .length
+        await user.click((await screen.findAllByRole('button', removable))[0])
         await user.click(screen.getByRole('button', { name: /^remove$/i }))
-        expect(
-            await screen.findByText(/cancelled/i)
-        ).toBeInTheDocument()
+        // Assert the durable outcome, not the toast: the class leaves the
+        // page (this view hides cancelled classes). The toast is transient
+        // by design and asserting it here was flaky on CI - NoticeToast's
+        // own tests cover the message.
+        await waitFor(
+            () =>
+                expect(screen.queryAllByRole('button', removable)).toHaveLength(
+                    before - 1
+                ),
+            { timeout: 5000 }
+        )
     })
 
     it('opens and closes the add-student modal without saving', async () => {
