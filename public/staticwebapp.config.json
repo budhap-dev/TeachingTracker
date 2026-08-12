@@ -8,9 +8,9 @@
         ]
     },
     "globalHeaders": {
-        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://func-teachtracker-dev-pjlmrq.azurewebsites.net https://func-teachtracker-prod-gjvecw.azurewebsites.net https://login.microsoftonline.com; frame-src https://login.microsoftonline.com; form-action 'self' https://login.microsoftonline.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://func-teachtracker-dev-pjlmrq.azurewebsites.net https://func-teachtracker-prod-gjvecw.azurewebsites.net https://login.microsoftonline.com; frame-src 'self' https://login.microsoftonline.com; form-action 'self' https://login.microsoftonline.com; object-src 'none'; base-uri 'self'; frame-ancestors 'self'",
         "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
+        "X-Frame-Options": "SAMEORIGIN",
         "Referrer-Policy": "strict-origin-when-cross-origin",
         "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
     }
