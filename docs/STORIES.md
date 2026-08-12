@@ -122,7 +122,7 @@ XS is an afternoon, XL is a project.
 | 46 | 🔲 | [REQ-046 — One edited-in-place hook for About, FAQ and Pricing](#req-046--one-edited-in-place-hook-for-about-faq-and-pricing) | M | frontend | — (the dirty-check bug was fixed three times on 2026-08-06) |
 | 47 | 🔲 | [REQ-047 — Split the stylesheet and route monoliths](#req-047--split-the-stylesheet-and-route-monoliths) | S | frontend | — |
 | 49 | ✅ | [REQ-049 — The visitors' phone tab bar](#req-049--the-visitors-phone-tab-bar) | M | both | — (Option C picked from design candidates, 2026-08-10) |
-| 50 | 🔲 | [REQ-050 — Adopt the React-Compiler-era hooks lint rules](#req-050--adopt-the-react-compiler-era-hooks-lint-rules) | M | frontend | — (plugin major held in dependabot.yml until this lands) |
+| 50 | 🔲 | [REQ-050 — Frontend toolchain migration: React 19, Vite 8, TS 6+, hooks lint](#req-050--frontend-toolchain-migration-react-19-vite-8-ts-6-hooks-lint) | L | frontend | — (all majors held in dependabot.yml until this lands) |
 | 51 | 🔲 | [REQ-051 — Subject chips play on tap](#req-051--subject-chips-play-on-tap) | S | frontend | — (owner idea, 2026-08-11) |
 | 52 | 🔲 | [REQ-052 — Class notes, read date-wise](#req-052--class-notes-read-date-wise) | S | frontend | — (owner ask, 2026-08-11) |
 
@@ -2117,11 +2117,12 @@ candidates (labelled hamburger / flat tab bar / raised-spotlight bar):
 - [x] Verified in a real phone-sized browser: tabs, active state,
       drawer, config, contact gating.
 
-## REQ-050 — Adopt the React-Compiler-era hooks lint rules
+## REQ-050 — Frontend toolchain migration: React 19, Vite 8, TS 6+, hooks lint
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** L
 
 **Story**
+The held Dependabot majors have converged into one deliberate migration.
 eslint-plugin-react-hooks ≥6 ships the React-Compiler-era rules
 (`react-hooks/purity`, `set-state-in-effect`, stricter `use-memo`), and
 its Dependabot bump (#91, 2026-08-10) failed lint with ten errors — six
@@ -2129,23 +2130,35 @@ of them the deliberate **adopt-until-edited** draft pattern (a
 `useEffect` that `setDraft(toDraft(content))` while unedited) used by
 About, FAQ, Pricing and the student details form, plus the per-mount
 quote roll (`Math.random` in `useMemo`) and two `useMemo` shape nits.
-The plugin major is held in `dependabot.yml` until this story lands.
+Then the group bump #97 (2026-08-11) stacked React 18→19, Vite 5→8,
+`@vitejs/plugin-react` 4→6 and TypeScript 5.6→6 on top and failed the
+build three ways (`JSX` namespace moved to `React.JSX`, argument-less
+`useRef()` gone, vite config plugin types). All of it is held in
+`dependabot.yml` until this story lands as one verified move.
 
 **Shape**
+- React 19 + `@types/react` 19: `React.JSX` namespace, `useRef(initial)`
+  call sites, then the full test suite and a real browser pass over the
+  teacher flows (publish, editors, tab bars).
+- Vite 8 + `@vitejs/plugin-react` 6 together; TypeScript 6 (then 7 when
+  typescript-eslint's peer range allows); eslint 10 + `@eslint/js` 10
+  ride with the hooks-plugin bump.
 - Rework draft adoption to derive-from-props (key the editor subtree on
   the published document, or compare-during-render) instead of
   effect-synced state — pairs naturally with REQ-046's shared hook.
 - Move the quote roll out of render (lazy `useState` initialiser or
   effect) keeping per-screen rotation and the fixed three-line slot.
-- Then lift the dependabot hold and let the plugin bump through.
+- Then lift every dependabot hold and let the group bump through.
 
 **Acceptance criteria**
+- [ ] App builds and all tests pass on React 19, Vite 8, TS ≥6.
 - [ ] Lint is clean under eslint-plugin-react-hooks ≥6 with the new
       rules ON (no disables).
 - [ ] Draft adoption still works: refreshed content adopts until the
       first edit on every edited-in-place page.
 - [ ] The quote still rotates per screen; headers stay fixed-height.
-- [ ] The dependabot hold is removed in the same PR.
+- [ ] Teacher publish + sign-in verified on dev before prod promote.
+- [ ] Every dependabot hold is removed in the same PR.
 
 ## REQ-051 — Subject chips play on tap
 
