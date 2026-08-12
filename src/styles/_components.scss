@@ -4761,6 +4761,46 @@ a.home-highlight-tile {
     }
 }
 
+/* Wider than a phone, the lead reads like a newspaper column (owner ask,
+   2026-08-12): the portrait sits at the top-left and the introduction
+   runs down its right edge, then continues full-width underneath it -
+   no dead column of space beside a short paragraph. The wrap edge stays
+   straight: hugging the circle (shape-outside) staggered every line and
+   read as misalignment rather than craft. */
+@media (min-width: 641px) {
+    .about-lead {
+        display: block;
+
+        /* The portrait is circular against a straight wrap edge, so it
+           needs more room than a square would to stop the text crowding
+           its curve (owner ask, 2026-08-12). */
+        .about-photo {
+            float: left;
+            margin: 50px ;
+        }
+
+        /* The reading measure is lifted here (owner ask, 2026-08-12):
+           the introduction fills the card to its right edge instead of
+           stopping short of it. */
+        .about-intro {
+            max-width: none;
+
+            /* The first line meets the top of the portrait. */
+            > :first-child {
+                margin-top: 0;
+            }
+        }
+
+        /* A short introduction must not let the portrait escape into
+           the trust row below. */
+        &::after {
+            content: '';
+            display: block;
+            clear: both;
+        }
+    }
+}
+
 /* The photo block sits bordered inside the editor card, like the public
    sections. The input hides visually but keeps working from its label —
    display:none can swallow label clicks in some browsers. */
