@@ -24,9 +24,10 @@ import { subjectIcon } from '../utils/subjectIcons'
 import { paths } from '../paths'
 import { PageLoading } from './PageLoading'
 import type { Testimonial } from '../data/students'
-import { recommendationRoles } from '../data/students'
 
 import type { SiteContent } from '../data/siteContent'
+import { SiteStructuredData } from './SiteStructuredData'
+import { familyReviewSummary } from '../utils/structuredData'
 
 type HomeViewProps = {
     /** Approved reviews for the proof strip; the view shows up to three. */
@@ -145,21 +146,11 @@ export const HomeView = ({
     // Recommendations (Professional/Personal) have no star rating — the
     // rating maths and the "N families" claim use family reviews only, so
     // the numbers stay honest.
-    const familyReviews = testimonials.filter(
-        (testimonial) => !recommendationRoles.includes(testimonial.role)
-    )
     const experienceYears = contentLoaded ? (hero.experienceYears ?? 0) : 0
-    const reviewCount = familyReviews.length
-    const averageRating = reviewCount
-        ? Math.round(
-              (familyReviews.reduce(
-                  (sum, testimonial) => sum + (testimonial.rating ?? 0),
-                  0
-              ) /
-                  reviewCount) *
-                  10
-          ) / 10
-        : 0
+    // Shared with the LocalBusiness markup (REQ-043), so the stars a search
+    // result shows are the stars the page shows.
+    const { count: reviewCount, average: averageRating } =
+        familyReviewSummary(testimonials)
     // The levels and boards chips: distinct values across the published
     // subjects, in first-seen order — "KS3 · GCSE · A-level", "AQA ·
     // Edexcel · OCR". Both are the teacher's own content, never hardcoded.
@@ -402,10 +393,18 @@ export const HomeLanding = () => {
         return <PageLoading />
     }
     return (
-        <HomeView
-            testimonials={testimonials}
-            content={content}
-            contentLoaded={contentLoaded}
-        />
+        <>
+            {/* Search engines read the business from the same published
+                document the page renders (REQ-043). */}
+            <SiteStructuredData
+                content={content}
+                testimonials={testimonials}
+            />
+            <HomeView
+                testimonials={testimonials}
+                content={content}
+                contentLoaded={contentLoaded}
+            />
+        </>
     )
 }
