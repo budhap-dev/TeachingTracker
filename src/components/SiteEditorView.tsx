@@ -75,6 +75,8 @@ type Draft = {
     modesLabel: string
     /** Masthead pill copy — {year} renders live; blank hides it. */
     mastheadPill: string
+    /** Where the tutoring is offered, published to search engines. */
+    areaServed: string
     /** The phone tab bars (REQ-049): flat page keys + spotlight, one
         pair for visitors, one for the teacher. */
     mobileNavItems: string[]
@@ -107,6 +109,7 @@ const toDraft = (content: SiteContent): Draft => ({
     servicesText: content.services.join('\n'),
     modesLabel: content.modesLabel,
     mastheadPill: content.mastheadPill,
+    areaServed: content.areaServed,
     mobileNavItems: [...content.mobileNav.items],
     mobileNavSpotlight: content.mobileNav.spotlight,
     mobileNavTeacherItems: [...content.mobileNavTeacher.items],
@@ -188,6 +191,7 @@ const assemble = (draft: Draft): SiteContent => ({
         .filter(Boolean),
     modesLabel: draft.modesLabel.trim() || 'Delivery',
     mastheadPill: draft.mastheadPill.trim(),
+    areaServed: draft.areaServed.trim(),
     mobileNav: {
         items: draft.mobileNavItems.slice(0, 3),
         spotlight: draft.mobileNavSpotlight || 'enquire',
@@ -578,6 +582,17 @@ export const SiteEditorView = ({
                                     })
                                 }
                                 helperText="The little badge in the top bar. {year} shows the current year. Leave blank to hide it."
+                            />
+                            <TextField
+                                label="Area served"
+                                size="small"
+                                value={draft.areaServed}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.areaServed = event.target.value
+                                    })
+                                }
+                                helperText="e.g. “Leeds”. Told to search engines so local families find you — it is not shown on the page. Leave blank to say nothing."
                             />
                             <TextField
                                 label="Years of tutoring experience"

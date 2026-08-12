@@ -167,6 +167,10 @@ export type SiteContent = {
         was teacher-speak). `{year}` renders as the current year so the
         message never rots each January; blank hides the pill. */
     mastheadPill: string
+    /** Where the tutoring is offered, e.g. "Leeds" (REQ-043). Published
+        to search engines as the business's area served; blank omits the
+        claim entirely — a location is the owner's to disclose. */
+    areaServed: string
     /** The phone tab bar (REQ-049): three flat slots + the raised
         spotlight, all owner-configurable page keys. */
     mobileNav: { items: string[]; spotlight: string }
@@ -217,6 +221,7 @@ export const normaliseSiteContent = (
     // ?? not ||: an owner-blanked pill stays hidden, only a missing
     // field (older document) takes the default.
     mastheadPill: content.mastheadPill ?? defaultSiteContent.mastheadPill,
+    areaServed: content.areaServed ?? defaultSiteContent.areaServed,
     mobileNav: content.mobileNav ?? defaultSiteContent.mobileNav,
     mobileNavTeacher:
         content.mobileNavTeacher ?? defaultSiteContent.mobileNavTeacher,
@@ -418,6 +423,9 @@ export const defaultSiteContent: SiteContent = {
     modesLabel: 'Delivery',
     // {year} renders live so the pill never rots each January.
     mastheadPill: 'Enrolling now • {year}',
+    // Blank until the owner publishes it: where they teach from is
+    // theirs to disclose, not ours to infer from the About copy.
+    areaServed: '',
     // The phone tab bar (REQ-049): Option C — flat, flat, raised
     // spotlight, flat, then Menu (always last).
     mobileNav: {

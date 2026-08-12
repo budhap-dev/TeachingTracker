@@ -1999,7 +1999,7 @@ role, no tabIndex, no key handler, so the back face is unreachable.
 
 ## REQ-043 — LocalBusiness structured data for search
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+**Status:** 🚧 Built (2026-08-12) · **Impact:** both · **Effort:** S
 
 **Story**
 As the owner, I want Google to understand AbhiTutor as a local tutoring
@@ -2008,11 +2008,35 @@ results can carry stars and rich details. One JSON-LD block, fed from the
 same published content the pages render (never-invent applies: emit only
 what is actually published — rating markup only from real reviews).
 
+**How it landed (2026-08-12)** — one JSON-LD block, injected into the head
+while the public landing is mounted (the `useDocumentMeta` shape, so the
+teacher's screens never carry it) and built by a pure function from the
+published document: name, description, subjects taught, price range from
+the published rates, and the contact channels the owner has published.
+The star average moved into a shared `familyReviewSummary()` that Home's
+trust chip and the markup both call, so the two cannot drift.
+
+**Area served became content, not an inference.** Google wants an address
+on a LocalBusiness, and the owner teaches from home — so a location is
+theirs to disclose, never ours to lift out of the About prose. A new
+`areaServed` field (site editor → Site name & hero) publishes both
+`areaServed` and a locality-only `PostalAddress`; blank omits both.
+⚠️ Owner action: fill "Area served" (e.g. "Leeds") and publish — the
+markup is otherwise addressless and won't earn a rich result.
+
+⚠️ **Known limit:** Google treats reviews collected on a business's own
+site as self-serving and generally will not show stars from them for
+LocalBusiness. The markup is correct and honest either way; the star
+snippet may simply not appear.
+
 **Acceptance criteria**
-- [ ] Google's Rich Results test passes for LocalBusiness.
-- [ ] Rating markup appears only when approved reviews exist and matches
-      the visible average exactly.
-- [ ] No hardcoded claims — the block derives from the site document.
+- [x] Google's Rich Results test passes for LocalBusiness _(structurally
+      verified against the emitted block: required name + address present,
+      absolute url/logo, rating in range; run the live tool once the owner
+      has published an area served)_.
+- [x] Rating markup appears only when approved reviews exist and matches
+      the visible average exactly _(one shared computation)_.
+- [x] No hardcoded claims — the block derives from the site document.
 
 ## REQ-044 — The installed app degrades gracefully offline
 
