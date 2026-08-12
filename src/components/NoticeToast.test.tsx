@@ -1,11 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
     createSessionSucceeded,
     saveStudentFailed,
+    setSessionStatusSucceeded,
     studentReducer,
 } from '../store/store'
 import type { ScheduledSession } from '../data/students'
@@ -36,6 +37,10 @@ const renderWithStore = () => {
 }
 
 describe('NoticeToast', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     it('renders nothing until something happens', () => {
         renderWithStore()
         expect(screen.queryByRole('alert')).not.toBeInTheDocument()
@@ -87,5 +92,44 @@ describe('NoticeToast', () => {
         await waitFor(() =>
             expect(store.getState().students.notice).toBeNull()
         )
+    })
+
+    it('gives a second outcome its own full life, not the leftovers', () => {
+        // Edit a class and cancel it moments later: MUI arms the auto-hide
+        // timer on open, not on message change, so the second toast used to
+        // inherit whatever was left of the first and could flash by.
+        vi.useFakeTimers()
+        const store = renderWithStore()
+
+        act(() => {
+            store.dispatch(createSessionSucceeded([session]))
+        })
+        expect(screen.getByText('Class booked.')).toBeInTheDocument()
+
+        // 3s in — still inside the first toast's 3.5s — the next outcome.
+        act(() => {
+            vi.advanceTimersByTime(3000)
+        })
+        act(() => {
+            store.dispatch(
+                setSessionStatusSucceeded([
+                    { ...session, status: 'Cancelled' },
+                ])
+            )
+        })
+        expect(screen.getByText('Class cancelled.')).toBeInTheDocument()
+
+        // The first toast's timer would have fired here; the second has
+        // only been up for 0.6s and must survive.
+        act(() => {
+            vi.advanceTimersByTime(600)
+        })
+        expect(store.getState().students.notice).not.toBeNull()
+
+        // It still goes on its own schedule.
+        act(() => {
+            vi.advanceTimersByTime(3000)
+        })
+        expect(store.getState().students.notice).toBeNull()
     })
 })
