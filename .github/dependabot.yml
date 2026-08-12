@@ -10,11 +10,28 @@ updates:
       npm-dependencies:
         patterns: ['*']
     ignore:
-      # TypeScript 7 is out ahead of typescript-eslint's peer range —
-      # the group bump ERESOLVEs (#88). Drop this once typescript-eslint
-      # supports TS 7, then let Dependabot offer the major again.
+      # TypeScript 7 is out ahead of typescript-eslint's peer range (#88
+      # ERESOLVEd), and the 6.x deprecation majors ride along with the
+      # React 19 / Vite 8 migration below — one toolchain move, made
+      # deliberately in REQ-050.
       - dependency-name: typescript
-        versions: ['>=7']
+        versions: ['>=6']
+      # React 19 renames the JSX types namespace and changes hook
+      # signatures (#97 failed on both), and Vite 8 + plugin-react 6 move
+      # in lockstep with it. That's a framework migration to run and
+      # verify deliberately (REQ-050), not a group-bump side effect.
+      - dependency-name: react
+        versions: ['>=19']
+      - dependency-name: react-dom
+        versions: ['>=19']
+      - dependency-name: '@types/react'
+        versions: ['>=19']
+      - dependency-name: '@types/react-dom'
+        versions: ['>=19']
+      - dependency-name: vite
+        versions: ['>=6']
+      - dependency-name: '@vitejs/plugin-react'
+        versions: ['>=5']
       # The React-Compiler-era hooks rules (purity, set-state-in-effect)
       # flag the app's deliberate adopt-until-edited draft pattern in ten
       # places (#91). Adopting them is a scheduled refactor (REQ-050),
