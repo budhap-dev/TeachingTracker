@@ -73,6 +73,8 @@ type Draft = {
     servicesText: string
     /** The subject cards' third tag label (default "Delivery"). */
     modesLabel: string
+    /** Masthead pill copy — {year} renders live; blank hides it. */
+    mastheadPill: string
     /** The phone tab bars (REQ-049): flat page keys + spotlight, one
         pair for visitors, one for the teacher. */
     mobileNavItems: string[]
@@ -104,6 +106,7 @@ const toDraft = (content: SiteContent): Draft => ({
     highlights: content.highlights,
     servicesText: content.services.join('\n'),
     modesLabel: content.modesLabel,
+    mastheadPill: content.mastheadPill,
     mobileNavItems: [...content.mobileNav.items],
     mobileNavSpotlight: content.mobileNav.spotlight,
     mobileNavTeacherItems: [...content.mobileNavTeacher.items],
@@ -184,6 +187,7 @@ const assemble = (draft: Draft): SiteContent => ({
         .map((line) => line.trim())
         .filter(Boolean),
     modesLabel: draft.modesLabel.trim() || 'Delivery',
+    mastheadPill: draft.mastheadPill.trim(),
     mobileNav: {
         items: draft.mobileNavItems.slice(0, 3),
         spotlight: draft.mobileNavSpotlight || 'enquire',
@@ -526,6 +530,7 @@ export const SiteEditorView = ({
                                 label="Headline"
                                 size="small"
                                 required
+                                multiline
                                 value={draft.hero.headline}
                                 onChange={(event) =>
                                     edit((next) => {
@@ -534,7 +539,9 @@ export const SiteEditorView = ({
                                 }
                                 error={headlineMissing}
                                 helperText={
-                                    headlineMissing ? 'Required.' : undefined
+                                    headlineMissing
+                                        ? 'Required.'
+                                        : 'Press Enter where phones should break the line — desktop keeps it on one line.'
                                 }
                             />
                             <TextField
@@ -559,6 +566,18 @@ export const SiteEditorView = ({
                                     })
                                 }
                                 helperText="e.g. “Now taking Year 10 & 11 students”. Leave blank to hide it."
+                            />
+                            <TextField
+                                label="Masthead pill"
+                                size="small"
+                                value={draft.mastheadPill}
+                                onChange={(event) =>
+                                    edit((next) => {
+                                        next.mastheadPill =
+                                            event.target.value
+                                    })
+                                }
+                                helperText="The little badge in the top bar. {year} shows the current year. Leave blank to hide it."
                             />
                             <TextField
                                 label="Years of tutoring experience"

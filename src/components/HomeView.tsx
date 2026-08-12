@@ -168,13 +168,6 @@ export const HomeView = ({
             content.subjects.flatMap((subject) => subject.keyStages ?? [])
         )
     ).join(' · ')
-    // The price chip anchors on the cheapest published rate (REQ-022).
-    const fromPrice =
-        contentLoaded && content.pricing.rates.length
-            ? Math.min(
-                  ...content.pricing.rates.map((rate) => rate.fromPerHour)
-              )
-            : 0
     const boards = Array.from(
         new Set(
             content.subjects.flatMap((subject) => subject.examBoards ?? [])
@@ -254,7 +247,27 @@ export const HomeView = ({
                         <BrandBadge size={74} />
                     </span>
                     <div className="home-band-copy">
-                        <h3 className="home-band-headline">{hero.headline}</h3>
+                        {/* An Enter in the editor's headline is a soft
+                            break: phones break there (owner ask,
+                            2026-08-12), desktop reads it as a space. */}
+                        <h3 className="home-band-headline">
+                            {hero.headline
+                                .split('\n')
+                                .flatMap((line, index) =>
+                                    index === 0
+                                        ? [line]
+                                        : [
+                                              <br
+                                                  key={index}
+                                                  className="phone-break"
+                                              />,
+                                              // The leading space keeps the
+                                              // one-line desktop reading;
+                                              // it collapses after a break.
+                                              ` ${line}`,
+                                          ]
+                                )}
+                        </h3>
                         <p className="home-band-subhead">{hero.subhead}</p>
                         {hero.availability && (
                             <p className="home-band-availability">
@@ -294,7 +307,6 @@ export const HomeView = ({
                         )}
                         {levels && <li>{levels}</li>}
                         {boards && <li>{boards}</li>}
-                        {fromPrice > 0 && <li>From £{fromPrice}/session</li>}
                     </ul>
                 )}
             </div>

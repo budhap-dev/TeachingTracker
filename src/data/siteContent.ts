@@ -163,6 +163,10 @@ export type SiteContent = {
     /** The subject cards' third tag label — "Delivery" by default, the
         owner can rename it (e.g. "Experience") (2026-08-09). */
     modesLabel: string
+    /** The masthead pill copy (owner ask, 2026-08-12 — "Active term"
+        was teacher-speak). `{year}` renders as the current year so the
+        message never rots each January; blank hides the pill. */
+    mastheadPill: string
     /** The phone tab bar (REQ-049): three flat slots + the raised
         spotlight, all owner-configurable page keys. */
     mobileNav: { items: string[]; spotlight: string }
@@ -210,6 +214,9 @@ export const normaliseSiteContent = (
     highlights: content.highlights ?? defaultSiteContent.highlights,
     services: content.services ?? defaultSiteContent.services,
     modesLabel: content.modesLabel || 'Delivery',
+    // ?? not ||: an owner-blanked pill stays hidden, only a missing
+    // field (older document) takes the default.
+    mastheadPill: content.mastheadPill ?? defaultSiteContent.mastheadPill,
     mobileNav: content.mobileNav ?? defaultSiteContent.mobileNav,
     mobileNavTeacher:
         content.mobileNavTeacher ?? defaultSiteContent.mobileNavTeacher,
@@ -223,7 +230,8 @@ export const normaliseSiteContent = (
 export const defaultSiteContent: SiteContent = {
     siteName: 'AbhiTutor',
     hero: {
-        headline: 'Confident tutoring for Years 7 to 13.',
+        // The \n is the phone break point; desktop reads it as a space.
+        headline: 'Confident tutoring for\nYears 7 to 13.',
         subhead: 'One-to-one or small-group lessons in maths and the sciences, from KS3 through GCSE to A-level — in person or online, matched to your child’s exam board and built around their school week.',
         // Blank by default — the page hides the line until the teacher
         // publishes one via the site editor.
@@ -408,6 +416,8 @@ export const defaultSiteContent: SiteContent = {
     ],
     // The subject cards' third tag label — renameable by the owner.
     modesLabel: 'Delivery',
+    // {year} renders live so the pill never rots each January.
+    mastheadPill: 'Enrolling now • {year}',
     // The phone tab bar (REQ-049): Option C — flat, flat, raised
     // spotlight, flat, then Menu (always last).
     mobileNav: {

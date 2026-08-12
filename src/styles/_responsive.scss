@@ -301,6 +301,12 @@
         grid-template-columns: 1fr;
     }
 
+    /* Phones honour the owner-placed headline break (owner ask,
+       2026-08-12: "Confident tutoring for" / "Years 7 to 13."). */
+    .phone-break {
+        display: inline;
+    }
+
     /* Phones: one field per line on the public forms, and the message
        boxes get real room to write (owner ask, 2026-08-11). */
     .enquire-form,
