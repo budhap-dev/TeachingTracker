@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined'
+import { useAppSelector } from '../hooks'
 import { TopbarGreeting } from './TopbarAuth'
 import {
     teacherQuotes,
@@ -30,6 +31,14 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
         () => teacherQuotes[Math.floor(Math.random() * teacherQuotes.length)],
         []
     )
+    // Owner-editable pill copy (2026-08-12 — "Active term" was
+    // teacher-speak). {year} renders live so it never rots each January;
+    // a blanked pill disappears.
+    const mastheadPill = useAppSelector(
+        (state) => state.students.siteContent.mastheadPill
+    )
+        .replace('{year}', String(new Date().getFullYear()))
+        .trim()
 
     return (
         // Wears the active theme's sidebar gradient, so the frame around the
@@ -135,10 +144,7 @@ export const Topbar = ({ theme, activeTheme, onSelectTheme }: TopbarProps) => {
                         </div>
                     )}
                 </div>
-                {/* The live year — a hardcoded one quietly rots every January. */}
-                <div className="pill">
-                    Active term • {new Date().getFullYear()}
-                </div>
+                {mastheadPill && <div className="pill">{mastheadPill}</div>}
                 {/* Sign out lives at the bottom of the menu now (owner
                     call, 2026-08-10) — no auth chrome up here. */}
             </div>

@@ -3293,6 +3293,12 @@ $note-rule: 32px;
     color: #ffffff;
 }
 
+// An owner-placed headline break (Enter in the editor) only takes
+// effect on phones — desktop keeps the one-line reading.
+.phone-break {
+    display: none;
+}
+
 .home-band-subhead {
     margin: 6px 0 0;
     font-size: 1rem;

@@ -46,7 +46,9 @@ describe('HomeView', () => {
         renderHome()
 
         expect(
-            screen.getByText(defaultSiteContent.hero.headline)
+            screen.getByRole('heading', {
+                name: defaultSiteContent.hero.headline.replace('\n', ' '),
+            })
         ).toBeInTheDocument()
         // The default availability line is blank, so no line renders — the
         // teacher publishes one via the site editor when there is news.
@@ -144,8 +146,9 @@ describe('HomeView', () => {
         // Levels and boards derive from the published subjects.
         expect(chips).toHaveTextContent('KS3 · GCSE · A-level')
         expect(chips).toHaveTextContent('AQA · Edexcel · OCR')
-        // The price chip anchors on the cheapest published rate (REQ-022).
-        expect(chips).toHaveTextContent('From £20/session')
+        // No price chip: rates live on the Pricing page alone (owner
+        // call, 2026-08-12).
+        expect(chips).not.toHaveTextContent('From £')
     })
 
     it('hides chips with nothing to say, and the whole row when empty', () => {
@@ -230,7 +233,9 @@ describe('HomeLanding', () => {
         // 2026-08-11 — the pinned note used to pop in late), then paints
         // whole: hero and the ★ trust chip together.
         expect(
-            await screen.findByText(defaultSiteContent.hero.headline)
+            await screen.findByRole('heading', {
+                name: defaultSiteContent.hero.headline.replace('\n', ' '),
+            })
         ).toBeInTheDocument()
         expect(await screen.findByText(/famil/i)).toBeInTheDocument()
     })
