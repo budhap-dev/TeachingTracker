@@ -2059,7 +2059,7 @@ the manifest-only PWA has no service worker today.
 
 ## REQ-045 — Default-content drift check between the repos
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** S
+**Status:** 🚧 Built (2026-08-12) · **Impact:** both · **Effort:** S
 
 **Story**
 As the maintainers, we want the mirrored `defaultSiteContent` in the two
@@ -2070,10 +2070,36 @@ cost a debugging session; today the mirror is discipline, not structure.
 - Either a CI job in each repo that renders both defaults to JSON and
   fails on any difference, or a single checked-in JSON both repos import.
 
+**How it landed (2026-08-12)** — the check found real drift the moment it
+ran, which is the argument for it: the backend still said "share the
+**hour**" after the 2026-08-09 per-session call, and its services list was
+the older nine-line version, missing "GCSE, IGCSE & A-Level Preparation"
+and "University Entrance & Scholarship Coaching". The backend defaults
+were brought up to the frontend's copy as part of this story.
+
+The gate is two halves, because drift has two shapes:
+1. **A unit test in each repo** renders its own `defaultSiteContent` to a
+   checked-in `site-content.default.json` (vitest `toMatchFileSnapshot`;
+   regenerate with `npx vitest -u`). Keys are sorted so layout can never
+   masquerade as drift, while array order — the order families read — is
+   preserved. This catches editing the TS without updating the snapshot.
+2. **A `content-drift` CI job in each repo** fetches the other repo's
+   snapshot and diffs the two files, catching the case where someone
+   updates one repo properly and the other never hears about it.
+
+⚠️ Owner action: the repos are private, so the cross-repo read needs a
+`CONTENT_DRIFT_TOKEN` secret in both (a fine-grained PAT, read-only
+Contents on both repos). Until it is set the job prints a loud warning
+and passes rather than blocking every PR — so half the gate is live now
+and half is one secret away.
+
 **Acceptance criteria**
-- [ ] An intentional one-character drift fails CI in whichever repo
-      changes second.
-- [ ] The check covers every shared field, not a hand-kept list.
+- [x] An intentional one-character drift fails CI in whichever repo
+      changes second _(verified both ways: an un-regenerated TS edit fails
+      the unit test; a regenerated one fails the cross-repo diff)_.
+- [x] The check covers every shared field, not a hand-kept list _(the
+      whole document is rendered, so a new field is covered the day it is
+      added)_.
 
 ## REQ-046 — One edited-in-place hook for About, FAQ and Pricing
 
