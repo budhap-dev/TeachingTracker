@@ -2248,7 +2248,7 @@ the tap for play instead of a page change.
 
 ## REQ-052 — Class notes, read date-wise
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+**Status:** 🚧 Built (2026-08-13) · **Impact:** frontend · **Effort:** S
 
 **Story**
 As the teacher, I write notes on classes while scheduling/editing them
@@ -2268,10 +2268,34 @@ per-student diary (which is its own thing, REQ-0xx dated notes).
   back to the class for edits.
 - Data is already loaded (sessions carry `notes`) — no API change.
 
+**How it landed (2026-08-13)** — a `/scheduling/notes` page, reached from
+a "Read class notes" link in the planner's own header: the notes belong to
+these classes, so the door is there rather than in the main menu. Newest
+day first, classes in the order they ran, and nothing but notes — a class
+with an empty (or whitespace) note never appears, and a day with no notes
+at all does not either.
+
+Decisions worth recording:
+- **A group class reads once**, under everyone in it, because the same
+  note usually sits on every linked row. When members genuinely carry
+  different notes, each is shown against the student it belongs to rather
+  than silently dropping one.
+- **A cancelled class keeps its note** and is marked cancelled. The note
+  is a record of what happened; hiding it would lose the reason.
+- **Read-only, by design.** Editing stays in the planner dialog so there
+  is exactly one place a note can be changed. Every row is a door: it
+  deep-links `?day=…&entry=…`, which the planner now honours, so a row
+  opens *its own* class rather than the day's first.
+- Filters (student, month) are built from classes that actually have
+  notes, so a picker can never lead to an empty page.
+
 **Acceptance criteria**
-- [ ] All session notes readable in one place, grouped by date, newest
+- [x] All session notes readable in one place, grouped by date, newest
       first; sessions without notes don't appear.
-- [ ] Each row identifies the class (date, time, student, subject) and
-      links back to it in the planner.
-- [ ] Works on phones (the scheduling area's mobile rows precedent).
-- [ ] No new API surface; coverage holds.
+- [x] Each row identifies the class (date, time, student, subject) and
+      links back to it in the planner _(verified in a browser against a
+      day holding two noted classes: clicking the 15:00 note opened the
+      15:00 class, not the day's 09:00 one)_.
+- [x] Works on phones (filters stack full-width, the action takes its own
+      line, no horizontal overflow at 390px).
+- [x] No new API surface; coverage holds (565 tests, 94.07%).

@@ -9,6 +9,7 @@ export const paths = {
     alumni: '/alumni',
     payments: '/payments',
     scheduling: '/scheduling',
+    classNotes: '/scheduling/notes',
     offerings: '/offerings',
     enquire: '/enquire',
     leads: '/leads',

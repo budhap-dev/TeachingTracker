@@ -52,6 +52,7 @@ import { AlumniView } from './components/AlumniView'
 import { StudySnapshotView } from './components/StudySnapshotView'
 import { PaymentTrackerView } from './components/PaymentTrackerView'
 import { ClassSchedulingView } from './components/ClassSchedulingView'
+import { ClassNotesView } from './components/ClassNotesView'
 import { ContactView } from './components/ContactView'
 import { EnquireView } from './components/EnquireView'
 import { LeadsView } from './components/LeadsView'
@@ -561,6 +562,39 @@ const PaymentTrackerRoute = () => {
     )
 }
 
+/**
+ * Class notes (REQ-052): the same sessions the planner shows, read as a
+ * chronological list of what was written. Archived students' classes stay
+ * out, exactly as they do on the planner.
+ */
+const ClassNotesRoute = () => {
+    useDocumentMeta(
+        'Class notes — AbhiTutor',
+        'Everything written on your classes, newest first.'
+    )
+    const allStudents = useAppSelector((state) => state.students.students)
+    const scheduledSessions = useAppSelector(
+        (state) => state.students.scheduledSessions
+    )
+    const sessions = useMemo(() => {
+        const archivedIds = new Set(
+            allStudents
+                .filter((student) => student.isArchived)
+                .map((student) => student.id)
+        )
+        return scheduledSessions.filter(
+            (session) => !archivedIds.has(session.studentId)
+        )
+    }, [allStudents, scheduledSessions])
+    const dataLoading = useAppSelector(
+        (state) => state.students.loading || state.students.sessionsLoading
+    )
+    if (dataLoading) {
+        return <PageLoading />
+    }
+    return <ClassNotesView sessions={sessions} />
+}
+
 const SchedulingRoute = () => {
     const dispatch = useAppDispatch()
     const [searchParams] = useSearchParams()
@@ -594,12 +628,14 @@ const SchedulingRoute = () => {
         return <PageLoading />
     }
     // Dashboard week bars land here with ?day=YYYY-MM-DD, straight into
-    // that day's modal.
+    // that day's modal; a class-notes row adds &entry= to land on its own
+    // class rather than the day's first one (REQ-052).
     return (
         <ClassSchedulingView
             students={students}
             sessions={sessions}
             initialOpenDate={searchParams.get('day') ?? undefined}
+            initialOpenEntryKey={searchParams.get('entry') ?? undefined}
             // Stay on the planner: the teacher books from a day modal and
             // usually has more to do on the calendar.
             onScheduleClass={(input) =>
@@ -886,6 +922,12 @@ export const AppRoutes = () => (
             <Route
                 path={paths.scheduling}
                 element={teacher(<SchedulingRoute />)}
+            />
+            {/* The planner's notes, read date-wise (REQ-052) — same data,
+                no new API surface. */}
+            <Route
+                path={paths.classNotes}
+                element={teacher(<ClassNotesRoute />)}
             />
             {/* Public by requirement (REQ-006/007): reachable signed out. */}
             <Route path={paths.offerings} element={<OfferingsRoute />} />

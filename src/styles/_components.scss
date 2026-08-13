@@ -2087,6 +2087,137 @@ $note-rule: 32px;
     align-items: center;
 }
 
+/* Class notes (REQ-052): the way through sits with the planner's own
+   chrome, quiet next to the stats it stands beside. */
+.scheduling-hero-actions {
+    display: flex;
+    align-items: center;
+}
+
+.scheduling-notes-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+}
+
+/* The notes list itself: a date heading, then the day's classes. */
+.class-notes-filters {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+
+    .MuiTextField-root {
+        min-width: 190px;
+    }
+}
+
+.class-notes-count {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.class-notes-log {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.class-notes-date {
+    margin: 0 0 10px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.class-notes-entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.class-note {
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+
+    /* A cancelled class keeps its note; the row is quieter about it. */
+    &.is-cancelled {
+        opacity: 0.75;
+    }
+}
+
+.class-note-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.class-note-time {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.class-note-who {
+    font-weight: 600;
+}
+
+.class-note-subject {
+    color: var(--muted);
+}
+
+.class-note-cancelled {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* The door back to the class, pushed to the end of the row. */
+.class-note-open {
+    margin-left: auto;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.85rem;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.class-note-body {
+    margin: 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
 .scheduling-hero-stats {
     display: flex;
     gap: 12px;

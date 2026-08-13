@@ -307,6 +307,26 @@
         display: inline;
     }
 
+    /* Class notes on a phone (REQ-052): the filters stack full-width and
+       the class line wraps to its own rows rather than squeezing five
+       fields onto one - the planner's mobile rows precedent. */
+    .class-notes-filters {
+        flex-direction: column;
+        align-items: stretch;
+
+        .MuiTextField-root {
+            min-width: 0;
+            width: 100%;
+        }
+    }
+
+    /* The action takes its own line and sits at the end of it, so it
+       reads as a door rather than interrupting the class's details. */
+    .class-note-open {
+        flex-basis: 100%;
+        text-align: right;
+    }
+
     /* Phones: one field per line on the public forms, and the message
        boxes get real room to write (owner ask, 2026-08-11). */
     .enquire-form,
