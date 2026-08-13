@@ -4,7 +4,7 @@ import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined'
 import { MenuItem, TextField } from '@mui/material'
 import type { ScheduledSession } from '../data/students'
 import { formatDayLabel } from '../utils/calendar'
-import { groupNotesByDate } from '../utils/classNotes'
+import { groupNotesByDate, hasWrittenNote } from '../utils/classNotes'
 import { paths } from '../paths'
 
 type ClassNotesViewProps = {
@@ -38,7 +38,7 @@ export const ClassNotesView = ({ sessions }: ClassNotesViewProps) => {
     // Both filter lists are built from classes that actually carry notes, so
     // the pickers never offer a choice that leads to an empty page.
     const noted = useMemo(
-        () => sessions.filter((session) => session.notes.trim()),
+        () => sessions.filter(hasWrittenNote),
         [sessions]
     )
     const students = useMemo(

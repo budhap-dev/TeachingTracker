@@ -47,6 +47,23 @@ describe('groupNotesByDate', () => {
         expect(days[0].date).toBe('2026-09-03')
     })
 
+    it('treats the planner’s own placeholder as nothing written', () => {
+        const days = groupNotesByDate([
+            session({ id: 1, notes: 'Scheduled from the class planner' }),
+            // Case and padding are the same placeholder.
+            session({ id: 2, date: '2026-09-02', notes: '  scheduled from the class planner  ' }),
+            // A note that merely mentions it is still the teacher's own.
+            session({
+                id: 3,
+                date: '2026-09-03',
+                notes: 'Scheduled from the class planner after the reshuffle — check ratios',
+            }),
+        ])
+
+        expect(days).toHaveLength(1)
+        expect(days[0].date).toBe('2026-09-03')
+    })
+
     it('reads a group class once, under everyone in it', () => {
         const days = groupNotesByDate([
             session({

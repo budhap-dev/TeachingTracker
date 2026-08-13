@@ -31,7 +31,27 @@ export type ClassNote = {
 /** A day's worth of notes, in the order the classes ran. */
 export type ClassNoteDay = { date: string; notes: ClassNote[] }
 
-const noteOf = (session: ScheduledSession): string => session.notes.trim()
+/**
+ * What the planner stores on a class booked without a note. It is
+ * scaffolding, not something the teacher wrote, so the read treats it as
+ * silence (owner call, 2026-08-13) - otherwise hundreds of identical
+ * lines bury the real notes.
+ */
+const PLACEHOLDER_NOTE = 'scheduled from the class planner'
+
+/** The note a teacher actually wrote, or '' when there is none. */
+export const writtenNote = (session: ScheduledSession): string => {
+    const text = session.notes.trim()
+    // Exact match only: a note that merely mentions the planner is still
+    // a note the teacher chose to write.
+    return text.toLowerCase() === PLACEHOLDER_NOTE ? '' : text
+}
+
+/** Whether this class carries anything worth reading back. */
+export const hasWrittenNote = (session: ScheduledSession): boolean =>
+    writtenNote(session) !== ''
+
+const noteOf = writtenNote
 
 /**
  * The notes on one planner entry. A group class usually carries the same

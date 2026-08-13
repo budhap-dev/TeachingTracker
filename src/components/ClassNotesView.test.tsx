@@ -121,6 +121,30 @@ describe('ClassNotesView', () => {
         expect(names).toEqual(['All students', 'Asha Perera', 'Nimal Perera'])
     })
 
+    it('leaves the planner’s placeholder out of the list and the pickers', async () => {
+        const user = userEvent.setup()
+        renderNotes([
+            ...sessions,
+            session({
+                id: 5,
+                studentId: 3,
+                studentName: 'Placeholder Only',
+                notes: 'Scheduled from the class planner',
+            }),
+        ])
+
+        expect(
+            screen.queryByText(/scheduled from the class planner/i)
+        ).not.toBeInTheDocument()
+        // And the student it belongs to is not offered as a filter, since
+        // choosing them would lead to an empty page.
+        await user.click(screen.getByRole('combobox', { name: /student/i }))
+        const names = (await screen.findAllByRole('option')).map(
+            (option) => option.textContent
+        )
+        expect(names).not.toContain('Placeholder Only')
+    })
+
     it('says so plainly when nothing has been written yet', () => {
         renderNotes([session({ id: 9, notes: '' })])
 

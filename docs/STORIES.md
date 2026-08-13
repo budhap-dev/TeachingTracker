@@ -2282,6 +2282,11 @@ Decisions worth recording:
   than silently dropping one.
 - **A cancelled class keeps its note** and is marked cancelled. The note
   is a record of what happened; hiding it would lose the reason.
+- **The planner's own placeholder is not a note** (owner call,
+  2026-08-13). Booking a class without writing anything stores
+  "Scheduled from the class planner", and hundreds of identical lines
+  buried the real notes. It reads as silence — matched exactly, so a note
+  that merely mentions the planner is still the teacher's own.
 - **Read-only, by design.** Editing stays in the planner dialog so there
   is exactly one place a note can be changed. Every row is a door: it
   deep-links `?day=…&entry=…`, which the planner now honours, so a row
