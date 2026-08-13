@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
+import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined'
 import {
     DndContext,
     PointerSensor,
@@ -38,6 +40,7 @@ import {
     type DayEntry,
 } from '../utils/sessionGroups'
 import { requiredFieldProps } from '../utils/formValidation'
+import { paths } from '../paths'
 import type { ScheduledSession, SessionStatus, Student } from '../data/students'
 
 type ClassSchedulingViewProps = {
@@ -45,6 +48,9 @@ type ClassSchedulingViewProps = {
     sessions: ScheduledSession[]
     /** Opens this day's modal on arrival (dashboard deep links, ?day=…). */
     initialOpenDate?: string
+    /** Which entry on that day to open — a class-notes row names its own
+        class rather than dropping the teacher on the day's first one. */
+    initialOpenEntryKey?: string
     onScheduleClass: (input: ScheduleClassInput) => void
     onEditClass: (
         id: number,
@@ -171,6 +177,7 @@ export const ClassSchedulingView = ({
     students,
     sessions,
     initialOpenDate,
+    initialOpenEntryKey,
     onScheduleClass,
     onEditClass,
     onSetSessionStatus,
@@ -391,10 +398,10 @@ export const ClassSchedulingView = ({
         openedInitialDate.current = true
         const [year, month] = initialOpenDate.split('-').map(Number)
         setMonthReference(new Date(year, month - 1, 1))
-        openDay(initialOpenDate)
+        openDay(initialOpenDate, initialOpenEntryKey)
         // eslint-disable-next-line react-hooks/exhaustive-deps -- run once;
         // openDay is stable in behaviour and recreating it must not re-open.
-    }, [initialOpenDate])
+    }, [initialOpenDate, initialOpenEntryKey])
 
     /** Switches the form to edit another of the day's entries. */
     const selectEntry = (entry: DayEntry) => {
@@ -635,15 +642,28 @@ export const ClassSchedulingView = ({
                         — or change what is already on.
                     </p>
                 </div>
-                <div className="scheduling-hero-stats">
-                    <div>
-                        <strong>{upcomingCount}</strong>
-                        <span>Classes to come</span>
+                {/* Two readouts and one action, in that order: the
+                    numbers are glanced at, the link is used, so the link
+                    ends the row (owner call, 2026-08-13). Label first,
+                    figure after — each reads as a sentence on one line. */}
+                <div className="scheduling-hero-aside">
+                    <div className="scheduling-hero-stats">
+                        <div>
+                            <span>Classes to come</span>
+                            <strong>{upcomingCount}</strong>
+                        </div>
+                        <div>
+                            <span>Students available</span>
+                            <strong>{students.length}</strong>
+                        </div>
                     </div>
-                    <div>
-                        <strong>{students.length}</strong>
-                        <span>Students available</span>
-                    </div>
+                    {/* The way through to the notes (REQ-052) — they
+                        belong to these classes, so the door is here
+                        rather than in the main menu. */}
+                    <Link className="scheduling-notes-link" to={paths.classNotes}>
+                        <EventNoteOutlinedIcon fontSize="small" />
+                        Class notes
+                    </Link>
                 </div>
             </div>
 

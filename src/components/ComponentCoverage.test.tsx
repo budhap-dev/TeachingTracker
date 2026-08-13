@@ -1,10 +1,12 @@
+import type { ReactNode } from 'react'
 import {
     fireEvent,
-    render,
+    render as rtlRender,
     screen,
     waitFor,
     within,
 } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
@@ -13,6 +15,19 @@ import type {
     ScheduledSession,
     Student,
 } from '../data/students'
+/**
+ * Everything here renders inside a router, because these views link to
+ * other pages (the planner's way through to class notes, REQ-052) and a
+ * bare <Link> throws without one. Components that never link are
+ * unaffected by the wrapper.
+ */
+const render = (ui: ReactNode) =>
+    rtlRender(ui, {
+        wrapper: ({ children }: { children: ReactNode }) => (
+            <MemoryRouter>{children}</MemoryRouter>
+        ),
+    })
+
 import { ClassSchedulingView } from './ClassSchedulingView'
 import { DashboardView } from './DashboardView'
 import { PaymentTrackerView } from './PaymentTrackerView'
