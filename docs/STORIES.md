@@ -2304,3 +2304,68 @@ Decisions worth recording:
 - [x] Works on phones (filters stack full-width, the action takes its own
       line, no horizontal overflow at 390px).
 - [x] No new API surface; coverage holds (565 tests, 94.07%).
+
+## REQ-053 — The phone says when an enquiry lands
+
+**Status:** 🔲 Not started · **Impact:** both + infra · **Effort:** M ·
+**Depends on:** REQ-044 (there is no service worker yet, and push needs one)
+_(owner ask, 2026-08-13)_
+
+**Story**
+As the teacher, with the app installed on my Android phone from Chrome, I
+want it to tell me when a new enquiry arrives — a notification and a badge
+on the app icon — so I can reply quickly without opening the app to check.
+
+**Shape**
+- **Service worker first.** Push is delivered to a service worker, and the
+  app is manifest-only today. REQ-044 brings one; this story adds a `push`
+  handler to it rather than a second worker.
+- **Permission at the right moment**, never on first load: a "Tell me about
+  new enquiries" switch in the portal (Leads page or settings). Browsers
+  penalise unprompted permission requests, and a refusal is sticky.
+- **Subscribe and store.** The client subscribes with the VAPID public key
+  and POSTs the subscription to the API; the backend keeps a list (the
+  teacher may have a phone *and* a laptop). `DELETE` when the switch is
+  turned off.
+- **Send on arrival.** `createLead` already runs on every public enquiry —
+  after it succeeds, push to every stored subscription (`web-push`, VAPID
+  private key in app settings, never the repo). Prune on 404/410 so dead
+  endpoints don't accumulate.
+- **The icon badge** the owner asked for is `navigator.setAppBadge(count)`
+  from the `push` handler, cleared when Leads is opened. `notificationclick`
+  opens `/leads`.
+- **Degrade gracefully.** Where push is unsupported (notably iOS unless
+  installed, and any browser where permission is refused), the Leads nav
+  item still carries a count of unseen enquiries while the app is open.
+
+**Privacy (REQ-030/031 apply)**
+- The notification says "New enquiry — open to read" and **nothing about the
+  family**: a name or message on a lock screen is personal data shown outside
+  the authenticated app.
+- A push subscription identifies the teacher's device: record it in the ROPA
+  and retention schedule, and delete it on unsubscribe and on sign-out.
+
+**Risks worth knowing before starting**
+- Android Chrome (installed) is the target and is well supported. iOS only
+  delivers web push to home-screen-installed apps (16.4+), and
+  `setAppBadge` is not available there at all — so the badge is an Android
+  promise, not a universal one.
+- The VAPID private key is a real secret: app settings/Key Vault, and
+  rotating it invalidates every existing subscription.
+- Sending happens inside the public enquiry request: it must not delay or
+  fail the family's submission — push failures are logged, never surfaced.
+
+**Acceptance criteria**
+- [ ] With the app installed on Android from Chrome and notifications
+      allowed, submitting an enquiry on the public site raises a
+      notification within seconds and badges the app icon.
+- [ ] Tapping the notification opens the Leads page; the badge clears once
+      the enquiries have been seen.
+- [ ] The notification carries no family personal data.
+- [ ] Turning the switch off stops notifications and deletes the
+      subscription server-side; expired endpoints are pruned automatically.
+- [ ] A push failure never breaks or slows an enquiry submission.
+- [ ] Where push is unsupported, the Leads nav shows an unseen count while
+      the app is open.
+- [ ] No secret in the repo; the ROPA and retention schedule cover the
+      subscription.
