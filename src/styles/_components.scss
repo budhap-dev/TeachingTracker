@@ -2087,13 +2087,27 @@ $note-rule: 32px;
     align-items: center;
 }
 
-/* Class notes (REQ-052): the way through sits with the planner's own
-   chrome, quiet next to the stats it stands beside. */
-.scheduling-hero-actions {
+/* The planner header's right-hand side: quiet readouts, then the one
+   thing to click. Boxing all three alike read as three tabs, so only the
+   action wears a border. */
+.scheduling-hero-aside {
     display: flex;
     align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+
+    /* Desk widths have room for both readouts and the action on one
+       line, so the description gives way rather than the row breaking.
+       Narrower than that the aside wraps instead — holding it rigid
+       would push the page sideways on a phone. */
+    @media (min-width: 901px) {
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+    }
 }
 
+/* Class notes (REQ-052): the way through sits with the planner's own
+   chrome — the only accent on the row, so it reads as the action. */
 .scheduling-notes-link {
     display: inline-flex;
     align-items: center;
@@ -2104,16 +2118,19 @@ $note-rule: 32px;
     flex-shrink: 0;
     padding: 9px 14px;
     border-radius: 12px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+    color: var(--accent);
     font-size: 0.9rem;
     font-weight: 600;
     text-decoration: none;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
 
     &:hover {
         border-color: var(--accent);
-        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, var(--surface));
     }
 }
 
@@ -2226,16 +2243,20 @@ $note-rule: 32px;
     display: flex;
     gap: 12px;
 
+    align-items: baseline;
+
     div {
         display: flex;
         align-items: baseline;
         gap: 6px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        background: var(--surface);
-        border: 1px solid var(--border);
         /* Sized to its own words, never squeezed into a wrap. */
         flex-shrink: 0;
+    }
+
+    /* A hairline between the readouts instead of a box around each. */
+    div + div {
+        padding-left: 12px;
+        border-left: 1px solid var(--border);
     }
 
     strong {

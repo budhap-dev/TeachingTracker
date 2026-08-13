@@ -642,26 +642,28 @@ export const ClassSchedulingView = ({
                         — or change what is already on.
                     </p>
                 </div>
-                {/* The way through to the notes (REQ-052) — they belong to
-                    these classes, so the door is here rather than in the
-                    main menu. */}
-                <div className="scheduling-hero-actions">
+                {/* Two readouts and one action, in that order: the
+                    numbers are glanced at, the link is used, so the link
+                    ends the row (owner call, 2026-08-13). Label first,
+                    figure after — each reads as a sentence on one line. */}
+                <div className="scheduling-hero-aside">
+                    <div className="scheduling-hero-stats">
+                        <div>
+                            <span>Classes to come</span>
+                            <strong>{upcomingCount}</strong>
+                        </div>
+                        <div>
+                            <span>Students available</span>
+                            <strong>{students.length}</strong>
+                        </div>
+                    </div>
+                    {/* The way through to the notes (REQ-052) — they
+                        belong to these classes, so the door is here
+                        rather than in the main menu. */}
                     <Link className="scheduling-notes-link" to={paths.classNotes}>
                         <EventNoteOutlinedIcon fontSize="small" />
                         Class notes
                     </Link>
-                </div>
-                {/* Label first, figure after — the tiles read as a
-                    sentence on one line (owner call, 2026-08-13). */}
-                <div className="scheduling-hero-stats">
-                    <div>
-                        <span>Classes to come</span>
-                        <strong>{upcomingCount}</strong>
-                    </div>
-                    <div>
-                        <span>Students available</span>
-                        <strong>{students.length}</strong>
-                    </div>
                 </div>
             </div>
 
