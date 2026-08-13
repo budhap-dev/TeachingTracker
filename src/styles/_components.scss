@@ -2080,11 +2080,18 @@ $note-rule: 32px;
     }
 }
 
+/* The title and its line get the full width; the readouts and the way
+   through to the notes settle into the bottom-right corner beneath them
+   (owner call, 2026-08-13) - nothing competes with the heading for room. */
 .scheduling-hero {
     display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    align-items: center;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+
+    .scheduling-hero-aside {
+        align-self: flex-end;
+    }
 }
 
 /* The planner header's right-hand side: quiet readouts, then the one

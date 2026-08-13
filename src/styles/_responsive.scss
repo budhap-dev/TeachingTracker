@@ -508,6 +508,12 @@
     .scheduling-hero {
         flex-direction: column;
         align-items: flex-start;
+
+        /* Full-width and left-aligned on a phone: hugging the right
+           edge reads as ragged when the aside wraps. */
+        .scheduling-hero-aside {
+            align-self: stretch;
+        }
     }
 
     .scheduling-hero-stats {
