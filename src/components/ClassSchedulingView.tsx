@@ -648,17 +648,19 @@ export const ClassSchedulingView = ({
                 <div className="scheduling-hero-actions">
                     <Link className="scheduling-notes-link" to={paths.classNotes}>
                         <EventNoteOutlinedIcon fontSize="small" />
-                        Read class notes
+                        Class notes
                     </Link>
                 </div>
+                {/* Label first, figure after — the tiles read as a
+                    sentence on one line (owner call, 2026-08-13). */}
                 <div className="scheduling-hero-stats">
                     <div>
-                        <strong>{upcomingCount}</strong>
                         <span>Classes to come</span>
+                        <strong>{upcomingCount}</strong>
                     </div>
                     <div>
-                        <strong>{students.length}</strong>
                         <span>Students available</span>
+                        <strong>{students.length}</strong>
                     </div>
                 </div>
             </div>

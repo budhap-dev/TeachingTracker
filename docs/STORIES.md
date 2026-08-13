@@ -2269,7 +2269,7 @@ per-student diary (which is its own thing, REQ-0xx dated notes).
 - Data is already loaded (sessions carry `notes`) — no API change.
 
 **How it landed (2026-08-13)** — a `/scheduling/notes` page, reached from
-a "Read class notes" link in the planner's own header: the notes belong to
+a "Class notes" link in the planner's own header: the notes belong to
 these classes, so the door is there rather than in the main menu. Newest
 day first, classes in the order they ran, and nothing but notes — a class
 with an empty (or whitespace) note never appears, and a day with no notes

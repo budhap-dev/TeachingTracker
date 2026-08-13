@@ -2098,6 +2098,10 @@ $note-rule: 32px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    /* The label stays on one line - the hero row squeezes it otherwise
+       (owner report, 2026-08-13). */
+    white-space: nowrap;
+    flex-shrink: 0;
     padding: 9px 14px;
     border-radius: 12px;
     border: 1px solid var(--border);
@@ -2223,23 +2227,33 @@ $note-rule: 32px;
     gap: 12px;
 
     div {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
         padding: 12px 14px;
         border-radius: 14px;
         background: var(--surface);
         border: 1px solid var(--border);
-        min-width: 110px;
+        /* Sized to its own words, never squeezed into a wrap. */
+        flex-shrink: 0;
     }
 
     strong {
-        display: block;
-        font-size: 1.4rem;
+        font-size: 1.05rem;
         color: var(--accent);
+        font-variant-numeric: tabular-nums;
     }
 
     span {
-        display: block;
         color: var(--muted);
         font-size: 0.85rem;
+        white-space: nowrap;
+
+        /* The separator is punctuation, not content — it stays out of
+           the markup so the label reads cleanly on its own. */
+        &::after {
+            content: ' :';
+        }
     }
 }
 
