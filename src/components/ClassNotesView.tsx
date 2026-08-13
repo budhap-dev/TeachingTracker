@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined'
-import { MenuItem, TextField } from '@mui/material'
+import { Button, MenuItem, TextField } from '@mui/material'
 import type { ScheduledSession } from '../data/students'
 import { formatDayLabel } from '../utils/calendar'
 import { groupNotesByDate, hasWrittenNote } from '../utils/classNotes'
@@ -10,6 +10,8 @@ import { paths } from '../paths'
 type ClassNotesViewProps = {
     /** Every session the teacher can see; the view keeps no server state. */
     sessions: ScheduledSession[]
+    /** Back to where the notes were opened from — the planner. */
+    onBack: () => void
 }
 
 const ALL = 'all'
@@ -31,7 +33,10 @@ const monthLabel = (monthKey: string): string => {
  * and every row a door back to the class it came from — editing stays in the
  * planner, so there is one place a note can be changed.
  */
-export const ClassNotesView = ({ sessions }: ClassNotesViewProps) => {
+export const ClassNotesView = ({
+    sessions,
+    onBack,
+}: ClassNotesViewProps) => {
     const [student, setStudent] = useState(ALL)
     const [month, setMonth] = useState(ALL)
 
@@ -83,6 +88,9 @@ export const ClassNotesView = ({ sessions }: ClassNotesViewProps) => {
                             class to change its note.
                         </p>
                     </div>
+                    <Button variant="text" onClick={onBack}>
+                        Back
+                    </Button>
                 </div>
 
                 {noted.length > 0 && (

@@ -568,6 +568,7 @@ const PaymentTrackerRoute = () => {
  * out, exactly as they do on the planner.
  */
 const ClassNotesRoute = () => {
+    const navigate = useNavigate()
     useDocumentMeta(
         'Class notes — AbhiTutor',
         'Everything written on your classes, newest first.'
@@ -592,7 +593,13 @@ const ClassNotesRoute = () => {
     if (dataLoading) {
         return <PageLoading />
     }
-    return <ClassNotesView sessions={sessions} />
+    // The planner is the only way in, so Back always means the planner.
+    return (
+        <ClassNotesView
+            sessions={sessions}
+            onBack={() => navigate(paths.scheduling)}
+        />
+    )
 }
 
 const SchedulingRoute = () => {

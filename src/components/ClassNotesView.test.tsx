@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ClassNotesView } from './ClassNotesView'
 import type { ScheduledSession } from '../data/students'
 
@@ -35,10 +35,12 @@ const sessions: ScheduledSession[] = [
     session({ id: 3, date: '2026-09-10', notes: '   ' }),
 ]
 
+const onBack = vi.fn()
+
 const renderNotes = (list = sessions) =>
     render(
         <MemoryRouter>
-            <ClassNotesView sessions={list} />
+            <ClassNotesView sessions={list} onBack={onBack} />
         </MemoryRouter>
     )
 
@@ -143,6 +145,14 @@ describe('ClassNotesView', () => {
             (option) => option.textContent
         )
         expect(names).not.toContain('Placeholder Only')
+    })
+
+    it('goes back to the planner it was opened from', async () => {
+        const user = userEvent.setup()
+        renderNotes()
+
+        await user.click(screen.getByRole('button', { name: /^back$/i }))
+        expect(onBack).toHaveBeenCalled()
     })
 
     it('says so plainly when nothing has been written yet', () => {
