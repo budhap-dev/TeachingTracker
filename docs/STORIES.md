@@ -2369,3 +2369,79 @@ on the app icon — so I can reply quickly without opening the app to check.
       the app is open.
 - [ ] No secret in the repo; the ROPA and retention schedule cover the
       subscription.
+
+## REQ-054 — The visitor's phone: give the first screen to the pitch
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+_(owner ask, 2026-08-14: "most people will view it in mobile only")_
+
+**Story**
+As a parent meeting AbhiTutor for the first time — almost always on a
+phone — I want the first screen to tell me what is offered and let me
+act on it, instead of spending itself on chrome I did not come for.
+
+**What the phone actually shows today** (measured at 390×844, visitor
+mode, 2026-08-14 — page coordinates):
+
+| what | from | height |
+|---|---|---|
+| brand lockup + masthead | 138px | 228px |
+| rotating teacher quote | 154px | 144px |
+| theme palette toggle | 310px | 40px |
+| notice board | 382px | 286px |
+| **hero card (the pitch)** | **684px** | 518px |
+| headline | 794px | 58px |
+| **"Request a free assessment"** | **974px** | 85px |
+| trust chips | 1077px | 104px |
+
+So the promise starts below the fold and the primary action sits ~130px
+past it: a visitor scrolls through 668px of brand, a quote and a notice
+before learning what is sold. The whole page is 2314px — 2.7 screens —
+so this is an ordering problem, not a length one.
+
+**Ideas recorded (pick at build time; the first three are the ones that
+move the number above)**
+
+1. **Reorder the phone landing so the pitch leads.** Headline, subhead
+   and the assessment CTA first; the notice and the rest follow. The
+   notice keeps its pin animation and its scroll-to (2026-08-11) — it
+   simply stops standing in front of the pitch.
+2. **Portal chrome is not visitor content.** The rotating teacher quote
+   and the theme palette toggle are for the person running the business.
+   On a visitor's phone that space belongs to the offer. (Both stay on
+   the teacher's phone and on desktop — this is a phone-visitor rule.)
+3. **One brand lockup above the fold, not two.** The sidebar-header
+   lockup and the masthead say the same thing 100px apart; a slim
+   sticky bar on scroll would free ~120px.
+4. **Proof where the decision is made.** One or two approved parent
+   reviews (swipeable) directly under the CTA — today they live a page
+   away, and the trust chips are the only proof on Home.
+5. **A face earlier.** Parents choose a person: the About portrait,
+   small, beside the pitch.
+6. **Section rhythm.** Every block is the same card on the same ground;
+   alternating surfaces would stop the page reading as one long stack.
+7. **Trim the notice board's frame on phones** — the cork surround is
+   286px tall for two lines of text.
+8. **Skeletons instead of the full-page loader**, so the landing feels
+   instant rather than blank-then-whole.
+
+**Guard-rails (owner calls this must not undo)**
+- The bottom tab bar and its raised spotlight stay exactly as they are
+  (REQ-049, and the teacher's own bar).
+- "Why AbhiTutor" stays one claim per line on phones (2026-08-11).
+- The notice keeps the pin-on animation, the perpetual sway, and the
+  scroll-into-view on load.
+- The subject chips stay non-navigating badges (2026-08-11); their tap
+  animation is REQ-051's business, not this story's.
+- `prefers-reduced-motion` keeps every quiet variant it has.
+
+**Acceptance criteria**
+- [ ] On a 390×844 phone in visitor mode, the headline and the primary
+      CTA are both above the fold, measured — not judged by eye.
+- [ ] No teacher-only chrome (quote, theme picker) on a visitor's phone;
+      both remain for the teacher and on desktop.
+- [ ] The tab bar, the notice choreography, the one-per-line highlights
+      and the chip badges all behave exactly as before.
+- [ ] Nothing regresses on desktop or tablet; screenshots at 390, 800
+      and 1280 accompany the PR.
+- [ ] Coverage holds.
