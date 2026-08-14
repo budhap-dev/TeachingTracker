@@ -129,6 +129,29 @@ export type FaqItem = {
     answer: string
 }
 
+/**
+ * The Home page's own wording (2026-08-14). Headings, button labels and the
+ * search-result title used to be literals in the view; they are the owner's
+ * copy, so they belong in the published document like every other line.
+ *
+ * Every field may be blank: the view falls back to the shipped wording, so
+ * an emptied heading can never render as a blank line or a nameless button.
+ */
+export type HomeCopy = {
+    /** The browser/search-result title. */
+    metaTitle: string
+    /** The search-result description under the title. */
+    metaDescription: string
+    /** The hero band's primary button, e.g. "Request a free assessment". */
+    ctaLabel: string
+    /** The quieter link beside it — the view supplies the arrow. */
+    exploreLabel: string
+    /** The highlight tiles' card heading, e.g. "Why AbhiTutor". */
+    highlightsHeading: string
+    /** The journey card's heading, e.g. "How it works". */
+    journeyHeading: string
+}
+
 /** The reorderable page sections, in their canonical order (REQ-008). */
 export const sectionKeys = [
     'hero',
@@ -176,6 +199,9 @@ export type SiteContent = {
     mobileNav: { items: string[]; spotlight: string }
     /** The teacher's own bar (2026-08-10) — same shape, work-screen keys. */
     mobileNavTeacher: { items: string[]; spotlight: string }
+    /** The Home page's headings, button labels and search-result copy
+        (2026-08-14). Blank fields fall back to the shipped wording. */
+    home: HomeCopy
     freeform: FreeformSection
     sectionOrder: SectionKey[]
 }
@@ -225,6 +251,10 @@ export const normaliseSiteContent = (
     mobileNav: content.mobileNav ?? defaultSiteContent.mobileNav,
     mobileNavTeacher:
         content.mobileNavTeacher ?? defaultSiteContent.mobileNavTeacher,
+    // Field-by-field, not whole-object: a document published before one of
+    // these lines existed keeps the shipped wording for it and its own for
+    // the rest.
+    home: { ...defaultSiteContent.home, ...(content.home ?? {}) },
     sectionOrder: [
         ...content.sectionOrder,
         ...sectionKeys.filter((key) => !content.sectionOrder.includes(key)),
@@ -451,6 +481,18 @@ export const defaultSiteContent: SiteContent = {
         'University Entrance & Scholarship Coaching',
         'Flexible In-Person and Online Sessions',
     ],
+    // The Home page's own wording (2026-08-14) — the copy the view used
+    // to hard-code, now the owner's to change. The arrow on the explore
+    // link stays the view's; only the words live here.
+    home: {
+        metaTitle: 'AbhiTutor — Where confidence takes off.',
+        metaDescription:
+            'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.',
+        ctaLabel: 'Request a free assessment',
+        exploreLabel: 'Explore subjects',
+        highlightsHeading: 'Why AbhiTutor',
+        journeyHeading: 'How it works',
+    },
     // Empty until the teacher writes one — an empty section renders nothing.
     freeform: { heading: '', markdown: '' },
     sectionOrder: [

@@ -28,12 +28,13 @@
        ink mark. Theme-independent identity — dark themes lighten them, and
        the pale-sidebar themes override the sidebar pair. */
     /* One "Abhi" everywhere (owner call): a bright luminous sky that reads
-       identically on the sidebar and topbar bands. The pale-chrome themes
-       override to the deep brand sky, where a light tint would wash out. */
+       identically on the sidebar and topbar bands. A theme with a pale band
+       would need to override this to the deep brand sky; none ships today
+       (Daylight and Parchment retired, 2026-08-14). */
     --brand-abhi: #8fdcff;
     /* "Tutor" is white wherever the brand appears (owner call 2026-08-03) —
-       the lockup lives on the sidebar/topbar bands, which are dark in every
-       theme except the two pale-chrome ones, which override this. */
+       the lockup lives on the sidebar/topbar bands, dark in every theme
+       that ships. */
     --brand-tutor: #ffffff;
     --brand-mark: #22c55e;
     --sidebar-brand-abhi: #8fdcff;
@@ -274,6 +275,29 @@
     --input-bg: #fafafa;
 }
 
+/* Oxford and Burgundy (2026-08-14): the two deep, formal lights. Both keep
+   the standard white surfaces — only the accent, chrome and pill change, so
+   every derived colour (year headers, hero gradient) follows on its own. */
+[data-theme='oxford'] {
+    --bg: linear-gradient(135deg, #f5f7fa, #f8fafc 45%, #eef2f8);
+    --accent: #1e3a8a;
+    --accent-alt: #475569;
+    --sidebar-start: #0b1220;
+    --sidebar-end: #1e3a8a;
+    --pill-bg: #e0e7ff;
+    --pill-text: #1e3a8a;
+}
+
+[data-theme='burgundy'] {
+    --bg: linear-gradient(135deg, #fdf7f7, #faf8f7 45%, #f5eceb);
+    --accent: #7f1d1d;
+    --accent-alt: #57534e;
+    --sidebar-start: #2a0d0d;
+    --sidebar-end: #7f1d1d;
+    --pill-bg: #f6e3e1;
+    --pill-text: #7f1d1d;
+}
+
 /* The dark shelf (REQ: light/dark picker groups). Same variable contract as
    midnight — dark page, dark surfaces, sidebar palette to match. */
 [data-theme='graphite'] {
@@ -417,54 +441,3 @@
     );
 }
 
-/* Light-chrome themes (REQ: light themes with dark menu/header text). The
-   sidebar/topbar band is pale, so --sidebar-text goes dark, --button-bg
-   becomes a faint dark wash, and the active/hover nav sits on the accent. */
-[data-theme='daylight'] {
-    --brand-abhi: #0284c7;
-    --brand-tutor: var(--sidebar-text);
-    --sidebar-brand-abhi: #0284c7;
-    --sidebar-brand-mark: #16a34a;
-    --bg: linear-gradient(135deg, #f8fafc, #eff6ff 45%, #e0f2fe);
-    --accent: #2563eb;
-    --accent-alt: #0ea5e9;
-    --sidebar-start: #f1f5f9;
-    --sidebar-end: #dbe4ee;
-    --sidebar-text: #1e293b;
-    --sidebar-muted: #5b6b7f;
-    --button-bg: rgba(15, 23, 42, 0.06);
-    --button-hover: var(--accent);
-    --button-hover-text: #ffffff;
-    --pill-bg: #dbeafe;
-    --pill-text: #1d4ed8;
-    --sidebar-gradient: linear-gradient(
-        180deg,
-        var(--sidebar-start),
-        var(--sidebar-end)
-    );
-}
-
-[data-theme='parchment'] {
-    --brand-abhi: #0284c7;
-    --brand-tutor: var(--sidebar-text);
-    --sidebar-brand-abhi: #0284c7;
-    --sidebar-brand-mark: #16a34a;
-    --bg: linear-gradient(135deg, #fdfaf3, #faf5ea 45%, #f3e9d6);
-    --surface-alt: #faf6ee;
-    --accent: #b45309;
-    --accent-alt: #c2701a;
-    --sidebar-start: #faf5ec;
-    --sidebar-end: #ece0cc;
-    --sidebar-text: #4a3418;
-    --sidebar-muted: #8a7355;
-    --button-bg: rgba(74, 52, 24, 0.07);
-    --button-hover: var(--accent);
-    --button-hover-text: #ffffff;
-    --pill-bg: #f3e6cf;
-    --pill-text: #92400e;
-    --sidebar-gradient: linear-gradient(
-        180deg,
-        var(--sidebar-start),
-        var(--sidebar-end)
-    );
-}

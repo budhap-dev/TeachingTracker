@@ -27,6 +27,7 @@ import { appVersion, isProdBuild } from '../version'
 import { paths } from '../paths'
 import { BrandLogo } from './BrandLogo'
 import { BrandBadge } from './BrandBadge'
+import { useIsPhone } from '../hooks/useIsPhone'
 import { TopbarAuth } from './TopbarAuth'
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined'
 import {
@@ -218,6 +219,8 @@ const SidebarContent = ({
     // palette toggle as the topbar (owner call, 2026-08-10 — a wall of
     // swatches always open was worse).
     const [isThemeOpen, setIsThemeOpen] = useState(false)
+    // The badge grows on the phone band; CSS cannot reach its glyph sizes.
+    const isPhone = useIsPhone()
     const dispatch = useAppDispatch()
     // The menu needs the published contact details to decide whether the
     // Contact entry earns its place; the page itself fetches too — the
@@ -264,7 +267,7 @@ const SidebarContent = ({
         >
             <div className="sidebar-header">
                 <div className="sidebar-brand">
-                    <BrandBadge size={50} />
+                    <BrandBadge size={isPhone ? 62 : 50} />
                     <div>
                         <h1 aria-label="AbhiTutor">
                             <BrandLogo />

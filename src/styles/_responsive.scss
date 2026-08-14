@@ -127,7 +127,9 @@
     }
 
     /* The notice auto-scroll's anchor: the offer line lands just under
-       the sticky band, hiding the greeting's duplicate lockup. */
+       the sticky band, hiding the greeting's duplicate lockup. The number
+       tracks the band's height — bigger, and the gap it opens above the
+       anchor is exactly where the duplicate lockup reappears. */
     .visitor-offer-line {
         scroll-margin-top: 132px;
     }
@@ -375,6 +377,15 @@
 
     .sidebar h1 {
         font-size: 1.4rem;
+    }
+
+    /* The phone band's brand, rebalanced (owner report, 2026-08-14): the
+       lockup's 1.4rem above is right, but at 2.5em the pen drew LARGER
+       than the 50px badge beside it. The pen comes down; the badge goes
+       up (its size prop, in Sidebar — every glyph inside scales from it).
+       Desktop keeps both as they were. */
+    .sidebar .brand-pen {
+        width: 1.7em;
     }
 
     .sidebar .sidebar-nav button {

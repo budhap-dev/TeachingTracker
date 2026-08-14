@@ -1,5 +1,7 @@
 export type ThemeName =
     | 'mono'
+    | 'oxford'
+    | 'burgundy'
     | 'ocean'
     | 'sunset'
     | 'forest'
@@ -21,8 +23,6 @@ export type ThemeName =
     | 'gold'
     | 'rosegold'
     | 'steel'
-    | 'daylight'
-    | 'parchment'
 
 export type ThemePreset = {
     label: string
@@ -52,6 +52,28 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
         sidebar: 'linear-gradient(180deg, #09090b, #3f3f46)',
         primary: '#111827',
         secondary: '#52525b',
+    },
+    // Two more for the quiet end of the shelf (2026-08-14), sat beside Mono:
+    // deep, low-chroma colours that read as a business rather than a splash.
+    oxford: {
+        label: 'Oxford',
+        appearance: 'light',
+        paper: '#ffffff',
+        accent: '#1e3a8a',
+        accentAlt: '#475569',
+        sidebar: 'linear-gradient(180deg, #0b1220, #1e3a8a)',
+        primary: '#1e3a8a',
+        secondary: '#475569',
+    },
+    burgundy: {
+        label: 'Burgundy',
+        appearance: 'light',
+        paper: '#ffffff',
+        accent: '#7f1d1d',
+        accentAlt: '#57534e',
+        sidebar: 'linear-gradient(180deg, #2a0d0d, #7f1d1d)',
+        primary: '#7f1d1d',
+        secondary: '#57534e',
     },
     ocean: {
         label: 'Ocean',
@@ -269,28 +291,6 @@ export const themePresets: Record<ThemeName, ThemePreset> = {
         sidebar: 'linear-gradient(160deg, #0a0e13, #414d61 48%, #121820)',
         primary: '#9fb0c3',
         secondary: '#7d8da1',
-    },
-    // Light-chrome themes: the sidebar and topbar band are pale, so their
-    // text is dark. Everything else stays a normal light theme.
-    daylight: {
-        label: 'Daylight',
-        appearance: 'light',
-        paper: '#ffffff',
-        accent: '#2563eb',
-        accentAlt: '#0ea5e9',
-        sidebar: 'linear-gradient(180deg, #f1f5f9, #dbe4ee)',
-        primary: '#2563eb',
-        secondary: '#0ea5e9',
-    },
-    parchment: {
-        label: 'Parchment',
-        appearance: 'light',
-        paper: '#ffffff',
-        accent: '#b45309',
-        accentAlt: '#c2701a',
-        sidebar: 'linear-gradient(180deg, #faf5ec, #ece0cc)',
-        primary: '#b45309',
-        secondary: '#c2701a',
     },
 }
 
