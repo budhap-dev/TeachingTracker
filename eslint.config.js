@@ -9,6 +9,16 @@ export default tseslint.config(
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
+        // The service worker runs in its own global scope (REQ-044): `self`,
+        // `caches`, `Request` and friends are undefined under the browser
+        // globals the app uses.
+        files: ['public/sw.js'],
+        languageOptions: {
+            ecmaVersion: 2020,
+            globals: globals.serviceworker,
+        },
+    },
+    {
         files: ['**/*.{ts,tsx}'],
         languageOptions: {
             ecmaVersion: 2020,

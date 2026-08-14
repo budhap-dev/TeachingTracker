@@ -2040,7 +2040,7 @@ snippet may simply not appear.
 
 ## REQ-044 — The installed app degrades gracefully offline
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+**Status:** 🚧 Built (2026-08-14) · **Impact:** frontend · **Effort:** M
 
 **Story**
 As a phone user who installed the app, I want opening it offline to show
@@ -2052,10 +2052,53 @@ the manifest-only PWA has no service worker today.
   version.json is the freshness signal; cache-bust on it.
 - The dev/prod identity split (yellow-ringed icons) must survive caching.
 
+**How it landed (2026-08-14)** — `public/sw.js`, registered as
+`/sw.js?v=<appVersion>` so every deploy is a new script URL, installs a new
+worker, and names its cache after that build; `activate` deletes every cache
+that is not this build's. Navigations are network-first, so online the browser
+always gets the freshly deployed `index.html` and its new hashed asset names —
+the cache only answers when the network does not. `/version.json` is never
+cached: the freshness stamp must come from the server.
+
+**Runtime caching alone was not enough.** On a first visit the page loads
+before the worker controls it, so its own script and stylesheet requests never
+pass through the worker — a visitor who arrived once and then lost signal got a
+genuinely blank page (observed in Chrome). A small vite plugin now emits
+`precache.json` listing the entry JS/CSS and the worker `addAll`s it on
+install, so ONE online visit is enough for every route. Images and fonts stay
+on-demand: they degrade to a missing picture, not a blank screen.
+
+**`navigator.onLine` could not carry the offline notice.** After a launch
+served entirely from the cache, Chrome reports `onLine === true` — the page
+never touched the network, so nothing told it the network was gone, and the
+notice stayed hidden in exactly the scenario this story is about. The notice
+probes `/version.json` instead: any response proves the origin is reachable,
+only a rejected request means offline.
+
+⚠️ **Known limit:** the visitor pages render from the BUNDLED default content
+when the API is unreachable (`fetchSiteContentFailed` has always fallen back
+that way), so an offline visitor may see older copy than the owner has
+published, presented as if current. The notice says "the last version saved to
+your device" for that reason. The enquiry form is also fully interactive
+offline and only fails on Send — nothing queues it.
+
 **Acceptance criteria**
-- [ ] Offline launch renders the shell + offline notice, no white screen.
-- [ ] Deploys reach clients within one reload once back online.
-- [ ] Lighthouse PWA audit passes; dev/prod icons stay distinct.
+- [x] Offline launch renders the shell + offline notice, no white screen
+      _(verified in Chrome: fresh profile, one page load, then offline —
+      `/`, `/about`, `/reviews`, `/pricing` all paint with the notice)_.
+- [x] Deploys reach clients within one reload once back online _(a persistent
+      profile on 1.0.44 moved to `sw.js?v=1.0.45`, cache
+      `abhitutor-shell-1.0.45`, new hashed bundle, old cache purged — in one
+      load)_.
+- [x] Lighthouse PWA audit passes; dev/prod icons stay distinct _(Lighthouse
+      dropped its PWA category in v12, so the criteria were checked directly:
+      secure context, an activated worker controlling the page with a fetch
+      handler, and a manifest with name/short_name/start_url/standalone and
+      192/512/maskable icons. `beforeinstallprompt` does not fire under
+      automation, so no install prompt was observed. Applying the deploy's
+      dev rewrite to a build gives "AbhiTutor (dev)", `/icons-dev/icon-192.png`
+      and `/badge-dev.svg` — the worker caches whatever the origin serves and
+      never names an icon, so the yellow ring survives caching)_.
 
 ## REQ-045 — Default-content drift check between the repos
 

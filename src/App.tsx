@@ -19,6 +19,7 @@ import {
 } from './store/store'
 import { useAppDispatch } from './hooks'
 import { useTheme } from './hooks/useTheme'
+import { OfflineNotice } from './components/OfflineNotice'
 import { BusyBar } from './components/BusyBar'
 import { NoticeToast } from './components/NoticeToast'
 import { Sidebar } from './components/Sidebar'
@@ -92,6 +93,7 @@ const AppShell = () => {
                         activeTheme={activeTheme}
                         onSelectTheme={setTheme}
                     />
+                    <OfflineNotice />
                     <AppRoutes />
                 </main>
                 {/* Visitors' bottom tab bar (REQ-049, Option C): its Menu
