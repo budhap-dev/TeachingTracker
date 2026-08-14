@@ -5254,3 +5254,19 @@ svg[data-testid='DeleteOutlineRoundedIcon'] {
     margin-right: 10px;
     white-space: nowrap;
 }
+
+/* The offline line (REQ-044): a quiet strip at the top of the content
+   column, not an alarm — the app still works, it is just showing what it
+   last saved. */
+.offline-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    background: var(--surface-alt);
+    color: var(--muted);
+    font-size: 0.88rem;
+}

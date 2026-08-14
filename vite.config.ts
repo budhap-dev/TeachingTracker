@@ -6,8 +6,38 @@ import react from '@vitejs/plugin-react'
 // call from the dev server instead, where CORS does not apply.
 const DEV_API_ORIGIN = 'https://func-teachtracker-dev-pjlmrq.azurewebsites.net'
 
+/**
+ * Writes the shell's precache list for the service worker (REQ-044).
+ *
+ * Runtime caching alone is not enough: on a first visit the page loads before
+ * the worker takes control, so its own asset requests never pass through it —
+ * a visitor who installs and immediately loses signal would get a blank page
+ * (observed, 2026-08-14). The worker reads this list on install instead, so
+ * one online visit is enough to make every route work offline.
+ *
+ * Only entry assets: the hashed JS/CSS the shell cannot boot without. Images
+ * and fonts stay on-demand — they degrade to a missing picture, not a blank
+ * screen, and precaching them would cost every casual visitor the download.
+ */
+const precacheManifest = () => ({
+    name: 'precache-manifest',
+    apply: 'build' as const,
+    generateBundle(_options: unknown, bundle: Record<string, unknown>) {
+        // (regex, not endsWith: tsconfig.node's lib predates it — same
+        // reason the manualChunks below uses indexOf.)
+        const files = Object.keys(bundle)
+            .filter((name) => /\.(?:js|css)$/.test(name))
+            .map((name) => `/${name}`)
+        this.emitFile({
+            type: 'asset',
+            fileName: 'precache.json',
+            source: JSON.stringify(['/', ...files], null, 2),
+        })
+    },
+})
+
 export default defineConfig({
-    plugins: [react()],
+    plugins: [react(), precacheManifest()],
     css: {
         // Silences the legacy-js-api deprecation the default bridge prints on
         // every build; sass's modern API is the supported path.
