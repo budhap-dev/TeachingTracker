@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Button, IconButton, TextField } from '@mui/material'
 import { Link } from 'react-router-dom'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
@@ -12,6 +12,7 @@ import {
     publishSiteContentRequested,
 } from '../store/store'
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
+import { useDraftSection } from '../hooks/useDraftSection'
 import { defaultSiteContent } from '../data/siteContent'
 import type { FaqItem, SiteContent } from '../data/siteContent'
 import { SortableItem, SortableList } from './SortableList'
@@ -63,27 +64,18 @@ export const FaqView = ({
         'FAQ — AbhiTutor',
         'Answers to the questions families ask about tutoring with AbhiTutor — subjects, levels, online and in-person lessons, and how to get started.'
     )
-    const [rows, setRows] = useState<FaqRow[]>(() => toRows(content.faq))
-    // Adopt refreshed content until the teacher's first edit — then the
-    // draft is theirs (same stance as the site editor).
-    const [edited, setEdited] = useState(false)
-    useEffect(() => {
-        if (!edited) {
-            setRows(toRows(content.faq))
-        }
-    }, [content.faq, edited])
-
-    const change = (mutate: (next: FaqRow[]) => FaqRow[]) => {
-        setEdited(true)
-        setRows((current) => mutate(current))
-    }
-
-    const assembled = assemble(rows)
-    // Same-shaped both sides (see AboutView): the API's key order must
-    // not keep Publish lit.
-    const dirty =
-        JSON.stringify(assembled) !==
-        JSON.stringify(assemble(toRows(content.faq)))
+    // Adopt-until-edited, the canonicalised dirty check and the publish
+    // assembly all live in the shared hook now (REQ-046).
+    const {
+        draft: rows,
+        edit: change,
+        assembled,
+        dirty,
+    } = useDraftSection({
+        source: content.faq,
+        toDraft: toRows,
+        assemble,
+    })
 
     return (
         <section className="content-stack faq-page">
