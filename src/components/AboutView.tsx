@@ -40,6 +40,7 @@ import {
     publishSiteContentRequested,
 } from '../store/store'
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
+import { useDraftSection } from '../hooks/useDraftSection'
 import { renderMarkdown } from '../utils/markdown'
 import { defaultSiteContent } from '../data/siteContent'
 import type { BioSection, CvEntry, SiteContent } from '../data/siteContent'
@@ -312,7 +313,14 @@ export const AboutView = ({
         'Meet Mrs Abhinanda Pandit: Maths Mentor at a Leeds secondary school, physics graduate, and tutor with 20+ years of teaching experience.'
     )
     const { bio, hero } = content
-    const [draft, setDraft] = useState<AboutDraft>(() => toDraft(bio))
+    // Adopt-until-edited, the canonicalised dirty check and the publish
+    // assembly all live in the shared hook now (REQ-046) — this page's
+    // 2026-08-06 Publish-always-lit bug is the reason it exists.
+    const { draft, edit, assembled, dirty } = useDraftSection({
+        source: bio,
+        toDraft,
+        assemble,
+    })
     const [photoError, setPhotoError] = useState<string | null>(null)
     const photoInput = useRef<HTMLInputElement>(null)
     // The picked image stays in memory so the crop can be reopened and
@@ -342,28 +350,10 @@ export const AboutView = ({
             )
         }
     }
-    const [edited, setEdited] = useState(false)
     // One inline editor open at a time; the pencil toggles it
     // (owner ask, 2026-08-09 — editors beside their sections, not a
     // monolith at the foot of the page).
     const [editingSection, setEditingSection] = useState<string | null>(null)
-    useEffect(() => {
-        if (!edited) {
-            setDraft(toDraft(bio))
-        }
-    }, [bio, edited])
-
-    const edit = (mutate: (next: AboutDraft) => AboutDraft) => {
-        setEdited(true)
-        setDraft((current) => mutate(current))
-    }
-
-    const assembled = assemble(draft)
-    // The published side goes through the same assemble path before the
-    // stringify comparison — the API's key order differs from ours, and
-    // comparing raw kept Publish lit forever (owner report, 2026-08-06).
-    const dirty =
-        JSON.stringify(assembled) !== JSON.stringify(assemble(toDraft(bio)))
     // The teacher sees the page AS THE DRAFT — photo, rows, everything —
     // before publishing; visitors see only the published document.
     const view = canEdit ? assembled : bio

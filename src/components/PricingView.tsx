@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Button, IconButton, TextField } from '@mui/material'
 import { Link } from 'react-router-dom'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
@@ -12,6 +12,7 @@ import {
     publishSiteContentRequested,
 } from '../store/store'
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
+import { useDraftSection } from '../hooks/useDraftSection'
 import type { PricingSection, SiteContent } from '../data/siteContent'
 import { paths } from '../paths'
 import { PageLoading } from './PageLoading'
@@ -33,8 +34,21 @@ const toRateRows = (pricing: PricingSection): RateRow[] =>
 const toFactorRows = (pricing: PricingSection): FactorRow[] =>
     pricing.factors.map((factor) => ({ key: newRowKey(), ...factor }))
 
+/** The form's working shape: the two keyed row lists plus the note. */
+type PricingDraft = {
+    rates: RateRow[]
+    factors: FactorRow[]
+    note: string
+}
+
+const toDraft = (pricing: PricingSection): PricingDraft => ({
+    rates: toRateRows(pricing),
+    factors: toFactorRows(pricing),
+    note: pricing.note,
+})
+
 /** Rows back into the publishable shape; half-filled rows are left out. */
-const assemble = (
+const assembleParts = (
     rates: RateRow[],
     factors: FactorRow[],
     note: string
@@ -55,6 +69,9 @@ const assemble = (
         .filter((factor) => factor.title.length > 0 && factor.detail.length > 0),
     note: note.trim(),
 })
+
+const assemble = (draft: PricingDraft): PricingSection =>
+    assembleParts(draft.rates, draft.factors, draft.note)
 
 type PricingViewProps = {
     content: SiteContent
@@ -85,29 +102,23 @@ export const PricingView = ({
         'Clear tutoring rates: lessons generally start from £20 per session per student at GCSE, with the exact rate agreed at a free assessment.'
     )
     const { pricing } = content
-    const [rates, setRates] = useState<RateRow[]>(() => toRateRows(pricing))
-    const [factors, setFactors] = useState<FactorRow[]>(() =>
-        toFactorRows(pricing)
-    )
-    const [note, setNote] = useState(pricing.note)
-    const [edited, setEdited] = useState(false)
-    useEffect(() => {
-        if (!edited) {
-            setRates(toRateRows(pricing))
-            setFactors(toFactorRows(pricing))
-            setNote(pricing.note)
-        }
-    }, [pricing, edited])
-
-    const touch = () => setEdited(true)
-    const assembled = assemble(rates, factors, note)
-    // Same-shaped both sides (see AboutView): the API's key order must
-    // not keep Publish lit.
-    const dirty =
-        JSON.stringify(assembled) !==
-        JSON.stringify(
-            assemble(toRateRows(pricing), toFactorRows(pricing), pricing.note)
-        )
+    // Adopt-until-edited, the canonicalised dirty check and the publish
+    // assembly all live in the shared hook now (REQ-046).
+    const { draft, edit, assembled, dirty } = useDraftSection({
+        source: pricing,
+        toDraft,
+        assemble,
+    })
+    const { rates, factors, note } = draft
+    // Per-slice setters keep the form's call sites reading as they did —
+    // each one edits its own list, the hook records that the draft is the
+    // teacher's now.
+    const setRates = (mutate: (current: RateRow[]) => RateRow[]) =>
+        edit((next) => ({ ...next, rates: mutate(next.rates) }))
+    const setFactors = (mutate: (current: FactorRow[]) => FactorRow[]) =>
+        edit((next) => ({ ...next, factors: mutate(next.factors) }))
+    const setNote = (value: string) =>
+        edit((next) => ({ ...next, note: value }))
     return (
         <section className="content-stack pricing-page">
             <div className="card">
@@ -224,7 +235,6 @@ export const PricingView = ({
                             size="small"
                             startIcon={<AddRoundedIcon fontSize="small" />}
                             onClick={() => {
-                                touch()
                                 setRates((current) => [
                                     ...current,
                                     { key: newRowKey(), label: '', from: '' },
@@ -245,7 +255,6 @@ export const PricingView = ({
                                     size="small"
                                     value={row.label}
                                     onChange={(event) => {
-                                        touch()
                                         setRates((current) =>
                                             current.map((item) =>
                                                 item.key === row.key
@@ -269,7 +278,6 @@ export const PricingView = ({
                                     }}
                                     value={row.from}
                                     onChange={(event) => {
-                                        touch()
                                         setRates((current) =>
                                             current.map((item) =>
                                                 item.key === row.key
@@ -287,7 +295,6 @@ export const PricingView = ({
                                     size="small"
                                     aria-label={`Remove ${row.label || 'new rate'}`}
                                     onClick={() => {
-                                        touch()
                                         setRates((current) =>
                                             current.filter(
                                                 (item) =>
@@ -310,7 +317,6 @@ export const PricingView = ({
                             size="small"
                             startIcon={<AddRoundedIcon fontSize="small" />}
                             onClick={() => {
-                                touch()
                                 setFactors((current) => [
                                     ...current,
                                     {
@@ -335,7 +341,6 @@ export const PricingView = ({
                                     size="small"
                                     value={row.title}
                                     onChange={(event) => {
-                                        touch()
                                         setFactors((current) =>
                                             current.map((item) =>
                                                 item.key === row.key
@@ -355,7 +360,6 @@ export const PricingView = ({
                                     multiline
                                     value={row.detail}
                                     onChange={(event) => {
-                                        touch()
                                         setFactors((current) =>
                                             current.map((item) =>
                                                 item.key === row.key
@@ -373,7 +377,6 @@ export const PricingView = ({
                                     size="small"
                                     aria-label={`Remove ${row.title || 'new factor'}`}
                                     onClick={() => {
-                                        touch()
                                         setFactors((current) =>
                                             current.filter(
                                                 (item) =>
@@ -395,7 +398,6 @@ export const PricingView = ({
                         fullWidth
                         value={note}
                         onChange={(event) => {
-                            touch()
                             setNote(event.target.value)
                         }}
                         helperText="e.g. “Your exact rate is agreed at the free assessment — no obligation, no surprises.”"

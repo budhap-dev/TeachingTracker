@@ -2103,7 +2103,7 @@ and half is one secret away.
 
 ## REQ-046 — One edited-in-place hook for About, FAQ and Pricing
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+**Status:** 🚧 Built (2026-08-14) · **Impact:** frontend · **Effort:** M
 
 **Story**
 As the next person adding an editable page, I want the edited-in-place
@@ -2112,11 +2112,29 @@ assembly — in one `useDraftSection` hook. It is currently hand-rolled
 three times, and the 2026-08-06 Publish-always-lit bug had to be fixed in
 all three places.
 
+**How it landed (2026-08-14)** — `useDraftSection({ source, toDraft,
+assemble })` returns `{ draft, edit, assembled, dirty }`, and the three
+pages kept their own row shapes: About passes its `AboutDraft`, FAQ its
+keyed rows, Pricing a new `{ rates, factors, note }` draft that replaced
+three separate `useState` slices. Pricing's form reads as it did — small
+per-slice setters wrap `edit`, so the twelve `touch(); setX(...)` pairs
+became plain `setX(...)`.
+
+Two details the hand-rolled copies had each solved separately, now solved
+once: the published side goes through the SAME `assemble` before the
+comparison (the API's key order is not ours), and the adopt effect keys
+only off `source`/`edited` — `toDraft`/`assemble` ride in a ref, so a page
+passing inline functions cannot spin a re-render loop.
+
+The hook is tested directly as well as through the pages: it is now one
+regression away from breaking three of them at once.
+
 **Acceptance criteria**
-- [ ] About, FAQ and Pricing all consume the shared hook; behaviour is
-      pixel-identical (existing suites pass unchanged).
-- [ ] The canonicalised dirty comparison lives in exactly one place.
-- [ ] A new editable page needs only its assemble/toDraft pair.
+- [x] About, FAQ and Pricing all consume the shared hook; behaviour is
+      pixel-identical (existing suites pass unchanged — no test file was
+      touched, 568 green).
+- [x] The canonicalised dirty comparison lives in exactly one place.
+- [x] A new editable page needs only its assemble/toDraft pair.
 
 ## REQ-047 — Split the stylesheet and route monoliths
 
