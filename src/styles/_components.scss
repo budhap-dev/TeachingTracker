@@ -219,8 +219,8 @@
     font-weight: 800;
     font-size: 1.32em;
     letter-spacing: -0.02em;
-    /* White everywhere the brand appears (owner call) — the pale-chrome
-       themes swap the variable so it never sits white-on-pale. */
+    /* White everywhere the brand appears (owner call). Kept a variable so
+       a pale-band theme could swap it rather than sit white-on-pale. */
     color: var(--brand-tutor);
     animation: brand-fade-up 0.5s ease 0.15s both;
 }
@@ -249,8 +249,7 @@
     animation: brand-ink-draw 0.9s ease-in-out 0.45s both;
 }
 
-/* On the sidebar's band the brand reads in the band's own light (or, on the
-   pale-chrome themes, dark) colours. */
+/* On the sidebar's band the brand reads in the band's own light colours. */
 .sidebar .brand-abhi {
     color: var(--sidebar-brand-abhi);
 }
@@ -3969,17 +3968,6 @@ a.home-highlight-tile {
         grid-template-columns: 1fr;
     }
 }
-
-.site-editor-preview-note {
-    margin: 0;
-    padding: 10px 14px;
-    border: 1px dashed var(--border);
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-    color: var(--text);
-    font-size: 0.9rem;
-}
-
 
 /* The tutor bio + safeguarding (REQ-021). Quiet prose card; the DBS badge
    is the one deliberate splash — a green pill that reads as verified. */

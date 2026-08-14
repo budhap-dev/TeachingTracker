@@ -217,6 +217,61 @@ describe('HomeView', () => {
         ).toBeInTheDocument()
         sessionStorage.clear()
     })
+
+    it('says what the teacher published — headings, buttons and the tab title', () => {
+        renderHome(reviews, {
+            ...defaultSiteContent,
+            home: {
+                metaTitle: 'Harbour Tuition — maths that clicks',
+                metaDescription: 'Tutoring in Leeds, in person or online.',
+                ctaLabel: 'Book a free chat',
+                exploreLabel: 'See what I teach',
+                highlightsHeading: 'Why families stay',
+                journeyHeading: 'Getting started',
+            },
+        })
+
+        expect(
+            screen.getByRole('link', { name: /book a free chat/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('link', { name: /see what i teach/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('heading', { name: 'Why families stay' })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('heading', { name: 'Getting started' })
+        ).toBeInTheDocument()
+        expect(document.title).toBe('Harbour Tuition — maths that clicks')
+    })
+
+    it('falls back to the shipped wording when a line is cleared', () => {
+        // Clearing a field means "use the usual words" — never a blank
+        // heading or a nameless button.
+        renderHome(reviews, {
+            ...defaultSiteContent,
+            home: {
+                metaTitle: '',
+                metaDescription: '',
+                ctaLabel: '',
+                exploreLabel: '',
+                highlightsHeading: '',
+                journeyHeading: '',
+            },
+        })
+
+        expect(
+            screen.getByRole('link', { name: /request a free assessment/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('heading', { name: 'Why AbhiTutor' })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('heading', { name: 'How it works' })
+        ).toBeInTheDocument()
+        expect(document.title).toBe(defaultSiteContent.home.metaTitle)
+    })
 })
 
 describe('HomeLanding', () => {

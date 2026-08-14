@@ -52,10 +52,13 @@ describe('SiteEditorView', () => {
             screen.getByDisplayValue('Grouped by year and subject')
         ).toBeInTheDocument()
 
-        // Every reorderable row carries a focusable grip — sections included.
+        // Every reorderable row carries a focusable grip. Page sections are
+        // no longer among them (2026-08-14) — only 'hero' and 'approach'
+        // still draw on Offerings, so the order list went; sectionOrder
+        // itself still publishes untouched.
         expect(
-            screen.getByRole('button', { name: /reorder subjects taught/i })
-        ).toBeInTheDocument()
+            screen.queryByRole('button', { name: /reorder hero/i })
+        ).not.toBeInTheDocument()
         expect(
             screen.getByRole('button', { name: /reorder mathematics/i })
         ).toBeInTheDocument()
@@ -90,6 +93,26 @@ describe('SiteEditorView', () => {
                 ...defaultSiteContent.hero,
                 headline: 'Tutoring that clicks.',
             },
+        })
+    })
+
+    it('publishes the Home page wording, trimmed', async () => {
+        const user = userEvent.setup()
+        const { onPublish } = renderEditor()
+
+        fireEvent.change(screen.getByLabelText(/main button/i), {
+            target: { value: '  Book a free chat  ' },
+        })
+        fireEvent.change(screen.getByLabelText(/how-it-works heading/i), {
+            target: { value: 'Getting started' },
+        })
+        await user.click(publishButton())
+
+        const published = onPublish.mock.calls[0][0] as SiteContent
+        expect(published.home).toEqual({
+            ...defaultSiteContent.home,
+            ctaLabel: 'Book a free chat',
+            journeyHeading: 'Getting started',
         })
     })
 
@@ -248,31 +271,27 @@ describe('SiteEditorView', () => {
         expect(publishButton()).toBeDisabled()
     })
 
-    it('previews unsaved edits exactly as the Offerings page renders them', async () => {
+    it('has no preview tab — the form is the whole screen', async () => {
+        // The preview rendered Offerings alone, which shows barely a third
+        // of what this form edits (2026-08-14). Publishing is live and
+        // reversible, so the site itself is the preview; nothing about
+        // editing or publishing changed with it.
         const user = userEvent.setup()
-        renderEditor()
+        const { onPublish } = renderEditor()
 
-        // The availability line — the hero's headline no longer renders
-        // on Offerings (owner call, 2026-08-07), but availability does.
+        expect(screen.queryAllByRole('tab')).toHaveLength(0)
+
         fireEvent.change(screen.getByLabelText(/availability/i), {
-            target: { value: 'Preview me before anyone else.' },
+            target: { value: 'Taking Year 11 from September.' },
         })
-        await user.click(screen.getByRole('tab', { name: /preview/i }))
-
-        // The public page's rendering, fed the draft — unsaved edit included.
-        expect(
-            screen.getByText('Preview me before anyone else.')
-        ).toBeInTheDocument()
-        expect(
-            screen.getByRole('heading', { name: 'Mathematics' })
-        ).toBeInTheDocument()
-        expect(screen.getByText(/including your unsaved changes/i))
-            .toBeInTheDocument()
-
-        // And back: the edit survives the round trip through the tabs.
-        await user.click(screen.getByRole('tab', { name: /edit/i }))
         expect(screen.getByLabelText(/availability/i)).toHaveValue(
-            'Preview me before anyone else.'
+            'Taking Year 11 from September.'
+        )
+        await user.click(publishButton())
+
+        const published = onPublish.mock.calls[0][0] as SiteContent
+        expect(published.hero.availability).toBe(
+            'Taking Year 11 from September.'
         )
     })
 

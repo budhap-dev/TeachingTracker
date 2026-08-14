@@ -26,6 +26,7 @@ import { PageLoading } from './PageLoading'
 import type { Testimonial } from '../data/students'
 
 import type { SiteContent } from '../data/siteContent'
+import { defaultSiteContent } from '../data/siteContent'
 import { SiteStructuredData } from './SiteStructuredData'
 import { familyReviewSummary } from '../utils/structuredData'
 
@@ -84,9 +85,14 @@ export const HomeView = ({
     content,
     contentLoaded = true,
 }: HomeViewProps) => {
+    // The page's own words are the owner's (2026-08-14): headings, button
+    // labels and the search-result copy all come from the published
+    // document. `||` not `??` throughout — a cleared field means "use the
+    // shipped wording", never an empty heading or a nameless button.
+    const home = content.home
     useDocumentMeta(
-        'AbhiTutor — Where confidence takes off.',
-        'Personal tutoring in maths and the sciences for Years 7–13, online or in person. Matched to your exam board, planned around the school week.'
+        home.metaTitle || defaultSiteContent.home.metaTitle,
+        home.metaDescription || defaultSiteContent.home.metaDescription
     )
     const { hero, journey } = content
     // The teacher door (owner ask, 2026-08-06): the sign-in afterline is
@@ -170,9 +176,11 @@ export const HomeView = ({
     // quote both retired; the trust chips' ★ average carries the number
     // (owner calls, 2026-08-06). "Proven results" carries its evidence —
     // it links to the reviews.
+    const highlightsHeading =
+        home.highlightsHeading || defaultSiteContent.home.highlightsHeading
     const highlightGrid =
         contentLoaded && content.highlights.length > 0 ? (
-            <ul className="home-highlights" aria-label="Why AbhiTutor">
+            <ul className="home-highlights" aria-label={highlightsHeading}>
                 {content.highlights.map((title) => {
                     const Icon = highlightIcon(title)
                     const provesResults = title
@@ -273,10 +281,12 @@ export const HomeView = ({
                         component={Link}
                         to={paths.enquire}
                     >
-                        Request a free assessment
+                        {home.ctaLabel || defaultSiteContent.home.ctaLabel}
                     </Button>
                     <Link className="home-band-more" to={paths.offerings}>
-                        Explore subjects →
+                        {home.exploreLabel ||
+                            defaultSiteContent.home.exploreLabel}{' '}
+                        →
                     </Link>
                 </div>
                 {(reviewCount > 0 ||
@@ -332,12 +342,17 @@ export const HomeView = ({
             <div className="home-proof-row">
                 {highlightGrid && (
                     <div className="card home-highlights-card">
-                        <h4 className="offerings-heading">Why AbhiTutor</h4>
+                        <h4 className="offerings-heading">
+                            {highlightsHeading}
+                        </h4>
                         {highlightGrid}
                     </div>
                 )}
                 <div className="card home-journey-mini">
-                    <h4 className="offerings-heading">How it works</h4>
+                    <h4 className="offerings-heading">
+                        {home.journeyHeading ||
+                            defaultSiteContent.home.journeyHeading}
+                    </h4>
                     <ol>
                         {journey.map((step, index) => (
                             <li key={step.title}>
