@@ -16,6 +16,7 @@ import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined'
 import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded'
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
+import QueryStatsOutlinedIcon from '@mui/icons-material/QueryStatsOutlined'
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import PrivacyTipOutlinedIcon from '@mui/icons-material/PrivacyTipOutlined'
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
@@ -154,6 +155,13 @@ const navItems: NavItem[] = [
         isActive: (pathname) => pathname === paths.reviewsModeration,
         teacherOnly: true,
         waiting: selectPendingReviews,
+    },
+    {
+        label: 'Site visits',
+        path: paths.visits,
+        icon: <QueryStatsOutlinedIcon fontSize="small" />,
+        isActive: (pathname) => pathname.startsWith(paths.visits),
+        teacherOnly: true,
     },
     {
         label: 'Public site',

@@ -110,10 +110,16 @@ export const PrivacyView = () => {
                         </tbody>
                     </table>
                 </div>
+                {/* The wording is REQ-058's, agreed before the counting
+                    shipped: it stops claiming there is no analytics at all,
+                    and says exactly what the counting does and does not do. */}
                 <p>
                     That is the whole list. There is no advertising profile,
-                    no analytics tracking, and nothing is ever sold or shared
-                    for marketing.
+                    and nothing is ever sold or shared for marketing. I do
+                    count how many visits each public page gets, so I know
+                    which pages are useful — that counting sets no cookies,
+                    stores nothing on your device, records no IP address, and
+                    identifies nobody.
                 </p>
             </div>
 

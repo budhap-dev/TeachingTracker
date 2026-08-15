@@ -84,6 +84,15 @@ purchases, no automated decision-making or profiling, and **no international
 transfers** beyond Microsoft's own support arrangements under its DPA — data
 is stored in **UK South**.
 
+**Page-visit counts (not personal data).** The public site records, for each
+visit to a public page, a random per-tab id held only in the browser's memory,
+the page name and the time. No IP address, user agent, referrer or form
+content is stored, and the id is never written to the visitor's device, so no
+visitor can be identified from these rows and no processor is involved. Counts
+are the owner's own, in the owner's own Azure storage. Raw rows are purged on
+the retention schedule. The absence of an analytics *identifier* above still
+holds: nothing here survives a closed tab (REQ-058).
+
 ---
 
 ## 3. Recipients and processors

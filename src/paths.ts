@@ -21,4 +21,5 @@ export const paths = {
     about: '/about',
     reviews: '/reviews',
     reviewsModeration: '/reviews/moderation',
+    visits: '/visits',
 } as const

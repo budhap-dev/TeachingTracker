@@ -7,6 +7,7 @@ import {
 import { isAuthConfigured } from '../auth/msal'
 import { paths } from '../paths'
 import { HomeLanding } from './HomeView'
+import { CountPageVisit } from './CountPageVisit'
 
 /**
  * Signed out, every teacher route bounces to the site root, which now shows
@@ -18,7 +19,15 @@ const SignedOut = () => {
     if (pathname !== paths.dashboard) {
         return <Navigate to={paths.dashboard} replace />
     }
-    return <HomeLanding />
+    // The visitor's Home is the one public page that lives behind the
+    // teacher gate — it shares the root path with the dashboard — so it is
+    // counted here rather than in the router (REQ-058).
+    return (
+        <>
+            <CountPageVisit page="home" />
+            <HomeLanding />
+        </>
+    )
 }
 
 /**
