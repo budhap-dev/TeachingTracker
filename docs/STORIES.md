@@ -125,6 +125,10 @@ XS is an afternoon, XL is a project.
 | 50 | 🔲 | [REQ-050 — Frontend toolchain migration: React 19, Vite 8, TS 6+, hooks lint](#req-050--frontend-toolchain-migration-react-19-vite-8-ts-6-hooks-lint) | L | frontend | — (all majors held in dependabot.yml until this lands) |
 | 51 | 🔲 | [REQ-051 — Subject chips play on tap](#req-051--subject-chips-play-on-tap) | S | frontend | — (owner idea, 2026-08-11) |
 | 52 | 🔲 | [REQ-052 — Class notes, read date-wise](#req-052--class-notes-read-date-wise) | S | frontend | — (owner ask, 2026-08-11) |
+| 53 | 🔲 | [REQ-053 — The phone says when an enquiry or a review lands](#req-053--the-phone-says-when-an-enquiry-or-a-review-lands) | M | both + infra | — (REQ-044 shipped 2026-08-14, so the worker exists) |
+| 54 | 🔲 | [REQ-054 — The visitor's phone: give the first screen to the pitch](#req-054--the-visitors-phone-give-the-first-screen-to-the-pitch) | M | frontend | — (owner ask, 2026-08-14) |
+| 55 | 🔲 | [REQ-055 — A month's statement per student, as a PDF](#req-055--a-months-statement-per-student-as-a-pdf) | M | frontend | — (owner ask, 2026-08-15) |
+| 56 | 🔲 | [REQ-056 — The dashboard counts what is waiting](#req-056--the-dashboard-counts-what-is-waiting) | S | frontend | — (owner ask, 2026-08-15) |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -2366,16 +2370,30 @@ Decisions worth recording:
       line, no horizontal overflow at 390px).
 - [x] No new API surface; coverage holds (565 tests, 94.07%).
 
-## REQ-053 — The phone says when an enquiry lands
+## REQ-053 — The phone says when an enquiry or a review lands
 
 **Status:** 🔲 Not started · **Impact:** both + infra · **Effort:** M ·
-**Depends on:** REQ-044 (there is no service worker yet, and push needs one)
-_(owner ask, 2026-08-13)_
+**Depends on:** ~~REQ-044~~ (shipped 2026-08-14 — the service worker exists;
+this story adds a `push` handler to it)
+_(owner ask, 2026-08-13; widened to reviews and the dashboard, 2026-08-15)_
 
 **Story**
 As the teacher, with the app installed on my Android phone from Chrome, I
-want it to tell me when a new enquiry arrives — a notification and a badge
-on the app icon — so I can reply quickly without opening the app to check.
+want it to tell me when something is waiting for me — a new enquiry, or a
+review awaiting moderation — as a notification and a number on the app
+icon, so I can act without opening the app to check.
+
+**Two things are waiting-for-me, and they behave the same way**
+
+| what | arrives from | where it is dealt with | counted while unseen |
+|---|---|---|---|
+| an enquiry | the public enquiry form (`createLead`) | Leads | status `New` |
+| a review | a family's submission (`createTestimonial`) | Moderation | status `Pending` |
+
+The icon badge is **one number** — the two added together — because an app
+icon has one badge and the teacher's question is "is anything waiting?",
+not "which kind?". The counts stay separate everywhere there is room to
+show them: the notification, the nav, and the dashboard (REQ-056).
 
 **Shape**
 - **Service worker first.** Push is delivered to a service worker, and the
@@ -2388,21 +2406,27 @@ on the app icon — so I can reply quickly without opening the app to check.
   and POSTs the subscription to the API; the backend keeps a list (the
   teacher may have a phone *and* a laptop). `DELETE` when the switch is
   turned off.
-- **Send on arrival.** `createLead` already runs on every public enquiry —
-  after it succeeds, push to every stored subscription (`web-push`, VAPID
-  private key in app settings, never the repo). Prune on 404/410 so dead
-  endpoints don't accumulate.
+- **Send on arrival.** `createLead` and `createTestimonial` already run on
+  every public submission — after either succeeds, push to every stored
+  subscription (`web-push`, VAPID private key in app settings, never the
+  repo). Prune on 404/410 so dead endpoints don't accumulate. A review that
+  the profanity flagger marks still notifies: flagged is exactly the kind
+  that wants looking at.
 - **The icon badge** the owner asked for is `navigator.setAppBadge(count)`
-  from the `push` handler, cleared when Leads is opened. `notificationclick`
-  opens `/leads`.
+  from the `push` handler — new enquiries plus pending reviews — cleared
+  with `clearAppBadge()` once nothing is left waiting. `notificationclick`
+  opens the page for whichever kind arrived: `/leads` or `/moderation`.
 - **Degrade gracefully.** Where push is unsupported (notably iOS unless
-  installed, and any browser where permission is refused), the Leads nav
-  item still carries a count of unseen enquiries while the app is open.
+  installed, and any browser where permission is refused), the counts still
+  show while the app is open — on the nav items and on the dashboard
+  (REQ-056), which is the fallback and stands on its own.
 
 **Privacy (REQ-030/031 apply)**
-- The notification says "New enquiry — open to read" and **nothing about the
-  family**: a name or message on a lock screen is personal data shown outside
-  the authenticated app.
+- The notification says "New enquiry — open to read" or "A review is waiting"
+  and **nothing about the family**: a name, a message or a review's words on
+  a lock screen are personal data shown outside the authenticated app. A
+  review is unmoderated by definition — its text must never reach a lock
+  screen.
 - A push subscription identifies the teacher's device: record it in the ROPA
   and retention schedule, and delete it on unsubscribe and on sign-out.
 
@@ -2420,14 +2444,17 @@ on the app icon — so I can reply quickly without opening the app to check.
 - [ ] With the app installed on Android from Chrome and notifications
       allowed, submitting an enquiry on the public site raises a
       notification within seconds and badges the app icon.
-- [ ] Tapping the notification opens the Leads page; the badge clears once
-      the enquiries have been seen.
-- [ ] The notification carries no family personal data.
+- [ ] Submitting a review does the same, and the badge shows enquiries and
+      pending reviews added together.
+- [ ] Tapping a notification opens the page for that kind — Leads or
+      Moderation; the badge clears once nothing is waiting.
+- [ ] The notification carries no family personal data, and never a
+      review's text.
 - [ ] Turning the switch off stops notifications and deletes the
       subscription server-side; expired endpoints are pruned automatically.
 - [ ] A push failure never breaks or slows an enquiry submission.
-- [ ] Where push is unsupported, the Leads nav shows an unseen count while
-      the app is open.
+- [ ] Where push is unsupported, the counts still show in-app: the nav
+      items and the dashboard (REQ-056), which does not depend on push.
 - [ ] No secret in the repo; the ROPA and retention schedule cover the
       subscription.
 
@@ -2506,3 +2533,157 @@ move the number above)**
 - [ ] Nothing regresses on desktop or tablet; screenshots at 390, 800
       and 1280 accompany the PR.
 - [ ] Coverage holds.
+
+## REQ-055 — A month's statement per student, as a PDF
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+_(owner ask, 2026-08-15)_
+
+**Story**
+As the teacher, I want to produce a single-student statement for a chosen
+month — who they are, the classes they attended, and what is owed or paid
+— as a PDF I can send to their parent, so billing is a document a family
+can keep rather than a screen I read numbers off.
+
+**The data is already there.** `PaymentRecord` (per student, per month)
+carries every figure this needs, so no model change and no API change is
+expected:
+
+| the statement wants | comes from |
+|---|---|
+| who it is for | `Student` — name, `studentId` code, year, school, parent name, contact |
+| the month | `PaymentRecord.month` |
+| classes attended | `PaymentRecord.sessions` — a `SessionLine` per held class (date, subject, duration, fee) |
+| how many, how long | `sessionsHeld`, `totalDurationMinutes` |
+| what it costs | `feePerSession` + `feeType` (per-session or a monthly retainer) |
+| where it stands | `amountDue`, `amountPaid`, `outstanding`, `status` (Paid / Partial / Pending) |
+
+Two rules the numbers already follow, which the PDF must not restate in
+its own words: a cancelled class is never billed (REQ-010), and a month
+bills for classes actually taught (REQ-001). A monthly-retainer student's
+lines carry fee 0 — their flat fee covers the classes — so a per-line fee
+column must not be summed into a total for them.
+
+**Shape (pick at build time)**
+1. **Print stylesheet + `window.print()`.** No dependency, no bundle
+   cost, and the browser's own "Save as PDF". The teacher picks the
+   destination, and page breaks are CSS's job. Weakest on exact layout
+   control and on filename (the browser decides).
+2. **Client-side generator (jsPDF/pdf-lib).** Exact layout and a proper
+   `Ashan-Perera-2026-08.pdf` filename, at the cost of a dependency and
+   ~100–300 kB in a bundle that already warns at 500 kB. Fonts for the
+   brand lockup would need embedding.
+3. **Server-side render.** Best fidelity and a mailable artefact, but it
+   is a new endpoint, a new dependency in the Function App, and a
+   personal-data document generated outside the browser — the heaviest
+   privacy footprint of the three.
+
+Recommendation to weigh at build time: **(1)**, unless the owner needs a
+fixed filename or wants to attach the file without a save dialog.
+
+**Cautions**
+- **This is a disclosure of personal data**, not a screen. A statement
+  names a child, their school and a parent's contact details, and then
+  leaves the app as a file. It should carry only what a bill needs — the
+  student's name, code, year and the classes; the address and notes have
+  no business on it (REQ-031 data minimisation).
+- **Diary notes and progress must never appear.** They are the teacher's
+  working record, not a billing document.
+- The CSP allows no external anything (`default-src 'self'`), so any
+  font, logo or library must be self-hosted or inlined — a PDF library
+  loaded from a CDN will simply not run.
+- A statement for a month with no held classes should say so plainly
+  rather than render an empty table that reads as a broken export.
+- The generated file is out of the app's control once saved: worth a line
+  in [PRIVACY-RETENTION.md](./PRIVACY-RETENTION.md) noting that exported
+  statements live wherever the teacher puts them.
+
+**Acceptance criteria**
+- [ ] From the payment tracker, a teacher can produce a PDF for **one**
+      student and **one** month in a single action.
+- [ ] The PDF names the student (name, code, year), the month, and the
+      teacher's own business identity as published in the site document —
+      never a hardcoded name or address.
+- [ ] Every held class of that month appears as a line — date, subject,
+      duration — and cancelled classes appear nowhere.
+- [ ] The totals on the PDF equal the totals the payment tracker shows
+      for that student and month, including the monthly-retainer case
+      where the per-class lines carry no fee.
+- [ ] A month with no held classes produces a statement that says so.
+- [ ] No diary note, progress figure, address or safeguarding detail
+      appears anywhere in the output.
+- [ ] The PDF renders with no network access (offline, and under the
+      site's CSP).
+
+**Notes**
+- Worth deciding early whether this is "a statement" (what is owed) or "a
+  receipt" (what was paid) — the acceptance above covers both by showing
+  due, paid and outstanding, but the title and tone differ, and the owner
+  may want the word "Invoice" avoided for tax reasons.
+- A whole-month, all-students export is a different story: this one is
+  deliberately per-student, because that is what gets sent to a parent.
+
+## REQ-056 — The dashboard counts what is waiting
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+_(owner ask, 2026-08-15: a number for a new review or a new enquiry, on the
+phone AND on the dashboard)_
+
+**Story**
+As the teacher opening my dashboard, I want to see at a glance how much is
+waiting for me — enquiries I have not answered and reviews I have not
+moderated — so the first screen tells me what needs doing rather than
+making me visit two pages to find out.
+
+**Half of this already ships.** The dashboard's hero carries a "N new
+enquiries" pill today (REQ-019), fed by `fetchLeadsRequested` on mount and
+counting leads with status `New`. What is missing is the same treatment
+for reviews: `fetchPendingTestimonials` exists and the moderation screen
+uses it, but nothing surfaces the count anywhere else. So this story is
+"do for reviews what REQ-019 did for enquiries, and make the pair read as
+one thing".
+
+**Deliberately not dependent on push.** REQ-053 puts these numbers on the
+Android app icon, which needs a subscription, a VAPID key and a permission
+prompt. This story needs none of that and can ship on its own — and it is
+the graceful-degradation path REQ-053 promises for every device where push
+is unsupported or refused.
+
+**Shape**
+- The dashboard loads the pending-review count the way it already loads
+  leads: dispatch on mount, count in a memo, no new endpoint.
+- Two pills side by side, each its own door — enquiries to Leads, reviews
+  to Moderation. Zero is not a pill: an empty inbox should be quiet, not a
+  "0" the teacher has to read and dismiss.
+- The teacher's nav carries the same counts, so the number is visible from
+  any screen and not only from the dashboard.
+- One shared "what is waiting" selector, so the dashboard, the nav and
+  (later) REQ-053's badge can never disagree about the number.
+
+**Cautions**
+- A pending review is unmoderated text from the public. The count is a
+  number — no names, no quotes, nowhere outside the authenticated screens.
+- The dashboard is already the busiest screen in the app; this must be two
+  quiet pills in the existing hero strip, not a new card competing with
+  "Today at a glance".
+- Flagged reviews (REQ-028) count as pending: they are the ones most
+  wanting attention, so they must not be filtered out of the number.
+
+**Acceptance criteria**
+- [ ] The dashboard shows the number of enquiries awaiting a reply and the
+      number of reviews awaiting moderation, each opening its own page.
+- [ ] A count of zero shows nothing at all — no empty pill.
+- [ ] Flagged reviews are included in the pending count.
+- [ ] The same numbers appear on the teacher's nav, from every screen.
+- [ ] The dashboard, the nav and REQ-053's badge read from one shared
+      count, so they cannot disagree.
+- [ ] No review text, family name or enquiry detail appears in any count
+      surface.
+- [ ] Nothing about it requires notification permission or a service
+      worker.
+
+**Notes**
+- REQ-053 adds the same two numbers to the installed app's icon; the badge
+  is their sum, because an icon has one badge. Keeping them separate here
+  is what makes the badge's total explainable when the teacher taps in.
+
