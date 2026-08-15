@@ -240,3 +240,93 @@ describe('ReviewsView', () => {
         expect(button).toBeDisabled()
     })
 })
+
+describe('the review form protects what people write (2026-08-15)', () => {
+    /** Renders the public form the way the page does. */
+    const renderForm = (props: { sent?: number } = {}) => {
+        const onSubmit = vi.fn()
+        const view = render(
+            <ReviewsView
+                testimonials={[]}
+                saving={false}
+                onSubmit={onSubmit}
+                {...props}
+            />
+        )
+        return { onSubmit, ...view }
+    }
+
+    const fill = async (quote: string) => {
+        fireEvent.change(screen.getByLabelText(/your name/i), {
+            target: { value: 'Priya Sharma' },
+        })
+        fireEvent.click(screen.getByRole('button', { name: /^5 stars$/i }))
+        fireEvent.change(screen.getByLabelText(/your review/i), {
+            target: { value: quote },
+        })
+    }
+
+    it('counts down as they write, the way the server counts', () => {
+        renderForm()
+
+        expect(screen.getByText('600 characters left')).toBeInTheDocument()
+
+        fireEvent.change(screen.getByLabelText(/your review/i), {
+            target: { value: 'Brilliant tutor' },
+        })
+        expect(screen.getByText('585 characters left')).toBeInTheDocument()
+
+        // An emoji is two characters to JavaScript AND to the API's cap, so
+        // the count must agree with the server rather than flatter the
+        // visitor and let the submission be refused.
+        fireEvent.change(screen.getByLabelText(/your review/i), {
+            target: { value: '😀' },
+        })
+        expect(screen.getByText('598 characters left')).toBeInTheDocument()
+    })
+
+    it('will not let them exceed what the API accepts', () => {
+        renderForm()
+
+        const review = screen.getByLabelText(/your review/i)
+        expect(review).toHaveAttribute('maxlength', '600')
+        expect(screen.getByLabelText(/your name/i)).toHaveAttribute(
+            'maxlength',
+            '80'
+        )
+    })
+
+    it('keeps their words when the submission is refused', async () => {
+        // The reported bug: the form cleared on submit, so a rejected review
+        // took the visitor's paragraph with it.
+        const { onSubmit } = renderForm()
+        await fill('They actually enjoy maths now, which I never expected.')
+
+        fireEvent.click(screen.getByRole('button', { name: /submit review/i }))
+
+        expect(onSubmit).toHaveBeenCalled()
+        expect(screen.getByLabelText(/your review/i)).toHaveValue(
+            'They actually enjoy maths now, which I never expected.'
+        )
+        expect(screen.getByLabelText(/your name/i)).toHaveValue('Priya Sharma')
+    })
+
+    it('clears once the submission has actually landed', async () => {
+        const { rerender } = renderForm()
+        await fill('Wonderful with my daughter.')
+
+        fireEvent.click(screen.getByRole('button', { name: /submit review/i }))
+        // The store records it; only now is it safe to empty the form.
+        rerender(
+            <ReviewsView
+                testimonials={[]}
+                saving={false}
+                onSubmit={vi.fn()}
+                sent={1}
+            />
+        )
+
+        expect(screen.getByLabelText(/your review/i)).toHaveValue('')
+        expect(screen.getByLabelText(/your name/i)).toHaveValue('')
+    })
+})

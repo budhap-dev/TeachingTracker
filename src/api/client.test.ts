@@ -93,4 +93,22 @@ describe('api client', () => {
             ApiError
         )
     })
+
+    it("says what the API said, not just its status code", async () => {
+        // A visitor lost a review to "failed with status 400" while the API
+        // was explaining the problem in the body all along (2026-08-15).
+        mockFetch({ error: 'quote must be 600 characters or fewer.' }, false, 400)
+
+        await expect(apiRequest('/testimonials')).rejects.toThrow(
+            'quote must be 600 characters or fewer.'
+        )
+    })
+
+    it('falls back to the status when the API says nothing useful', async () => {
+        mockFetch('<html>gateway timeout</html>', false, 504)
+
+        await expect(apiRequest('/students')).rejects.toThrow(
+            /failed with status 504/
+        )
+    })
 })
