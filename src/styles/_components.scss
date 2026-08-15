@@ -3868,6 +3868,28 @@ a.home-highlight-tile {
     color: #b45309;
 }
 
+/* Reviews waiting (REQ-056) sit beside the enquiries pill in the same idiom,
+   a different hue so the two read as two things at a glance. */
+.dashboard-enquiries-pill.reviews {
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    color: var(--accent);
+}
+
+/* The count on a menu row (REQ-056): a small disc pushed to the row's end,
+   in the sidebar band's own light so it reads on every theme. */
+.nav-count {
+    margin-left: auto;
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--brand-mark) 82%, #000000);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+}
+
 /* ---- Site editor (REQ-008): drag-to-reorder rows and the editor forms ---- */
 
 .sortable-rows {

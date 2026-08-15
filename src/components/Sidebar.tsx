@@ -22,6 +22,8 @@ import SendOutlinedIcon from '@mui/icons-material/SendOutlined'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
 import { isAuthConfigured } from '../auth/msal'
 import { useAppDispatch, useAppSelector } from '../hooks'
+import type { RootState } from '../store/store'
+import { selectNewEnquiries, selectPendingReviews } from '../store/waiting'
 import { fetchContactRequested } from '../store/store'
 import { appVersion, isProdBuild } from '../version'
 import { paths } from '../paths'
@@ -52,6 +54,46 @@ type NavItem = {
     /** Visitor-only items leave the menu for the signed-in teacher — Home
         shares the root path with the Dashboard (REQ-024). */
     visitorOnly?: boolean
+    /** Reads the count waiting behind this item, if any (REQ-056). */
+    waiting?: (state: RootState) => number
+}
+
+/**
+ * One menu row. Items that carry something waiting (REQ-056 — Leads and
+ * Review moderation) wear the number, so it is visible from every screen and
+ * not only from the dashboard. Nothing waiting means no badge at all.
+ */
+const NavButton = ({
+    item,
+    active,
+    onNavigate,
+}: {
+    item: NavItem
+    active: boolean
+    onNavigate: (path: string) => void
+}) => {
+    const waiting = useAppSelector((state) =>
+        item.waiting ? item.waiting(state) : 0
+    )
+    return (
+        <button
+            className={active ? 'active' : ''}
+            onClick={() => onNavigate(item.path)}
+            // Without this the name reads "Leads 3", which could be a count
+            // or part of the label.
+            aria-label={waiting > 0 ? `${item.label}, ${waiting} waiting` : undefined}
+        >
+            <span className="nav-icon" aria-hidden="true">
+                {item.icon}
+            </span>
+            {item.label}
+            {waiting > 0 && (
+                <span className="nav-count" aria-hidden="true">
+                    {waiting}
+                </span>
+            )}
+        </button>
+    )
 }
 
 const navItems: NavItem[] = [
@@ -103,6 +145,7 @@ const navItems: NavItem[] = [
         icon: <InboxOutlinedIcon fontSize="small" />,
         isActive: (pathname) => pathname.startsWith(paths.leads),
         teacherOnly: true,
+        waiting: selectNewEnquiries,
     },
     {
         label: 'Review moderation',
@@ -110,6 +153,7 @@ const navItems: NavItem[] = [
         icon: <FactCheckOutlinedIcon fontSize="small" />,
         isActive: (pathname) => pathname === paths.reviewsModeration,
         teacherOnly: true,
+        waiting: selectPendingReviews,
     },
     {
         label: 'Public site',
@@ -310,18 +354,12 @@ const SidebarContent = ({
                             </p>
                         )}
                         {group.items.map((item) => (
-                            <button
+                            <NavButton
                                 key={item.path}
-                                className={
-                                    item.isActive(pathname) ? 'active' : ''
-                                }
-                                onClick={() => handleNavigate(item.path)}
-                            >
-                                <span className="nav-icon" aria-hidden="true">
-                                    {item.icon}
-                                </span>
-                                {item.label}
-                            </button>
+                                item={item}
+                                active={item.isActive(pathname)}
+                                onNavigate={handleNavigate}
+                            />
                         ))}
                     </div>
                 ))}

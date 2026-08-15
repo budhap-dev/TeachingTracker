@@ -2,12 +2,15 @@ import { DashboardView } from '../components/DashboardView'
 import { PageLoading } from '../components/PageLoading'
 import { activeSessions } from '../data/students'
 import type { ScheduledSession } from '../data/students'
-import { useAppDispatch, useAppSelector } from '../hooks'
+import { useAppSelector } from '../hooks'
 import { paths } from '../paths'
-import { fetchLeadsRequested } from '../store/store'
+import {
+    selectNewEnquiries,
+    selectPendingReviews,
+} from '../store/waiting'
 import { toDateKey } from '../utils/calendar'
 import { getProgressBands, getWeekLoad } from '../utils/dashboard'
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOpenStudentPage } from '../hooks/useOpenStudentPage'
 
@@ -16,19 +19,13 @@ const upcomingPerStudent = 3
 
 export const DashboardRoute = () => {
     const navigate = useNavigate()
-    const dispatch = useAppDispatch()
     const openStudentPage = useOpenStudentPage()
     const allStudents = useAppSelector((state) => state.students.students)
-    // The open-enquiry count rides the dashboard (REQ-019): load the inbox
-    // alongside the boot data so the pill is fresh on arrival.
-    const leads = useAppSelector((state) => state.students.leads)
-    useEffect(() => {
-        dispatch(fetchLeadsRequested())
-    }, [dispatch])
-    const newEnquiries = useMemo(
-        () => leads.filter((lead) => lead.status === 'New').length,
-        [leads]
-    )
+    // What is waiting (REQ-019, widened by REQ-056): both counts come from
+    // the shared selectors, so the dashboard, the nav and the app badge can
+    // never disagree. The data itself loads with the boot fetches.
+    const newEnquiries = useAppSelector(selectNewEnquiries)
+    const pendingReviews = useAppSelector(selectPendingReviews)
     // Archived students (REQ-013) leave every active surface — the dashboard,
     // the roster, snapshot and the planner — for the Alumni section.
     const students = useMemo(
@@ -200,6 +197,8 @@ export const DashboardRoute = () => {
             }
             newEnquiries={newEnquiries}
             onOpenLeads={() => navigate(paths.leads)}
+            pendingReviews={pendingReviews}
+            onOpenModeration={() => navigate(paths.reviewsModeration)}
         />
     )
 }

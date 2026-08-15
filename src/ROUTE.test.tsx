@@ -479,7 +479,9 @@ describe('enquiries and leads (REQ-018/019)', () => {
 
         const navigation = screen.getByRole('navigation', { name: /main menu/i })
         await user.click(
-            within(navigation).getByRole('button', { name: /^leads$/i })
+            // The nav row carries its waiting count now (REQ-056), so its
+            // accessible name is "Leads, 2 waiting" whenever any are open.
+            within(navigation).getByRole('button', { name: /^leads(,|$)/i })
         )
 
         expect(
@@ -519,6 +521,46 @@ describe('enquiries and leads (REQ-018/019)', () => {
         expect(screen.getByLabelText(/parent name/i)).toHaveValue(
             'Priya Sharma'
         )
+    })
+
+    it('surfaces the reviews waiting on the dashboard and opens moderation', async () => {
+        // REQ-056: the same treatment enquiries got, for the other thing that
+        // arrives from the public site and sits until it is dealt with.
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        const pill = await screen.findByRole('button', {
+            name: /review(s)? to moderate/i,
+        })
+        await user.click(pill)
+
+        expect(
+            await screen.findByRole('heading', { name: /review moderation/i })
+        ).toBeInTheDocument()
+    })
+
+    it('carries both counts on the teacher nav, from any screen', async () => {
+        // The point of loading them at boot: the numbers are right on the
+        // students page too, not only where the fetch happens to live.
+        window.history.pushState({}, '', '/students')
+        render(<App />)
+
+        // Two navs on a phone-capable layout: the sidebar menu and the tab
+        // bar. The counts under test are the sidebar's.
+        const navigation = await screen.findByRole('navigation', {
+            name: /main menu/i,
+        })
+        expect(
+            await within(navigation).findByRole('button', {
+                name: /^leads, \d+ waiting$/i,
+            })
+        ).toBeInTheDocument()
+        expect(
+            within(navigation).getByRole('button', {
+                name: /^review moderation, \d+ waiting$/i,
+            })
+        ).toBeInTheDocument()
     })
 
     it('surfaces the open-enquiry count on the dashboard and opens the inbox', async () => {
