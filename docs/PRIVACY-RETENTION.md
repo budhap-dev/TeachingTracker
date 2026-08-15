@@ -28,6 +28,7 @@ the policy page.
 | **Enquiries — not converted** | **12 months** after they arrive _(default)_ | `Lead.submittedOn` | `DELETE /api/leads/{id}` |
 | **Enquiries — converted to a student** | **6 months** after conversion _(default)_ | `Lead.submittedOn` (see §4) | `DELETE /api/leads/{id}` |
 | **Reviews — published** | Until removed, or immediately on request | — | `DELETE /api/testimonials/{id}` |
+| **Page-visit rows** (REQ-058 — not personal data) | **90 days** _(default)_ | The row's own date partition | Purge the `pageviews` partitions older than the window; the per-day totals the teacher reads identify nobody and may be kept |
 | **Reviews — rejected / not published** | Until the next quarterly run (≤ 3 months) | `Testimonial.moderatedOn` | `DELETE /api/testimonials/{id}` |
 | **Monthly JSON dumps** | **12 months**, rolling _(default)_ | Filename date stamp | Delete the file from owner storage |
 | **Dev seed data** | Indefinite — invented people, no real personal data | — | n/a |

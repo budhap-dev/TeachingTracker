@@ -5292,3 +5292,65 @@ svg[data-testid='DeleteOutlineRoundedIcon'] {
     color: var(--muted);
     font-size: 0.88rem;
 }
+
+/* Visits to the public site (REQ-058): a day per row, its bar drawn against
+   the busiest day in view, and the pages it reached beneath. */
+.visits-days {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+}
+
+.visits-day-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.visits-date {
+    font-weight: 700;
+}
+
+.visits-total {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.visits-bar {
+    height: 6px;
+    margin: 6px 0 8px;
+    border-radius: 999px;
+    background: var(--hero-gradient);
+    min-width: 6px;
+}
+
+.visits-pages {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.85rem;
+    }
+}
+
+.visits-page-name {
+    color: var(--text);
+}
+
+.visits-page-count {
+    color: var(--muted);
+    font-weight: 700;
+}
