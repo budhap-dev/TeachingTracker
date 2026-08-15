@@ -13,6 +13,12 @@ import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlin
 import type { Lead } from '../data/students'
 import type { LeadInput } from '../api/leads'
 import { subjectOptions, yearOptions } from '../utils/constants'
+
+/** What the API accepts (leadService): a longer goal than a public review,
+    because this one is a private message to the teacher. */
+const MAX_GOAL = 1000
+const MAX_NAME = 80
+const MAX_CONTACT = 254
 import {
     isValidEmail,
     isValidPhone,
@@ -82,6 +88,10 @@ export const EnquireView = ({
         subjectsMissing ||
         goalMissing
 
+    // Counted the way the SERVER counts — JavaScript string length, so an
+    // emoji is 2. A friendlier count would promise room the API refuses.
+    const goalLeft = MAX_GOAL - goal.length
+
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
         setAttempted(true)
@@ -146,6 +156,7 @@ export const EnquireView = ({
                         label="Your name"
                         size="small"
                         value={parentName}
+                        slotProps={{ htmlInput: { maxLength: MAX_NAME } }}
                         onChange={(event) => setParentName(event.target.value)}
                         {...requiredFieldProps(
                             attempted && nameMissing,
@@ -174,6 +185,7 @@ export const EnquireView = ({
                         type="email"
                         size="small"
                         value={email}
+                        slotProps={{ htmlInput: { maxLength: MAX_CONTACT } }}
                         onChange={(event) => setEmail(event.target.value)}
                         error={
                             attempted && (contactMissing || Boolean(emailInvalid))
@@ -191,6 +203,7 @@ export const EnquireView = ({
                         label="Phone"
                         size="small"
                         value={phone}
+                        slotProps={{ htmlInput: { maxLength: MAX_CONTACT } }}
                         onChange={(event) => setPhone(event.target.value)}
                         error={
                             attempted && (contactMissing || Boolean(phoneInvalid))
@@ -259,6 +272,7 @@ export const EnquireView = ({
                         className="enquire-goal"
                         value={goal}
                         onChange={(event) => setGoal(event.target.value)}
+                        slotProps={{ htmlInput: { maxLength: MAX_GOAL } }}
                         multiline
                         minRows={3}
                         {...requiredFieldProps(
@@ -272,6 +286,15 @@ export const EnquireView = ({
                         }
                         fullWidth
                     />
+                    {/* The count comes down as they write, and turns urgent
+                        near the end — so nobody meets the limit for the first
+                        time by having their enquiry refused. */}
+                    <p
+                        className={`enquire-remaining ${goalLeft <= 100 ? 'low' : ''}`}
+                        aria-live="polite"
+                    >
+                        {goalLeft} character{goalLeft === 1 ? '' : 's'} left
+                    </p>
                     {/* Honeypot: off-screen, not announced. Bots fill it; the
                         API silently drops anything that arrives with it set. */}
                     <input
