@@ -22,4 +22,6 @@ export const paths = {
     reviews: '/reviews',
     reviewsModeration: '/reviews/moderation',
     visits: '/visits',
+    statement: (studentId: number | string, month: string) =>
+        `/payments/statement/${studentId}/${month}`,
 } as const

@@ -4,10 +4,13 @@ import { useAppDispatch, useAppSelector } from '../hooks'
 import { savePaymentRequested } from '../store/store'
 import { useMemo } from 'react'
 import { useOpenStudentPage } from '../hooks/useOpenStudentPage'
+import { useNavigate } from 'react-router-dom'
+import { paths } from '../paths'
 
 export const PaymentTrackerRoute = () => {
     const dispatch = useAppDispatch()
     const openStudentPage = useOpenStudentPage()
+    const navigate = useNavigate()
     const allStudents = useAppSelector((state) => state.students.students)
     // Archived students have finished tutoring, so they drop off the payment
     // tracker — only the active roster is billed here.
@@ -32,6 +35,9 @@ export const PaymentTrackerRoute = () => {
                 dispatch(savePaymentRequested(record))
             }
             onOpenStudentPage={openStudentPage}
+            onOpenStatement={(studentId, month) =>
+                navigate(paths.statement(studentId, month))
+            }
         />
     )
 }
