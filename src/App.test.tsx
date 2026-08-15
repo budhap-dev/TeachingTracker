@@ -66,6 +66,9 @@ const serveSessions = (sessions: ScheduledSession[]) =>
             let body: unknown = fixtureStudents
             if (url.includes('/payments')) body = buildFixturePaymentsByMonth()
             else if (url.includes('/sessions')) body = sessions
+            // Without this the catch-all answered with the STUDENTS fixture
+            // and the dashboard listed five students as reminders (REQ-057).
+            else if (url.includes('/reminders')) body = []
             return { ok: true, status: 200, json: async () => body } as Response
         })
     )
@@ -590,7 +593,7 @@ describe('Teaching Tracker app', () => {
         render(<App />)
 
         const list = await screen.findByRole('list', {
-            name: /upcoming sessions calendar/i,
+            name: /what's coming up/i,
         })
         // The dashboard previews four; the toggle owns the full count — six
         // (three per student), not the eleven booked.
@@ -648,7 +651,7 @@ describe('Teaching Tracker app', () => {
         render(<App />)
 
         const list = await screen.findByRole('list', {
-            name: /upcoming sessions calendar/i,
+            name: /what's coming up/i,
         })
         await waitFor(() =>
             expect(

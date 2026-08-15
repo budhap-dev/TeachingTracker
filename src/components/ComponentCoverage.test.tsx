@@ -172,6 +172,9 @@ describe('component-level coverage', () => {
                 onOpenSnapshot={onOpenSnapshot}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
 

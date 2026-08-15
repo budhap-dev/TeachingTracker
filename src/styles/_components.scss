@@ -5354,3 +5354,86 @@ svg[data-testid='DeleteOutlineRoundedIcon'] {
     color: var(--muted);
     font-weight: 700;
 }
+/* The teacher's own reminders in the upcoming list (REQ-057).
+   A class is a card with a date chip, attendees and a status; a reminder is
+   one line you wrote to yourself. It reads as a note beside them — a pin, the
+   words, when — rather than borrowing the class row's furniture. */
+.reminder-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+
+/* Yesterday's forgotten note stays readable rather than vanishing; deleting
+   it is the teacher's own call. */
+.reminder-item.past {
+    opacity: 0.6;
+}
+
+.reminder-pin {
+    color: var(--accent);
+    flex: none;
+}
+
+.reminder-body {
+    min-width: 0;
+    flex: 1 1 auto;
+
+    p {
+        margin: 0;
+    }
+}
+
+.reminder-text {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.reminder-when {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.reminder-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: none;
+}
+
+.reminder-item.editing {
+    display: block;
+}
+
+.reminder-add {
+    margin: 8px 0 4px;
+}
+
+.reminder-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+}
+
+/* The words get the room; the date and time take what they need. */
+.reminder-text-field {
+    flex: 1 1 240px;
+}
+
+.reminder-form-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+@media (max-width: 640px) {
+    .reminder-form > * {
+        flex: 1 1 100%;
+    }
+}

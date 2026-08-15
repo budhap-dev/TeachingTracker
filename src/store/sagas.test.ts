@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { all, call, put, takeEvery, takeLatest } from 'redux-saga/effects'
+import {
+    createReminder as createReminderApi,
+    deleteReminder as deleteReminderApi,
+    fetchReminders as fetchRemindersApi,
+    updateReminder as updateReminderApi,
+} from '../api/reminders'
 import type {
     MonthlyPaymentGroup,
     ScheduledSession,
@@ -40,6 +46,9 @@ import {
     submitLeadSaga,
     updateLeadStatusSaga,
     deleteLeadSaga,
+    loadRemindersSaga,
+    saveReminderSaga,
+    deleteReminderSaga,
     loadTestimonialsSaga,
     loadPendingTestimonialsSaga,
     submitTestimonialSaga,
@@ -95,6 +104,12 @@ import {
     updateLeadStatusRequested,
     updateLeadStatusFailed,
     deleteLeadRequested,
+    fetchRemindersRequested,
+    fetchRemindersSucceeded,
+    saveReminderSucceeded,
+    deleteReminderSucceeded,
+    saveReminderRequested,
+    deleteReminderRequested,
     fetchTestimonialsRequested,
     fetchPendingTestimonialsRequested,
     submitTestimonialRequested,
@@ -509,6 +524,72 @@ describe('savePaymentSaga', () => {
     })
 })
 
+describe('reminder sagas (REQ-057)', () => {
+    const reminder = { id: 1, date: '2026-08-20', text: 'Order paper' }
+
+    it('loads the notes-to-self', () => {
+        const gen = loadRemindersSaga()
+        expect(gen.next().value).toEqual(call(fetchRemindersApi))
+        expect(gen.next([reminder]).value).toEqual(
+            put(fetchRemindersSucceeded([reminder]))
+        )
+        expect(gen.next().done).toBe(true)
+    })
+
+    it('creates when there is no id, updates when there is', () => {
+        const input = { date: '2026-08-20', text: 'Order paper' }
+
+        const creating = saveReminderSaga(saveReminderRequested({ input }))
+        expect(creating.next().value).toEqual(call(createReminderApi, input))
+
+        const updating = saveReminderSaga(
+            saveReminderRequested({ id: 1, input })
+        )
+        expect(updating.next().value).toEqual(
+            call(updateReminderApi, 1, input)
+        )
+    })
+
+    it('stores the server copy after a save', () => {
+        const gen = saveReminderSaga(
+            saveReminderRequested({ input: { date: '2026-08-20', text: 'x' } })
+        )
+        gen.next()
+        expect(gen.next(reminder).value).toEqual(
+            put(saveReminderSucceeded(reminder))
+        )
+    })
+
+    it('drops the id from state after a delete', () => {
+        const gen = deleteReminderSaga(deleteReminderRequested(1))
+        expect(gen.next().value).toEqual(call(deleteReminderApi, 1))
+        expect(gen.next().value).toEqual(put(deleteReminderSucceeded(1)))
+    })
+
+    it.each([
+        ['load', () => loadRemindersSaga(), /load your reminders/],
+        [
+            'save',
+            () =>
+                saveReminderSaga(
+                    saveReminderRequested({
+                        input: { date: '2026-08-20', text: 'x' },
+                    })
+                ),
+            /save the reminder/,
+        ],
+        ['delete', () => deleteReminderSaga(deleteReminderRequested(1)), /delete the reminder/],
+    ])('says what went wrong when a %s fails', (_what, start, message) => {
+        const gen = start()
+        gen.next()
+        // The effect is a put(); the message rides in its action's payload.
+        const failure = gen.throw(new Error('offline')).value as {
+            payload: { action: { payload: string } }
+        }
+        expect(failure.payload.action.payload).toMatch(message)
+    })
+})
+
 describe('rootSaga', () => {
     it('watches every request action', () => {
         const gen = rootSaga()
@@ -545,6 +626,9 @@ describe('rootSaga', () => {
                     updateLeadStatusSaga
                 ),
                 takeEvery(deleteLeadRequested.type, deleteLeadSaga),
+                takeLatest(fetchRemindersRequested.type, loadRemindersSaga),
+                takeEvery(saveReminderRequested.type, saveReminderSaga),
+                takeEvery(deleteReminderRequested.type, deleteReminderSaga),
                 takeLatest(
                     fetchTestimonialsRequested.type,
                     loadTestimonialsSaga

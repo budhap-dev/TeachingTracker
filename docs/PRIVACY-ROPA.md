@@ -104,6 +104,13 @@ holds: nothing here survives a closed tab (REQ-058).
 | **GitHub** | Source code and CI | **None** — no personal data in the repository (dev seed data is invented people) | n/a |
 | **The owner's own storage** | Holds the monthly JSON dumps | All of §2 records 1–4 | Not a third party; owner custody, private storage, no sharing |
 
+**The teacher's own reminders (REQ-057).** Notes-to-self carrying a date, an
+optional time and free text the teacher writes. They belong to no student and
+are never public, but the text may name a family ("ring the Chapmans back"),
+so they are personal data of whoever is named: teacher-only on every verb,
+stored in the same Azure tables under the same DPA, and covered by the
+retention schedule.
+
 **Rule — no new processor without paperwork first.** Adding analytics, an
 email/newsletter provider, a backup service, an SMS gateway or any AI service
 means updating **this table and the public policy before** it ships, not
