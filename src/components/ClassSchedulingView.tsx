@@ -35,6 +35,7 @@ import {
 } from '../utils/calendar'
 import {
     activeMembers,
+    entryMembers,
     entryTitle,
     groupDaySessions,
     type DayEntry,
@@ -89,11 +90,6 @@ const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
  * the whole class is cancelled, its members, so a cancelled class still names
  * the students it was for rather than opening to an empty field.
  */
-const displayMembers = (entry: DayEntry) => {
-    const active = activeMembers(entry)
-    return active.length ? active : entry.sessions
-}
-
 /** The API keeps one subject string; the form edits it as chips. */
 const splitSubjects = (subject?: string) => (subject ? subject.split(', ') : [])
 
@@ -346,7 +342,7 @@ export const ClassSchedulingView = ({
         // Active attendees seed the field (an excused member is not in the
         // class until re-added); a fully cancelled class still shows its names.
         const members = entry
-            ? displayMembers(entry).map((session) => {
+            ? entryMembers(entry).map((session) => {
                   const option = studentOptions.find(
                       (candidate) => candidate.id === session.studentId
                   )
@@ -513,7 +509,7 @@ export const ClassSchedulingView = ({
     // so a reordering of the chips never reads as a change.
     const originalForm = editingEntry
         ? {
-              studentIds: displayMembers(editingEntry)
+              studentIds: entryMembers(editingEntry)
                   .map((session) => session.studentId)
                   .sort((left, right) => left - right),
               subject: splitSubjects(editingEntry.lead.subject).join(', '),
@@ -582,7 +578,7 @@ export const ClassSchedulingView = ({
 
         if (editingEntry) {
             const originalIds = new Set(
-                displayMembers(editingEntry).map((session) => session.studentId)
+                entryMembers(editingEntry).map((session) => session.studentId)
             )
             const currentIds = new Set(selectedStudents.map((o) => o.id))
 
@@ -721,7 +717,7 @@ export const ClassSchedulingView = ({
                                         {index + 1}
                                         {entry.isGroup && (
                                             <span className="chip-group-size">
-                                                ×{entry.sessions.length}
+                                                ×{entryMembers(entry).length}
                                             </span>
                                         )}
                                     </button>
@@ -743,7 +739,7 @@ export const ClassSchedulingView = ({
                     <h4>
                         {editingEntry
                             ? editingEntry.isGroup
-                                ? `Edit group class (${editingEntry.sessions.length} students)`
+                                ? `Edit group class (${entryMembers(editingEntry).length} students)`
                                 : 'Edit class'
                             : 'Add a class'}
                     </h4>
@@ -1369,8 +1365,9 @@ export const ClassSchedulingView = ({
                                                         <span className="chip-group-size">
                                                             ×
                                                             {
-                                                                entry.sessions
-                                                                    .length
+                                                                entryMembers(
+                                                                    entry
+                                                                ).length
                                                             }
                                                         </span>
                                                     )}

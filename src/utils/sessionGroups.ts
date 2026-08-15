@@ -19,7 +19,36 @@ export type DayEntry = {
 export const activeMembers = (entry: DayEntry): ScheduledSession[] =>
     entry.sessions.filter((session) => session.status !== 'Cancelled')
 
-/** How the entry reads in chips and tooltips. */
+/**
+ * Who the class is FOR — the students still on it, or, when every one of
+ * them is off, the students it was booked for.
+ *
+ * Removing a student from a group class cancels their row rather than
+ * deleting it: the row is the record that they were booked. So counting
+ * `entry.sessions` counts people who are not coming, and the day modal read
+ * "Edit group class (3 students)" over a field holding two (prod report,
+ * 2026-08-15). Every count and name the teacher reads comes from here.
+ *
+ * The fallback matters: a wholly cancelled class reading "Group of 0" would
+ * look like a bug, and the modal would open on an empty field instead of the
+ * names it was for.
+ *
+ * Not the same as `entryTitle`, deliberately: the calendar's tooltip names
+ * the whole booking BECAUSE it also says "1 of 2 cancelled" underneath. The
+ * day modal has no such line — its count sits straight above the field
+ * listing the students, so it must agree with it.
+ */
+export const entryMembers = (entry: DayEntry): ScheduledSession[] => {
+    const active = activeMembers(entry)
+    return active.length ? active : entry.sessions
+}
+
+/**
+ * How the entry reads in chips and tooltips: the WHOLE booking, cancelled
+ * members included. On the calendar this sits beside a "1 of 2 cancelled"
+ * line that explains the number — see `entryMembers` for the count used
+ * where no such line explains it.
+ */
 export const entryTitle = (entry: DayEntry): string =>
     entry.isGroup
         ? `Group of ${entry.sessions.length} — ${entry.sessions
