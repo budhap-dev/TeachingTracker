@@ -22,6 +22,7 @@ import { ReviewModerationRoute } from './routes/reviewModeration'
 import { EnquireRoute } from './routes/enquire'
 import { LeadsRoute } from './routes/leads'
 import { VisitsRoute } from './routes/visits'
+import { StatementRoute } from './routes/statement'
 
 /**
  * The router, and only the router (REQ-047). Every page's connected component
@@ -127,6 +128,11 @@ export const AppRoutes = () => (
             <Route
                 path={paths.reviewsModeration}
                 element={teacher(<ReviewModerationRoute />)}
+            />
+            {/* A month's statement for one student (REQ-055) — printable. */}
+            <Route
+                path="/payments/statement/:studentId/:month"
+                element={teacher(<StatementRoute />)}
             />
             {/* How the public site is doing (REQ-058) — teacher-only. */}
             <Route path={paths.visits} element={teacher(<VisitsRoute />)} />

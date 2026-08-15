@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from 'react'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import { Button, TextField } from '@mui/material'
+import { formatCurrency } from '../utils/money'
 import type {
     MonthlyPaymentGroup,
     PaymentRecord,
@@ -16,6 +17,8 @@ type PaymentTrackerViewProps = {
     paymentsByMonth: MonthlyPaymentGroup[]
     onUpdatePaymentRecord: (record: PaymentRecordInput) => void
     onOpenStudentPage: (studentId: number) => void
+    /** Opens this student's statement for the month on screen (REQ-055). */
+    onOpenStatement: (studentId: number, month: string) => void
 }
 
 const monthLabels = [
@@ -40,13 +43,6 @@ const getMonthOptions = () => {
         label: `${label} ${year}`,
     }))
 }
-
-const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('en-GB', {
-        style: 'currency',
-        currency: 'GBP',
-        maximumFractionDigits: 0,
-    }).format(value)
 
 const getStatusClass = (status: PaymentStatus) => status.toLowerCase()
 
@@ -165,6 +161,7 @@ export const PaymentTrackerView = ({
     paymentsByMonth,
     onUpdatePaymentRecord,
     onOpenStudentPage,
+    onOpenStatement,
 }: PaymentTrackerViewProps) => {
     const monthOptions = useMemo(getMonthOptions, [])
     const currentMonth = useMemo(getCurrentMonth, [])
@@ -581,6 +578,21 @@ export const PaymentTrackerView = ({
                                                 {student.lastName}
                                             </button>
                                             <small>{student.school}</small>
+                                            {/* The month a family can keep
+                                                (REQ-055) — printed from the
+                                                same record this row shows. */}
+                                            <Button
+                                                size="small"
+                                                className="payment-statement-link"
+                                                onClick={() =>
+                                                    onOpenStatement(
+                                                        student.id,
+                                                        selectedMonth
+                                                    )
+                                                }
+                                            >
+                                                Statement
+                                            </Button>
                                         </td>
                                         <td
                                             className="payment-basis"

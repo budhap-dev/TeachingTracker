@@ -2537,7 +2537,7 @@ move the number above)**
 
 ## REQ-055 — A month's statement per student, as a PDF
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** M
+**Status:** 🚧 Built (2026-08-15) · **Impact:** frontend · **Effort:** M
 _(owner ask, 2026-08-15)_
 
 **Story**
@@ -2599,21 +2599,43 @@ fixed filename or wants to attach the file without a save dialog.
   in [PRIVACY-RETENTION.md](./PRIVACY-RETENTION.md) noting that exported
   statements live wherever the teacher puts them.
 
+**How it landed (2026-08-15)** — shape (1) from the list above: a print
+stylesheet and the browser's own "Save as PDF". No library, so no CSP
+exception, no bundle cost, and no font to embed. A **Statement** button on each
+row of the payment tracker opens `/payments/statement/:studentId/:month`, which
+renders the document and offers one button to print it.
+
+The word is **Statement**, not Invoice (owner ask recorded 2026-08-15: avoid
+"Invoice" for tax reasons). It appears once, in `StatementView`, if it ever
+needs to become "Receipt".
+
+**It reads, it never recomputes.** Every figure comes from the `PaymentRecord`
+the payment tracker shows, so the two can never disagree — including the
+monthly-retainer case, where the class lines carry no fee and the flat fee is
+stated once. `formatCurrency` moved to `utils/money` so a statement cannot
+format a figure differently from the screen it mirrors.
+
+Three cases the document handles rather than pretending away: a month with no
+classes says so instead of printing an empty table; a **no-fee** student is
+told no fee is charged rather than shown "£0 outstanding"; and the print rules
+drop the sidebar, topbar, tab bar and the page's own buttons, so the paper
+starts at the document.
+
 **Acceptance criteria**
-- [ ] From the payment tracker, a teacher can produce a PDF for **one**
+- [x] From the payment tracker, a teacher can produce a PDF for **one**
       student and **one** month in a single action.
-- [ ] The PDF names the student (name, code, year), the month, and the
+- [x] The PDF names the student (name, code, year), the month, and the
       teacher's own business identity as published in the site document —
       never a hardcoded name or address.
-- [ ] Every held class of that month appears as a line — date, subject,
+- [x] Every held class of that month appears as a line — date, subject,
       duration — and cancelled classes appear nowhere.
-- [ ] The totals on the PDF equal the totals the payment tracker shows
+- [x] The totals on the PDF equal the totals the payment tracker shows
       for that student and month, including the monthly-retainer case
       where the per-class lines carry no fee.
-- [ ] A month with no held classes produces a statement that says so.
-- [ ] No diary note, progress figure, address or safeguarding detail
+- [x] A month with no held classes produces a statement that says so.
+- [x] No diary note, progress figure, address or safeguarding detail
       appears anywhere in the output.
-- [ ] The PDF renders with no network access (offline, and under the
+- [x] The PDF renders with no network access (offline, and under the
       site's CSP).
 
 **Notes**
