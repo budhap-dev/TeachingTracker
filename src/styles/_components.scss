@@ -3726,7 +3726,10 @@ a.home-highlight-tile {
 
     .enquire-goal,
     .enquire-submit,
-    .enquire-consent {
+    .enquire-consent,
+    /* Full width, or its right-aligned count lands mid-form under nothing —
+       the same trap the review form's counter fell into. */
+    .enquire-remaining {
         grid-column: 1 / -1;
     }
 }
@@ -5452,7 +5455,17 @@ svg[data-testid='DeleteOutlineRoundedIcon'] {
     color: var(--muted);
 }
 
-.review-remaining.low {
+.review-remaining.low,
+.enquire-remaining.low {
     color: #b45309;
     font-weight: 700;
+}
+
+/* The enquiry's count, in the review form's idiom — its own limit, though:
+   1000, because an enquiry is a private message rather than public copy. */
+.enquire-remaining {
+    margin: -4px 0 0;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--muted);
 }

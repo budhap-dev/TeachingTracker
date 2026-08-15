@@ -166,3 +166,39 @@ describe('EnquireView', () => {
         ).not.toBeInTheDocument()
     })
 })
+
+describe('the enquiry form respects the API\'s limits (2026-08-15)', () => {
+    it('counts down as they write, with the enquiry\'s own longer limit', () => {
+        // 1000, not the review form's 600: an enquiry is a private message to
+        // the teacher rather than public copy.
+        render(<EnquireView onSubmit={vi.fn()} saving={false} />)
+
+        expect(screen.getByText('1000 characters left')).toBeInTheDocument()
+
+        fireEvent.change(
+            screen.getByLabelText(/what would you like tutoring to achieve/i),
+            { target: { value: 'Confidence before mocks' } }
+        )
+        expect(screen.getByText('977 characters left')).toBeInTheDocument()
+    })
+
+    it('will not let them type past what the API accepts', () => {
+        render(<EnquireView onSubmit={vi.fn()} saving={false} />)
+
+        expect(
+            screen.getByLabelText(/what would you like tutoring to achieve/i)
+        ).toHaveAttribute('maxlength', '1000')
+        expect(screen.getByLabelText(/your name/i)).toHaveAttribute(
+            'maxlength',
+            '80'
+        )
+        expect(screen.getByLabelText(/email/i)).toHaveAttribute(
+            'maxlength',
+            '254'
+        )
+        expect(screen.getByLabelText(/phone/i)).toHaveAttribute(
+            'maxlength',
+            '254'
+        )
+    })
+})
