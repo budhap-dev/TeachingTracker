@@ -129,6 +129,7 @@ XS is an afternoon, XL is a project.
 | 54 | 🔲 | [REQ-054 — The visitor's phone: give the first screen to the pitch](#req-054--the-visitors-phone-give-the-first-screen-to-the-pitch) | M | frontend | — (owner ask, 2026-08-14) |
 | 55 | 🔲 | [REQ-055 — A month's statement per student, as a PDF](#req-055--a-months-statement-per-student-as-a-pdf) | M | frontend | — (owner ask, 2026-08-15) |
 | 56 | 🔲 | [REQ-056 — The dashboard counts what is waiting](#req-056--the-dashboard-counts-what-is-waiting) | S | frontend | — (owner ask, 2026-08-15) |
+| 57 | 🔲 | [REQ-057 — The teacher's own reminders](#req-057--the-teachers-own-reminders) | M | both | — (owner ask, 2026-08-15) |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -2686,4 +2687,72 @@ is unsupported or refused.
 - REQ-053 adds the same two numbers to the installed app's icon; the badge
   is their sum, because an icon has one badge. Keeping them separate here
   is what makes the badge's total explainable when the teacher taps in.
+
+## REQ-057 — The teacher's own reminders
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+_(owner ask, 2026-08-15)_
+
+**Story**
+As the teacher, I want to write myself a reminder — a date, a time and
+whatever I need to remember — and see it on the dashboard among the
+upcoming classes, so the one screen I open in the morning holds everything
+that is coming, not only the teaching.
+
+**What it is not.** Not a class: it books nothing, bills nothing, belongs
+to no student and never touches the planner. "Order more graph paper" and
+"Ring the Chapmans back" are the shape of it. That separation is the whole
+design — the moment a reminder can carry a student, it becomes a second
+way to schedule teaching and the two will disagree.
+
+**Shape**
+- **A reminder is `{ id, date, time?, text }`** and nothing else. The time
+  is optional: "Thursday" is a legitimate reminder, and forcing 00:00 on it
+  would sort it to dawn.
+- **Its own store, its own endpoints.** `GET/POST/PUT/DELETE /reminders`,
+  a `reminders` table alongside the others, teacher-only on every verb —
+  this is the teacher's private note-to-self, never public and never
+  reachable signed out.
+- **On the dashboard, in the same list as the classes**, ordered by date
+  and time together so the morning reads in order. A reminder must be
+  visually distinct at a glance — a class is an obligation to a family, a
+  reminder is one to yourself — and must never be counted in "upcoming
+  sessions" totals or the week-load bars.
+- **Editing where it is read.** Add from the dashboard, edit and delete in
+  place. There is no second screen for four fields.
+- **Past reminders fade rather than vanish**, so yesterday's forgotten note
+  is still visible today; a delete is the teacher's own call.
+
+**Cautions**
+- The dashboard's upcoming list is capped per student (REQ-019 era logic)
+  and folds group classes into one entry. Reminders join the same list, so
+  the cap and the folding must not silently swallow them.
+- Free text written by the teacher is still stored data: HTML-stripped on
+  write like every other free field, and length-capped.
+- A reminder may name a family ("ring the Chapmans"), so it is personal
+  data in the ROPA sense — it needs a line in the retention schedule and it
+  must be deleted with the teacher's data, not left behind.
+- Times are local. The app has a `toDateKey` convention precisely because
+  `toISOString` shifts the day near midnight — reminders must use it too.
+
+**Acceptance criteria**
+- [ ] The teacher can add a reminder with a date, an optional time and free
+      text, from the dashboard.
+- [ ] It appears among the upcoming items in date/time order, plainly
+      distinguishable from a class.
+- [ ] The teacher can edit and delete their reminders.
+- [ ] Reminders never appear in session counts, week-load bars, payments,
+      a student's page, or anywhere public.
+- [ ] A reminder with no time still sorts sensibly within its day.
+- [ ] Reminders survive a reload — they are stored via the API, not in the
+      browser.
+- [ ] Signed out, no reminder is reachable; the endpoints are teacher-only.
+- [ ] The retention schedule and ROPA cover them.
+
+**Notes**
+- Worth deciding at build time whether a reminder can repeat ("every
+  Monday"). The story deliberately specifies single-date reminders: repeats
+  are a scheduler, and a scheduler is a different story.
+- Once REQ-053 exists, a reminder due today is the obvious second thing the
+  phone could announce — but that is REQ-053's business, not this one's.
 
