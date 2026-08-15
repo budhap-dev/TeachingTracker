@@ -534,7 +534,10 @@
     .review-rating,
     .review-submit,
     .review-consent,
-    .review-error {
+    .review-error,
+    /* Without this the counter sits in the left column and its right-aligned
+       text lands mid-form, under nothing (owner report, 2026-08-15). */
+    .review-remaining {
         grid-column: 1 / -1;
     }
 }
