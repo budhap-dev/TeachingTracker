@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from './App'
@@ -561,6 +567,33 @@ describe('enquiries and leads (REQ-018/019)', () => {
                 name: /^review moderation, \d+ waiting$/i,
             })
         ).toBeInTheDocument()
+    })
+
+    it('writes a reminder through the API, not the browser (REQ-057)', async () => {
+        // The story's promise is that reminders survive a reload — which
+        // means they leave for the API rather than sitting in local state.
+        const user = userEvent.setup()
+        window.history.pushState({}, '', '/')
+        render(<App />)
+
+        await user.click(
+            await screen.findByRole('button', { name: /add a reminder/i })
+        )
+        fireEvent.change(screen.getByLabelText(/^date\s*\*?$/i), {
+            target: { value: '2026-08-25' },
+        })
+        await user.type(
+            screen.getByLabelText(/^reminder\s*\*?$/i),
+            'Book the hall'
+        )
+        await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+        await waitFor(() =>
+            expect(fetch).toHaveBeenCalledWith(
+                '/reminders',
+                expect.objectContaining({ method: 'POST' })
+            )
+        )
     })
 
     it('surfaces the open-enquiry count on the dashboard and opens the inbox', async () => {

@@ -1,7 +1,10 @@
 import { Fragment, useMemo, useState } from 'react'
 import { Button } from '@mui/material'
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined'
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import type { DayLoad } from '../utils/dashboard'
+import type { Reminder, ReminderInput } from '../data/students'
+import { ReminderForm, ReminderItem } from './ReminderItem'
 import { formatHours } from '../utils/dashboard'
 
 /** The dashboard shows this many upcoming sessions before "Show all". */
@@ -37,6 +40,10 @@ type DashboardViewProps = {
     onManageStudents: () => void
     /** The progress tile opens the Study Snapshot. */
     onOpenSnapshot: () => void
+    /** The teacher's own reminders (REQ-057) — never classes, never billed. */
+    reminders: Reminder[]
+    onSaveReminder: (id: number | undefined, input: ReminderInput) => void
+    onDeleteReminder: (id: number) => void
     /** Open enquiries (status New) awaiting the teacher — REQ-019. */
     newEnquiries: number
     onOpenLeads: () => void
@@ -56,16 +63,42 @@ export const DashboardView = ({
     onOpenSnapshot,
     onOpenStudentPage,
     onOpenDay,
+    reminders,
+    onSaveReminder,
+    onDeleteReminder,
     newEnquiries,
     onOpenLeads,
     pendingReviews,
     onOpenModeration,
 }: DashboardViewProps) => {
-    // Collapsed, the sessions list is a glance; expanded, the full horizon.
+    // Collapsed, the list is a glance; expanded, the full horizon.
     const [showAllSessions, setShowAllSessions] = useState(false)
-    const visibleSessions = showAllSessions
-        ? upcomingSessions
-        : upcomingSessions.slice(0, upcomingPreviewCount)
+    const [addingReminder, setAddingReminder] = useState(false)
+
+    // Classes and reminders read as one morning (REQ-057): sorted together by
+    // day and time, with an untimed reminder leading its day because it
+    // belongs to the whole of it. The cap applies to the merged list, so a
+    // reminder can never be squeezed out by a busy teaching day.
+    const upcomingItems = useMemo(() => {
+        const items = [
+            ...upcomingSessions.map((session) => ({
+                kind: 'session' as const,
+                sort: `${session.date} ${session.time}`,
+                session,
+            })),
+            ...reminders.map((reminder) => ({
+                kind: 'reminder' as const,
+                sort: `${reminder.date} ${reminder.time ?? ''}`,
+                reminder,
+            })),
+        ]
+        return items.sort((left, right) => left.sort.localeCompare(right.sort))
+    }, [upcomingSessions, reminders])
+
+    const visibleItems = showAllSessions
+        ? upcomingItems
+        : upcomingItems.slice(0, upcomingPreviewCount)
+    const todayKeyForFade = new Date().toISOString().slice(0, 10)
 
     // The tallest bar owns the chart's height; label only it and today
     // (selective direct labels — every other bar answers on hover).
@@ -111,6 +144,65 @@ export const DashboardView = ({
     const shownBand = activeBandData ?? attentionBands[0]
     const toggleBand = (key: string) =>
         setPinnedBand((current) => (current === key ? null : key))
+
+    /** One class in the list — unchanged markup; reminders sit beside it. */
+    const renderSession = (
+        session: DashboardViewProps['upcomingSessions'][number]
+    ) => (
+        <article
+            key={session.id}
+            className="session-item"
+            role="listitem"
+        >
+            <div className="session-date-pill">
+                {new Date(session.date).toLocaleDateString(
+                    'en-GB',
+                    {
+                        day: '2-digit',
+                        month: 'short',
+                    }
+                )}
+            </div>
+            <div className="session-content">
+                <strong className="session-attendees">
+                    {session.members.length > 1 && (
+                        <span className="session-group-tag">
+                            Group
+                        </span>
+                    )}
+                    {session.members.map((member, index) => (
+                        <Fragment key={member.studentId}>
+                            {index > 0 && ', '}
+                            <a
+                                href={`#student-${member.studentId}`}
+                                className="student-link"
+                                onClick={(event) => {
+                                    event.preventDefault()
+                                    onOpenStudentPage(
+                                        member.studentId
+                                    )
+                                }}
+                            >
+                                {member.studentName}
+                            </a>
+                        </Fragment>
+                    ))}
+                </strong>
+                <p>
+                    {session.subject} •{' '}
+                    {session.members.length === 1 &&
+                        `Year ${session.members[0].year} • `}
+                    {session.time}
+                </p>
+                <small>{session.notes}</small>
+            </div>
+            <span className="session-mode booked">
+                {session.members.length > 1
+                    ? `Group · ${session.members.length}`
+                    : 'Booked'}
+            </span>
+        </article>
+    )
 
     return (
         <section className="grid">
@@ -180,70 +272,52 @@ export const DashboardView = ({
 
             <div className="card calendar-card">
                 <div className="calendar-header">
-                    <h3>Upcoming sessions</h3>
+                    {/* Classes AND the teacher's own reminders (REQ-057), so
+                        the heading no longer promises only sessions. */}
+                    <h3>What's coming up</h3>
+                    <Button
+                        size="small"
+                        startIcon={<AddRoundedIcon fontSize="small" />}
+                        onClick={() => setAddingReminder(true)}
+                    >
+                        Add a reminder
+                    </Button>
                 </div>
+                {addingReminder && (
+                    <div className="reminder-add">
+                        <ReminderForm
+                            onSave={(input) => {
+                                onSaveReminder(undefined, input)
+                                setAddingReminder(false)
+                            }}
+                            onCancel={() => setAddingReminder(false)}
+                        />
+                    </div>
+                )}
                 <div
                     className="calendar-list"
                     role="list"
-                    aria-label="Upcoming sessions calendar"
+                    aria-label="What's coming up"
                 >
-                    {visibleSessions.map((session) => (
-                        <article
-                            key={session.id}
-                            className="session-item"
-                            role="listitem"
-                        >
-                            <div className="session-date-pill">
-                                {new Date(session.date).toLocaleDateString(
-                                    'en-GB',
-                                    {
-                                        day: '2-digit',
-                                        month: 'short',
-                                    }
-                                )}
-                            </div>
-                            <div className="session-content">
-                                <strong className="session-attendees">
-                                    {session.members.length > 1 && (
-                                        <span className="session-group-tag">
-                                            Group
-                                        </span>
-                                    )}
-                                    {session.members.map((member, index) => (
-                                        <Fragment key={member.studentId}>
-                                            {index > 0 && ', '}
-                                            <a
-                                                href={`#student-${member.studentId}`}
-                                                className="student-link"
-                                                onClick={(event) => {
-                                                    event.preventDefault()
-                                                    onOpenStudentPage(
-                                                        member.studentId
-                                                    )
-                                                }}
-                                            >
-                                                {member.studentName}
-                                            </a>
-                                        </Fragment>
-                                    ))}
-                                </strong>
-                                <p>
-                                    {session.subject} •{' '}
-                                    {session.members.length === 1 &&
-                                        `Year ${session.members[0].year} • `}
-                                    {session.time}
-                                </p>
-                                <small>{session.notes}</small>
-                            </div>
-                            <span className="session-mode booked">
-                                {session.members.length > 1
-                                    ? `Group · ${session.members.length}`
-                                    : 'Booked'}
-                            </span>
-                        </article>
-                    ))}
+                    {visibleItems.map((item) =>
+                        item.kind === 'reminder' ? (
+                            <ReminderItem
+                                key={`reminder-${item.reminder.id}`}
+                                reminder={item.reminder}
+                                past={item.reminder.date < todayKeyForFade}
+                                onSave={(input) =>
+                                    onSaveReminder(item.reminder.id, input)
+                                }
+                                onDelete={() =>
+                                    onDeleteReminder(item.reminder.id)
+                                }
+                            />
+                        ) : (
+                            renderSession(item.session)
+                        )
+                    )}
                 </div>
-                {upcomingSessions.length > upcomingPreviewCount && (
+                {upcomingItems.length > upcomingPreviewCount && (
                     <Button
                         size="small"
                         variant="text"
@@ -253,7 +327,7 @@ export const DashboardView = ({
                     >
                         {showAllSessions
                             ? 'Show fewer'
-                            : `Show all ${upcomingSessions.length}`}
+                            : `Show all ${upcomingItems.length}`}
                     </Button>
                 )}
             </div>

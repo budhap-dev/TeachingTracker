@@ -2690,7 +2690,7 @@ is unsupported or refused.
 
 ## REQ-057 — The teacher's own reminders
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+**Status:** 🚧 Built (2026-08-15) · **Impact:** both · **Effort:** M
 _(owner ask, 2026-08-15)_
 
 **Story**
@@ -2735,19 +2735,37 @@ way to schedule teaching and the two will disagree.
 - Times are local. The app has a `toDateKey` convention precisely because
   `toISOString` shifts the day near midnight — reminders must use it too.
 
+**How it landed (2026-08-15)** — `{ id, date, time?, text }` with its own
+`reminders` table and four teacher-only endpoints. The dashboard's card is no
+longer "Upcoming sessions" but "What's coming up": classes and reminders are
+merged and sorted together, and the preview cap applies to the merged list, so
+a busy teaching day can never squeeze a reminder out.
+
+Three details worth keeping:
+- **An absent time stays absent.** Not `time: undefined`, and never "00:00" —
+  the API omits the field, the row omits the column, and the card says "Any
+  time that day". Sorting an untimed reminder as midnight would put it first
+  by accident rather than on purpose; it leads its day because it belongs to
+  the whole of it, and there is a test for that ordering.
+- **A reminder never dresses as a booking** — no student link, no "Booked"
+  tag, no group count. A test asserts the row carries none of them.
+- The test harness's catch-all fetch mock answered `/reminders` with the
+  STUDENTS fixture, and the dashboard cheerfully listed five students as
+  reminders. Its own arm now returns `[]`.
+
 **Acceptance criteria**
-- [ ] The teacher can add a reminder with a date, an optional time and free
+- [x] The teacher can add a reminder with a date, an optional time and free
       text, from the dashboard.
-- [ ] It appears among the upcoming items in date/time order, plainly
+- [x] It appears among the upcoming items in date/time order, plainly
       distinguishable from a class.
-- [ ] The teacher can edit and delete their reminders.
-- [ ] Reminders never appear in session counts, week-load bars, payments,
+- [x] The teacher can edit and delete their reminders.
+- [x] Reminders never appear in session counts, week-load bars, payments,
       a student's page, or anywhere public.
-- [ ] A reminder with no time still sorts sensibly within its day.
-- [ ] Reminders survive a reload — they are stored via the API, not in the
+- [x] A reminder with no time still sorts sensibly within its day.
+- [x] Reminders survive a reload — they are stored via the API, not in the
       browser.
-- [ ] Signed out, no reminder is reachable; the endpoints are teacher-only.
-- [ ] The retention schedule and ROPA cover them.
+- [x] Signed out, no reminder is reachable; the endpoints are teacher-only.
+- [x] The retention schedule and ROPA cover them.
 
 **Notes**
 - Worth deciding at build time whether a reminder can repeat ("every

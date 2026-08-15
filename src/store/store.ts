@@ -8,6 +8,8 @@ import {
     SessionStatus,
     Student,
     Lead,
+    Reminder,
+    ReminderInput,
     LeadStatus,
 
     Testimonial,
@@ -81,6 +83,8 @@ type StudentState = {
     // Leads (REQ-018/019): the teacher's enquiries inbox, plus the public
     // form's in-flight flag.
     leads: Lead[]
+    /** The teacher's own reminders (REQ-057). */
+    reminders: Reminder[]
     leadsLoading: boolean
     savingLead: boolean
     /** True once this visit's enquiry was accepted — the form shows thanks. */
@@ -155,6 +159,7 @@ const createInitialState = (): StudentState => ({
     // experience — the owner hasn't published (REQ-022 flash bug).
     siteContentLoaded: false,
     leads: [],
+    reminders: [],
     leadsLoading: true,
     savingLead: false,
     leadSubmitted: false,
@@ -566,6 +571,50 @@ const studentSlice = createSlice({
             state.leadsLoading = false
             fail(state, action.payload)
         },
+        // --- Reminders (REQ-057): the teacher's own notes-to-self ---
+        fetchRemindersRequested: (state) => {
+            state.error = null
+        },
+        fetchRemindersSucceeded: (
+            state,
+            action: PayloadAction<Reminder[]>
+        ) => {
+            state.reminders = action.payload
+        },
+        saveReminderRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (payload: { id?: number; input: ReminderInput }) => ({
+                payload,
+            }),
+        },
+        saveReminderSucceeded: (state, action: PayloadAction<Reminder>) => {
+            const index = state.reminders.findIndex(
+                (reminder) => reminder.id === action.payload.id
+            )
+            if (index >= 0) {
+                state.reminders[index] = action.payload
+            } else {
+                state.reminders.push(action.payload)
+            }
+            state.notice = { kind: 'success', message: 'Reminder saved.' }
+        },
+        deleteReminderRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (id: number) => ({ payload: id }),
+        },
+        deleteReminderSucceeded: (state, action: PayloadAction<number>) => {
+            state.reminders = state.reminders.filter(
+                (reminder) => reminder.id !== action.payload
+            )
+            state.notice = { kind: 'success', message: 'Reminder deleted.' }
+        },
+        reminderFailed: (state, action: PayloadAction<string>) => {
+            fail(state, action.payload)
+        },
         // --- Leads: public enquiry (REQ-018) ---
         submitLeadRequested: {
             reducer: (state: StudentState) => {
@@ -815,6 +864,13 @@ export const {
     fetchLeadsRequested,
     fetchLeadsSucceeded,
     fetchLeadsFailed,
+    fetchRemindersRequested,
+    fetchRemindersSucceeded,
+    saveReminderRequested,
+    saveReminderSucceeded,
+    deleteReminderRequested,
+    deleteReminderSucceeded,
+    reminderFailed,
     submitLeadRequested,
     submitLeadSucceeded,
     submitLeadFailed,

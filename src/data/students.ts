@@ -106,6 +106,31 @@ export type SessionLine = {
     fee: number
 }
 
+/**
+ * The teacher's own reminder (REQ-057) — a note-to-self with a date and,
+ * optionally, a time.
+ *
+ * Not a class: it books nothing, bills nothing and belongs to no student, and
+ * it never reaches the planner, a payment or a public page. The separation is
+ * the design — a reminder that could carry a student would be a second way to
+ * schedule teaching, and the two would disagree.
+ */
+export type Reminder = {
+    id: number
+    /** `YYYY-MM-DD`. */
+    date: string
+    /** `HH:MM`, or absent when the reminder belongs to the whole day. */
+    time?: string
+    text: string
+}
+
+/** What the teacher sends when writing or changing one. */
+export type ReminderInput = {
+    date: string
+    time?: string
+    text: string
+}
+
 export type PaymentRecord = {
     id: number
     studentId: number

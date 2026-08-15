@@ -6,10 +6,17 @@ import {
     updateLeadStatus,
 } from '../api/leads'
 import { fetchSiteContent, updateSiteContent as putSiteContent } from '../api/siteContent'
+import {
+    createReminder as createReminderApi,
+    deleteReminder as deleteReminderApi,
+    fetchReminders as fetchRemindersApi,
+    updateReminder as updateReminderApi,
+} from '../api/reminders'
 import type { SiteContent } from '../data/siteContent'
 import type {
     Lead,
     MonthlyPaymentGroup,
+    Reminder,
     PaymentRecord,
     ScheduledSession,
     Student,
@@ -83,6 +90,13 @@ import {
     publishSiteContentFailed,
     fetchLeadsRequested,
     fetchLeadsSucceeded,
+    fetchRemindersRequested,
+    fetchRemindersSucceeded,
+    saveReminderRequested,
+    saveReminderSucceeded,
+    deleteReminderRequested,
+    deleteReminderSucceeded,
+    reminderFailed,
     fetchLeadsFailed,
     submitLeadRequested,
     submitLeadSucceeded,
@@ -457,6 +471,63 @@ export function* deleteLeadSaga(
     }
 }
 
+/** Loads the teacher's own reminders (REQ-057). */
+export function* loadRemindersSaga() {
+    try {
+        const reminders: Reminder[] = yield call(fetchRemindersApi)
+        yield put(fetchRemindersSucceeded(reminders))
+    } catch (error) {
+        // Quiet on load: the dashboard still has classes to show, and a
+        // missing note-to-self is not worth an error banner over them.
+        yield put(
+            reminderFailed(
+                error instanceof Error
+                    ? `Could not load your reminders: ${error.message}`
+                    : 'Could not load your reminders.'
+            )
+        )
+    }
+}
+
+/** Writes a reminder — new when there is no id, a change when there is. */
+export function* saveReminderSaga(
+    action: ReturnType<typeof saveReminderRequested>
+) {
+    const { id, input } = action.payload
+    try {
+        const reminder: Reminder = yield call(
+            id ? updateReminderApi : createReminderApi,
+            ...(id ? [id, input] : [input])
+        )
+        yield put(saveReminderSucceeded(reminder))
+    } catch (error) {
+        yield put(
+            reminderFailed(
+                error instanceof Error
+                    ? `Could not save the reminder: ${error.message}`
+                    : 'Could not save the reminder.'
+            )
+        )
+    }
+}
+
+export function* deleteReminderSaga(
+    action: ReturnType<typeof deleteReminderRequested>
+) {
+    try {
+        yield call(deleteReminderApi, action.payload)
+        yield put(deleteReminderSucceeded(action.payload))
+    } catch (error) {
+        yield put(
+            reminderFailed(
+                error instanceof Error
+                    ? `Could not delete the reminder: ${error.message}`
+                    : 'Could not delete the reminder.'
+            )
+        )
+    }
+}
+
 /** Fetches approved reviews for the public Reviews page. */
 export function* loadTestimonialsSaga() {
     try {
@@ -586,6 +657,9 @@ export function* rootSaga() {
         takeEvery(submitLeadRequested.type, submitLeadSaga),
         takeEvery(updateLeadStatusRequested.type, updateLeadStatusSaga),
         takeEvery(deleteLeadRequested.type, deleteLeadSaga),
+        takeLatest(fetchRemindersRequested.type, loadRemindersSaga),
+        takeEvery(saveReminderRequested.type, saveReminderSaga),
+        takeEvery(deleteReminderRequested.type, deleteReminderSaga),
         takeLatest(fetchTestimonialsRequested.type, loadTestimonialsSaga),
         takeLatest(
             fetchPendingTestimonialsRequested.type,

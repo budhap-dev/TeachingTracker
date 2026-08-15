@@ -59,11 +59,14 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
 
         // A glance: the first four, and the toggle names the full count.
-        const list = screen.getByRole('list', { name: /upcoming sessions/i })
+        const list = screen.getByRole('list', { name: /what's coming up/i })
         expect(within(list).getAllByRole('listitem')).toHaveLength(4)
         expect(screen.queryByText('Student 5')).not.toBeInTheDocument()
 
@@ -105,6 +108,9 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={onOpenStudentPage}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
 
@@ -114,7 +120,7 @@ describe('DashboardView', () => {
             screen.getByRole('heading', { name: /who needs attention/i })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('heading', { name: /upcoming sessions/i })
+            screen.getByRole('heading', { name: /what's coming up/i })
         ).toBeInTheDocument()
         expect(
             screen.getByRole('link', { name: 'Asha Perera' })
@@ -165,10 +171,13 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={onOpenStudentPage}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
 
-        const list = screen.getByRole('list', { name: /upcoming sessions/i })
+        const list = screen.getByRole('list', { name: /what's coming up/i })
         // One entry for the whole group, not one per attendee.
         expect(within(list).getAllByRole('listitem')).toHaveLength(1)
         expect(within(list).getByText('Group')).toBeInTheDocument()
@@ -209,6 +218,9 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={onOpenStudentPage}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
 
@@ -238,6 +250,9 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
 
@@ -291,6 +306,9 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
 
@@ -336,6 +354,9 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
         // Neediest band is empty, so no students are revealed until a band with
@@ -362,6 +383,9 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={vi.fn()}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
         // An empty roster shows a friendly prompt, not an empty bar.
@@ -397,6 +421,9 @@ describe('DashboardView', () => {
                 onOpenSnapshot={vi.fn()}
                 onOpenStudentPage={vi.fn()}
                 onOpenDay={onOpenDay}
+                reminders={[]}
+                onSaveReminder={vi.fn()}
+                onDeleteReminder={vi.fn()}
             />
         )
 
@@ -409,5 +436,197 @@ describe('DashboardView', () => {
 
         await user.click(screen.getByTitle(/thu — 2 classes · 2\.5 hrs/i))
         expect(onOpenDay).toHaveBeenCalledWith('2026-07-16')
+    })
+})
+
+describe('DashboardView reminders (REQ-057)', () => {
+    const reminder = (
+        id: number,
+        date: string,
+        text: string,
+        time?: string
+    ) => ({ id, date, text, ...(time ? { time } : {}) })
+
+    const renderWithReminders = (
+        reminders: ReturnType<typeof reminder>[],
+        handlers: {
+            onSaveReminder?: ReturnType<typeof vi.fn>
+            onDeleteReminder?: ReturnType<typeof vi.fn>
+        } = {}
+    ) =>
+        render(
+            <DashboardView
+                stats={{
+                    onlineStudents: 2,
+                    faceToFaceStudents: 3,
+                    avgProgress: 82,
+                    totalStudents: 5,
+                }}
+                attention={calmAttention}
+                upcomingSessions={[
+                    {
+                        id: 1,
+                        date: '2026-08-20',
+                        time: '16:00',
+                        subject: 'Mathematics',
+                        notes: '',
+                        members: [
+                            {
+                                studentId: 1,
+                                studentName: 'Asha Perera',
+                                year: '10',
+                            },
+                        ],
+                    },
+                ]}
+                weekLoad={quietWeek}
+                onManageStudents={vi.fn()}
+                onOpenSnapshot={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+                onOpenDay={vi.fn()}
+                reminders={reminders}
+                onSaveReminder={handlers.onSaveReminder ?? vi.fn()}
+                onDeleteReminder={handlers.onDeleteReminder ?? vi.fn()}
+            />
+        )
+
+    it('reads classes and reminders as one morning, in time order', () => {
+        renderWithReminders([
+            reminder(1, '2026-08-20', 'Order more graph paper'),
+            reminder(2, '2026-08-20', 'Ring the Chapmans', '17:30'),
+        ])
+
+        const list = screen.getByRole('list', { name: /what's coming up/i })
+        const items = within(list).getAllByRole('listitem')
+        // The untimed one leads its day — it belongs to the whole of it —
+        // then the 16:00 class, then the 17:30 reminder.
+        expect(items[0]).toHaveTextContent('Order more graph paper')
+        expect(items[1]).toHaveTextContent('Asha Perera')
+        expect(items[2]).toHaveTextContent('Ring the Chapmans')
+    })
+
+    it('says when a reminder has no time rather than inventing midnight', () => {
+        renderWithReminders([reminder(1, '2026-08-20', 'Order paper')])
+
+        expect(screen.getByText('Any time that day')).toBeInTheDocument()
+        expect(screen.queryByText('00:00')).not.toBeInTheDocument()
+    })
+
+    it('never dresses a reminder as a booking', () => {
+        // A class is an obligation to a family; a reminder is one to
+        // yourself. Nothing about it should read as booked or billable.
+        renderWithReminders([reminder(1, '2026-08-20', 'Order paper')])
+
+        const list = screen.getByRole('list', { name: /what's coming up/i })
+        const [first] = within(list).getAllByRole('listitem')
+        expect(first).not.toHaveTextContent(/booked/i)
+        expect(first).not.toHaveTextContent(/group/i)
+    })
+
+    it('edits one in place, sending only what changed', async () => {
+        const user = userEvent.setup()
+        const onSaveReminder = vi.fn()
+        renderWithReminders([reminder(1, '2026-08-20', 'Order paper')], {
+            onSaveReminder,
+        })
+
+        await user.click(
+            screen.getByRole('button', { name: /edit reminder: order paper/i })
+        )
+        const text = screen.getByLabelText(/^reminder\s*\*?$/i)
+        await user.clear(text)
+        await user.type(text, 'Order A3 paper')
+        await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+        expect(onSaveReminder).toHaveBeenCalledWith(1, {
+            date: '2026-08-20',
+            text: 'Order A3 paper',
+        })
+    })
+
+    it('sets a time when the teacher gives one', async () => {
+        const user = userEvent.setup()
+        const onSaveReminder = vi.fn()
+        renderWithReminders([], { onSaveReminder })
+
+        await user.click(
+            screen.getByRole('button', { name: /add a reminder/i })
+        )
+        fireEvent.change(screen.getByLabelText(/^date\s*\*?$/i), {
+            target: { value: '2026-08-25' },
+        })
+        fireEvent.change(screen.getByLabelText(/^time$/i), {
+            target: { value: '17:45' },
+        })
+        await user.type(screen.getByLabelText(/^reminder\s*\*?$/i), 'Call back')
+        await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+        expect(onSaveReminder).toHaveBeenCalledWith(undefined, {
+            date: '2026-08-25',
+            time: '17:45',
+            text: 'Call back',
+        })
+    })
+
+    it('backs out of adding and of editing, changing nothing', async () => {
+        const user = userEvent.setup()
+        const onSaveReminder = vi.fn()
+        renderWithReminders([reminder(1, '2026-08-20', 'Order paper')], {
+            onSaveReminder,
+        })
+
+        await user.click(
+            screen.getByRole('button', { name: /add a reminder/i })
+        )
+        await user.click(screen.getByRole('button', { name: /^cancel$/i }))
+        expect(
+            screen.queryByRole('button', { name: /^save$/i })
+        ).not.toBeInTheDocument()
+
+        await user.click(
+            screen.getByRole('button', { name: /edit reminder: order paper/i })
+        )
+        await user.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+        // Back to the row, and nothing was sent.
+        expect(screen.getByText('Order paper')).toBeInTheDocument()
+        expect(onSaveReminder).not.toHaveBeenCalled()
+    })
+
+    it('deletes one', async () => {
+        const user = userEvent.setup()
+        const onDeleteReminder = vi.fn()
+        renderWithReminders([reminder(1, '2026-08-20', 'Order paper')], {
+            onDeleteReminder,
+        })
+
+        await user.click(
+            screen.getByRole('button', {
+                name: /delete reminder: order paper/i,
+            })
+        )
+
+        expect(onDeleteReminder).toHaveBeenCalledWith(1)
+    })
+
+    it('adds one without leaving the dashboard', async () => {
+        const user = userEvent.setup()
+        const onSaveReminder = vi.fn()
+        renderWithReminders([], { onSaveReminder })
+
+        await user.click(
+            screen.getByRole('button', { name: /add a reminder/i })
+        )
+        fireEvent.change(screen.getByLabelText(/^date\s*\*?$/i), {
+            target: { value: '2026-08-25' },
+        })
+        await user.type(screen.getByLabelText(/^reminder\s*\*?$/i), 'Book the hall')
+        await user.click(screen.getByRole('button', { name: /^save$/i }))
+
+        // No id: the dashboard does not know one yet, and the API mints it.
+        expect(onSaveReminder).toHaveBeenCalledWith(undefined, {
+            date: '2026-08-25',
+            text: 'Book the hall',
+        })
     })
 })

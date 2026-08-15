@@ -5354,3 +5354,63 @@ svg[data-testid='DeleteOutlineRoundedIcon'] {
     color: var(--muted);
     font-weight: 700;
 }
+/* The teacher's own reminders in the upcoming list (REQ-057). A class is an
+   obligation to a family; a reminder is one to yourself — so it reads as a
+   pinned note beside them, never as another booking. */
+.reminder-item {
+    background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+    border-left: 3px solid var(--accent);
+}
+
+/* Yesterday's forgotten note stays readable rather than vanishing; deleting
+   it is the teacher's own call. */
+.reminder-item.past {
+    opacity: 0.6;
+}
+
+.reminder-pill {
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    color: var(--accent);
+}
+
+.reminder-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reminder-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+}
+
+.reminder-add {
+    margin: 8px 0 4px;
+}
+
+.reminder-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+}
+
+/* The words get the room; the date and time take what they need. */
+.reminder-text-field {
+    flex: 1 1 240px;
+}
+
+.reminder-form-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+@media (max-width: 640px) {
+    .reminder-form > * {
+        flex: 1 1 100%;
+    }
+}

@@ -2,7 +2,12 @@ import { DashboardView } from '../components/DashboardView'
 import { PageLoading } from '../components/PageLoading'
 import { activeSessions } from '../data/students'
 import type { ScheduledSession } from '../data/students'
-import { useAppSelector } from '../hooks'
+import { useAppDispatch, useAppSelector } from '../hooks'
+import {
+    deleteReminderRequested,
+    fetchRemindersRequested,
+    saveReminderRequested,
+} from '../store/store'
 import { paths } from '../paths'
 import {
     selectNewEnquiries,
@@ -10,7 +15,7 @@ import {
 } from '../store/waiting'
 import { toDateKey } from '../utils/calendar'
 import { getProgressBands, getWeekLoad } from '../utils/dashboard'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useOpenStudentPage } from '../hooks/useOpenStudentPage'
 
@@ -19,11 +24,18 @@ const upcomingPerStudent = 3
 
 export const DashboardRoute = () => {
     const navigate = useNavigate()
+    const dispatch = useAppDispatch()
     const openStudentPage = useOpenStudentPage()
     const allStudents = useAppSelector((state) => state.students.students)
     // What is waiting (REQ-019, widened by REQ-056): both counts come from
     // the shared selectors, so the dashboard, the nav and the app badge can
     // never disagree. The data itself loads with the boot fetches.
+    // The teacher's own reminders ride the same list as the classes
+    // (REQ-057), so they load with the dashboard.
+    const reminders = useAppSelector((state) => state.students.reminders)
+    useEffect(() => {
+        dispatch(fetchRemindersRequested())
+    }, [dispatch])
     const newEnquiries = useAppSelector(selectNewEnquiries)
     const pendingReviews = useAppSelector(selectPendingReviews)
     // Archived students (REQ-013) leave every active surface — the dashboard,
@@ -195,6 +207,11 @@ export const DashboardRoute = () => {
             onOpenDay={(dateKey) =>
                 navigate(`${paths.scheduling}?day=${dateKey}`)
             }
+            reminders={reminders}
+            onSaveReminder={(id, input) =>
+                dispatch(saveReminderRequested({ id, input }))
+            }
+            onDeleteReminder={(id) => dispatch(deleteReminderRequested(id))}
             newEnquiries={newEnquiries}
             onOpenLeads={() => navigate(paths.leads)}
             pendingReviews={pendingReviews}

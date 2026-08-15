@@ -138,6 +138,18 @@ beforeEach(() => {
                 } else {
                     body = buildFixtureLeads()
                 }
+            } else if (url.includes('/reminders')) {
+                // The teacher's own notes-to-self (REQ-057). Without this
+                // arm the catch-all below answered with the STUDENTS
+                // fixture, and the dashboard cheerfully listed five
+                // students as reminders.
+                if (init.method === 'POST' || init.method === 'PUT') {
+                    body = { id: 1, ...JSON.parse(String(init.body)) }
+                } else if (init.method === 'DELETE') {
+                    body = {}
+                } else {
+                    body = []
+                }
             } else if (url.includes('/site-content')) {
                 if (init.method === 'PUT') {
                     // Publishing echoes the document back, as the API does.
