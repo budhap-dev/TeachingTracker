@@ -106,7 +106,7 @@ export const ReminderItem = ({
 
     if (editing) {
         return (
-            <article className="session-item reminder-item" role="listitem">
+            <article className="reminder-item editing" role="listitem">
                 <ReminderForm
                     initial={reminder}
                     onSave={(input) => {
@@ -119,23 +119,21 @@ export const ReminderItem = ({
         )
     }
 
+    // "20 Aug · 12:00", or "20 Aug · any time" when it belongs to the day.
+    const when = `${new Date(reminder.date).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+    })} · ${reminder.time ?? 'any time'}`
+
     return (
         <article
-            className={`session-item reminder-item ${past ? 'past' : ''}`}
+            className={`reminder-item ${past ? 'past' : ''}`}
             role="listitem"
         >
-            <div className="session-date-pill reminder-pill">
-                {new Date(reminder.date).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: 'short',
-                })}
-            </div>
-            <div className="session-content">
-                <strong className="reminder-title">
-                    <PushPinOutlinedIcon fontSize="small" aria-hidden />
-                    {reminder.text}
-                </strong>
-                <p>{reminder.time ? reminder.time : 'Any time that day'}</p>
+            <PushPinOutlinedIcon className="reminder-pin" fontSize="small" />
+            <div className="reminder-body">
+                <p className="reminder-text">{reminder.text}</p>
+                <p className="reminder-when">{when}</p>
             </div>
             <div className="reminder-actions">
                 <IconButton

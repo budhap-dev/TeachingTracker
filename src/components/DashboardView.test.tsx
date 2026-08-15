@@ -508,8 +508,10 @@ describe('DashboardView reminders (REQ-057)', () => {
     it('says when a reminder has no time rather than inventing midnight', () => {
         renderWithReminders([reminder(1, '2026-08-20', 'Order paper')])
 
-        expect(screen.getByText('Any time that day')).toBeInTheDocument()
-        expect(screen.queryByText('00:00')).not.toBeInTheDocument()
+        // The line reads "20 Aug · any time" — a day, and an honest absence
+        // of a time rather than a midnight nobody meant.
+        expect(screen.getByText('20 Aug · any time')).toBeInTheDocument()
+        expect(screen.queryByText(/00:00/)).not.toBeInTheDocument()
     })
 
     it('never dresses a reminder as a booking', () => {
