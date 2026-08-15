@@ -15,6 +15,8 @@ import {
     fetchStudentsRequested,
     fetchPaymentsRequested,
     fetchSessionsRequested,
+    fetchLeadsRequested,
+    fetchPendingTestimonialsRequested,
     initialLoadSkipped,
 } from './store/store'
 import { useAppDispatch } from './hooks'
@@ -38,6 +40,11 @@ const InitialData = ({ ready }: { ready: boolean }) => {
         dispatch(fetchStudentsRequested())
         dispatch(fetchPaymentsRequested())
         dispatch(fetchSessionsRequested())
+        // What is waiting (REQ-056): the counts ride the nav on every
+        // screen, so they load with the boot data rather than waiting for
+        // the teacher to visit the page that would have fetched them.
+        dispatch(fetchLeadsRequested())
+        dispatch(fetchPendingTestimonialsRequested())
     }, [ready, dispatch])
     return null
 }

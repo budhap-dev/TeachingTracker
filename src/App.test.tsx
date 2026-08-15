@@ -761,7 +761,10 @@ describe('Teaching Tracker app', () => {
         if (progressField) {
             fireEvent.change(progressField, { target: { value: '85' } })
         }
-        await user.click(screen.getByLabelText(/mode/i))
+        // "Study mode", specifically: the nav's Review moderation row now
+        // carries an aria-label with its waiting count (REQ-056), which a
+        // bare /mode/i also matches.
+        await user.click(screen.getByLabelText(/study mode/i))
         await user.click(screen.getByRole('option', { name: 'Online' }))
         fireEvent.change(screen.getByLabelText(/parent name/i), {
             target: { value: 'Nimal Bandara' },

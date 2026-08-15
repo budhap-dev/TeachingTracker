@@ -40,6 +40,9 @@ type DashboardViewProps = {
     /** Open enquiries (status New) awaiting the teacher — REQ-019. */
     newEnquiries: number
     onOpenLeads: () => void
+    /** Reviews awaiting moderation, flagged ones included — REQ-056. */
+    pendingReviews: number
+    onOpenModeration: () => void
     onOpenStudentPage: (studentId: number) => void
     onOpenDay: (dateKey: string) => void
 }
@@ -55,6 +58,8 @@ export const DashboardView = ({
     onOpenDay,
     newEnquiries,
     onOpenLeads,
+    pendingReviews,
+    onOpenModeration,
 }: DashboardViewProps) => {
     // Collapsed, the sessions list is a glance; expanded, the full horizon.
     const [showAllSessions, setShowAllSessions] = useState(false)
@@ -126,6 +131,10 @@ export const DashboardView = ({
                         <button onClick={onManageStudents}>
                             Manage students
                         </button>
+                        {/* What is waiting (REQ-056), one pill per kind,
+                            each its own door. Nothing waiting means no pill:
+                            a "0" is a number to read and dismiss, and an
+                            empty inbox should be quiet. */}
                         {newEnquiries > 0 && (
                             <button
                                 className="dashboard-enquiries-pill"
@@ -133,6 +142,16 @@ export const DashboardView = ({
                             >
                                 {newEnquiries} new{' '}
                                 {newEnquiries === 1 ? 'enquiry' : 'enquiries'}
+                            </button>
+                        )}
+                        {pendingReviews > 0 && (
+                            <button
+                                className="dashboard-enquiries-pill reviews"
+                                onClick={onOpenModeration}
+                            >
+                                {pendingReviews}{' '}
+                                {pendingReviews === 1 ? 'review' : 'reviews'}{' '}
+                                to moderate
                             </button>
                         )}
                     </div>
