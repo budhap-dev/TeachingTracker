@@ -130,6 +130,7 @@ XS is an afternoon, XL is a project.
 | 55 | 🔲 | [REQ-055 — A month's statement per student, as a PDF](#req-055--a-months-statement-per-student-as-a-pdf) | M | frontend | — (owner ask, 2026-08-15) |
 | 56 | 🔲 | [REQ-056 — The dashboard counts what is waiting](#req-056--the-dashboard-counts-what-is-waiting) | S | frontend | — (owner ask, 2026-08-15) |
 | 57 | 🔲 | [REQ-057 — The teacher's own reminders](#req-057--the-teachers-own-reminders) | M | both | — (owner ask, 2026-08-15) |
+| 58 | 🔲 | [REQ-058 — Which pages visitors actually reach](#req-058--which-pages-visitors-actually-reach) | M | both | — (owner ask, 2026-08-15) |
 
 **Next up: the content stories — [REQ-020](#req-020--testimonials-and-outcomes) (outcomes strip), [REQ-021](#req-021--tutor-bio-and-safeguarding), [REQ-022](#req-022--transparent-pricing), [REQ-025](#req-025--faq) — then [REQ-026](#req-026--refer-a-family).** Their gates have all shipped: REQ-008's editor + preview (backend PR #49, frontend PRs #56–58) and REQ-009's durable store. Each content story adds fields/sections to the site-content model (both repos), an editor section, and the public rendering — the *structure* is buildable now; the real copy (bio, DBS details, prices, FAQ answers) is the owner's to type into the editor.
 
@@ -2755,4 +2756,101 @@ way to schedule teaching and the two will disagree.
   are a scheduler, and a scheduler is a different story.
 - Once REQ-053 exists, a reminder due today is the obvious second thing the
   phone could announce — but that is REQ-053's business, not this one's.
+
+## REQ-058 — Which pages visitors actually reach
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+_(owner ask, 2026-08-15: "how many people are viewing the website and their
+actions" — narrowed the same day to **visits, not people**, and to which
+pages they reach, date by date)_
+
+**Story**
+As the owner, I want to see how many visits the public site got and which
+pages those visits reached, day by day, so I can tell whether anyone is
+getting as far as Pricing or the enquiry form — without installing anything
+that watches families.
+
+**The constraint that shapes the design.** The app's CSP is `script-src
+'self'` with `connect-src` limited to its own two Function Apps, and
+[PRIVACY-ROPA.md §3](./PRIVACY-ROPA.md) carries a standing rule: *"no new
+processor without paperwork first… the policy currently tells families
+there are no such providers; that statement must stay true."* Google
+Analytics, Plausible, Fathom and anything else hosted would each mean
+widening the CSP, adding a processor to the ROPA and rewriting what the
+privacy policy promises.
+
+So this is first-party by design: the site posts to the API it already
+talks to. No CSP change, no new processor, and the promise to families
+stays as written.
+
+**Built so it holds no personal data at all**
+- **A visit is a tab, not a person.** A random id is generated in memory
+  when the page loads and lives in a JS variable — **nothing is written to
+  the device**, no cookie and no storage. That keeps it outside PECR's
+  consent rule for storing information on terminal equipment, which is what
+  forces a banner. The honest cost: a full reload counts as a new visit, so
+  the number is "visits", never "people", and must be labelled that way.
+- **No IP, no user agent, no referrer stored.** An IP is personal data; the
+  moment it is kept, this becomes a processing activity with a lawful basis
+  to argue. The API records only what the page tells it.
+- **Public pages only.** The teacher's own screens are private and their own
+  usage would drown the numbers — a signed-in session records nothing.
+- **Never the content.** What someone typed into the enquiry form is never
+  an event; only that they reached the page.
+
+**Shape**
+- **Event:** `{ visitId, page, at }` where `page` is the route key the menu
+  already uses (`home`, `offerings`, `pricing`, `enquire`, `about`,
+  `reviews`, `faq`, `contact`). An unknown key is dropped, so the table can
+  never fill with arbitrary strings.
+- **`POST /events`** — public, unauthenticated (visitors are not signed in),
+  rate-limited, and written to a `pageviews` table. It must never fail a
+  page: fire-and-forget, errors swallowed.
+- **`GET /events/daily`** — teacher-only, returning per-date totals: visits
+  (distinct `visitId`) and a count per page.
+- **The snapshot screen** — a date-wise table, newest first: one row per
+  day, the visit count, and the per-page numbers beside it. The app already
+  has a table idiom (Study Snapshot, Payment Tracker) to follow.
+- **Aggregate on read, purge the raw.** Daily totals are what the teacher
+  reads; raw event rows are purged on the retention schedule, and the
+  schedule gains a line for them.
+
+**Cautions**
+- **Bots inflate everything.** Crawlers hit the public pages constantly.
+  Without at least a crude filter the numbers are fiction — worth deciding
+  the rule (no events from requests without a real navigation, or a
+  known-bot user-agent check done server-side and then discarded).
+- Every visitor now makes an extra request per page. It must be small,
+  fire-and-forget, and never on the critical path of a render.
+- An open public POST endpoint is an invitation: rate-limit it, cap the
+  body, and validate the page key against the known list.
+- **The ROPA and privacy policy still need a line**, even holding no
+  personal data — saying plainly that the site counts visits to its own
+  pages, stores no cookies and identifies nobody. Silence would be worse
+  than the sentence.
+
+**Acceptance criteria**
+- [ ] A teacher-only screen shows, per date, how many visits the public site
+      had and how many reached each page.
+- [ ] The number is labelled visits, never users or people.
+- [ ] Nothing is written to a visitor's device — no cookie, no storage —
+      and no consent banner is required.
+- [ ] No IP, user agent, referrer or form content is stored.
+- [ ] A signed-in teacher's own browsing records nothing.
+- [ ] An unknown page key is rejected rather than stored.
+- [ ] Event posting can fail, be blocked or be slow without affecting what
+      the visitor sees.
+- [ ] The CSP is unchanged and no third-party processor is added.
+- [ ] The privacy policy and ROPA describe the counting before it ships.
+
+**Notes**
+- Deliberately not included: sessions of *people* across visits, referrers,
+  time-on-page, scroll depth, or anything approaching a funnel by
+  individual. Each of those needs an identifier that survives the tab, and
+  that is the line where a banner and a ROPA entry become unavoidable.
+- If richer data is ever wanted, Azure Application Insights is the natural
+  next step — its JS SDK installs from npm, so it satisfies `script-src
+  'self'`, and the data would stay in the same Azure subscription under the
+  DPA the ROPA already cites. It sets a session identifier, so it is a
+  paperwork decision, not a drop-in.
 
