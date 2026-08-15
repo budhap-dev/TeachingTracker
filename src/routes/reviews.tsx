@@ -25,6 +25,9 @@ export const ReviewsRoute = () => {
     const saving = useAppSelector(
         (state) => state.students.savingTestimonial
     )
+    // Rises only when a submission lands; the form clears on the change, so
+    // a rejected review keeps the visitor's words.
+    const sent = useAppSelector((state) => state.students.reviewsSubmitted)
     // The published subjects drive the picker (owner report, 2026-08-10).
     const content = useAppSelector((state) => state.students.siteContent)
     useEffect(() => {
@@ -40,6 +43,7 @@ export const ReviewsRoute = () => {
         <ReviewsView
             testimonials={testimonials}
             saving={saving}
+            sent={sent}
             {...(subjectChoices.length ? { subjectChoices } : {})}
             onSubmit={(input) => dispatch(submitTestimonialRequested(input))}
         />

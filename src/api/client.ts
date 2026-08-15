@@ -59,9 +59,20 @@ export async function apiRequest<T>(
     })
 
     if (!response.ok) {
+        // The API explains itself — "quote must be 600 characters or fewer."
+        // Throwing only the status turned every rejection into a puzzle for
+        // whoever hit it (owner report, 2026-08-15: a visitor lost a review
+        // to "failed with status 400"). Prefer its words; fall back to the
+        // status when there are none.
+        const said = await response
+            .json()
+            .then((body: { error?: unknown }) =>
+                typeof body?.error === 'string' ? body.error : ''
+            )
+            .catch(() => '')
         throw new ApiError(
             response.status,
-            `API ${method} ${path} failed with status ${response.status}`
+            said || `API ${method} ${path} failed with status ${response.status}`
         )
     }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { recommendationRoles } from '../data/students'
 import type { FormEvent } from 'react'
 import {
@@ -14,6 +14,10 @@ import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined'
 import type { Testimonial, TestimonialRole } from '../data/students'
 import type { TestimonialInput } from '../api/reviews'
 import { subjectOptions, yearOptions } from '../utils/constants'
+
+/** What the API accepts (testimonialService): 600 for a review, 80 a name. */
+const MAX_QUOTE = 600
+const MAX_NAME = 80
 import { requiredFieldProps } from '../utils/formValidation'
 import { paths } from '../paths'
 
@@ -25,6 +29,8 @@ type ReviewsViewProps = {
         empty falls back to the bundled defaults. */
     subjectChoices?: string[]
     onSubmit: (input: TestimonialInput) => void
+    /** Rises when a submission lands, so the form clears only then. */
+    sent?: number
 }
 
 /** "Parent · Mathematics · Year 10", dropping whichever optional parts are absent. */
@@ -42,6 +48,7 @@ export const ReviewsView = ({
     testimonials,
     saving,
     onSubmit,
+    sent = 0,
     subjectChoices = subjectOptions,
 }: ReviewsViewProps) => {
     const [authorName, setAuthorName] = useState('')
@@ -50,6 +57,10 @@ export const ReviewsView = ({
     const [year, setYear] = useState('')
     const [rating, setRating] = useState(0)
     const [quote, setQuote] = useState('')
+    // Counted the way the SERVER counts — JavaScript string length, so an
+    // emoji is 2 and a family emoji is 8. A "friendlier" count would tell
+    // someone they had room left and then the API would still say no.
+    const quoteLeft = MAX_QUOTE - quote.length
     // Honeypot: hidden from people, tempting to bots. Left blank normally.
     const [website, setWebsite] = useState('')
     const [error, setError] = useState<string | null>(null)
@@ -64,6 +75,9 @@ export const ReviewsView = ({
         recommendationRoles.includes(testimonial.role)
     )
 
+    // The API's own caps (testimonialService). Kept here so the form refuses
+    // what the server would refuse, rather than letting someone write a
+    // paragraph and lose it to a 400 (owner report, 2026-08-15).
     const nameMissing = !authorName.trim()
     // A recommendation (Professional/Personal) carries no star rating.
     const isRecommendation = recommendationRoles.includes(role)
@@ -91,16 +105,27 @@ export const ReviewsView = ({
             quote: quote.trim(),
             website,
         })
-        setAuthorName('')
-        setRole('Parent')
-        setSubjects([])
-        setYear('')
-        setRating(0)
-        setQuote('')
-        setWebsite('')
         setError(null)
+        // The fields are NOT cleared here. They used to be, which meant a
+        // rejected review took the visitor's words with it (owner report,
+        // 2026-08-15) — someone wrote a paragraph and watched it vanish
+        // behind an error. They are cleared when the save actually lands.
         setSubmitted(false)
     }
+
+    // Cleared on success, and only then: `sent` flips when the store
+    // records the submission.
+    useEffect(() => {
+        if (sent > 0) {
+            setAuthorName('')
+            setRole('Parent')
+            setSubjects([])
+            setYear('')
+            setRating(0)
+            setQuote('')
+            setWebsite('')
+        }
+    }, [sent])
 
     return (
         <section className="content-stack">
@@ -200,6 +225,7 @@ export const ReviewsView = ({
                         size="small"
                         value={authorName}
                         onChange={(event) => setAuthorName(event.target.value)}
+                        slotProps={{ htmlInput: { maxLength: MAX_NAME } }}
                         {...requiredFieldProps(
                             submitted && nameMissing,
                             'Your name is required'
@@ -326,6 +352,7 @@ export const ReviewsView = ({
                         className="review-quote"
                         value={quote}
                         onChange={(event) => setQuote(event.target.value)}
+                        slotProps={{ htmlInput: { maxLength: MAX_QUOTE } }}
                         {...requiredFieldProps(
                             submitted && quoteMissing,
                             'Please add a few words'
@@ -334,6 +361,15 @@ export const ReviewsView = ({
                         minRows={3}
                         fullWidth
                     />
+                    {/* The count comes down as they write, and turns urgent
+                        near the end — so nobody meets the limit for the first
+                        time by having their review refused. */}
+                    <p
+                        className={`review-remaining ${quoteLeft <= 50 ? 'low' : ''}`}
+                        aria-live="polite"
+                    >
+                        {quoteLeft} character{quoteLeft === 1 ? '' : 's'} left
+                    </p>
                     {/* Honeypot: off-screen, not announced. Bots fill it; the API
                         silently drops anything that arrives with it set. */}
                     <input

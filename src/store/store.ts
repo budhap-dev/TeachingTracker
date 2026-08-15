@@ -94,6 +94,9 @@ type StudentState = {
     pendingTestimonials: Testimonial[]
     pendingTestimonialsLoading: boolean
     savingTestimonial: boolean
+    /** Counts submissions that actually landed, so the public form knows
+        when it is safe to clear itself (owner report, 2026-08-15). */
+    reviewsSubmitted: number
     // Contact details (REQ-006/008). Public, teacher-editable; the Contact
     // route fetches its own on mount, like the Reviews routes.
     contact: Contact
@@ -168,6 +171,7 @@ const createInitialState = (): StudentState => ({
     pendingTestimonials: [],
     pendingTestimonialsLoading: true,
     savingTestimonial: false,
+    reviewsSubmitted: 0,
     contact: {},
     contactLoading: true,
     savingContact: false,
@@ -713,6 +717,7 @@ const studentSlice = createSlice({
         },
         submitTestimonialSucceeded: (state) => {
             state.savingTestimonial = false
+            state.reviewsSubmitted += 1
             state.notice = {
                 kind: 'success',
                 message:

@@ -5437,3 +5437,19 @@ svg[data-testid='DeleteOutlineRoundedIcon'] {
         flex: 1 1 100%;
     }
 }
+
+
+/* The review's remaining characters (owner ask, 2026-08-15). Quiet while
+   there is room, urgent near the end — nobody should meet the limit for the
+   first time by having their review refused. */
+.review-remaining {
+    margin: -4px 0 0;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.review-remaining.low {
+    color: #b45309;
+    font-weight: 700;
+}
