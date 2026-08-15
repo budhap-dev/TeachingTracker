@@ -550,6 +550,60 @@ describe('component-level coverage', () => {
         )
     })
 
+    it('counts the students in a group class, not the ones removed from it', async () => {
+        // Prod report, 2026-08-15: a student removed from a group class left
+        // the modal reading "Edit group class (3 students)" over a field
+        // holding two. Removal cancels their row rather than deleting it, and
+        // every count was of rows, not of students still coming.
+        const user = userEvent.setup()
+        const day = new Date(today.getFullYear(), today.getMonth(), 12, 12)
+        const dayKey = dateKey(day)
+        const member = (
+            id: number,
+            studentName: string,
+            status: ScheduledSession['status'] = 'Scheduled'
+        ): ScheduledSession => ({
+            id,
+            studentId: id,
+            studentName,
+            year: '10',
+            subject: 'Physics',
+            date: dayKey,
+            time: '16:00',
+            groupId: 'grp-1',
+            notes: '',
+            status,
+        })
+
+        render(
+            <ClassSchedulingView
+                students={[buildStudent()]}
+                sessions={[
+                    member(1, 'Michael Chapman'),
+                    member(2, 'Rick Graham'),
+                    member(3, 'Removed Student', 'Cancelled'),
+                ]}
+                onScheduleClass={vi.fn()}
+                onEditClass={vi.fn()}
+                onSetSessionStatus={vi.fn()}
+            />
+        )
+
+        // The badge on the month grid, before anything is opened.
+        expect(classChip(day, 1)).toHaveTextContent('1×2')
+
+        await user.click(openDayCell(day))
+        const dialog = screen.getByRole('dialog')
+
+        expect(
+            within(dialog).getByRole('heading', {
+                name: 'Edit group class (2 students)',
+            })
+        ).toBeInTheDocument()
+        // The day's chip agrees with the heading and with the field below it.
+        expect(within(dialog).getByRole('tab', { name: /1\s*×2/ })).toBeInTheDocument()
+    })
+
     it('opens a day on its earliest class when the date itself is clicked', async () => {
         const user = userEvent.setup()
         const day = new Date(today.getFullYear(), today.getMonth(), 9, 12)
