@@ -2815,6 +2815,13 @@ stays as written.
   reads; raw event rows are purged on the retention schedule, and the
   schedule gains a line for them.
 
+**Cost: none.** Azure Functions' consumption plan gives 1M executions and
+400,000 GB-seconds free each month, far above this site's traffic; a
+page-visit row is ~100 bytes, so Table Storage is fractions of a penny.
+No licence and no subscription — which is the reason for building it rather
+than paying £7–9/month for a hosted tool that would also cost a processor
+entry and a CSP change (owner call, 2026-08-15).
+
 **Cautions**
 - **Bots inflate everything.** Crawlers hit the public pages constantly.
   Without at least a crude filter the numbers are fiction — worth deciding
@@ -2841,7 +2848,46 @@ stays as written.
 - [ ] Event posting can fail, be blocked or be slow without affecting what
       the visitor sees.
 - [ ] The CSP is unchanged and no third-party processor is added.
-- [ ] The privacy policy and ROPA describe the counting before it ships.
+- [ ] The privacy policy and ROPA describe the counting before it ships,
+      in the exact words below.
+
+**The paperwork, decided now rather than at build time** (owner call,
+2026-08-15). Three claims on the privacy page were checked against this
+design; only one of them stops being true.
+
+| Privacy page claim | After this ships |
+|---|---|
+| "no analytics, advertising or email-marketing **providers**" | ✅ true — first-party is the point |
+| "sets no advertising or analytics **cookies** … no cookie banner" | ✅ true — nothing is stored on the device |
+| "There is no advertising profile, **no analytics tracking**" | ❌ **must change** |
+
+**1. `PrivacyView` — replace** _"That is the whole list. There is no
+advertising profile, no analytics tracking, and nothing is ever sold or
+shared for marketing."_ **with:**
+
+> That is the whole list. There is no advertising profile, and nothing is
+> ever sold or shared for marketing. I do count how many visits each public
+> page gets, so I know which pages are useful — that counting sets no
+> cookies, stores nothing on your device, records no IP address, and
+> identifies nobody.
+
+**2. `PrivacyView` — the Cookies section stays exactly as written.** It is
+true, and it is only true because the visit id lives in memory. Anyone
+changing that must change this paragraph in the same commit.
+
+**3. `PRIVACY-ROPA.md` — add under §2, not as a processor:**
+
+> **Page-visit counts (not personal data).** The public site records, for
+> each visit to a public page, a random per-tab id held only in the
+> browser's memory, the page name and the time. No IP address, user agent,
+> referrer or form content is stored, and the id is never written to the
+> visitor's device, so no visitor can be identified from these rows and no
+> processor is involved. Counts are the owner's own, in the owner's own
+> Azure storage. Raw rows are purged on the retention schedule.
+
+**4. `PRIVACY-RETENTION.md` — add a line:** raw page-visit rows are kept for
+**90 days** and purged with the other routines; the per-day totals the
+teacher reads may be kept indefinitely, since they identify nobody.
 
 **Notes**
 - Deliberately not included: sessions of *people* across visits, referrers,
