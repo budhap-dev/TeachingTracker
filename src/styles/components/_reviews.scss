@@ -124,6 +124,29 @@
     margin-top: 4px;
 }
 
+/* The way to the form from the top of the page (REQ-060). `.section-header` is
+   already a space-between flex row that wraps on narrow screens, and already
+   keeps its action button off the wrap (see _responsive.scss) — so all this
+   adds is the full width on a phone. A control this important should not drop
+   onto its own line and then sit there as a 90px target against the edge. */
+@media (max-width: 640px) {
+    .write-review-button.MuiButton-root {
+        width: 100%;
+        margin-top: 4px;
+    }
+}
+
+/* Where "Write a review" actually lands. Below 900px the sidebar becomes a
+   sticky brand band 110px tall, so scrolling the form card to the top of the
+   viewport parks its own heading — and the "checked before they appear" line
+   that answers the visitor's first worry — underneath it. Measured in Chrome,
+   not guessed. */
+@media (max-width: 900px) {
+    .review-form-card {
+        scroll-margin-top: 126px;
+    }
+}
+
 /* The published card's controls sit above the stars (owner ask, 2026-08-16),
    so the row of cards can be scanned by what can be done to them. A rule under
    them separates the controls from the review itself — without it the checkbox
