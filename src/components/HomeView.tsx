@@ -22,6 +22,7 @@ import StarOutlineRoundedIcon from '@mui/icons-material/StarOutlineRounded'
 
 import { subjectIcon } from '../utils/subjectIcons'
 import { paths } from '../paths'
+import { HomeReviews } from './HomeReviews'
 import { PageLoading } from './PageLoading'
 import type { Testimonial } from '../data/students'
 
@@ -335,10 +336,17 @@ export const HomeView = ({
                 </div>
             )}
 
-            {/* The reasons + the journey at a glance, side by side. Parent
-                quotes retired from the hero (owner call, 2026-08-06) — the
-                trust chips' ★ average and the Reviews page carry the
-                proof. */}
+            {/* Proof where the decision is made (REQ-059): the three reviews
+                the teacher chose, straight after the band and its one row of
+                subject chips — so the words arrive while the call to action
+                is still on screen. This reinstates parent quotes on Home,
+                retired from the hero on 2026-08-06, as a curated three
+                rather than the single rotating quote that was removed. */}
+            <HomeReviews testimonials={testimonials} />
+
+            {/* The reasons + the journey at a glance, side by side. The trust
+                chips' ★ average carries the number; the strip above carries
+                the words. */}
             <div className="home-proof-row">
                 {highlightGrid && (
                     <div className="card home-highlights-card">

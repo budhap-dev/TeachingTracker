@@ -104,13 +104,13 @@ describe('HomeView', () => {
         ).toHaveAttribute('href', '/reviews')
     })
 
-    it('keeps parent quotes off the hero — the Reviews page owns them', () => {
+    it('keeps quotes out of the hero band itself, and the journey compact', () => {
         renderHome()
 
-        // Quotes retired from the hero (owner call, 2026-08-06).
-        expect(screen.queryByText('Quote number 1.')).not.toBeInTheDocument()
+        // Quotes left the HERO on 2026-08-06 and have not gone back: REQ-059
+        // put them in their own card below it, never inside the band.
         expect(
-            screen.queryByRole('link', { name: /read all reviews/i })
+            document.querySelector('.home-hero-band blockquote')
         ).not.toBeInTheDocument()
         // The journey still shows, compact — titles with their step number.
         expect(screen.getByText(/how it works/i)).toBeInTheDocument()
@@ -292,6 +292,10 @@ describe('HomeLanding', () => {
                 name: defaultSiteContent.hero.headline.replace('\n', ' '),
             })
         ).toBeInTheDocument()
-        expect(await screen.findByText(/famil/i)).toBeInTheDocument()
+        // The ★ trust chip: "N families", distinct from the review strip's
+        // "What families say" heading below it.
+        expect(
+            await screen.findByText(/★.*famil/i, { selector: 'li' })
+        ).toBeInTheDocument()
     })
 })

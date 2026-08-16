@@ -52,6 +52,7 @@ import {
     loadTestimonialsSaga,
     loadPendingTestimonialsSaga,
     submitTestimonialSaga,
+    featureTestimonialSaga,
     moderateTestimonialSaga,
     deleteTestimonialSaga,
     loadContactSaga,
@@ -113,6 +114,7 @@ import {
     fetchTestimonialsRequested,
     fetchPendingTestimonialsRequested,
     submitTestimonialRequested,
+    featureTestimonialRequested,
     moderateTestimonialRequested,
     deleteTestimonialRequested,
     fetchContactRequested,
@@ -644,6 +646,10 @@ describe('rootSaga', () => {
                 takeEvery(
                     moderateTestimonialRequested.type,
                     moderateTestimonialSaga
+                ),
+                takeEvery(
+                    featureTestimonialRequested.type,
+                    featureTestimonialSaga
                 ),
                 takeEvery(
                     deleteTestimonialRequested.type,

@@ -5,12 +5,14 @@ import {
     deleteTestimonial,
     fetchApprovedTestimonials,
     fetchPendingTestimonials,
+    setTestimonialFeatured,
     setTestimonialStatus,
     submitTestimonial,
 } from '../api/reviews'
 import type { TestimonialInput } from '../api/reviews'
 import {
     deleteTestimonialSaga,
+    featureTestimonialSaga,
     loadPendingTestimonialsSaga,
     loadTestimonialsSaga,
     moderateTestimonialSaga,
@@ -26,6 +28,9 @@ import {
     fetchTestimonialsFailed,
     fetchTestimonialsRequested,
     fetchTestimonialsSucceeded,
+    featureTestimonialFailed,
+    featureTestimonialRequested,
+    featureTestimonialSucceeded,
     moderateTestimonialFailed,
     moderateTestimonialRequested,
     moderateTestimonialSucceeded,
@@ -283,6 +288,91 @@ describe('testimonial sagas', () => {
         expect(gen.throw('kaboom').value).toEqual(
             put(moderateTestimonialFailed('Could not update the review.'))
         )
+    })
+
+    // REQ-059 — choosing a review for Home.
+    it('features a review', () => {
+        const gen = featureTestimonialSaga(
+            featureTestimonialRequested({ id: 1, featured: true })
+        )
+        expect(gen.next().value).toEqual(call(setTestimonialFeatured, 1, true))
+        const featured = { ...approved, featured: true }
+        expect(gen.next(featured).value).toEqual(
+            put(featureTestimonialSucceeded(featured))
+        )
+    })
+
+    // The API's refusal says which rule was hit ("Only 5 reviews can be shown
+    // on Home"), so it is shown as-is rather than wrapped in a generic line.
+    it('passes the API refusal through unchanged', () => {
+        const gen = featureTestimonialSaga(
+            featureTestimonialRequested({ id: 1, featured: true })
+        )
+        gen.next()
+        expect(
+            gen.throw(new Error('Only 5 reviews can be shown on Home.')).value
+        ).toEqual(
+            put(featureTestimonialFailed('Only 5 reviews can be shown on Home.'))
+        )
+    })
+
+    it('falls back to a readable message when the throw is not an Error', () => {
+        const gen = featureTestimonialSaga(
+            featureTestimonialRequested({ id: 1, featured: false })
+        )
+        gen.next()
+        expect(gen.throw('kaboom').value).toEqual(
+            put(featureTestimonialFailed('Could not update the home page.'))
+        )
+    })
+
+    it('replaces the review in the approved list, in place', () => {
+        const start = {
+            ...base(),
+            testimonials: [approved, { ...approved, id: 2 }],
+        }
+
+        const state = studentReducer(
+            start,
+            featureTestimonialSucceeded({ ...approved, featured: true })
+        )
+
+        expect(state.testimonials.map((item) => item.id)).toEqual([1, 2])
+        expect(state.testimonials[0].featured).toBe(true)
+        expect(state.notice?.message).toMatch(/added to the home page/i)
+    })
+
+    it('says so when a review comes off the home page', () => {
+        const start = {
+            ...base(),
+            testimonials: [{ ...approved, featured: true }],
+        }
+
+        const state = studentReducer(
+            start,
+            featureTestimonialSucceeded(approved)
+        )
+
+        expect(state.testimonials[0].featured).toBeUndefined()
+        expect(state.notice?.message).toMatch(/removed from the home page/i)
+    })
+
+    it('records a feature failure as an error', () => {
+        const state = studentReducer(
+            base(),
+            featureTestimonialFailed('Only 5 reviews can be shown on Home.')
+        )
+
+        expect(state.error).toBe('Only 5 reviews can be shown on Home.')
+    })
+
+    it('clears the error when a feature request starts', () => {
+        const state = studentReducer(
+            { ...base(), error: 'old' },
+            featureTestimonialRequested({ id: 1, featured: true })
+        )
+
+        expect(state.error).toBeNull()
     })
 
     it('deletes a review', () => {

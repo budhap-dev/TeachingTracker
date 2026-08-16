@@ -762,6 +762,36 @@ const studentSlice = createSlice({
         moderateTestimonialFailed: (state, action: PayloadAction<string>) => {
             fail(state, action.payload)
         },
+        // --- Moderation: choose for Home (REQ-059) ---
+        featureTestimonialRequested: {
+            reducer: (state: StudentState) => {
+                state.error = null
+            },
+            prepare: (input: { id: number; featured: boolean }) => ({
+                payload: input,
+            }),
+        },
+        featureTestimonialSucceeded: (
+            state,
+            action: PayloadAction<Testimonial>
+        ) => {
+            const updated = action.payload
+            // Only the approved list carries featured reviews, and the record
+            // is replaced in place so the strip's order never shifts under a
+            // tick — Home reads this list in the order it arrived.
+            state.testimonials = state.testimonials.map((item) =>
+                item.id === updated.id ? updated : item
+            )
+            state.notice = {
+                kind: 'success',
+                message: updated.featured
+                    ? 'Review added to the home page.'
+                    : 'Review removed from the home page.',
+            }
+        },
+        featureTestimonialFailed: (state, action: PayloadAction<string>) => {
+            fail(state, action.payload)
+        },
         // --- Moderation: delete outright ---
         deleteTestimonialRequested: {
             reducer: (state: StudentState) => {
@@ -897,6 +927,9 @@ export const {
     moderateTestimonialRequested,
     moderateTestimonialSucceeded,
     moderateTestimonialFailed,
+    featureTestimonialRequested,
+    featureTestimonialSucceeded,
+    featureTestimonialFailed,
     deleteTestimonialRequested,
     deleteTestimonialSucceeded,
     deleteTestimonialFailed,

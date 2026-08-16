@@ -3,6 +3,7 @@ import {
     deleteTestimonial,
     fetchApprovedTestimonials,
     fetchPendingTestimonials,
+    setTestimonialFeatured,
     setTestimonialStatus,
     submitTestimonial,
 } from './reviews'
@@ -75,6 +76,37 @@ describe('reviews api', () => {
             expect.objectContaining({
                 method: 'PUT',
                 body: JSON.stringify({ status: 'Approved' }),
+            })
+        )
+    })
+
+    // REQ-059 — the same endpoint, carrying the Home choice instead.
+    it('features a review via PUT /testimonials/{id}', async () => {
+        const fetchMock = jsonResponse({ id: 4, featured: true })
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(setTestimonialFeatured(4, true)).resolves.toMatchObject({
+            featured: true,
+        })
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/testimonials/4',
+            expect.objectContaining({
+                method: 'PUT',
+                body: JSON.stringify({ featured: true }),
+            })
+        )
+    })
+
+    it('unfeatures a review with the same call', async () => {
+        const fetchMock = jsonResponse({ id: 4 })
+        vi.stubGlobal('fetch', fetchMock)
+
+        await setTestimonialFeatured(4, false)
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/testimonials/4',
+            expect.objectContaining({
+                body: JSON.stringify({ featured: false }),
             })
         )
     })

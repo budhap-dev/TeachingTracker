@@ -333,3 +333,192 @@ a.home-highlight-tile {
 
 /* Leads inbox (REQ-019): one card per enquiry, its left spine coloured by
    status so the inbox reads at a glance. */
+
+/* Three chosen reviews under the hero (REQ-059).
+
+   The height rules are the whole point of this block. A quote is capped at 600
+   characters with no floor, so the cards in a row can differ by a factor of
+   fifteen: stretching the row to the tallest leaves the short ones floating,
+   and letting each keep its own height changes the card height under a thumb
+   mid-swipe on the phone rail. So every card is ONE fixed height, and the type
+   is sized to the quote — three buckets, set in HomeReviews.tsx — so a short
+   review fills its card instead of rattling around in it. */
+.home-reviews-card {
+    padding: 20px 22px 22px;
+}
+
+.home-reviews-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    h4 {
+        margin: 0;
+    }
+}
+
+.home-reviews-all {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.88rem;
+    white-space: nowrap;
+}
+
+/* One rail at every width (owner call, 2026-08-16). Desktop shows three cards
+   and scrolls to the rest; a phone shows one. It began as a wrapping grid,
+   which at five cards read as 3 + 2 — a second row that looked like an
+   afterthought, and left the fourth and fifth reviews below the fold on a
+   laptop. Scrolling keeps every pick the same distance from the eye, and the
+   dots below say how many there are before anyone drags.
+
+   nowrap and flex-start are load-bearing: wrap turns full-width cards into a
+   stack (which is exactly how the phone rail broke once), and a centred
+   overflow container puts its first card half off the left edge, out of reach
+   of a scroll that can only go right. */
+.home-review-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 16px;
+    margin-top: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    /* Room for the cards' shadow. */
+    padding-bottom: 4px;
+    /* The dots carry the count; a scrollbar said the same thing less clearly,
+       and only once the visitor had already dragged. */
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-review-grid {
+        scroll-behavior: auto;
+    }
+}
+
+.home-review {
+    /* One height for every card — see the note above. */
+    height: 250px;
+    /* Three to a view on desktop: two gaps of 16px come out of the width. */
+    flex: 0 0 calc((100% - 32px) / 3);
+    scroll-snap-align: start;
+
+    /* The quote takes whatever the card has left, and hides what will not
+       fit. `-webkit-line-clamp` was the first attempt and never fired: the
+       flex row squeezed the quote to four lines before the clamp's nine were
+       reached, so the browser clipped it with no ellipsis and the text simply
+       stopped mid-sentence. Height here, fade below. */
+    blockquote {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* Pinned to the bottom so the names line up across the row however much
+       quote sits above them. */
+    figcaption {
+        margin-top: auto;
+    }
+}
+
+/* The type scale: a quote of 80 characters or fewer becomes a pull quote, a
+   long one sets small so more of it survives the card. */
+.home-review.is-short blockquote {
+    font-size: 1.24rem;
+    line-height: 1.35;
+    font-weight: 600;
+}
+
+.home-review.is-mid blockquote {
+    font-size: 1rem;
+}
+
+.home-review.is-long blockquote {
+    font-size: 0.86rem;
+}
+
+/* A quote too long for its card fades out instead of stopping dead, and the
+   card's closing quote mark goes — it would be claiming the family finished
+   their sentence there. The fade is a mask rather than a gradient overlay, so
+   it works on any card colour in the rotation and in every theme. */
+.home-review.is-clipped blockquote {
+    mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+
+    &::after {
+        content: none;
+    }
+}
+
+.home-review-more {
+    color: var(--card-accent);
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+/* The dots under the phone rail (owner ask, 2026-08-16): how many cards there
+   are, said before the visitor swipes rather than after. Hidden on desktop,
+   where all three are on screen at once and a position indicator would be
+   pointing at nothing. */
+.home-review-dots {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    margin-top: 6px;
+}
+
+.home-review-dot {
+    /* A tap target of 24px around a 7px dot — the dot is what is seen, the
+       button is what is hit. */
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    background: none;
+    display: grid;
+    place-items: center;
+
+    &::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--muted) 45%, transparent);
+        transition: width 0.2s ease, background 0.2s ease;
+    }
+
+    &.is-current::before {
+        width: 20px;
+        background: var(--accent);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 999px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-review-dot::before {
+        transition: none;
+    }
+}
+
+/* A phone shows one card at a time rather than three — the only thing about
+   the rail that changes with width. */
+@media (max-width: 900px) {
+    .home-review-grid {
+        gap: 12px;
+    }
+
+    .home-review {
+        flex: 0 0 100%;
+    }
+}

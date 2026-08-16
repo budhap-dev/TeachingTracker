@@ -195,6 +195,9 @@ export type Testimonial = {
     /** Set when a profanity screen matched the name/quote (REQ-028) — the
         moderation queue highlights it. It does not change visibility. */
     flagged?: boolean
+    /** Chosen by the teacher to show on the public Home page (REQ-059).
+        At most three at once, and only ever on an Approved review. */
+    featured?: boolean
     /** ISO date, YYYY-MM-DD, when it was submitted. */
     submittedOn: string
     /** ISO date the teacher approved/rejected it; absent while Pending. */

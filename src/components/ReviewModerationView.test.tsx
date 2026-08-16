@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { ReviewModerationView } from './ReviewModerationView'
+import { MAX_FEATURED, ReviewModerationView } from './ReviewModerationView'
 import type { Testimonial } from '../data/students'
 
 const pending: Testimonial = {
@@ -37,6 +37,7 @@ const renderView = (
             onApprove={vi.fn()}
             onReject={vi.fn()}
             onDelete={vi.fn()}
+            onFeature={vi.fn()}
             {...overrides}
         />
     )
@@ -159,5 +160,72 @@ describe('ReviewModerationView', () => {
         // Sanity: the published quote sits under the Published heading's card.
         expect(screen.getByText('Wonderful tutor.')).toBeInTheDocument()
         expect(within(document.body).getByText(/published reviews/i)).toBeInTheDocument()
+    })
+})
+
+// REQ-059 — which reviews lead the home page, chosen where reviews already
+// get looked at.
+describe('choosing reviews for the home page', () => {
+    it('ticks a published review onto the home page', async () => {
+        const onFeature = vi.fn()
+        renderView({ published: [published], onFeature })
+
+        await userEvent.click(
+            screen.getByRole('checkbox', { name: /show on home page/i })
+        )
+
+        expect(onFeature).toHaveBeenCalledWith(published.id, true)
+    })
+
+    it('unticks one that is already there', async () => {
+        const onFeature = vi.fn()
+        renderView({
+            published: [{ ...published, featured: true }],
+            onFeature,
+        })
+
+        const box = screen.getByRole('checkbox', { name: /show on home page/i })
+        expect(box).toBeChecked()
+
+        await userEvent.click(box)
+
+        expect(onFeature).toHaveBeenCalledWith(published.id, false)
+    })
+
+    it('counts how many are chosen', () => {
+        renderView({
+            published: [
+                { ...published, id: 1, featured: true },
+                { ...published, id: 2, featured: true },
+                { ...published, id: 3 },
+            ],
+        })
+
+        expect(
+            screen.getByText(`2 of ${MAX_FEATURED} chosen`)
+        ).toBeInTheDocument()
+    })
+
+    // At the cap the remaining boxes disable rather than letting the teacher
+    // pick a fourth and be refused by the API.
+    it('disables the rest once three are chosen, and says why', () => {
+        renderView({
+            published: [
+                ...Array.from({ length: MAX_FEATURED }, (_, index) => ({
+                    ...published,
+                    id: index + 1,
+                    featured: true,
+                })),
+                { ...published, id: 90 },
+            ],
+        })
+
+        expect(
+            screen.getByRole('checkbox', { name: /untick one to choose another/i })
+        ).toBeDisabled()
+        // The three already chosen stay tickable, so one can be swapped out.
+        screen
+            .getAllByRole('checkbox', { name: /show on home page/i })
+            .forEach((box) => expect(box).toBeEnabled())
     })
 })
