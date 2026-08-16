@@ -1,7 +1,7 @@
 import { PageLoading } from '../components/PageLoading'
 import { ReviewModerationView } from '../components/ReviewModerationView'
 import { useAppDispatch, useAppSelector } from '../hooks'
-import { deleteTestimonialRequested, fetchPendingTestimonialsRequested, fetchTestimonialsRequested, moderateTestimonialRequested } from '../store/store'
+import { deleteTestimonialRequested, featureTestimonialRequested, fetchPendingTestimonialsRequested, fetchTestimonialsRequested, moderateTestimonialRequested } from '../store/store'
 import { useEffect } from 'react'
 
 export const ReviewModerationRoute = () => {
@@ -38,6 +38,9 @@ export const ReviewModerationRoute = () => {
                 )
             }
             onDelete={(id) => dispatch(deleteTestimonialRequested(id))}
+            onFeature={(id, featured) =>
+                dispatch(featureTestimonialRequested({ id, featured }))
+            }
         />
     )
 }

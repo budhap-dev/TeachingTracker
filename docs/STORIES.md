@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-030`**
+**Next id: `REQ-060`**
 
 ## Legend
 
@@ -2681,7 +2681,7 @@ starts at the document.
 
 ## REQ-056 — The dashboard counts what is waiting
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+**Status:** 🚧 Built (2026-08-15, `1dc0ba2`) · **Impact:** frontend · **Effort:** S
 _(owner ask, 2026-08-15: a number for a new review or a new enquiry, on the
 phone AND on the dashboard)_
 
@@ -2726,16 +2726,16 @@ is unsupported or refused.
   wanting attention, so they must not be filtered out of the number.
 
 **Acceptance criteria**
-- [ ] The dashboard shows the number of enquiries awaiting a reply and the
+- [x] The dashboard shows the number of enquiries awaiting a reply and the
       number of reviews awaiting moderation, each opening its own page.
-- [ ] A count of zero shows nothing at all — no empty pill.
-- [ ] Flagged reviews are included in the pending count.
-- [ ] The same numbers appear on the teacher's nav, from every screen.
-- [ ] The dashboard, the nav and REQ-053's badge read from one shared
+- [x] A count of zero shows nothing at all — no empty pill.
+- [x] Flagged reviews are included in the pending count.
+- [x] The same numbers appear on the teacher's nav, from every screen.
+- [x] The dashboard, the nav and REQ-053's badge read from one shared
       count, so they cannot disagree.
-- [ ] No review text, family name or enquiry detail appears in any count
+- [x] No review text, family name or enquiry detail appears in any count
       surface.
-- [ ] Nothing about it requires notification permission or a service
+- [x] Nothing about it requires notification permission or a service
       worker.
 
 **Notes**
@@ -2829,3 +2829,126 @@ Three details worth keeping:
 - Once REQ-053 exists, a reminder due today is the obvious second thing the
   phone could announce — but that is REQ-053's business, not this one's.
 
+
+## REQ-059 — Three chosen reviews on Home
+
+**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+_(owner ask, 2026-08-16: "something to do with the reviews on the home —
+maybe 3 reviews I can pick, and the rest behind 'show more reviews'".
+Layout picked from rendered options the same day: cards under the CTA.)_
+
+**Story**
+As a parent deciding whether to enquire, I want to read what other families
+say without leaving the page I landed on, so the proof reaches me where the
+decision is made rather than a page away.
+
+As the teacher, I want to choose which reviews those are, so the front page
+shows the ones that represent the tutoring best — not simply the newest.
+
+**This is REQ-054's idea 4, brought forward.** That story recorded "proof
+where the decision is made" as an idea and measured the problem: the trust
+chips are the only proof on Home, and the reviews live a page away. This
+delivers that one idea; the rest of REQ-054's reordering is still its own
+story.
+
+**Where the reviews go** — under the hero's call to action, in their own
+card headed "What families say", as **one horizontal rail at every width**
+(owner call, 2026-08-16): three cards to a screen on desktop with the next
+peeking, one to a screen on a phone, scrolling to the rest. It began as a
+wrapping grid, which at five picks read as 3 + 2 — a second row that looked
+like an afterthought and left the last two reviews below the fold on a
+laptop.
+
+**A dot per card** sits below the rail, and they only appear when the rail
+can actually move: three picks on a wide screen all fit, and dots for a
+rail that cannot scroll are furniture. The dots read the rail rather than
+drive it, so they can never point at a card that is not on screen — the
+last card of five cannot lead a three-up rail, so its dot lights the
+position the rail truly reached. The scrollbar itself is hidden; the dots
+say how many there are before anyone drags, which a scrollbar only does
+after. The card heads to the Reviews page with a
+plain "Read all reviews →" — no count, because the ★ chip in the band
+above already carries the number and saying it twice, differently, is how
+the two come to disagree (owner call, 2026-08-16).
+
+**How they are chosen** — a "Show on home page" checkbox on each approved
+review in Review moderation, which is already where the teacher looks at
+reviews and already lists the published ones. **At most five** (owner call,
+2026-08-16 — it began at three); once five are ticked the rest disable with
+"Untick one to choose another", and the API refuses a sixth so two tabs
+cannot race past the cap. They appear on Home newest first. **Manual
+ordering is deliberately out of scope** — it is a drag handle and a second
+field for a page that shows a handful of quotes.
+
+**Nothing is chosen on day one**, so an empty pick falls back to the five
+newest approved reviews. The strip ships useful and the teacher curates when
+they want to, exactly as the bio section shipped empty and safe.
+
+**The height problem, which is the real work.** The submit form caps a quote
+at 600 characters and sets no floor, so three cards in a row can differ by a
+factor of fifteen: a full-length review runs about sixteen lines in a 260px
+column, "Reliable, patient and genuinely invested." runs one. Stretching the
+row to the tallest leaves two cards floating in white space; letting each
+keep its own height staircases the bottom edge and — worse — changes the
+card height under a thumb mid-swipe on the phone rail. So:
+
+- **One fixed height** for every card in the strip, which is what keeps the
+  phone rail from resizing as it scrolls.
+- **The type scales to the quote**, in three buckets, not per-character:
+  under ~90 characters sets large (a pull quote), middling sets at body
+  size, long sets small. A short review then reads as deliberately punchy
+  rather than accidentally empty, and the row does not jitter when a review
+  is swapped.
+- **A quote too long for its card fades out** and carries a "Read this
+  review →" link to that review on the Reviews page, so nothing a family
+  wrote is lost, only deferred. Reviews page cards gain an anchor id for the
+  link to land on. Two things this must not be: a hard stop mid-sentence
+  (which is what `-webkit-line-clamp` gave, because the flex row squeezed the
+  quote before the clamp fired, so no ellipsis ever rendered), and a rule
+  keyed to the type size — the card gives a quote about 100px, so anything
+  past ~130 characters overflows whether or not it is long enough to set
+  small.
+
+**Recommendations may be featured too.** Professional and personal
+endorsements carry no star rating, so the strip's card omits the star row
+when there is no rating rather than showing an empty one.
+
+**Acceptance criteria**
+- [ ] Home shows up to five approved reviews under the call to action, and
+      a link on to the Reviews page.
+- [ ] Each approved review in moderation has a "Show on home page"
+      checkbox; ticking it puts that review on Home, unticking removes it.
+      It sits with Delete at the top of the card, above the stars, so the
+      list can be scanned by what can be done to it (owner call,
+      2026-08-16).
+- [ ] At most five can be chosen: the remaining checkboxes disable with a
+      reason, and the API refuses a sixth if one is sent anyway.
+- [ ] With none chosen, the five newest approved reviews show.
+- [ ] A featured review that is later rejected or deleted leaves Home by
+      itself, and stops counting toward the cap.
+- [ ] Every card in the strip is the same height, at 390px and on desktop;
+      a quote that does not fit fades out and links to the full review —
+      including a middling one that fits the type scale but not the card.
+- [ ] A short quote fills its card rather than floating in white space.
+- [ ] The strip is a horizontal rail at every width — three cards to a
+      screen on desktop, one on a phone — whose height does not change while
+      it scrolls, with one dot per card below it. The dots follow a drag as
+      well as driving one, step by one card rather than one screen, and each
+      is reachable by keyboard.
+- [ ] The dots are absent when every chosen review already fits on screen.
+- [ ] No autoplay: the only movement is the one the visitor asked for, and
+      reduced-motion turns off its smoothing.
+- [ ] A review with no star rating (a recommendation) shows no empty stars.
+- [ ] The choice is teacher-only: nothing about featuring is reachable
+      signed out, and no unapproved review can ever be featured.
+- [ ] Coverage holds at 100%; lint and build clean in both repos.
+
+**Notes**
+- The pick lives on the review record rather than in the site-content
+  document, which means it goes live the moment it is ticked rather than on
+  publish. That was the owner's call (2026-08-16) — moderation is where
+  reviews are already handled, and a review is a thing in its own right, not
+  a piece of page copy.
+- This reinstates parent quotes on Home, retired in favour of the ★ chips on
+  2026-08-06. Curated and three at a time is a different proposition from
+  the rotating single quote that was removed.

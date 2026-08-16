@@ -35,6 +35,7 @@ import {
     deleteTestimonial as deleteTestimonialApi,
     fetchApprovedTestimonials,
     fetchPendingTestimonials,
+    setTestimonialFeatured,
     setTestimonialStatus,
     submitTestimonial,
 } from '../api/reviews'
@@ -119,6 +120,9 @@ import {
     moderateTestimonialRequested,
     moderateTestimonialSucceeded,
     moderateTestimonialFailed,
+    featureTestimonialRequested,
+    featureTestimonialSucceeded,
+    featureTestimonialFailed,
     deleteTestimonialRequested,
     deleteTestimonialSucceeded,
     deleteTestimonialFailed,
@@ -590,6 +594,32 @@ export function* moderateTestimonialSaga(
     }
 }
 
+/**
+ * Chooses a review for Home, or takes it off (REQ-059). The API refuses a
+ * fourth pick, and its message says why — so it is shown as-is rather than
+ * replaced with a generic failure the teacher can do nothing about.
+ */
+export function* featureTestimonialSaga(
+    action: ReturnType<typeof featureTestimonialRequested>
+) {
+    try {
+        const testimonial: Testimonial = yield call(
+            setTestimonialFeatured,
+            action.payload.id,
+            action.payload.featured
+        )
+        yield put(featureTestimonialSucceeded(testimonial))
+    } catch (error) {
+        yield put(
+            featureTestimonialFailed(
+                error instanceof Error
+                    ? error.message
+                    : 'Could not update the home page.'
+            )
+        )
+    }
+}
+
 /** Deletes a review outright; the removed id comes back to drop from state. */
 export function* deleteTestimonialSaga(
     action: ReturnType<typeof deleteTestimonialRequested>
@@ -667,6 +697,7 @@ export function* rootSaga() {
         ),
         takeEvery(submitTestimonialRequested.type, submitTestimonialSaga),
         takeEvery(moderateTestimonialRequested.type, moderateTestimonialSaga),
+        takeEvery(featureTestimonialRequested.type, featureTestimonialSaga),
         takeEvery(deleteTestimonialRequested.type, deleteTestimonialSaga),
         takeLatest(fetchContactRequested.type, loadContactSaga),
         takeEvery(updateContactRequested.type, updateContactSaga),

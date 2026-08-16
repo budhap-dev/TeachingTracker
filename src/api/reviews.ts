@@ -42,6 +42,20 @@ export const setTestimonialStatus = (
         body: { status },
     })
 
+/**
+ * PUT /testimonials/{id} — teacher: choose this review for Home, or take it
+ * off (REQ-059). The updated review comes back; a fourth pick is refused by
+ * the API with a message the moderation screen shows as-is.
+ */
+export const setTestimonialFeatured = (
+    id: number,
+    featured: boolean
+): Promise<Testimonial> =>
+    apiRequest<Testimonial>(`/testimonials/${id}`, {
+        method: 'PUT',
+        body: { featured },
+    })
+
 /** DELETE /testimonials/{id} — teacher: remove a review; the id comes back. */
 export const deleteTestimonial = async (id: number): Promise<number> => {
     const { id: removed } = await apiRequest<{ id: number }>(

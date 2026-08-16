@@ -152,6 +152,9 @@ export const ReviewsView = ({
                         {familyReviews.map((testimonial) => (
                             <figure
                                 key={testimonial.id}
+                                // Home's clamped quotes link straight to the
+                                // whole of a review (REQ-059).
+                                id={`review-${testimonial.id}`}
                                 className="testimonial-card review"
                             >
                                 <Rating

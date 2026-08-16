@@ -118,8 +118,39 @@
 .moderation-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
     gap: 8px;
     margin-top: 4px;
+}
+
+/* The published card's controls sit above the stars (owner ask, 2026-08-16),
+   so the row of cards can be scanned by what can be done to them. A rule under
+   them separates the controls from the review itself — without it the checkbox
+   read as part of the quote. */
+.moderation-actions.on-top {
+    margin: 0 0 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--card-accent, var(--border)) 22%, transparent);
+}
+
+/* "Show on home page" (REQ-059). The label carries the reason when the box is
+   disabled at the cap, so it needs to wrap rather than push Delete off the
+   card. */
+.feature-toggle.MuiFormControlLabel-root {
+    margin: 0;
+    min-width: 0;
+
+    .MuiFormControlLabel-label {
+        font-size: 0.82rem;
+        line-height: 1.3;
+        color: var(--muted);
+    }
+
+    .MuiCheckbox-root {
+        padding: 4px 6px 4px 0;
+    }
 }
 
 /* A flagged review (REQ-028): an amber warning strip and a warm-tinted card, so

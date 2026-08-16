@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import {
     Button,
+    Checkbox,
     Dialog,
     DialogActions,
     DialogContent,
     DialogContentText,
     DialogTitle,
+    FormControlLabel,
     Rating,
 } from '@mui/material'
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
@@ -19,7 +21,16 @@ type ReviewModerationViewProps = {
     onApprove: (id: number) => void
     onReject: (id: number) => void
     onDelete: (id: number) => void
+    /** Ticks or unticks "Show on Home" for one review (REQ-059). */
+    onFeature: (id: number, featured: boolean) => void
 }
+
+/**
+ * How many reviews Home shows — the cap the checkboxes enforce (REQ-059).
+ * Kept in step with HOME_REVIEW_COUNT and the API's own cap; the API is the
+ * one that actually holds the line, since two tabs can race a checkbox.
+ */
+export const MAX_FEATURED = 5
 
 /** "Parent · Mathematics · Year 10", dropping absent optional parts. */
 const attribution = (testimonial: Testimonial): string =>
@@ -42,9 +53,16 @@ export const ReviewModerationView = ({
     onApprove,
     onReject,
     onDelete,
+    onFeature,
 }: ReviewModerationViewProps) => {
     // The review a delete has been requested for, held until confirmed.
     const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
+
+    // Chosen for Home (REQ-059). At the cap the unticked boxes disable rather
+    // than letting the teacher pick a fourth and be refused by the API — a
+    // control that cannot succeed should not look like it can.
+    const featuredCount = published.filter((item) => item.featured).length
+    const atCap = featuredCount >= MAX_FEATURED
 
     const closeDialog = () => setPendingDeleteId(null)
 
@@ -141,6 +159,17 @@ export const ReviewModerationView = ({
                             Live on the public Reviews page. Deleting one takes
                             it down and removes it for good.
                         </p>
+                        {/* REQ-059: which three lead the home page. Said here
+                            rather than on each checkbox, so the rule is read
+                            once instead of three times. */}
+                        <p className="section-subtitle">
+                            Tick up to {MAX_FEATURED} to show on the home page —{' '}
+                            <strong>
+                                {featuredCount} of {MAX_FEATURED} chosen
+                            </strong>
+                            . With none ticked, the {MAX_FEATURED} newest
+                            approved reviews show.
+                        </p>
                     </div>
                 </div>
 
@@ -155,17 +184,38 @@ export const ReviewModerationView = ({
                                 key={testimonial.id}
                                 className="testimonial-card moderation"
                             >
-                                <Rating
-                                    value={testimonial.rating ?? 0}
-                                    readOnly
-                                    size="small"
-                                />
-                                <blockquote>{testimonial.quote}</blockquote>
-                                <figcaption>
-                                    <strong>{testimonial.authorName}</strong>
-                                    <span>{attribution(testimonial)}</span>
-                                </figcaption>
-                                <div className="moderation-actions">
+                                {/* The controls lead the card (owner ask,
+                                    2026-08-16): the teacher is here to act,
+                                    and hunting for the checkbox under the
+                                    quote made a scan of the list slower than
+                                    it needed to be. */}
+                                <div className="moderation-actions on-top">
+                                    <FormControlLabel
+                                        className="feature-toggle"
+                                        control={
+                                            <Checkbox
+                                                size="small"
+                                                checked={Boolean(
+                                                    testimonial.featured
+                                                )}
+                                                disabled={
+                                                    atCap &&
+                                                    !testimonial.featured
+                                                }
+                                                onChange={(event) =>
+                                                    onFeature(
+                                                        testimonial.id,
+                                                        event.target.checked
+                                                    )
+                                                }
+                                            />
+                                        }
+                                        label={
+                                            atCap && !testimonial.featured
+                                                ? 'Untick one to choose another'
+                                                : 'Show on home page'
+                                        }
+                                    />
                                     <Button
                                         size="small"
                                         color="error"
@@ -177,6 +227,16 @@ export const ReviewModerationView = ({
                                         Delete
                                     </Button>
                                 </div>
+                                <Rating
+                                    value={testimonial.rating ?? 0}
+                                    readOnly
+                                    size="small"
+                                />
+                                <blockquote>{testimonial.quote}</blockquote>
+                                <figcaption>
+                                    <strong>{testimonial.authorName}</strong>
+                                    <span>{attribution(testimonial)}</span>
+                                </figcaption>
                             </figure>
                         ))}
                     </div>
