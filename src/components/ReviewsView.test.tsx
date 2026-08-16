@@ -333,6 +333,130 @@ describe('the review form protects what people write (2026-08-15)', () => {
 
 // REQ-060 — with twelve reviews the form's first field sits four screens down
 // on a phone, and nothing above the wall said writing one was possible.
+// REQ-061 — the wall stops at six so the page (and the submit form four
+// screens down it) stops growing with every approval.
+describe('the review wall stops at six', () => {
+    const many = (count: number): Testimonial[] =>
+        Array.from({ length: count }, (_, index) => ({
+            ...withMeta,
+            id: index + 1,
+            authorName: `Reviewer ${index + 1}`,
+            quote: `Review number ${index + 1}.`,
+        }))
+
+    const renderWall = (count: number) =>
+        render(
+            <ReviewsView
+                testimonials={many(count)}
+                saving={false}
+                onSubmit={vi.fn()}
+            />
+        )
+
+    it('shows six of twelve, and says so', () => {
+        renderWall(12)
+
+        expect(screen.getByText('Review number 6.')).toBeInTheDocument()
+        expect(screen.queryByText('Review number 7.')).not.toBeInTheDocument()
+        expect(screen.getByText('Showing 6 of 12')).toBeInTheDocument()
+    })
+
+    it('shows the rest on request', async () => {
+        renderWall(12)
+
+        await userEvent.click(
+            screen.getByRole('button', { name: /show 6 more reviews/i })
+        )
+
+        expect(screen.getByText('Review number 12.')).toBeInTheDocument()
+        expect(
+            screen.queryByRole('button', { name: /show .* more/i })
+        ).not.toBeInTheDocument()
+    })
+
+    it('says "review" when only one is hidden', () => {
+        renderWall(7)
+
+        expect(
+            screen.getByRole('button', { name: /show 1 more review$/i })
+        ).toBeInTheDocument()
+    })
+
+    it('offers no button when every review already shows', () => {
+        renderWall(4)
+
+        expect(
+            screen.queryByRole('button', { name: /show .* more/i })
+        ).not.toBeInTheDocument()
+        expect(screen.queryByText(/showing/i)).not.toBeInTheDocument()
+    })
+})
+
+// The trap this story exists around: REQ-059's clipped quotes link to one
+// review, and a review behind "Show more" is not in the DOM for the browser
+// to find — the link would land at the top of the page instead.
+describe('a link to one review', () => {
+    const many = (count: number): Testimonial[] =>
+        Array.from({ length: count }, (_, index) => ({
+            ...withMeta,
+            id: index + 1,
+            quote: `Review number ${index + 1}.`,
+        }))
+
+    const renderAt = (hash: string, count = 12) => {
+        window.history.pushState({}, '', `/reviews${hash}`)
+        return render(
+            <ReviewsView
+                testimonials={many(count)}
+                saving={false}
+                onSubmit={vi.fn()}
+            />
+        )
+    }
+
+    it('opens the wall when the review is behind the button', () => {
+        renderAt('#review-11')
+
+        expect(screen.getByText('Review number 11.')).toBeInTheDocument()
+    })
+
+    it('scrolls to it once it is on the page', () => {
+        const scrollIntoView = vi.fn()
+        Element.prototype.scrollIntoView = scrollIntoView
+
+        renderAt('#review-11')
+
+        expect(scrollIntoView).toHaveBeenCalledWith(
+            expect.objectContaining({ block: 'start' })
+        )
+    })
+
+    it('leaves the wall alone for a review already showing', () => {
+        renderAt('#review-2')
+
+        expect(screen.getByText('Showing 6 of 12')).toBeInTheDocument()
+    })
+
+    it('does nothing for a review that is no longer there', () => {
+        const scrollIntoView = vi.fn()
+        Element.prototype.scrollIntoView = scrollIntoView
+
+        renderAt('#review-999')
+
+        expect(scrollIntoView).not.toHaveBeenCalled()
+        expect(screen.getByText('Showing 6 of 12')).toBeInTheDocument()
+    })
+
+    it('ignores a hash that names something else', () => {
+        const scrollIntoView = vi.fn()
+        Element.prototype.scrollIntoView = scrollIntoView
+
+        renderAt('#share')
+
+        expect(scrollIntoView).not.toHaveBeenCalled()
+    })
+})
+
 describe('finding the review form', () => {
     const renderPage = () =>
         render(
