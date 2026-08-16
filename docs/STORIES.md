@@ -2535,9 +2535,10 @@ move the number above)**
 3. **One brand lockup above the fold, not two.** The sidebar-header
    lockup and the masthead say the same thing 100px apart; a slim
    sticky bar on scroll would free ~120px.
-4. **Proof where the decision is made.** One or two approved parent
-   reviews (swipeable) directly under the CTA — today they live a page
-   away, and the trust chips are the only proof on Home.
+4. ~~**Proof where the decision is made.**~~ **Delivered by REQ-059**
+   (2026-08-16) — up to five teacher-chosen reviews in a swipeable rail
+   below the CTA. It sits *below* the call to action, so it does not move
+   the fold measurement above; the other seven ideas still stand.
 5. **A face earlier.** Parents choose a person: the About portrait,
    small, beside the pitch.
 6. **Section rhythm.** Every block is the same card on the same ground;
@@ -2832,7 +2833,8 @@ Three details worth keeping:
 
 ## REQ-059 — Three chosen reviews on Home
 
-**Status:** 🔲 Not started · **Impact:** both · **Effort:** M
+**Status:** 🚧 Built (2026-08-16, in review — frontend #123, backend #80
+merged / #81 open) · **Impact:** both · **Effort:** M
 _(owner ask, 2026-08-16: "something to do with the reviews on the home —
 maybe 3 reviews I can pick, and the rest behind 'show more reviews'".
 Layout picked from rendered options the same day: cards under the CTA.)_
