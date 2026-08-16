@@ -16,17 +16,10 @@ import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded
 import LaptopChromebookOutlinedIcon from '@mui/icons-material/LaptopChromebookOutlined'
 import type { SiteContent } from '../data/siteContent'
 import { subjectIcon } from '../utils/subjectIcons'
+import { subjectEmoji } from '../utils/subjectEmoji'
 
 
 /** Five playful, subject-relevant emoji that cycle on the flip side, for fun. */
-const subjectImages = (name: string): string[] =>
-    ({
-        Mathematics: ['📐', '📏', '➗', '🔢', '📊'],
-        Physics: ['⚛️', '🔭', '🧲', '💡', '🚀'],
-        Chemistry: ['🧪', '⚗️', '🧫', '🔬', '💥'],
-        Biology: ['🔬', '🧬', '🌱', '🦠', '🧠'],
-    })[name] ?? ['📚', '✏️', '🎓', '🗺️', '🔎']
-
 type OfferingsViewProps = {
     /** The whole teacher-published document (REQ-008); sections render in
         its `sectionOrder`. */
@@ -199,7 +192,7 @@ export const OfferingsView = ({
                                             aria-hidden="true"
                                         >
                                             <div className="subject-card-stage">
-                                                {subjectImages(
+                                                {subjectEmoji(
                                                     subject.name
                                                 ).map((emoji, imageIndex) => (
                                                     <span
