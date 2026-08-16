@@ -18,6 +18,19 @@ import { subjectOptions, yearOptions } from '../utils/constants'
 /** What the API accepts (testimonialService): 600 for a review, 80 a name. */
 const MAX_QUOTE = 600
 const MAX_NAME = 80
+
+/**
+ * How many reviews the wall shows before "Show more" (REQ-061). Twelve
+ * reviews put the submit form four screens down on a phone; six puts it at
+ * two and a half, and the page stops growing as reviews are approved.
+ */
+const FIRST_PAGE = 6
+
+/** `#review-7` from REQ-059's "Read this review" links. */
+const anchoredReviewId = (): number | null => {
+    const match = /^#review-(\d+)$/.exec(window.location.hash)
+    return match ? Number(match[1]) : null
+}
 import { requiredFieldProps } from '../utils/formValidation'
 import { paths } from '../paths'
 
@@ -69,6 +82,8 @@ export const ReviewsView = ({
     // nothing above the wall said writing one was even possible.
     const formRef = useRef<HTMLDivElement>(null)
     const nameRef = useRef<HTMLInputElement>(null)
+    // The wall shows six until asked for the rest (REQ-061).
+    const [showAll, setShowAll] = useState(false)
     // Errors show only after a submit is attempted (REQ-029). Each required
     // field then marks itself inline; `error` stays as the one-line summary.
     const [submitted, setSubmitted] = useState(false)
@@ -76,6 +91,10 @@ export const ReviewsView = ({
     const familyReviews = testimonials.filter(
         (testimonial) => !recommendationRoles.includes(testimonial.role)
     )
+    const shownReviews = showAll
+        ? familyReviews
+        : familyReviews.slice(0, FIRST_PAGE)
+    const hiddenCount = familyReviews.length - shownReviews.length
     const recommendations = testimonials.filter((testimonial) =>
         recommendationRoles.includes(testimonial.role)
     )
@@ -104,6 +123,43 @@ export const ReviewsView = ({
         formRef.current?.scrollIntoView?.({ behavior, block: 'start' })
         nameRef.current?.focus?.({ preventScroll: true })
     }
+
+    /**
+     * A "Read this review" link from Home (REQ-059) names one review, and it
+     * may be behind the "Show more" button — where the browser cannot find it
+     * to scroll to, and would silently leave the visitor at the top of the
+     * page instead. So the wall opens first, and only then do we go there.
+     *
+     * `handledAnchor` keeps it to once: the effect re-runs when the review
+     * list arrives, and a visitor who has since scrolled away should not be
+     * yanked back.
+     */
+    const handledAnchor = useRef(false)
+    useEffect(() => {
+        const id = anchoredReviewId()
+        if (id === null || handledAnchor.current || familyReviews.length === 0) {
+            return
+        }
+        const index = familyReviews.findIndex((review) => review.id === id)
+        if (index === -1) {
+            // Rejected, deleted, or a recommendation — nothing to go to.
+            handledAnchor.current = true
+            return
+        }
+        if (index >= FIRST_PAGE && !showAll) {
+            setShowAll(true)
+            // Re-runs once the rest of the wall is on the page.
+            return
+        }
+        handledAnchor.current = true
+        const behavior = (window.matchMedia?.('(prefers-reduced-motion: reduce)')
+            .matches ?? true)
+            ? ('auto' as const)
+            : ('smooth' as const)
+        document
+            .getElementById(`review-${id}`)
+            ?.scrollIntoView?.({ behavior, block: 'start' })
+    }, [familyReviews, showAll])
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
@@ -177,7 +233,7 @@ export const ReviewsView = ({
                     </p>
                 ) : (
                     <div className="testimonial-grid">
-                        {familyReviews.map((testimonial) => (
+                        {shownReviews.map((testimonial) => (
                             <figure
                                 key={testimonial.id}
                                 // Home's clamped quotes link straight to the
@@ -198,6 +254,27 @@ export const ReviewsView = ({
                             </figure>
                         ))}
                     </div>
+                )}
+
+                {/* The rest of the wall, on request (REQ-061). A page that
+                    grows with every approval is a page whose submit form
+                    drifts further away every month. */}
+                {hiddenCount > 0 && (
+                    <>
+                        <div className="reviews-more">
+                            <Button
+                                variant="outlined"
+                                onClick={() => setShowAll(true)}
+                            >
+                                Show {hiddenCount} more{' '}
+                                {hiddenCount === 1 ? 'review' : 'reviews'}
+                            </Button>
+                        </div>
+                        <p className="section-subtitle reviews-count">
+                            Showing {shownReviews.length} of{' '}
+                            {familyReviews.length}
+                        </p>
+                    </>
                 )}
             </div>
 

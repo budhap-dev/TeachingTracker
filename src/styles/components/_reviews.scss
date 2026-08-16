@@ -136,13 +136,31 @@
     }
 }
 
+/* "Show more reviews" (REQ-061), centred under the wall with its count below
+   — the count is a quiet aside, not a second control. */
+.reviews-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.reviews-count {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 0.82rem;
+}
+
 /* Where "Write a review" actually lands. Below 900px the sidebar becomes a
    sticky brand band 110px tall, so scrolling the form card to the top of the
    viewport parks its own heading — and the "checked before they appear" line
    that answers the visitor's first worry — underneath it. Measured in Chrome,
    not guessed. */
 @media (max-width: 900px) {
-    .review-form-card {
+    .review-form-card,
+    /* A review reached by a "Read this review" link (REQ-059) lands under the
+       same sticky band, and a quote whose first line is hidden is worse than
+       one that was clipped. */
+    .testimonial-card.review {
         scroll-margin-top: 126px;
     }
 }

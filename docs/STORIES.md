@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-061`**
+**Next id: `REQ-062`**
 
 ## Legend
 
@@ -3018,4 +3018,62 @@ top solves both at once and costs a scroll handler.
 - [ ] A reduced-motion visitor gets no scroll animation.
 - [ ] Nothing else about the page moves: the reading order is still reviews,
       then recommendations, then the form.
+- [ ] Coverage holds; lint and build clean.
+
+## REQ-061 — The review wall stops at six
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+_(owner ask, 2026-08-16 — the other half of REQ-060: a wall of cards makes
+the submit form hard to reach)_
+
+**Story**
+As a visitor to the Reviews page, I want the wall to show a readable few
+with the rest a button away, so the page is not four screens of cards
+before anything else — and so it does not get longer every time a review
+is approved.
+
+**Measured, before and after, in Chrome at 390×844.** With twelve approved
+reviews the submit form's first field sat 3,409px down — 4.0 screens. With
+the wall capped it sits at 2,345px: **2.8 screens**, and the page itself
+drops from 4,195px to 3,265px. (An earlier estimate of 2.5 came from a
+six-review dataset rather than a capped twelve; the number above is the one
+this change actually produces, on a wall whose first review is a
+590-character one.) REQ-060 put a button at the top so the form is always
+one tap away; this stops the page needing it.
+
+**Shape**
+- Six reviews, then "Show N more reviews" with a quiet "Showing 6 of 12"
+  underneath. One way: once opened it stays open — a collapse control is a
+  second decision for a visitor who has just asked to see more.
+- Recommendations are untouched. They are a short, separate list and the
+  wall is what grows.
+
+**The trap this story exists around.** REQ-059 gave clipped quotes a "Read
+this review →" link to `/reviews#review-N`. A review behind the button is
+**not in the DOM**, so the browser finds nothing to scroll to and silently
+leaves the visitor at the top of the page — the failure is quiet, which is
+what makes it dangerous. So:
+
+- The page opens the wall when the anchor names a review past the sixth,
+  and only then scrolls to it.
+- It happens once. A visitor who has since scrolled away is not yanked
+  back when the review list re-arrives.
+- An anchor naming a review that no longer exists (rejected, deleted, or a
+  recommendation) does nothing at all, rather than opening the wall for
+  nothing.
+- `ScrollToTop` no longer fires when the URL carries a hash. It scrolled to
+  the top on every route change, which would have undone the landing
+  whatever the page did.
+- An anchored review carries the same `scroll-margin-top` as REQ-060's
+  form: below 900px the sticky brand band is 110px tall, and a quote whose
+  first line is hidden behind it is worse than one that was clipped.
+
+**Acceptance criteria**
+- [ ] The wall shows six reviews with the rest behind a button that says
+      how many, and a count that says what is showing.
+- [ ] Pressing it reveals the rest and the button goes.
+- [ ] Fewer than seven reviews: no button, no count.
+- [ ] A "Read this review" link from Home lands on that review, whether or
+      not it was behind the button, and clear of the sticky band.
+- [ ] A link to a review that no longer exists changes nothing.
 - [ ] Coverage holds; lint and build clean.
