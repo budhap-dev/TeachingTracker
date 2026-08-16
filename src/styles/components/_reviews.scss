@@ -1,0 +1,236 @@
+// Testimonials, the public review form and its honeypot. `.table-wrapper`
+// leads it: a shared utility that happens to sit here in source order, and
+// moving it would change the cascade.
+
+.table-wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Testimonials (REQ-027): approved reviews as cards on the public page, and the
+   same card shape with actions in the teacher's moderation queue. */
+.testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.testimonial-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+
+    blockquote {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: var(--text);
+    }
+
+    blockquote::before {
+        content: '\201C';
+        margin-right: 2px;
+        color: var(--muted);
+    }
+
+    blockquote::after {
+        content: '\201D';
+        margin-left: 2px;
+        color: var(--muted);
+    }
+
+    figcaption {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        strong {
+            font-size: 0.95rem;
+        }
+
+        span,
+        small {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+    }
+}
+
+/* Public review cards get per-card variety: a rotating hue drives the spine,
+   the quotation marks, the name and the stars, and alternate cards lift the
+   accent to a top bar and italicise — so a wall of reviews reads lively, not
+   uniform. (The moderation queue keeps the plain card.) */
+.testimonial-card.review {
+    background: color-mix(in srgb, var(--card-accent) 8%, var(--surface));
+    border-color: color-mix(in srgb, var(--card-accent) 30%, var(--border));
+    border-left: 5px solid var(--card-accent);
+
+    blockquote::before,
+    blockquote::after {
+        color: var(--card-accent);
+    }
+
+    figcaption strong {
+        color: var(--card-accent);
+    }
+
+    .MuiRating-iconFilled {
+        color: var(--card-accent);
+    }
+}
+
+.testimonial-card.review:nth-child(even) {
+    border-left: 1px solid
+        color-mix(in srgb, var(--card-accent) 30%, var(--border));
+    border-top: 5px solid var(--card-accent);
+
+    blockquote {
+        font-style: italic;
+    }
+}
+
+.testimonial-card.review:nth-child(6n + 1) {
+    --card-accent: #2563eb;
+}
+.testimonial-card.review:nth-child(6n + 2) {
+    --card-accent: #0d9488;
+}
+.testimonial-card.review:nth-child(6n + 3) {
+    --card-accent: #7c3aed;
+}
+.testimonial-card.review:nth-child(6n + 4) {
+    --card-accent: #16a34a;
+}
+.testimonial-card.review:nth-child(6n + 5) {
+    --card-accent: #d97706;
+}
+.testimonial-card.review:nth-child(6n + 6) {
+    --card-accent: #db2777;
+}
+
+.moderation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* A flagged review (REQ-028): an amber warning strip and a warm-tinted card, so
+   a possibly-offensive submission stands out in the queue. It's a hint only —
+   nothing publishes without the teacher approving it. */
+.testimonial-card.flagged {
+    border-color: color-mix(in srgb, #d97706 55%, var(--border));
+    background: color-mix(in srgb, #d97706 8%, var(--surface));
+}
+
+.testimonial-flag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: color-mix(in srgb, #d97706 16%, var(--surface));
+    color: #b45309;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* Public submit form: fields stack, the review box and consent line run full
+   width. Kept simple — one column reads fine on a public page. */
+.review-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+    max-width: 640px;
+
+    .review-quote,
+    .review-rating,
+    .review-submit,
+    .review-consent,
+    .review-error,
+    /* Without this the counter sits in the left column and its right-aligned
+       text lands mid-form, under nothing (owner report, 2026-08-15). */
+    .review-remaining {
+        grid-column: 1 / -1;
+    }
+}
+
+.review-rating {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    span {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    /* The star rating is a custom control, so it carries the same required-*
+       and red-error treatment as the MUI fields around it (REQ-029). */
+    &.has-error #review-rating-label {
+        color: #dc2626;
+    }
+
+    .required-mark {
+        color: #dc2626;
+    }
+
+    .review-field-error {
+        color: #dc2626;
+        font-size: 0.78rem;
+    }
+}
+
+.star-buttons {
+    display: inline-flex;
+    gap: 4px;
+
+    .star {
+        border: none;
+        background: none;
+        padding: 0 2px;
+        font-size: 1.6rem;
+        line-height: 1;
+        cursor: pointer;
+        color: var(--border);
+
+        &.on {
+            color: #f59e0b;
+        }
+    }
+}
+
+.review-consent {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.review-error {
+    margin: 0;
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.review-submit {
+    justify-self: start;
+}
+
+/* The honeypot is for bots only — kept in the DOM but out of sight and out of
+   the tab order. */
+.review-website {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}

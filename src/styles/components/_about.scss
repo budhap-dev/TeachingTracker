@@ -1,0 +1,633 @@
+// The About page, its editor, the photo crop and the note animations.
+
+.about-intro {
+    max-width: 72ch;
+
+    p {
+        line-height: 1.6;
+    }
+}
+
+.about-trust-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 14px 0 4px;
+}
+
+.about-dbs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #16a34a;
+    border: 1.5px solid #16a34a;
+    border-radius: 999px;
+    padding: 4px 12px;
+}
+
+.about-trust-chip {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+    border-radius: 999px;
+    padding: 4px 12px;
+}
+
+.about-safeguarding {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* Qualifications: the panel matches its siblings (owner call); the spark
+   lives in the award cards and their coloured icons. */
+.about-quals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.about-qual-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 9px 16px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+    border: 1.5px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--text);
+    transition: transform 0.15s ease;
+
+    svg {
+        font-size: 1.15rem;
+    }
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+}
+
+/* The professional icon colours — shared by the qualification cards and
+   the expectation points (top level so both can reach them). */
+.qual-icon-blue {
+    color: #0284c7;
+}
+
+.qual-icon-green {
+    color: #16a34a;
+}
+
+.qual-icon-gold {
+    color: #d97706;
+}
+
+/* Desktop: the About blocks fill the width as a CV — main story left,
+   credentials rail right. Phones stack, rail first. */
+.about-columns {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 2px;
+}
+
+@media (min-width: 901px) {
+    .about-columns {
+        grid-template-columns: 1.55fr 1fr;
+        gap: 14px;
+        align-items: start;
+    }
+
+    .about-main {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .about-rail {
+        grid-column: 2;
+        grid-row: 1;
+    }
+}
+
+/* Each About section is a bounded panel: soft border, tinted heading row
+   with its glyph in the accent. */
+.about-block {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px 16px;
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+.about-block-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--accent) 25%, var(--border));
+    font-size: 0.95rem;
+    font-weight: 700;
+
+    svg {
+        color: var(--accent);
+    }
+}
+
+.about-cv-list {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    li {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 12px;
+        align-items: baseline;
+    }
+
+    li > div p {
+        margin: 3px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+
+    li > div > span {
+        color: var(--muted);
+    }
+}
+
+.about-cv-years {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.about-expectations {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        svg {
+            flex: 0 0 auto;
+        }
+    }
+}
+
+.about-section-body {
+    max-width: 72ch;
+
+    p,
+    li {
+        line-height: 1.6;
+    }
+
+    /* Owner-section lists (the promise) read as personal commitments, not
+       bullet points: no dots — each line carries a warm ink-bar and an
+       italic voice. */
+    ul {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    ul li {
+        padding: 3px 0 3px 14px;
+        border-left: 3px solid var(--accent-alt);
+        border-radius: 2px;
+        font-style: italic;
+        color: color-mix(in srgb, var(--text) 88%, var(--muted));
+    }
+}
+
+/* The safeguarding line speaks quietly, in the same italic voice. */
+.about-safeguarding {
+    font-style: italic;
+}
+
+.about-cta {
+    margin-top: 20px;
+}
+
+/* The About editor's CV rows: years · title · place · detail · remove. */
+.about-cv-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 1fr 1.4fr auto;
+    gap: 8px;
+    align-items: start;
+}
+
+@media (max-width: 640px) {
+    .about-expectations {
+        grid-template-columns: 1fr;
+    }
+
+    .about-cv-list li {
+        grid-template-columns: 72px 1fr;
+    }
+
+    .about-cv-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* The About portrait: circular, ringed in the accent, beside the intro.
+   The intro keeps its 72ch reading measure, so the pair is centred as a
+   unit on wide screens — no dead column of whitespace on the right — with
+   the portrait enlarged and vertically centred against the text. Phones
+   stack the portrait above the intro (owner ask, 2026-08-06). */
+.about-lead {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    @media (min-width: 901px) {
+        align-items: center;
+        justify-content: center;
+        gap: 36px;
+
+        .about-photo {
+            width: 190px;
+            height: 190px;
+        }
+    }
+}
+
+.about-photo {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+    flex: 0 0 auto;
+
+    &.small {
+        width: 72px;
+        height: 72px;
+        border-width: 2px;
+    }
+}
+
+/* Wider than a phone, the lead reads like a newspaper column (owner ask,
+   2026-08-12): the portrait sits at the top-left and the introduction
+   runs down its right edge, then continues full-width underneath it -
+   no dead column of space beside a short paragraph. The wrap edge stays
+   straight: hugging the circle (shape-outside) staggered every line and
+   read as misalignment rather than craft. */
+@media (min-width: 641px) {
+    .about-lead {
+        display: block;
+
+        /* The portrait is circular against a straight wrap edge, so it
+           needs more room than a square would to stop the text crowding
+           its curve (owner ask, 2026-08-12). */
+        .about-photo {
+            float: left;
+            margin: 50px ;
+        }
+
+        /* The reading measure is lifted here (owner ask, 2026-08-12):
+           the introduction fills the card to its right edge instead of
+           stopping short of it. */
+        .about-intro {
+            max-width: none;
+
+            /* The first line meets the top of the portrait. */
+            > :first-child {
+                margin-top: 0;
+            }
+        }
+
+        /* A short introduction must not let the portrait escape into
+           the trust row below. */
+        &::after {
+            content: '';
+            display: block;
+            clear: both;
+        }
+    }
+}
+
+/* The photo block sits bordered inside the editor card, like the public
+   sections. The input hides visually but keeps working from its label —
+   display:none can swallow label clicks in some browsers. */
+.about-photo-block {
+    margin-top: 4px;
+    margin-bottom: 14px;
+}
+
+.visually-hidden-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* The pinned note lands ON the board (owner ask, 2026-08-11): it
+   drops in slightly large and tilted, presses flat with a tiny
+   overshoot, and settles - like a hand pinning paper. Runs once on
+   mount; Home paints whole after the document loads, so the pin reads
+   as part of the page's arrival. */
+/* The paper stays off the board until the auto-scroll settles (the
+   .pin-play class arms it) - then a beat, and three quick swings that
+   die away as it stills (owner directions, 2026-08-11). */
+.offerings-freeform .freeform-note {
+    transform-origin: 50% 12%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .offerings-freeform.pin-wait .freeform-note {
+        opacity: 0;
+    }
+}
+
+.offerings-freeform.pin-play .freeform-note {
+    /* Pin on, then keep breathing: once the landing wobble settles the
+       gentle perpetual sway takes over - paper on a board is never
+       perfectly still (owner ask, 2026-08-11). */
+    animation:
+        note-pin-on 0.95s cubic-bezier(0.3, 0.9, 0.4, 1) 0.25s both,
+        note-sway 5.5s ease-in-out 1.25s infinite;
+}
+
+@keyframes note-sway {
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-0.9deg);
+    }
+    75% {
+        transform: rotate(0.9deg);
+    }
+}
+
+@keyframes note-pin-on {
+    0% {
+        opacity: 0;
+        transform: translateY(-24px) scale(1.08) rotate(-3deg);
+    }
+    16% {
+        opacity: 1;
+        transform: translateY(1px) scale(1) rotate(2.6deg);
+    }
+    30% {
+        transform: rotate(-2deg);
+    }
+    44% {
+        transform: rotate(1.3deg);
+    }
+    60% {
+        transform: rotate(-0.7deg);
+    }
+    78% {
+        transform: rotate(0.3deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(0deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .offerings-freeform.pin-play .freeform-note {
+        animation: none;
+    }
+}
+
+/* The site editor's sections fold away (owner ask, 2026-08-10):
+   native details accordions, collapsed by default. Collapsed rows sit
+   tight - slimmer padding, and consecutive accordions close ranks
+   against the page's 16px stack gap. */
+.editor-accordion {
+    padding: 12px 18px;
+}
+
+.editor-accordion[open] {
+    padding: 18px;
+}
+
+.editor-accordion + .editor-accordion {
+    /* The flex gap can't shrink per-pair, so the accordion pulls
+       itself up instead. */
+    margin-top: -9px;
+}
+
+.editor-accordion > .editor-accordion-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    list-style: none;
+    margin: -4px 0;
+
+    &::-webkit-details-marker {
+        display: none;
+    }
+
+    h4 {
+        margin: 0;
+    }
+}
+
+.editor-accordion-chevron.editor-accordion-chevron {
+    margin-left: auto;
+    color: var(--muted);
+    transition: transform 0.2s ease;
+}
+
+.editor-accordion[open] > .editor-accordion-summary {
+    margin-bottom: 10px;
+
+    .editor-accordion-chevron {
+        transform: rotate(180deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .editor-accordion-chevron.editor-accordion-chevron {
+        transition: none;
+    }
+}
+
+/* The About page wears a theme frame (owner ask, 2026-08-10): a slim
+   gradient border drawn from the active theme's own accent pair, so it
+   re-dresses with every theme - light, dark and metallic alike. The
+   two-layer background keeps the card surface intact inside the frame. */
+.about-page .card {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(var(--surface), var(--surface)) padding-box,
+        linear-gradient(
+                135deg,
+                var(--accent),
+                color-mix(in srgb, var(--accent-alt) 70%, var(--accent)),
+                var(--accent-alt)
+            )
+            border-box;
+}
+
+/* The section blocks inside pick up a quieter tint of the same pair. */
+.about-page .about-block {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+/* The per-section edit pencils (owner ask, 2026-08-09): quiet until
+   hovered; lit while their inline editor is open. */
+.about-edit-pencil.about-edit-pencil {
+    margin-left: auto;
+    color: var(--muted);
+
+    &.on,
+    &:hover {
+        color: var(--accent);
+    }
+}
+
+/* The heading row hosts the pencil at its right edge. */
+.page-heading .about-edit-pencil {
+    margin-left: 6px;
+}
+
+/* An inline editor unfolds beneath its section: dashed accent border so
+   draft chrome never reads as published content. */
+.about-inline-editor {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 14px;
+    border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+/* The rich-text intro editor (TipTap): a bordered surface with a small
+   toolbar; the document stores Markdown either way. */
+.rich-text-editor {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+
+.rich-text-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border);
+
+    .on {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+}
+
+.rich-text-surface {
+    min-height: 140px;
+    padding: 10px 12px;
+    outline: none;
+
+    p {
+        margin: 0 0 8px;
+    }
+
+    ul,
+    ol {
+        margin: 0 0 8px;
+        padding-left: 22px;
+    }
+}
+
+/* The crop dialog: react-easy-crop needs a positioned box to fill. */
+.about-crop-area {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #14181f;
+}
+
+.about-crop-zoom {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 14px 4px 4px;
+
+    span {
+        font-size: 0.85rem;
+        color: var(--muted);
+    }
+}
+
+.about-photo-editor {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+    .about-lead {
+        flex-direction: column;
+        align-items: center;
+        text-align: left;
+    }
+}
+
+/* Every trash icon app-wide reads as destructive: MUI icon components
+   carry their name as data-testid, so one rule colours them all. */
+svg[data-testid='DeleteOutlineRoundedIcon'] {
+    color: #dc2626;
+}
+
+/* The About page previews the teacher's draft; this chip says so. */
+.about-preview-hint {
+    align-self: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #d97706;
+    border: 1.5px dashed #d97706;
+    border-radius: 999px;
+    padding: 4px 12px;
+    margin-right: 10px;
+    white-space: nowrap;
+}
+
+/* The offline line (REQ-044): a quiet strip at the top of the content
+   column, not an alarm — the app still works, it is just showing what it
+   last saved. */

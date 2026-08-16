@@ -1,0 +1,147 @@
+// The calendar's hover tooltip and the payment status pills — neighbours in
+// source order rather than in feature.
+
+.calendar-tooltip {
+    max-width: 220px;
+}
+
+.calendar-tooltip li {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 3px 7px;
+    font-size: 0.75rem;
+}
+
+/* The name · subject text takes the remaining width and wraps instead of
+   pushing the tooltip off-screen. */
+.tooltip-entry {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Matches the number on the day's chip, so hover and click line up. */
+.tooltip-number {
+    min-width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: color-mix(in srgb, #fff 25%, transparent);
+    font-size: 0.62rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+
+.tooltip-time {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.tooltip-cancelled {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    opacity: 0.75;
+}
+
+.payment-student-link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-weight: 700;
+    color: var(--accent);
+    cursor: pointer;
+    text-align: left;
+}
+
+.payment-student-link:hover,
+.payment-student-link:focus-visible {
+    text-decoration: underline;
+}
+
+.payment-basis strong {
+    font-size: 1rem;
+}
+
+.payment-basis small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.7rem;
+}
+
+.payment-status-pill {
+    display: inline-block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+}
+
+/* No-fee students are listed but not billed: muted, uncoloured markers. */
+.payment-status-pill.nofee {
+    color: var(--muted);
+    border-color: var(--border);
+}
+
+.payment-nofee {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+/* Paid / Partial / Pending as a tiny three-column table in the status card:
+   coloured label over its count, hairlines between columns — two short
+   lines, so the card matches its neighbours' height. */
+.status-mini-table {
+    width: 100%;
+    margin-top: 6px;
+    border-collapse: collapse;
+
+    th,
+    td {
+        text-align: left;
+        padding: 1px 10px;
+    }
+
+    th:first-child,
+    td:first-child {
+        padding-left: 0;
+    }
+
+    th + th,
+    td + td {
+        border-left: 1px solid
+            color-mix(in srgb, var(--border) 60%, transparent);
+    }
+
+    th {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    td {
+        font-size: 1.05rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.payment-summary-card small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+/* REQ-004: sign-in gate + topbar identity */

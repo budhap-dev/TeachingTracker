@@ -1,0 +1,86 @@
+// Data tables and their furniture — sorting, paging, totals.
+
+.snapshot-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+    background: var(--surface);
+
+    th,
+    td {
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+    }
+
+    /* The header carries the active theme: an accent-tinted band with an
+       accent rule, so every theme (light or dark) shows its colour here. */
+    th {
+        background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+        color: var(--accent);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 2px solid
+            color-mix(in srgb, var(--accent) 55%, var(--border));
+    }
+
+    tr:nth-child(even) {
+        background: color-mix(in srgb, var(--surface-alt) 70%, transparent);
+    }
+}
+
+.sort-button {
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    color: var(--muted);
+}
+
+.page-size-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    label {
+        font-size: 0.9rem;
+    }
+
+    select {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 5px 8px;
+        font-size: 0.9rem;
+    }
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 8px;
+
+    button {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: var(--radius-button);
+        padding: 6px 12px;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+}

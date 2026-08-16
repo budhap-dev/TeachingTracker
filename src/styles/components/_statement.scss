@@ -1,0 +1,230 @@
+// The two public forms' character counts, and a month's statement with the
+// rules that print it.
+
+/* The review's remaining characters (owner ask, 2026-08-15). Quiet while
+   there is room, urgent near the end — nobody should meet the limit for the
+   first time by having their review refused. */
+.review-remaining {
+    margin: -4px 0 0;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.review-remaining.low,
+.enquire-remaining.low {
+    color: #b45309;
+    font-weight: 700;
+}
+
+/* The enquiry's count, in the review form's idiom — its own limit, though:
+   1000, because an enquiry is a private message rather than public copy. */
+.enquire-remaining {
+    margin: -4px 0 0;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* A month's statement (REQ-055) — a document on screen, a document on paper. */
+.statement-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.statement {
+    max-width: 720px;
+}
+
+.statement-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+}
+
+.statement-title {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.statement-month {
+    margin: 2px 0 0;
+    color: var(--muted);
+}
+
+.statement-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.statement-from {
+    margin: 0;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.statement-for,
+.statement-totals {
+    display: grid;
+    gap: 8px 24px;
+    margin: 16px 0 0;
+
+    div {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    dt {
+        color: var(--muted);
+    }
+
+    dd {
+        margin: 0;
+        font-weight: 600;
+    }
+}
+
+/* Label above value, like the top of any statement. Sharing the totals'
+   space-between rule dragged "Student" and the name to opposite edges of the
+   page — fine for a figure you scan down a column, wrong for an identity. */
+.statement-for {
+    grid-template-columns: repeat(auto-fit, minmax(160px, auto));
+    justify-content: start;
+    gap: 8px 48px;
+
+    div {
+        display: block;
+    }
+
+    dt {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    dd {
+        margin-top: 2px;
+        font-size: 1.05rem;
+    }
+}
+
+.statement-section {
+    margin: 22px 0 8px;
+    font-size: 1rem;
+}
+
+.statement-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+        text-align: left;
+        padding: 7px 6px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    th {
+        color: var(--muted);
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+}
+
+.statement-amount {
+    text-align: right;
+}
+
+.statement-empty,
+.statement-note {
+    color: var(--muted);
+}
+
+.statement-note {
+    margin-top: 20px;
+}
+
+/* The one line that carries the answer: what is still owed. */
+.statement-outstanding {
+    padding-top: 8px;
+    border-top: 2px solid var(--border);
+
+    dt,
+    dd {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+}
+
+/* Printing is how the PDF is made (REQ-055): no library, no CDN — the CSP
+   forbids one and the browser already writes PDFs. What is left is making the
+   page BE the document: the app's chrome goes, the card stops being a card,
+   and the ink is black on white whatever theme the teacher happens to use. */
+@media print {
+    /* The document owns its margins, not the browser. With a zero page
+       margin Chrome drops the header and footer it otherwise prints in that
+       space — the timestamp and the tab title that appeared above the
+       statement (owner report, 2026-08-15) — and the padding below puts the
+       white space back where a document wants it. */
+    @page {
+        margin: 0;
+    }
+
+    .sidebar,
+    .topbar,
+    .mobile-tabbar,
+    .busy-bar,
+    .no-print {
+        display: none !important;
+    }
+
+    body,
+    .app-shell,
+    .main-content,
+    .content-stack {
+        display: block;
+        background: #ffffff;
+        color: #000000;
+        padding: 0;
+        margin: 0;
+        gap: 0;
+    }
+
+    /* It prints in colour (owner ask, 2026-08-15): the badge and the accent
+       rule are the business's identity, and a statement in flat black reads
+       like a bank letter. Browsers drop backgrounds and adjust colours when
+       printing unless told not to — hence print-color-adjust, which is what
+       keeps the badge's disc and ring from coming out empty. */
+    .statement {
+        max-width: none;
+        border: none;
+        box-shadow: none;
+        /* The page's own margins, now that @page has none. */
+        padding: 16mm 14mm;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* The body copy still goes black: theme text colours are chosen for a
+       screen, and a pale grey prints as a smudge. */
+    .statement-table td,
+    .statement-for dd,
+    .statement-totals dd,
+    .statement-title {
+        color: #000000;
+    }
+
+    /* A statement should not break across pages mid-table if it can help it. */
+    .statement-table {
+        page-break-inside: avoid;
+    }
+}

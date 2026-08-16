@@ -1,0 +1,98 @@
+// Transparent pricing.
+
+.pricing-rates {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pricing-rates li {
+    flex: 1 1 200px;
+    max-width: 300px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.pricing-rate-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.pricing-rate-price {
+    font-size: 1.55rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+
+    small {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--muted);
+    }
+}
+
+.pricing-factors {
+    margin-top: 6px;
+
+    ul {
+        list-style: none;
+        margin: 8px 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    li p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+    }
+}
+
+.pricing-note {
+    margin: 16px 0 0;
+    font-weight: 600;
+}
+
+.pricing-factors-header {
+    margin-top: 18px;
+}
+
+.pricing-rate-row {
+    grid-template-columns: 1fr 140px auto;
+}
+
+/* The pricing close: the starts-from line and both doors — assessment or
+   a plain conversation. */
+.pricing-cta {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pricing-cta-line {
+    margin: 0;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.pricing-cta-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* About the teacher (REQ-037): the CV-style page. */
