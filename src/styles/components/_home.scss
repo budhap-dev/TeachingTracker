@@ -1,0 +1,335 @@
+// The public Home landing and the enquiry form.
+
+.home-hero-band {
+    border-radius: 18px;
+    padding: 30px 32px 26px;
+    background: var(--sidebar-gradient);
+    color: #ffffff;
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--sidebar-start) 40%, transparent);
+}
+
+.home-band-lead {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.home-band-copy {
+    min-width: 0;
+}
+
+.home-band-headline {
+    margin: 0;
+    font-size: clamp(1.5rem, 3.5vw, 1.9rem);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+}
+
+// An owner-placed headline break (Enter in the editor) only takes
+// effect on phones — desktop keeps the one-line reading.
+.phone-break {
+    display: none;
+}
+
+.home-band-subhead {
+    margin: 6px 0 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.home-band-availability {
+    margin: 8px 0 0;
+    font-weight: 700;
+    color: #fde68a;
+}
+
+.home-band-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+/* The one button. Amber regardless of theme: it is the marketing accent,
+   not a theme colour. */
+.home-band-cta.MuiButton-root {
+    background: #f59e0b;
+    color: #241a02;
+    font-weight: 800;
+    padding: 9px 22px;
+
+    &:hover {
+        background: #d97706;
+    }
+}
+
+.home-band-more {
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 600;
+}
+
+.home-band-chips {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    li {
+        background: rgba(255, 255, 255, 0.13);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+}
+
+/* The five-tap teacher door: an invisible wrapper — no box of its own,
+   no pointer cursor, nothing that hints the badge is a control. */
+.home-badge-tap {
+    display: contents;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Hero highlights (REQ-038): the selling points as a compact icon-grid,
+   2-up, in their own card beside the journey (quotes and the rating
+   record retired from the hero — owner calls, 2026-08-06). */
+.home-highlights {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    align-content: center;
+}
+
+.home-highlight-tile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    font-size: 0.83rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text);
+    text-decoration: none;
+
+    svg {
+        flex-shrink: 0;
+        color: var(--accent);
+    }
+}
+
+/* "Proven results" is a door — it walks to the evidence, but dresses
+   like its neighbours (owner call, 2026-08-11: the accent border made
+   it the odd one out). Hover still whispers that it's tappable. */
+a.home-highlight-tile {
+    transition: transform 0.15s ease;
+
+    &:hover {
+        background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+        transform: translateY(-1px);
+    }
+}
+
+/* Keyboard focus on the flip cards (REQ-042): a visible ring, only for
+   keyboard/switch focus — mouse clicks stay clean. */
+.offerings-subject-card:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 12px;
+}
+
+/* The Offerings services checklist: two columns on wide screens. */
+.offerings-services-heading {
+    margin-top: 18px;
+}
+
+.offerings-services {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 13px;
+
+    @media (min-width: 701px) {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 0.93rem;
+        line-height: 1.4;
+
+        svg {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+    }
+}
+
+/* The published subjects, one tap from the door. */
+.home-subject-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.home-subject-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1.5px solid var(--subject-accent);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--subject-accent) 82%, var(--text));
+    background: color-mix(in srgb, var(--subject-accent) 12%, var(--surface));
+
+    svg {
+        font-size: 1.1rem;
+        color: var(--subject-accent);
+    }
+}
+
+/* The chips wear the same six-step theme-derived hue cycle as the subject
+   cards on Offerings — a subject keeps its colour family across pages. */
+.home-subject-chip:nth-child(6n + 1) {
+    --subject-accent: var(--accent);
+}
+.home-subject-chip:nth-child(6n + 2) {
+    --subject-accent: var(--accent-alt);
+}
+.home-subject-chip:nth-child(6n + 3) {
+    --subject-accent: color-mix(in srgb, var(--accent) 50%, var(--accent-alt));
+}
+.home-subject-chip:nth-child(6n + 4) {
+    --subject-accent: color-mix(in srgb, var(--accent) 72%, var(--text));
+}
+.home-subject-chip:nth-child(6n + 5) {
+    --subject-accent: color-mix(in srgb, var(--accent-alt) 72%, var(--text));
+}
+.home-subject-chip:nth-child(6n + 6) {
+    --subject-accent: color-mix(in srgb, var(--accent-alt) 45%, var(--accent));
+}
+
+/* Proof with a face + the journey at a glance — equal halves
+   (owner call, 2026-08-06). */
+.home-proof-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+}
+
+.home-journey-mini {
+    ol {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    li {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+
+        strong {
+            font-weight: 700;
+        }
+
+        p {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+    }
+}
+
+.home-journey-icon {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.home-teacher-line {
+    margin: 4px 0 12px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.enquire-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+    max-width: 640px;
+
+    .enquire-goal,
+    .enquire-submit,
+    .enquire-consent,
+    /* Full width, or its right-aligned count lands mid-form under nothing —
+       the same trap the review form's counter fell into. */
+    .enquire-remaining {
+        grid-column: 1 / -1;
+    }
+}
+
+.enquire-submit {
+    justify-self: start;
+}
+
+.enquire-consent {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+/* The honeypot mirrors the review form's: in the DOM, out of sight and tab order. */
+.enquire-website {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+/* The thanks card after a successful enquiry. */
+.enquire-thanks {
+    text-align: center;
+    padding: 40px 24px;
+
+    .enquire-thanks-icon {
+        color: var(--accent);
+    }
+
+    h3 {
+        margin: 10px 0 6px;
+    }
+
+    p {
+        margin: 0;
+        color: var(--muted);
+    }
+}
+
+/* Leads inbox (REQ-019): one card per enquiry, its left spine coloured by
+   status so the inbox reads at a glance. */

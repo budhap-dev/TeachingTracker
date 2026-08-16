@@ -1,0 +1,317 @@
+// The payment tracker: filters, tabs, the breakdown and the month's summary.
+
+.payment-tracker-view {
+    gap: 14px;
+}
+
+.payment-tracker-hero {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+}
+
+/* A self-contained control rather than a bare select floating in the corner:
+   a bordered pill with a calendar icon, so it reads as a deliberate filter. */
+.payment-month-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: 8px 8px 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-alt) 70%, var(--surface));
+
+    label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    select {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font-weight: 600;
+        padding: 8px 10px;
+        cursor: pointer;
+    }
+}
+
+/* Tabs switching the monthly summary and the per-session breakdown. Underline
+   style so they read as view switches, not buttons that do something. */
+.payment-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+}
+
+.payment-tab {
+    border: none;
+    background: none;
+    padding: 10px 16px;
+    margin-bottom: -1px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+
+    &:hover {
+        color: var(--text);
+    }
+
+    &.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+    }
+}
+
+/* The Student filter + Export CSV, sitting to the right of the section title. */
+/* A toolbar under the heading: the student filter on the left, Export CSV on
+   the right — so the button lines up cleanly instead of floating in the header. */
+.session-breakdown-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 4px 0 12px;
+}
+
+.session-student-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    label {
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    select {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font-weight: 600;
+        padding: 8px 10px;
+        cursor: pointer;
+    }
+}
+
+/* The planner's view-only student filter, under the calendar header. */
+.calendar-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 12px 0 4px;
+}
+
+.calendar-student-filter {
+    width: 280px;
+    max-width: 100%;
+}
+
+.calendar-filter-hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    max-width: 46ch;
+}
+
+.session-breakdown-empty {
+    margin: 16px 0 0;
+    color: var(--muted);
+}
+
+/* Right-align the fee column and make the footed total stand out as the tally. */
+.session-breakdown-table {
+    td:last-child,
+    th:last-child {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Each student's rows share one tint so their block reads as a group.
+       Five tints cycle by student (student-group-N from the view), mixed
+       from the active theme's own colours — like the year tints — so they
+       hold up across every theme, light or dark. They also override the
+       default zebra stripe, which would fight the grouping. */
+    tbody tr.student-group-0 {
+        background: color-mix(in srgb, var(--accent) 26%, var(--surface));
+    }
+
+    tbody tr.student-group-1 {
+        background: color-mix(in srgb, var(--accent-alt) 26%, var(--surface));
+    }
+
+    tbody tr.student-group-2 {
+        background: color-mix(in srgb, var(--muted) 30%, var(--surface));
+    }
+
+    tbody tr.student-group-3 {
+        background: color-mix(in srgb, var(--accent) 42%, var(--surface-alt));
+    }
+
+    tbody tr.student-group-4 {
+        background: color-mix(in srgb, var(--accent-alt) 42%, var(--surface-alt));
+    }
+
+    /* A monthly student's charge line doubles as their total for the month,
+       so it reads bold like the footed total. */
+    tbody tr.session-monthly-row {
+        font-weight: 700;
+    }
+
+    /* The subtotal closing each student's block. It keeps the student's tint
+       so it still reads as part of their group, with a rule above and a
+       heavier one below to separate one student from the next. */
+    tbody tr.session-student-total-row {
+        font-weight: 700;
+
+        td {
+            border-top: 1px solid var(--border);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td:first-child {
+            text-align: right;
+            color: var(--muted);
+        }
+    }
+
+    tfoot .session-total-row {
+        font-weight: 700;
+
+        td {
+            border-top: 2px solid var(--border);
+        }
+
+        td:first-child {
+            text-align: right;
+            color: var(--muted);
+        }
+    }
+}
+
+.payment-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.payment-summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    span {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    strong {
+        font-size: 1.4rem;
+    }
+}
+
+.payment-summary-card.received strong,
+.payment-row.paid td:first-child strong,
+.paid {
+    color: #059669;
+}
+
+.payment-summary-card.pending strong,
+.payment-row.pending td:first-child strong,
+.pending {
+    color: #dc2626;
+}
+
+.payment-summary-card.total strong,
+.payment-row.partial td:first-child strong,
+.partial {
+    color: #b45309;
+}
+
+.payment-summary-card.status strong {
+    color: var(--accent);
+}
+
+.payment-table-wrapper .snapshot-table {
+    min-width: 920px;
+}
+
+.payment-tracker-table {
+    td {
+        vertical-align: top;
+    }
+
+    small {
+        display: block;
+        color: var(--muted);
+        margin-top: 4px;
+    }
+
+    input,
+    select {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        padding: 7px 9px;
+    }
+}
+
+.payment-amount-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .MuiTextField-root {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .payment-amount-save {
+        flex: 0 0 auto;
+    }
+}
+
+.payment-row.paid {
+    background: color-mix(in srgb, #dcfce7 45%, transparent);
+}
+
+.payment-row.partial {
+    background: color-mix(in srgb, #ffedd5 55%, transparent);
+}
+
+.payment-row.pending {
+    background: color-mix(in srgb, #fee2e2 55%, transparent);
+}
+
+.payment-row-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+
+    span {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 4px 10px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+}

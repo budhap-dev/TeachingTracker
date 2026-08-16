@@ -2186,7 +2186,8 @@ regression away from breaking three of them at once.
 
 ## REQ-047 — Split the stylesheet and route monoliths
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+**Status:** 🚧 Built (part 1 routes 2026-08-15, part 2 stylesheet 2026-08-16) ·
+**Impact:** frontend · **Effort:** S
 
 **Story**
 As the maintainers, we want `_components.scss` (4,800+ lines) split into
@@ -2194,11 +2195,43 @@ per-feature partials and `ROUTE.tsx` (900+ lines) split into per-page
 connected components — pure moves, no rule or behaviour changes, so
 finding code stops being scroll-archaeology.
 
+**How it landed** — in two parts, because the two halves had different risks.
+
+**Part 1 (routes, 2026-08-15).** `ROUTE.tsx` held 970 lines: fifteen connected
+page components AND the router. Now `routes/<page>.tsx` per feature area, with
+`ROUTE.tsx` as the map. `ScrollToTop` joined the components and
+`useOpenStudentPage` the hooks, so no file exports both a component and a hook.
+
+**Part 2 (stylesheet, 2026-08-16).** `_components.scss` was 5,674 lines and had
+caused **three merge conflicts in a single day** — REQ-057, the review fix and
+the statement — every one the same shape: two branches appending a block to the
+same end of the same file. It is now 21 partials under `styles/components/`,
+and `_components.scss` is the list that loads them.
+
+Two things worth knowing before touching it again:
+- **The order of the `@use` lines IS the cascade.** They are in the order the
+  rules were in. Reordering them would be a behaviour change wearing a
+  tidy-up's clothes.
+- **The partial headers are `//` comments, not `/* */`.** Sass emits loud
+  comments into the stylesheet — the first attempt failed its own
+  byte-for-byte check because 21 explanatory headers became CSS.
+
+One constraint the file itself imposed: `$note-rule` is declared at what was
+line 1809 and used at 1936–1943, so no cut could separate them. Both live in
+`_scheduling.scss`, and its header says so.
+
 **Acceptance criteria**
-- [ ] No visual diff (spot screenshots) and no test changes needed.
-- [ ] Each partial/page file owns one feature area; imports stay ordered
-      so the cascade is unchanged.
-- [ ] The build output is byte-comparable ignoring hashes.
+- [x] No visual diff (spot screenshots) and no test changes needed _(8 public
+      routes × desktop and phone: identical widths, radii, colours and page
+      heights against main; 639 tests pass with no test file touched)_.
+- [x] Each partial/page file owns one feature area; imports stay ordered
+      so the cascade is unchanged _(with two honest exceptions, noted in their
+      headers: `.table-wrapper` leads `_reviews` and the calendar tooltip
+      shares `_status` with the payment pills — both are neighbours in source
+      order rather than in feature, and moving them would change the
+      cascade)_.
+- [x] The build output is byte-comparable ignoring hashes _(the emitted CSS is
+      **byte-identical**: 165,332 bytes, `cmp` clean against main)_.
 
 ## REQ-049 — The visitors' phone tab bar
 

@@ -1,0 +1,145 @@
+// Sign-in, the topbar's identity, the loading skeleton and the week chart.
+
+.signin-card {
+    max-width: 460px;
+    margin: 48px auto;
+    display: grid;
+    gap: 12px;
+    justify-items: start;
+
+    h3 {
+        margin: 0;
+    }
+}
+
+/* The visitor landing (REQ-003) leads with the public actions; teacher
+   sign-in hangs back as a quiet afterline under a soft divider. */
+.signin-visitor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.signin-teacher-line {
+    margin: 12px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    justify-self: stretch;
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+
+/* Same pill idiom as its neighbours (.theme-picker, .pill): without it the
+   sign-out floats as a bare flat button at a different height. Colours come
+   from the sidebar palette — the topbar wears the sidebar gradient now. */
+.topbar-auth {
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--button-bg);
+
+    /* The button carries the label; the pill just frames it. Its own height
+       stays under the row's 40px min so it centres cleanly beside the others. */
+    .MuiButton-root {
+        border-radius: 999px;
+        padding-block: 4px;
+        font-weight: 700;
+        color: var(--sidebar-text);
+    }
+}
+
+/* Global API-activity bar: pinned over everything, gone when idle.
+   Doubled class: MUI injects `.MuiLinearProgress-root { position: relative }`
+   later in the cascade, and equal specificity would let it win. */
+.busy-bar.busy-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1400;
+}
+
+/* Skeleton layout while a screen's data loads. */
+.page-loading-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+/* ----- Dashboard: week-at-a-glance bars ----- */
+/* One series, hours by weekday: thin bars, rounded data-end, quiet labels.
+   Today wears the full accent; other days a lighter step of the same hue. */
+.week-card {
+    grid-column: span 4;
+}
+
+.week-chart {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    align-items: end;
+    margin-top: 8px;
+    max-width: 620px;
+}
+
+.week-bar-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    min-height: 112px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border); /* the baseline */
+
+    .week-bar {
+        width: 14px;
+        border-radius: 4px 4px 0 0; /* data-end rounded, baseline square */
+        background: color-mix(in srgb, var(--accent) 35%, var(--surface));
+    }
+
+    &.today .week-bar {
+        background: var(--accent);
+    }
+
+    &:hover .week-bar,
+    &:focus-visible .week-bar {
+        background: color-mix(in srgb, var(--accent) 70%, var(--surface));
+    }
+
+    &.today:hover .week-bar {
+        background: var(--accent);
+    }
+}
+
+.week-bar-value {
+    font-size: 0.7rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.week-bar-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    padding: 4px 0 2px;
+}
+
+.week-bar-cell.today .week-bar-label {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* Group classes on chips: the ×N badge says several students share the slot. */
+.chip-group-size {
+    font-size: 0.62rem;
+    margin-left: 2px;
+    opacity: 0.85;
+}
+
+/* Public Home landing (REQ-024) — D1 "the Brand Band" (owner pick,
+   2026-08-04). The hero is a sweep of the sidebar gradient: white promise,
+   one amber CTA, trust chips inside the band. */

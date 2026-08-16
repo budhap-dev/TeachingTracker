@@ -1,0 +1,114 @@
+// The contact channels and their inline editor.
+
+.contact-channel-grid {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+}
+
+.contact-channel-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-alt);
+    text-decoration: none;
+    color: var(--text);
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgb(15 23 42 / 0.1);
+        border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+    }
+
+    &.preferred {
+        border-color: color-mix(in srgb, #16a34a 45%, var(--border));
+        background: color-mix(in srgb, #16a34a 5%, var(--surface-alt));
+    }
+}
+
+.contact-channel-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .contact-preferred-pill {
+        margin-left: auto;
+    }
+}
+
+.contact-channel-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+
+    .call & {
+        color: var(--accent-alt);
+        background: color-mix(in srgb, var(--accent-alt) 12%, var(--surface));
+    }
+
+    .whatsapp & {
+        color: #1faf53;
+        background: color-mix(in srgb, #25d366 14%, var(--surface));
+    }
+}
+
+.contact-channel-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.contact-channel-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.contact-channel-card:hover .contact-channel-value,
+.contact-channel-card:focus-visible .contact-channel-value {
+    color: var(--accent);
+}
+
+.contact-note {
+    margin: 16px 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+/* Teacher's inline editor for the contact details (REQ-006/008). */
+.contact-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 18px;
+    max-width: 46rem;
+
+    @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.contact-form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}

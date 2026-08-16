@@ -1,0 +1,355 @@
+// The roster, year groups, a student's page and their per-subject progress.
+
+.student-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+/* One year, one quiet card: the year's colour is a dot and a top rule,
+   not a banner. --year-color/--year-tint arrive inline per group. */
+.year-group {
+    border: 1px solid color-mix(in srgb, var(--year-color) 22%, var(--border));
+    border-top: 3px solid var(--year-color);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--year-tint) 35%, var(--surface));
+    padding: 2px 14px 6px;
+}
+
+.year-group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0 8px;
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--year-color) 18%, var(--border));
+
+    &::before {
+        content: '';
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: var(--year-color);
+    }
+
+    h4 {
+        margin: 0;
+        font-size: 0.95rem;
+    }
+}
+
+.year-count {
+    margin-left: auto;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.year-students {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 0;
+
+        + li {
+            border-top: 1px solid
+                color-mix(in srgb, var(--border) 60%, transparent);
+        }
+    }
+}
+
+.student-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+
+    small {
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.student-code {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.payment-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+
+.student-summary {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    width: 100%;
+    color: var(--text);
+
+    span {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+}
+
+.student-link {
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+    }
+}
+
+.rotated {
+    transform: rotate(180deg);
+}
+
+.student-details {
+    display: grid;
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    gap: 16px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+/* Tabs across the student page: Details | Diary, an underline on the active
+   one. Buttons (not links) so keyboard/role semantics stay simple. */
+.student-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 4px 0 16px;
+    border-bottom: 1px solid var(--border);
+
+    .student-tab {
+        appearance: none;
+        border: 0;
+        background: none;
+        cursor: pointer;
+        padding: 10px 16px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--muted);
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+
+        &:hover {
+            color: var(--text);
+        }
+
+        &.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+    }
+}
+
+.student-detail-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* Same card treatment as the left rail's sections, so the two columns
+       read as matching panels rather than a boxed rail beside loose fields. */
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-alt) 70%, transparent);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+
+    p {
+        margin: 0;
+    }
+}
+
+.detail-grid-full {
+    grid-column: span 2;
+}
+
+/* The left rail: the meta card with the session summary tucked beneath it. */
+.student-side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+/* A 12-column grid so each field takes a width that suits its content: small
+   ones (Year, Fee, DoB) stay narrow, text fields take half, Address the whole
+   row. Fields default to half width; .col-N overrides per field. */
+.edit-fields {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 10px 12px;
+    margin-top: 8px;
+    align-items: start;
+}
+
+.edit-fields > * {
+    grid-column: span 6;
+}
+
+.edit-fields .col-2 {
+    grid-column: span 2;
+}
+.edit-fields .col-3 {
+    grid-column: span 3;
+}
+.edit-fields .col-4 {
+    grid-column: span 4;
+}
+.edit-fields .col-5 {
+    grid-column: span 5;
+}
+.edit-fields .col-7 {
+    grid-column: span 7;
+}
+.edit-fields .col-8 {
+    grid-column: span 8;
+}
+.edit-fields .col-12,
+.edit-span-2 {
+    grid-column: span 12;
+}
+
+/* On narrow screens, stack every field full-width (flex ignores grid spans). */
+@media (max-width: 640px) {
+    .edit-fields {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* Subjects render as removable chips inside the select — wrap them so several
+   subjects don't clip the (disabled) field. */
+.subject-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 1px 0;
+}
+
+.student-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 180px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-alt) 70%, transparent);
+
+    input {
+        width: 100%;
+    }
+}
+
+.meta-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Per-subject progress (REQ-014): label | bar (or slider) | value rows.
+   The overall figure above stays the headline; these are the detail. */
+.subject-progress-list {
+    display: grid;
+    gap: 6px;
+}
+
+.subject-progress-row {
+    display: grid;
+    grid-template-columns: minmax(72px, auto) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+
+    .MuiSlider-root {
+        padding: 8px 0;
+    }
+}
+
+.subject-progress-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.subject-progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--border) 55%, transparent);
+    overflow: hidden;
+}
+
+.subject-progress-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.subject-progress-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.progress-value {
+    color: var(--accent);
+}
+
+.meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mode-pill,
+.subject-count-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.subjects-line,
+.school-line {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}

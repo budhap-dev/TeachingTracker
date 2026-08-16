@@ -1,0 +1,76 @@
+// The student form and the modal shells every dialog reuses.
+
+.student-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    .MuiInputBase-root {
+        min-height: 40px;
+    }
+
+    .MuiSelect-select {
+        display: flex;
+        align-items: center;
+    }
+
+    .MuiFormControlLabel-root {
+        margin-right: 8px;
+    }
+
+    input,
+    select,
+    textarea {
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--input-bg);
+        color: var(--text);
+    }
+
+    /* Native inputs (the text and date fields) otherwise render taller than the
+       MUI selects; pin them to the selects' 40px so paired fields line up. */
+    input {
+        box-sizing: border-box;
+        height: 40px;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    textarea {
+        grid-column: span 2;
+        min-height: 80px;
+        resize: vertical;
+    }
+}
+
+.modal-form {
+    padding-top: 8px;
+
+    .span-2 {
+        grid-column: span 2;
+    }
+}
+
+/* Shared modal header: title left, primary action + ✕ right. Both the
+   student and class-scheduling modals use this shape. */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.payment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Year groups sit side by side — the roster reads across, not down. */

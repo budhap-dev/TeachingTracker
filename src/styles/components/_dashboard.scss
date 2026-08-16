@@ -1,0 +1,195 @@
+// The dashboard's cards and the who-needs-attention band.
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.section-header p {
+    margin: 4px 0 0;
+    color: #64748b;
+}
+
+.paid {
+    color: #059669;
+    font-weight: 700;
+}
+
+.pending {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.calendar-card {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dashboard-chart-card {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* "Who needs attention": a status breakdown, not a chart. The three bands
+   reuse the app's reserved status palette (green / amber / red), each shown
+   with its own label and count so identity never rests on colour alone. */
+.attention-card {
+    /* Status hues, shared by the bar segments and the legend dots. */
+    --band-on-track: #059669;
+    --band-developing: #b45309;
+    --band-needs-attention: #dc2626;
+}
+
+.attention-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.attention-empty {
+    margin: 0;
+    color: var(--muted);
+}
+
+/* One proportional bar, split by band, with a 2px surface gap between fills.
+   Segments are buttons: hover previews their students, a tap pins them. */
+.attention-bar {
+    display: flex;
+    gap: 2px;
+    height: 16px;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.attention-bar-segment {
+    min-width: 8px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+
+    &.on-track {
+        background: var(--band-on-track);
+    }
+    &.developing {
+        background: var(--band-developing);
+    }
+    &.needs-attention {
+        background: var(--band-needs-attention);
+    }
+
+    &:hover,
+    &:focus-visible,
+    &.active {
+        filter: brightness(1.12) saturate(1.1);
+        outline: none;
+    }
+}
+
+.attention-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.attention-legend-item {
+    display: flex;
+}
+
+/* A big tap target (the whole row), so the students reveal is reachable on a
+   phone where the 16px bar is too thin to hit. */
+.attention-legend-button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+
+    &:hover,
+    &:focus-visible,
+    &.active {
+        background: var(--surface-alt);
+        border-color: var(--border);
+        outline: none;
+    }
+}
+
+.attention-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+
+    &.on-track {
+        background: var(--band-on-track);
+    }
+    &.developing {
+        background: var(--band-developing);
+    }
+    &.needs-attention {
+        background: var(--band-needs-attention);
+    }
+}
+
+.attention-legend-label {
+    flex: 1;
+}
+
+.attention-legend-count {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.05rem;
+}
+
+/* The revealed band: its students, each a link to their page. */
+.attention-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    // Reserve the space so the list (or its hint) never grows/shrinks the card.
+    min-height: 8rem;
+}
+
+.attention-detail-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.attention-detail-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.attention-detail-names {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px 12px;
+    // A stable, scrolling box: switching bands swaps the names without ever
+    // growing or shrinking the card (which read as a sudden height jump).
+    height: 5.5rem;
+    overflow-y: auto;
+}

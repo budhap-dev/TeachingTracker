@@ -1,0 +1,159 @@
+// The offline line and the visits snapshot.
+
+.offline-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    background: var(--surface-alt);
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+/* Visits to the public site (REQ-058): a day per row, its bar drawn against
+   the busiest day in view, and the pages it reached beneath. */
+.visits-days {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+}
+
+.visits-day-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.visits-date {
+    font-weight: 700;
+}
+
+.visits-total {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.visits-bar {
+    height: 6px;
+    margin: 6px 0 8px;
+    border-radius: 999px;
+    background: var(--hero-gradient);
+    min-width: 6px;
+}
+
+.visits-pages {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.85rem;
+    }
+}
+
+.visits-page-name {
+    color: var(--text);
+}
+
+.visits-page-count {
+    color: var(--muted);
+    font-weight: 700;
+}
+/* The teacher's own reminders in the upcoming list (REQ-057).
+   A class is a card with a date chip, attendees and a status; a reminder is
+   one line you wrote to yourself. It reads as a note beside them — a pin, the
+   words, when — rather than borrowing the class row's furniture. */
+.reminder-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+
+/* Yesterday's forgotten note stays readable rather than vanishing; deleting
+   it is the teacher's own call. */
+.reminder-item.past {
+    opacity: 0.6;
+}
+
+.reminder-pin {
+    color: var(--accent);
+    flex: none;
+}
+
+.reminder-body {
+    min-width: 0;
+    flex: 1 1 auto;
+
+    p {
+        margin: 0;
+    }
+}
+
+.reminder-text {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.reminder-when {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.reminder-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: none;
+}
+
+.reminder-item.editing {
+    display: block;
+}
+
+.reminder-add {
+    margin: 8px 0 4px;
+}
+
+.reminder-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+}
+
+/* The words get the room; the date and time take what they need. */
+.reminder-text-field {
+    flex: 1 1 240px;
+}
+
+.reminder-form-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+@media (max-width: 640px) {
+    .reminder-form > * {
+        flex: 1 1 100%;
+    }
+}

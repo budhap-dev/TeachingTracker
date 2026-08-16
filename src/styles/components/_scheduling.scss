@@ -1,0 +1,935 @@
+// The planner — the calendar, the day modal, class notes and the diary.
+// Holds the $note-rule variable and every use of it.
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+
+    h3 {
+        margin: 0;
+    }
+}
+
+.calendar-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.calendar-list {
+    display: grid;
+    gap: 10px;
+}
+
+.session-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    background: color-mix(in srgb, var(--surface-alt) 60%, transparent);
+}
+
+.session-date-pill {
+    border-radius: 999px;
+    padding: 6px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.session-content {
+    strong {
+        display: block;
+    }
+
+    /* A group class lists every attendee on one line, led by a small tag —
+       the names flow as inline text so the commas between them read right. */
+    .session-group-tag {
+        display: inline-block;
+        margin-right: 6px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 1px 6px;
+        border-radius: 999px;
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        vertical-align: middle;
+    }
+
+    p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+
+    small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+    }
+}
+
+.session-mode {
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: 1px solid var(--border);
+}
+
+.session-mode.online {
+    color: #1d4ed8;
+    background: #dbeafe;
+}
+
+.session-mode.face {
+    color: #92400e;
+    background: #ffedd5;
+}
+
+.session-mode.booked {
+    color: #0f766e;
+    background: #ccfbf1;
+}
+
+.student-session-summary {
+    margin-top: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+
+    h4 {
+        margin: 0 0 8px;
+    }
+
+    p {
+        margin: 0;
+        color: var(--muted);
+    }
+
+    /* A small table wants small furniture: whispered headers, hairline
+       rows, the duration tucked under the time. */
+    .session-mini-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+
+        th {
+            text-align: left;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            padding: 0 6px 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 7px 6px 7px 0;
+            border-bottom: 1px solid
+                color-mix(in srgb, var(--border) 60%, transparent);
+            vertical-align: top;
+
+            small {
+                display: block;
+                color: var(--muted);
+            }
+        }
+
+        /* A group class's classmates read in the accent; "1:1" stays muted. */
+        .session-with-group {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Edit / remove sit tight at the row's end — each in its own colour
+           (accent for edit, red for remove) from the MUI colour prop. */
+        .session-actions {
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+    }
+}
+
+/* The dated notes "diary" as a ruled notebook page: warm paper, faint blue
+   rules the text sits on, and a red margin line down the left. Colours are
+   mixed from theme tokens so it reads as paper in light mode and as a dark
+   notebook in dark mode. The rule rhythm ($note-rule) must match the note
+   line-height so text lands on the lines. */
+$note-rule: 32px;
+
+.student-notes-card {
+    --paper: color-mix(in srgb, #fbf6e3 62%, var(--surface));
+    --paper-line: color-mix(in srgb, #5b86c4 40%, transparent);
+    --paper-margin: color-mix(in srgb, #d9524b 70%, transparent);
+    background: var(--paper);
+    padding: 0;
+    overflow: hidden;
+}
+
+.student-notes-log {
+    position: relative;
+    /* Left padding clears the red margin line; everything writes to its right. */
+    padding: 22px 26px 26px 60px;
+
+    /* The red margin rule. */
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 44px;
+        width: 2px;
+        background: var(--paper-margin);
+    }
+
+    .notes-log-head {
+        margin-bottom: 18px;
+
+        h3 {
+            margin: 0;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 1.5rem;
+            letter-spacing: 0.01em;
+            color: var(--text);
+        }
+
+        p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Add-an-entry row, pinned to the top like a fresh line on the page. */
+    .note-add-form {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 14px;
+        border-radius: 10px;
+        border: 1px solid color-mix(in srgb, var(--paper-line) 60%, transparent);
+        background: color-mix(in srgb, var(--surface) 60%, transparent);
+        margin-bottom: 22px;
+
+        .MuiButton-root {
+            flex: 0 0 auto;
+            margin-top: 2px;
+        }
+
+        /* Wide enough that the native calendar icon never overlaps the date. */
+        .note-date-field {
+            flex: 0 0 172px;
+        }
+    }
+
+    .note-empty {
+        margin: 0;
+        color: var(--muted);
+        font-style: italic;
+    }
+
+    .note-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+    }
+
+    /* One diary entry: a dated header line, then the note on ruled lines. */
+    .note-entry {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* The date, written along the top of the entry like a diary header. */
+    .note-date-rail {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 4px;
+        font-family: Georgia, 'Times New Roman', serif;
+
+        .note-weekday {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--paper-margin);
+        }
+
+        .note-day {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .note-monthyear {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+    }
+
+    .note-body {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    /* The written line(s): text sitting on repeating ruled lines. */
+    .note-text {
+        flex: 1;
+        margin: 0;
+        white-space: pre-wrap;
+        line-height: #{$note-rule};
+        min-height: #{$note-rule};
+        background-image: repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent #{$note-rule - 1px},
+            var(--paper-line) #{$note-rule - 1px},
+            var(--paper-line) #{$note-rule}
+        );
+        background-position: 0 0;
+    }
+
+    .note-actions {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .note-edit {
+        flex: 1;
+
+        .note-edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+    }
+}
+
+@media (max-width: 640px) {
+    .student-notes-log {
+        /* Clear of the margin rule, which moves in-board on phones -
+           44px put the text's left edge exactly ON the red line
+           (owner report, 2026-08-11). */
+        padding-left: 34px;
+
+        &::before {
+            left: 16px;
+        }
+
+        .note-add-form {
+            flex-direction: column;
+
+            /* In a column, the 172px flex-BASIS became height - a tall
+               empty date box gaping above the textarea (owner report). */
+            .note-date-field {
+                flex: 0 0 auto;
+                width: 100%;
+            }
+
+            .MuiButton-root {
+                align-self: flex-end;
+            }
+        }
+    }
+}
+
+.session-summary-meta {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+/* The "this is permanent" line under a delete confirmation. */
+.delete-warning {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+/* The day modal: booked classes first, then the add-a-class form. */
+.day-modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    h4 {
+        margin: 0;
+    }
+}
+
+.day-modal-sessions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+/* Numbered chips, mirroring the ones on the calendar day. */
+.day-modal-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.day-modal-picker-chip {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.day-modal-picker-chip.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.day-modal-picker-chip.cancelled {
+    background: color-mix(in srgb, #dc2626 14%, var(--surface-alt));
+    border-color: color-mix(in srgb, #dc2626 40%, var(--border));
+    color: #dc2626;
+    text-decoration: line-through;
+}
+
+/* The trailing "+" chip that switches the form to adding a new class. */
+.day-modal-picker-chip.add {
+    border-style: dashed;
+    font-weight: 400;
+    font-size: 1.1rem;
+}
+
+/* Save/Add sits next to the destructive Cancel-class action. */
+.day-modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+/* A student option in the scheduler's picker: the name on its own line, the
+   year and subjects as a muted line under it — instead of both running
+   together inline ("Maya FernandoYear 10 • Physics"). */
+.scheduling-student-option {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.3;
+
+    small {
+        color: var(--muted);
+        font-size: 0.78rem;
+    }
+}
+
+/* The title and its line get the full width; the readouts and the way
+   through to the notes settle into the bottom-right corner beneath them
+   (owner call, 2026-08-13) - nothing competes with the heading for room. */
+.scheduling-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+
+    .scheduling-hero-aside {
+        align-self: flex-end;
+    }
+}
+
+/* The planner header's right-hand side: quiet readouts, then the one
+   thing to click. Boxing all three alike read as three tabs, so only the
+   action wears a border. */
+.scheduling-hero-aside {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+
+    /* Desk widths have room for both readouts and the action on one
+       line, so the description gives way rather than the row breaking.
+       Narrower than that the aside wraps instead — holding it rigid
+       would push the page sideways on a phone. */
+    @media (min-width: 901px) {
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+    }
+}
+
+/* Class notes (REQ-052): the way through sits with the planner's own
+   chrome — the only accent on the row, so it reads as the action. */
+.scheduling-notes-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    /* The label stays on one line - the hero row squeezes it otherwise
+       (owner report, 2026-08-13). */
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+
+    &:hover {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    }
+}
+
+/* The notes list itself: a date heading, then the day's classes. */
+.class-notes-filters {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+
+    .MuiTextField-root {
+        min-width: 190px;
+    }
+}
+
+.class-notes-count {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.class-notes-log {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.class-notes-date {
+    margin: 0 0 10px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.class-notes-entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.class-note {
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+
+    /* A cancelled class keeps its note; the row is quieter about it. */
+    &.is-cancelled {
+        opacity: 0.75;
+    }
+}
+
+.class-note-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.class-note-time {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.class-note-who {
+    font-weight: 600;
+}
+
+.class-note-subject {
+    color: var(--muted);
+}
+
+.class-note-cancelled {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* The door back to the class, pushed to the end of the row. */
+.class-note-open {
+    margin-left: auto;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.85rem;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.class-note-body {
+    margin: 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.scheduling-hero-stats {
+    display: flex;
+    gap: 12px;
+
+    align-items: baseline;
+
+    div {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        /* Sized to its own words, never squeezed into a wrap. */
+        flex-shrink: 0;
+    }
+
+    /* A hairline between the readouts instead of a box around each. */
+    div + div {
+        padding-left: 12px;
+        border-left: 1px solid var(--border);
+    }
+
+    strong {
+        font-size: 1.05rem;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+    }
+
+    span {
+        color: var(--muted);
+        font-size: 0.85rem;
+        white-space: nowrap;
+
+        /* The separator is punctuation, not content — it stays out of
+           the markup so the label reads cleanly on its own. */
+        &::after {
+            content: ' :';
+        }
+    }
+}
+
+.scheduling-form {
+    display: grid;
+    gap: 12px;
+
+    .MuiTextField-root {
+        width: 100%;
+    }
+}
+
+.scheduling-calendar-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.scheduling-calendar-header {
+    align-items: flex-start;
+
+    /* The heading block yields, so the controls hold one aligned row on
+       desktop instead of stacking toggle-above-nav. */
+    > div:first-child {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .calendar-actions {
+        flex-shrink: 0;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    /* Narrow screens stack the header anyway (see _responsive.scss) — let
+       the controls wrap again there. */
+    @media (max-width: 900px) {
+        .calendar-actions {
+            flex-wrap: wrap;
+        }
+    }
+}
+
+.calendar-nav-button {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    padding: 6px 12px;
+    font-weight: 700;
+
+    /* Current, while already looking at the current period. */
+    &:disabled {
+        opacity: 0.45;
+        cursor: default;
+    }
+}
+
+.calendar-weekdays,
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.calendar-weekdays span {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.calendar-day {
+    position: relative;
+    min-height: 128px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 10px;
+    background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.calendar-day:hover,
+.calendar-day:focus-within {
+    border-color: var(--accent);
+}
+
+/* Fills the cell above the chips, so tapping the day opens it. */
+.calendar-day-open {
+    flex: 1;
+    border: 0;
+    padding: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.calendar-day-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* One numbered chip per class, in time order. */
+.calendar-day-chip {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.calendar-day-chip:hover,
+.calendar-day-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* Cancelled classes read as cancelled by colour — a red tint, not just the
+   muted grey it used to share with everything else — with the strike kept as a
+   second, colour-blind-safe cue. */
+.calendar-day-chip.cancelled {
+    background: color-mix(in srgb, #dc2626 16%, var(--surface));
+    border-color: color-mix(in srgb, #dc2626 45%, var(--border));
+    color: #dc2626;
+    text-decoration: line-through;
+}
+
+/* Weekends wear a warm tint, so the week's shape reads at a glance. A booked
+   weekend still shows its booked shading — those rules come later and win. */
+.calendar-day.weekend {
+    background: color-mix(in srgb, #f59e0b 8%, var(--surface-alt));
+    border-color: color-mix(in srgb, #f59e0b 25%, var(--border));
+
+    .calendar-day-number {
+        color: #b45309;
+    }
+}
+
+/* Another month's spill-over days: flat and dashed, unmistakably not this
+   month — distinct from the weekend tint. */
+.calendar-day.muted {
+    opacity: 0.5;
+    background: transparent;
+    border-style: dashed;
+}
+
+/* Today wears a darkened folded corner in its top-right, rather than a loud
+   full-cell ring — a quiet marker that reads at a glance and matches the
+   cell's rounded corner. */
+.calendar-day.today::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 26px;
+    height: 26px;
+    border-top-right-radius: 14px;
+    background: linear-gradient(
+        to top right,
+        transparent 0 50%,
+        color-mix(in srgb, var(--accent) 72%, #0b1220) 50% 100%
+    );
+    pointer-events: none;
+}
+
+.calendar-day-number {
+    font-weight: 700;
+}
+
+.calendar-session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.calendar-session-chip {
+    border: 0;
+    border-radius: 12px;
+    padding: 8px;
+    background: var(--surface);
+    color: var(--text);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+
+    span {
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    small {
+        color: var(--muted);
+    }
+}
+
+.calendar-session-more {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* Header actions (Archive + Back) sit together, right-aligned. */
+.student-page-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* An archived student wears a clear banner over their (otherwise normal)
+   page, with the closing note and the way back to active. */
+.archived-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+
+    p {
+        margin: 4px 0 0;
+        color: var(--muted);
+    }
+}
+
+.archive-dialog-copy {
+    margin: 0 0 12px;
+    color: var(--muted);
+}
+
+/* The in-place edit-a-class form inside its dialog. */
+.session-edit-form {
+    display: grid;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+/* Manage who's in the class: chips (with a remove) + an add picker. */
+.session-members {
+    display: grid;
+    gap: 8px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+}
+
+.session-member-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.student-page-details {
+    margin-top: 8px;
+    /* A floor so the profile reads as substantial. Scoped to the details block,
+       not the whole card, so the Diary tab (which hides these details) doesn't
+       leave a tall empty card behind. */
+    min-height: 320px;
+    /* 40 / 60 split — the meta + sessions rail left, the editable fields
+       right. minmax(0, …) lets both columns shrink instead of overflowing. */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+/* Contact channels as cards (REQ-006/008): the whole card is the action —
+   email, call or WhatsApp — with its availability note and, when set, the
+   Preferred state designed in rather than bolted on. */
