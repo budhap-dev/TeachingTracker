@@ -2311,7 +2311,7 @@ build three ways (`JSX` namespace moved to `React.JSX`, argument-less
 
 ## REQ-051 — Subject chips play on tap
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+**Status:** 🚧 Built (2026-08-16) · **Impact:** frontend · **Effort:** S
 
 **Story**
 As a visitor (often a child looking over a parent's shoulder), tapping a
@@ -2337,13 +2337,46 @@ the tap for play instead of a page change.
 - Touch and mouse and keyboard (chips become buttons with aria-pressed
   or plain decorative buttons — decide with the a11y hat on).
 
+**How it landed (2026-08-16)** — the burst, not the wobble. Tapping a chip
+throws **one of each** emoji in that subject's Offerings set, which fan out
+and fall over 700ms. The set moved to `utils/subjectEmoji.ts` so the chip
+and the flip card behind it can never disagree.
+
+The burst count is the set's own length, and that is the point rather than a
+detail. A mid-build attempt at "more and bigger" threw nine from a set of
+five, which repeated four of them — the owner's report was that the images
+were "showing up twice", and it read as the same picture again rather than a
+handful of different ones. Tying the count to the set makes that impossible
+instead of merely unlikely. The slower, evenly-fanned flight that came with
+it was reverted at the same time: the original motion was the one the owner
+liked. What it needed was bigger glyphs (1rem → 3rem, about 45px
+rendered — the owner set the final size themselves) and a wider throw — the arc and the timing untouched, only the
+distance, so the five land apart instead of overlapping near the chip.
+Measured mid-flight in Chrome: 110px between the outermost pair, 17px
+between the closest.
+
+Chips became `<button>`s so a keyboard can play too; the sparks are
+`aria-hidden` and wordless, so a screen reader still hears only
+"Mathematics, button".
+
+Two implementation notes worth keeping. The animation lengths live in the
+component and are set inline, so one number drives both the flight and the
+element's removal. And removal is on a **timer, not `animationend`**: a
+cancelled animation never fires `animationend` and would strand an emoji
+mid-air, and jsdom has no `AnimationEvent` at all — so an `animationend`
+cleanup could not have been tested, which would have left the tidying-up
+as the one part taken on trust.
+
 **Acceptance criteria**
-- [ ] Tapping/clicking a chip plays a subject-flavoured animation
+- [x] Tapping/clicking a chip plays a subject-flavoured animation
       matching that subject's existing emoji set.
-- [ ] Zero layout shift; reduced-motion users get a quiet variant.
-- [ ] Works with touch, mouse and keyboard; screen readers are not
+- [x] Zero layout shift; reduced-motion users get a quiet variant.
+      _Both measured in Chrome: chip positions identical during play under
+      full and reduced motion; reduced motion renders 0 sparks and one
+      glowing chip that clears itself._
+- [x] Works with touch, mouse and keyboard; screen readers are not
       spammed (decorative, aria-hidden particles).
-- [ ] No regression to the "no navigation from chips" rule.
+- [x] No regression to the "no navigation from chips" rule.
 
 ## REQ-052 — Class notes, read date-wise
 
@@ -2502,8 +2535,37 @@ As a parent meeting AbhiTutor for the first time — almost always on a
 phone — I want the first screen to tell me what is offered and let me
 act on it, instead of spending itself on chrome I did not come for.
 
-**What the phone actually shows today** (measured at 390×844, visitor
-mode, 2026-08-14 — page coordinates):
+**Re-measured 2026-08-16** on `main`, 390×844, signed out, against the dev
+API — because the page had changed under the original table (REQ-049's tab
+bar, REQ-059's review strip, the theme toggle moving into the drawer) and
+building from stale numbers optimises the wrong 100px.
+
+| what | from | height |
+|---|---|---|
+| brand lockup | 83px | 76px |
+| masthead "AbhiTutor" | 144px | 49px |
+| offer line | 199px | 19px |
+| rotating teacher quote | 224px | 63px |
+| "Enrolling now" pill | 299px | 40px |
+| **notice board** | 371px | 286px |
+| **hero band (the pitch)** | 673px | 518px |
+| **"Request a free assessment"** | **963px** | 85px |
+| trust chips | 1065px | 104px |
+| review strip (REQ-059) | 1311px | 363px |
+
+The fold is 844px, but the tab bar floats at 843px, so the usable fold is
+**776px** and the CTA sits **187px below it**. Three things this changed:
+
+1. **REQ-059's strip did not make it worse.** The page grew 2,314 → 2,681px,
+   all of it below the CTA; nothing above the fold moved by more than 11px.
+2. **The theme toggle has already left the visitor page** — it lives in the
+   menu drawer now, so idea 2 is half done and only the quote remains.
+3. **The notice board is the biggest thing standing in front of the pitch:
+   286px.** With the quote (63) and the pill (40) that is 389px — which is
+   the whole gap. Move those three and the CTA clears the fold without the
+   hero being touched at all.
+
+**The original table** (measured 2026-08-14, kept for comparison):
 
 | what | from | height |
 |---|---|---|
@@ -2957,7 +3019,7 @@ when there is no rating rather than showing an empty one.
 
 ## REQ-060 — A way to the review form from the top of the page
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** XS
+**Status:** 🚧 Built (2026-08-16, `#124`) · **Impact:** frontend · **Effort:** XS
 _(owner ask, 2026-08-16: "if there are a number of cards for reviews then it
 will be difficult for a new visitor to write reviews")_
 
@@ -3022,7 +3084,7 @@ top solves both at once and costs a scroll handler.
 
 ## REQ-061 — The review wall stops at six
 
-**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** S
+**Status:** 🚧 Built (2026-08-16, `#125`) · **Impact:** frontend · **Effort:** S
 _(owner ask, 2026-08-16 — the other half of REQ-060: a wall of cards makes
 the submit form hard to reach)_
 

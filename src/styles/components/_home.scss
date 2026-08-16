@@ -200,9 +200,91 @@ a.home-highlight-tile {
     color: color-mix(in srgb, var(--subject-accent) 82%, var(--text));
     background: color-mix(in srgb, var(--subject-accent) 12%, var(--surface));
 
+    /* A button now, so a keyboard can play too (REQ-051) — but it must still
+       read as the badge it has been since 2026-08-11, so it takes no button
+       chrome and keeps the badge's own font. */
+    font-family: inherit;
+    /* The sparks are absolutely positioned against this, and `overflow` stays
+       visible so they can leave the chip. */
+    position: relative;
+
+    &:active {
+        /* Transform only: a chip that moved its neighbours on every tap would
+           be a layout shift on the most-tapped thing on the page. */
+        transform: scale(.96);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--subject-accent);
+        outline-offset: 3px;
+    }
+
     svg {
         font-size: 1.1rem;
         color: var(--subject-accent);
+    }
+}
+
+/* One emoji in flight (REQ-051). Absolutely positioned and pointer-events
+   none, so a burst never moves the chips or blocks the next tap; transform
+   and opacity only, so nothing reflows. */
+.chip-spark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    /* Bigger than the chip's own icon on purpose (owner ask, 2026-08-16) —
+       the burst is the thing being looked at. The flight itself is the
+       original one; only the glyphs grew. */
+    font-size: 3rem;
+    line-height: 2;
+    z-index: 1;
+    pointer-events: none;
+    will-change: transform, opacity;
+    /* Duration comes from the component, so one number drives both the
+       flight and when the element is removed. */
+    animation-name: chip-spark-fly;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+}
+
+@keyframes chip-spark-fly {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg) scale(0.6);
+        opacity: 0;
+    }
+    15% {
+        opacity: 1;
+    }
+    to {
+        transform: translate(
+                calc(-50% + var(--dx)),
+                calc(-50% + var(--dy))
+            )
+            rotate(var(--rotate)) scale(1.1);
+        opacity: 0;
+    }
+}
+
+/* The quiet variant. A visitor who asked for less motion gets a glow that
+   swells and fades where everyone else gets a burst — the tap is still
+   answered, which is the point of the story. */
+.home-subject-chip.is-lit {
+    animation-name: chip-glow;
+    animation-timing-function: ease-out;
+}
+
+@keyframes chip-glow {
+    50% {
+        background: color-mix(in srgb, var(--subject-accent) 34%, var(--surface));
+        border-color: color-mix(in srgb, var(--subject-accent) 90%, var(--text));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* Sparks never render for this visitor — the press feedback is the only
+       movement left, and it goes too. */
+    .home-subject-chip:active {
+        transform: none;
     }
 }
 

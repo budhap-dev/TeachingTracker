@@ -20,9 +20,9 @@ import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded'
 import StarOutlineRoundedIcon from '@mui/icons-material/StarOutlineRounded'
 
-import { subjectIcon } from '../utils/subjectIcons'
 import { paths } from '../paths'
 import { HomeReviews } from './HomeReviews'
+import { SubjectChips } from './SubjectChips'
 import { PageLoading } from './PageLoading'
 import type { Testimonial } from '../data/students'
 
@@ -313,28 +313,13 @@ export const HomeView = ({
                 )}
             </div>
 
-            {/* What we teach, without a click — literally: the chips are
-                plain badges now (owner call, 2026-08-11); the band's
-                "Explore subjects" button is the door to the cards. */}
-            {content.subjects.length > 0 && (
-                <div
-                    className="home-subject-chips"
-                    aria-label="Subjects taught"
-                >
-                    {content.subjects.map((subject) => {
-                        const Icon = subjectIcon(subject.name)
-                        return (
-                            <span
-                                key={subject.name}
-                                className="home-subject-chip"
-                            >
-                                <Icon fontSize="small" aria-hidden />
-                                {subject.name}
-                            </span>
-                        )
-                    })}
-                </div>
-            )}
+            {/* What we teach, without a click — literally: the chips stopped
+                navigating on 2026-08-11 (owner call), and the band's "Explore
+                subjects" button is the door to the cards. The freed tap plays
+                instead (REQ-051). */}
+            <SubjectChips
+                subjects={content.subjects.map((subject) => subject.name)}
+            />
 
             {/* Proof where the decision is made (REQ-059): the three reviews
                 the teacher chose, straight after the band and its one row of
