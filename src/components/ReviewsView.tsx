@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { recommendationRoles } from '../data/students'
 import type { FormEvent } from 'react'
 import {
@@ -64,6 +64,11 @@ export const ReviewsView = ({
     // Honeypot: hidden from people, tempting to bots. Left blank normally.
     const [website, setWebsite] = useState('')
     const [error, setError] = useState<string | null>(null)
+    // The way to the form from the top of the page (REQ-060). With twelve
+    // approved reviews the first field sits four screens down on a phone, and
+    // nothing above the wall said writing one was even possible.
+    const formRef = useRef<HTMLDivElement>(null)
+    const nameRef = useRef<HTMLInputElement>(null)
     // Errors show only after a submit is attempted (REQ-029). Each required
     // field then marks itself inline; `error` stays as the one-line summary.
     const [submitted, setSubmitted] = useState(false)
@@ -83,6 +88,22 @@ export const ReviewsView = ({
     const isRecommendation = recommendationRoles.includes(role)
     const ratingMissing = !isRecommendation && rating < 1
     const quoteMissing = !quote.trim()
+
+    /**
+     * Takes the visitor to the form and puts the cursor in it. Both halves
+     * matter: the scroll alone leaves a keyboard user where they were, and
+     * focus alone jumps the page without showing what happened. The scroll
+     * respects reduced-motion the way the home page's notice does, and focus
+     * gives up its own scrolling so the two do not fight.
+     */
+    const goToForm = () => {
+        const behavior = (window.matchMedia?.('(prefers-reduced-motion: reduce)')
+            .matches ?? true)
+            ? ('auto' as const)
+            : ('smooth' as const)
+        formRef.current?.scrollIntoView?.({ behavior, block: 'start' })
+        nameRef.current?.focus?.({ preventScroll: true })
+    }
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault()
@@ -140,6 +161,13 @@ export const ReviewsView = ({
                             What families say about tutoring with AbhiTutor.
                         </p>
                     </div>
+                    <Button
+                        className="write-review-button"
+                        variant="contained"
+                        onClick={goToForm}
+                    >
+                        Write a review
+                    </Button>
                 </div>
 
                 {familyReviews.length === 0 ? (
@@ -205,7 +233,7 @@ export const ReviewsView = ({
                 </div>
             )}
 
-            <div className="card">
+            <div className="card review-form-card" ref={formRef}>
                 <div className="section-header">
                     <div>
                         <h4 className="offerings-heading">
@@ -227,6 +255,7 @@ export const ReviewsView = ({
                         label="Your name"
                         size="small"
                         value={authorName}
+                        inputRef={nameRef}
                         onChange={(event) => setAuthorName(event.target.value)}
                         slotProps={{ htmlInput: { maxLength: MAX_NAME } }}
                         {...requiredFieldProps(

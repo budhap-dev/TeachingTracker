@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-060`**
+**Next id: `REQ-061`**
 
 ## Legend
 
@@ -2954,3 +2954,68 @@ when there is no rating rather than showing an empty one.
 - This reinstates parent quotes on Home, retired in favour of the ★ chips on
   2026-08-06. Curated and three at a time is a different proposition from
   the rotating single quote that was removed.
+
+## REQ-060 — A way to the review form from the top of the page
+
+**Status:** 🔲 Not started · **Impact:** frontend · **Effort:** XS
+_(owner ask, 2026-08-16: "if there are a number of cards for reviews then it
+will be difficult for a new visitor to write reviews")_
+
+**Story**
+As a parent who has just read what other families say, I want an obvious way
+to write my own, so I do not have to scroll past every review on the page to
+discover that writing one is possible at all.
+
+**Measured, not judged by eye.** Driven in Chrome at 390×844 with twelve
+approved reviews: the submit form's first field sits **3,409px down — four
+full screens**. Desktop at 1280 is 2.3 screens. The form is last on the page,
+after the review wall and after the recommendations block, and nothing above
+either of them mentions it. The wall grows with every review approved, so
+this worsens on its own: twenty-four reviews puts the form past seven
+screens.
+
+**Two problems, and this story fixes the smaller-looking one first.** Reach
+is the obvious complaint, but discoverability is the real one — a visitor who
+never scrolls to the bottom does not know the form exists. A button at the
+top solves both at once and costs a scroll handler.
+
+**Shape**
+- A "Write a review" button beside the "Reviews" heading, in the existing
+  `.section-header` — which is already a space-between row that wraps on
+  narrow screens. On a phone it takes the full width rather than sitting as
+  a small target against the edge.
+- It scrolls the form card into view **and** moves focus to the first field.
+  Both halves: a scroll alone leaves a keyboard user where they were, and
+  focus alone jumps the page without showing what happened. Focus gives up
+  its own scrolling so the two do not fight.
+- Reduced motion gets no animation, the same rule the home page's notice
+  scroll already follows.
+- The form card carries a `scroll-margin-top` below 900px. The sidebar
+  becomes a sticky brand band 110px tall there, and without the margin the
+  form lands with its own heading — and the "checked before they appear"
+  line that answers the visitor's first worry — parked underneath it.
+  Measured in Chrome, not guessed.
+
+**Deliberately not in this story**
+- **Capping the wall at six with "Show more"** — measured at 2.5 screens
+  rather than 4.0, and worth doing. It carries a trap that wants its own
+  story: REQ-059's clipped quotes deep-link to `/reviews#review-N`, and a
+  review behind "Show more" is not in the DOM when the browser goes looking
+  for that anchor, so the link would land at the top of the page instead.
+  Whatever ships must expand the wall when the anchor points past the
+  visible slice.
+- **The form in a dialog.** Six fields, a star rating and a 600-character
+  textarea: long forms scroll badly in modals on phones, and REQ-029's
+  inline validation has nowhere good to go.
+- **A sticky button bar on phones.** The REQ-049 tab bar already owns that
+  edge, and the owner asked for it to be left alone.
+
+**Acceptance criteria**
+- [ ] A "Write a review" button sits at the top of the Reviews page, visible
+      without scrolling at 390px and on desktop.
+- [ ] Pressing it moves the page to the form and the cursor into the first
+      field, so a keyboard user ends up where a mouse user does.
+- [ ] A reduced-motion visitor gets no scroll animation.
+- [ ] Nothing else about the page moves: the reading order is still reviews,
+      then recommendations, then the form.
+- [ ] Coverage holds; lint and build clean.

@@ -330,3 +330,86 @@ describe('the review form protects what people write (2026-08-15)', () => {
         expect(screen.getByLabelText(/your name/i)).toHaveValue('')
     })
 })
+
+// REQ-060 — with twelve reviews the form's first field sits four screens down
+// on a phone, and nothing above the wall said writing one was possible.
+describe('finding the review form', () => {
+    const renderPage = () =>
+        render(
+            <ReviewsView
+                testimonials={[withMeta, bare]}
+                saving={false}
+                onSubmit={vi.fn()}
+            />
+        )
+
+    it('offers a way to the form from the top of the page', () => {
+        renderPage()
+
+        expect(
+            screen.getByRole('button', { name: /write a review/i })
+        ).toBeInTheDocument()
+    })
+
+    it('takes the visitor there and puts the cursor in the first field', async () => {
+        renderPage()
+        const scrollIntoView = vi.fn()
+        // jsdom implements neither; the component optional-chains both.
+        const form = screen
+            .getByRole('heading', { name: /share your experience/i })
+            .closest('.card') as HTMLElement
+        form.scrollIntoView = scrollIntoView
+
+        await userEvent.click(
+            screen.getByRole('button', { name: /write a review/i })
+        )
+
+        expect(scrollIntoView).toHaveBeenCalledWith(
+            expect.objectContaining({ block: 'start' })
+        )
+        // Focus is the half a scroll alone would leave behind.
+        expect(screen.getByLabelText(/your name/i)).toHaveFocus()
+    })
+
+    it('does not animate the scroll for a reduced-motion visitor', async () => {
+        renderPage()
+        const scrollIntoView = vi.fn()
+        const form = screen
+            .getByRole('heading', { name: /share your experience/i })
+            .closest('.card') as HTMLElement
+        form.scrollIntoView = scrollIntoView
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn().mockReturnValue({ matches: true })
+        )
+
+        await userEvent.click(
+            screen.getByRole('button', { name: /write a review/i })
+        )
+
+        expect(scrollIntoView).toHaveBeenCalledWith(
+            expect.objectContaining({ behavior: 'auto' })
+        )
+    })
+
+    it('animates it for everyone else', async () => {
+        renderPage()
+        const scrollIntoView = vi.fn()
+        const form = screen
+            .getByRole('heading', { name: /share your experience/i })
+            .closest('.card') as HTMLElement
+        form.scrollIntoView = scrollIntoView
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn().mockReturnValue({ matches: false })
+        )
+
+        await userEvent.click(
+            screen.getByRole('button', { name: /write a review/i })
+        )
+
+        expect(scrollIntoView).toHaveBeenCalledWith(
+            expect.objectContaining({ behavior: 'smooth' })
+        )
+    })
+})
