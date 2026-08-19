@@ -88,10 +88,43 @@
     background: color-mix(in srgb, var(--accent) 5%, var(--surface));
 }
 
-/* Yesterday's forgotten note stays readable rather than vanishing; deleting
-   it is the teacher's own call. */
+/* A passed note stays readable rather than vanishing; deleting it is the
+   teacher's own call. It now lives in the "Past reminders" disclosure
+   below the list (REQ-062) rather than fading in place among what is still
+   to come. */
 .reminder-item.past {
     opacity: 0.6;
+}
+
+/* Where reminders go once their time has passed (REQ-062). Closed, quiet, and
+   clearly a footnote to "what's coming up" rather than a second list
+   competing with it. */
+.past-reminders {
+    margin-top: 14px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+
+    summary {
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted);
+        list-style-position: inside;
+
+        &:hover {
+            color: var(--text);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+    }
+
+    .calendar-list {
+        margin-top: 10px;
+    }
 }
 
 .reminder-pin {

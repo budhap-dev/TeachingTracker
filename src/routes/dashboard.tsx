@@ -9,11 +9,10 @@ import {
     saveReminderRequested,
 } from '../store/store'
 import { paths } from '../paths'
-import {
-    selectNewEnquiries,
-    selectPendingReviews,
-} from '../store/waiting'
+import { selectNewEnquiries, selectPendingReviews } from '../store/waiting'
 import { toDateKey } from '../utils/calendar'
+import { splitReminders } from '../utils/reminders'
+import { useMinuteTick } from '../hooks/useMinuteTick'
 import { getProgressBands, getWeekLoad } from '../utils/dashboard'
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -32,10 +31,32 @@ export const DashboardRoute = () => {
     // never disagree. The data itself loads with the boot fetches.
     // The teacher's own reminders ride the same list as the classes
     // (REQ-057), so they load with the dashboard.
-    const reminders = useAppSelector((state) => state.students.reminders)
+    const allReminders = useAppSelector((state) => state.students.reminders)
     useEffect(() => {
         dispatch(fetchRemindersRequested())
     }, [dispatch])
+    /*
+     * A reminder that has been and gone leaves "what's coming up" and waits in
+     * "Past reminders" instead (REQ-062). Left unfiltered it led the
+     * dashboard for ever — last week's "order the new workbooks" above
+     * tomorrow's classes — and a list that keeps what the teacher has already
+     * dealt with stops being read at all.
+     *
+     * It moves rather than vanishing, which is what makes going by the CLOCK
+     * safe: a 3pm reminder can leave at 3pm precisely because the teacher who
+     * opens the dashboard at five can still find it. Nothing is deleted — the
+     * retention schedule (REQ-033) keeps that the teacher's own call, and the
+     * delete button rides along to the section below.
+     *
+     * `now` ticks each minute, so a reminder crosses over while the dashboard
+     * is open rather than at the next reload.
+     */
+    const now = useMinuteTick()
+    const { upcoming: reminders, past: pastReminders } = useMemo(
+        () => splitReminders(allReminders, now),
+        [allReminders, now]
+    )
+
     const newEnquiries = useAppSelector(selectNewEnquiries)
     const pendingReviews = useAppSelector(selectPendingReviews)
     // Archived students (REQ-013) leave every active surface — the dashboard,
@@ -208,6 +229,7 @@ export const DashboardRoute = () => {
                 navigate(`${paths.scheduling}?day=${dateKey}`)
             }
             reminders={reminders}
+            pastReminders={pastReminders}
             onSaveReminder={(id, input) =>
                 dispatch(saveReminderRequested({ id, input }))
             }

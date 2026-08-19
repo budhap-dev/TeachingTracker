@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-062`**
+**Next id: `REQ-063`**
 
 ## Legend
 
@@ -3139,3 +3139,68 @@ what makes it dangerous. So:
       not it was behind the button, and clear of the sticky band.
 - [ ] A link to a review that no longer exists changes nothing.
 - [ ] Coverage holds; lint and build clean.
+
+## REQ-062 — A passed reminder moves out of the way, not out of reach
+
+**Status:** 🚧 Built (2026-08-18) · **Impact:** frontend · **Effort:** S
+_(owner ask, 2026-08-18: "the reminder should get cleared when the time has
+passed" — refined the same day: "hide/remove the reminders if the date and
+time has passed but keep those somewhere to back track")_
+
+**Story**
+As the teacher, I want a reminder that has been and gone to leave "what's
+coming up", but still be somewhere I can look back at, so the list is what
+is ahead of me without losing the note I wrote myself.
+
+**What was wrong.** Classes were already filtered to today or later, but
+reminders were passed through unfiltered — so last week's "order the new
+workbooks" sat above tomorrow's classes for ever. A faded `.past` style
+existed, which made the stale ones quieter but never got them out of the
+way.
+
+**Passing goes by the clock, and that is only safe because it moves rather
+than vanishing.** A reminder carrying a time passes at that time: "call the
+school at 3pm" stops being something coming up at 3pm. One with no time
+belongs to the whole of its day and passes when the day does — "Thursday" is
+a real reminder, and treating a missing time as midnight would retire it
+before Thursday had started. The first draft of this story used the day for
+everything, on the grounds that a 3pm reminder vanishing at 3:01pm would go
+exactly when it mattered. Keeping the passed ones reachable is what removed
+that objection.
+
+**Where it goes.** A "Past reminders (N)" disclosure under the upcoming
+list — closed by default, newest first, so the most recently missed is met
+first. It is a native `<details>`, like the FAQ accordion: no state to get
+out of step with what is on screen. With nothing passed there is no section
+at all.
+
+**Nothing is deleted.** The retention schedule (REQ-033) says a reminder
+lives "until the teacher deletes them — the teacher's own call", so clearing
+one automatically would contradict the documented policy and destroy
+something the teacher may still want. The delete button rides along into the
+disclosure, so the route to removing one survives — which the first draft of
+this story broke by hiding passed reminders with no way back to them.
+
+**The clock ticks.** The dashboard is a screen people leave open all
+morning; read once at mount, a 3pm reminder would sit in "what's coming up"
+until the next reload. `useMinuteTick` re-reads the time each minute — a
+minute being the finest granularity a reminder carries, so anything shorter
+would re-render for nothing.
+
+**Acceptance criteria**
+- [x] A reminder whose date and time have passed leaves "what's coming up".
+- [x] An untimed reminder stays up for the whole of its day.
+- [x] Passed reminders are readable under "Past reminders", newest first,
+      and can still be edited and deleted there.
+- [x] No section appears when nothing has passed.
+- [x] Nothing is deleted automatically, and the retention schedule stays
+      true as written.
+- [x] A reminder crosses over while the dashboard is open, without a reload.
+- [x] Coverage holds; lint and build clean.
+
+**Notes**
+- Verified by tests rather than in a browser: the dashboard sits behind
+  Entra sign-in, which the headless harness cannot complete.
+- `hasPassed` compares on the local clock, not UTC — the teacher's Thursday
+  is the one their phone shows them. There is a test for the half-hour after
+  midnight, where the two disagree.
