@@ -42,6 +42,9 @@ type DashboardViewProps = {
     onOpenSnapshot: () => void
     /** The teacher's own reminders (REQ-057) — never classes, never billed. */
     reminders: Reminder[]
+    /** Ones that have been and gone (REQ-062), newest first. Absent means
+        none have — the disclosure hides itself either way. */
+    pastReminders?: Reminder[]
     onSaveReminder: (id: number | undefined, input: ReminderInput) => void
     onDeleteReminder: (id: number) => void
     /** Open enquiries (status New) awaiting the teacher — REQ-019. */
@@ -64,6 +67,7 @@ export const DashboardView = ({
     onOpenStudentPage,
     onOpenDay,
     reminders,
+    pastReminders = [],
     onSaveReminder,
     onDeleteReminder,
     newEnquiries,
@@ -98,7 +102,6 @@ export const DashboardView = ({
     const visibleItems = showAllSessions
         ? upcomingItems
         : upcomingItems.slice(0, upcomingPreviewCount)
-    const todayKeyForFade = new Date().toISOString().slice(0, 10)
 
     // The tallest bar owns the chart's height; label only it and today
     // (selective direct labels — every other bar answers on hover).
@@ -149,26 +152,17 @@ export const DashboardView = ({
     const renderSession = (
         session: DashboardViewProps['upcomingSessions'][number]
     ) => (
-        <article
-            key={session.id}
-            className="session-item"
-            role="listitem"
-        >
+        <article key={session.id} className="session-item" role="listitem">
             <div className="session-date-pill">
-                {new Date(session.date).toLocaleDateString(
-                    'en-GB',
-                    {
-                        day: '2-digit',
-                        month: 'short',
-                    }
-                )}
+                {new Date(session.date).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                })}
             </div>
             <div className="session-content">
                 <strong className="session-attendees">
                     {session.members.length > 1 && (
-                        <span className="session-group-tag">
-                            Group
-                        </span>
+                        <span className="session-group-tag">Group</span>
                     )}
                     {session.members.map((member, index) => (
                         <Fragment key={member.studentId}>
@@ -178,9 +172,7 @@ export const DashboardView = ({
                                 className="student-link"
                                 onClick={(event) => {
                                     event.preventDefault()
-                                    onOpenStudentPage(
-                                        member.studentId
-                                    )
+                                    onOpenStudentPage(member.studentId)
                                 }}
                             >
                                 {member.studentName}
@@ -216,8 +208,8 @@ export const DashboardView = ({
                         Today at a glance
                     </h3>
                     <p>
-                        Keep student progress, contact notes, and learning
-                        modes in one calm workspace.
+                        Keep student progress, contact notes, and learning modes
+                        in one calm workspace.
                     </p>
                     <div className="dashboard-hero-actions">
                         <button onClick={onManageStudents}>
@@ -242,8 +234,8 @@ export const DashboardView = ({
                                 onClick={onOpenModeration}
                             >
                                 {pendingReviews}{' '}
-                                {pendingReviews === 1 ? 'review' : 'reviews'}{' '}
-                                to moderate
+                                {pendingReviews === 1 ? 'review' : 'reviews'} to
+                                moderate
                             </button>
                         )}
                     </div>
@@ -304,7 +296,10 @@ export const DashboardView = ({
                             <ReminderItem
                                 key={`reminder-${item.reminder.id}`}
                                 reminder={item.reminder}
-                                past={item.reminder.date < todayKeyForFade}
+                                // Everything in this list is still to come:
+                                // what has passed is in the section below
+                                // (REQ-062).
+                                past={false}
                                 onSave={(input) =>
                                     onSaveReminder(item.reminder.id, input)
                                 }
@@ -329,6 +324,39 @@ export const DashboardView = ({
                             ? 'Show fewer'
                             : `Show all ${upcomingItems.length}`}
                     </Button>
+                )}
+
+                {/* Where a reminder goes when its time passes (REQ-062).
+                    Closed by default and out of the way, because these are
+                    done with — but reachable, so the teacher can look back at
+                    what they set themselves, and still delete it. A native
+                    disclosure, like the FAQ accordion: no state to get out of
+                    step with what is on screen. */}
+                {pastReminders.length > 0 && (
+                    <details className="past-reminders">
+                        <summary>
+                            Past reminders ({pastReminders.length})
+                        </summary>
+                        <div
+                            className="calendar-list"
+                            role="list"
+                            aria-label="Past reminders"
+                        >
+                            {pastReminders.map((reminder) => (
+                                <ReminderItem
+                                    key={`past-reminder-${reminder.id}`}
+                                    reminder={reminder}
+                                    past
+                                    onSave={(input) =>
+                                        onSaveReminder(reminder.id, input)
+                                    }
+                                    onDelete={() =>
+                                        onDeleteReminder(reminder.id)
+                                    }
+                                />
+                            ))}
+                        </div>
+                    </details>
                 )}
             </div>
 
@@ -445,7 +473,9 @@ export const DashboardView = ({
                                                 className="student-link"
                                                 onClick={(event) => {
                                                     event.preventDefault()
-                                                    onOpenStudentPage(student.id)
+                                                    onOpenStudentPage(
+                                                        student.id
+                                                    )
                                                 }}
                                             >
                                                 {student.name}
