@@ -17,7 +17,7 @@ or both — this file is the source of truth for both repos.
    sorted easiest-first, so the top is always the next sensible thing to pick up.
 4. A story is only ticked ✅ once it meets the [Definition of done](#definition-of-done).
 
-**Next id: `REQ-063`**
+**Next id: `REQ-064`**
 
 ## Legend
 
@@ -3204,3 +3204,145 @@ would re-render for nothing.
 - `hasPassed` compares on the local clock, not UTC — the teacher's Thursday
   is the one their phone shows them. There is a test for the half-hour after
   midnight, where the two disagree.
+
+## REQ-063 — Files on a class, kept in the teacher's own OneDrive
+
+**Status:** 🔲 Not started · **Impact:** both + infra · **Effort:** L
+_(owner ask, 2026-11-08: "upload documents/images for each session I take,
+and preview/review them when I need with a search by date/student/session"
+— refined the same day: free of cost, and "use the user's MS account to
+store the data")_
+
+**Story**
+As the teacher, I want to attach photos and documents to a class I took —
+a photo of the whiteboard, a marked worksheet, a past paper — and later
+find them again by date, student or class, and look at them without
+downloading anything.
+
+**Where the files live — decided (owner call, 2026-11-08).** In the
+**teacher's own OneDrive** (`abhinandapandit@outlook.com`, a personal
+Microsoft account), written from the browser with the teacher's delegated
+consent. Not Azure Blob Storage, and not the host's OneDrive:
+- **£0.** Personal OneDrive gives 5GB free (shared with that account's
+  Outlook.com attachments); the estimate is ~2GB a year with images
+  shrunk before upload, so roughly two years before Microsoft 365 Basic
+  (100GB) is worth buying. Blob Storage would have been pennies, not
+  nothing.
+- **The controller holds the data.** The teacher is the data controller
+  (TDD §11); the files sit in their account, not the developer's.
+- **The backend cannot do this itself.** App-only Graph access does not
+  exist for personal OneDrive, and the only workaround — a stored refresh
+  token in Key Vault — is a long-lived secret that breaks the keyless
+  design and fails silently when it lapses. So the **browser** talks to
+  OneDrive; the API never touches file bytes.
+- **Accepted cost: UK residency is lost for files.** Personal OneDrive has
+  no region choice. Table data (including the file *index* below) stays in
+  UK South. Record this in `PRIVACY-ROPA.md` and `PRIVACY-RETENTION.md`.
+
+**Shape (decide details at build)**
+- **Storage layout** — the app's own folder (`Files.ReadWrite.AppFolder`,
+  the narrowest scope; the app cannot see the rest of the drive):
+  `Apps/<app>/<env>/students/<studentId>/<date>_<sessionId>/<file>`.
+  Per-env so dev testing (the developer's own OneDrive) and prod never mix;
+  per-student so erasing a student is **one folder delete**. A group class
+  writes one copy per attendee's folder — erasure stays one delete, at the
+  cost of duplicate bytes (small, and only for group classes).
+- **The index is ours** — a new `attachments` table (backend): `id,
+  sessionId, groupId?, studentId, date, subject, fileName, contentType,
+  sizeBytes, driveItemId, caption, uploadedAt`. `date`/`studentId`/
+  `subject` are copied from the class (as session rows copy names), so
+  search never joins. Endpoints: `GET /attachments?from&to&studentId&
+  sessionId&subject`, `POST /attachments` (after the upload succeeds),
+  `PATCH /attachments/{id}` (caption), `DELETE /attachments/{id}`.
+  Search is ours, not OneDrive's — Graph search is fuzzy and knows nothing
+  about students or classes.
+- **Upload** — in the class dialog: `<input type="file" multiple
+  accept="image/*,application/pdf" capture="environment">`, so a phone
+  photographs work straight after the lesson. Images are **re-encoded
+  through a canvas** (~2000px, ~0.8 quality) before upload: ~10× smaller,
+  and it **strips EXIF, including GPS** — these are photos of children's
+  work. Small files PUT directly; larger ones via a Graph upload session.
+  The index row is written only after OneDrive confirms, so a failed
+  upload leaves no ghost row.
+- **Review** — a "Class files" page modelled on Class notes (REQ-052):
+  filters for date range, student and subject; thumbnails grouped by day,
+  newest first; every item a door back to its class. Plus a Files tab on
+  the student page (same search, student fixed) and the list on the class
+  dialog itself. Thumbnails from Graph's `thumbnails`; full view from the
+  item's short-lived `downloadUrl` — images in a lightbox, PDFs in the
+  browser's own viewer.
+- **Erasure** — `DELETE /students/{id}` already cascades the table rows
+  (including the new `attachments` rows). The OneDrive folder must be
+  deleted **from the browser** in the same delete flow, since the API has
+  no access to the drive. If that call fails, say so and offer a retry —
+  never report the student erased while files remain.
+
+**Sign-in changes**
+- The **SPA** app registration (backend repo, `module.auth`) widens to
+  `AzureADandPersonalMicrosoftAccount` and gains delegated
+  `Files.ReadWrite.AppFolder` + `offline_access`. The **API** registration
+  stays `AzureADMyOrg`, so the teacher gate (`requireTeacher`, Key Vault
+  allow-list) is untouched.
+- MSAL acquires the Graph token against `/consumers` — a second account in
+  the cache beside the tenant one. API calls must keep using the tenant
+  account (today `acquireApiToken` takes `getAllAccounts()[0]`, which would
+  become a coin toss). One-time consent screen for the teacher, the first
+  time they attach a file — not at sign-in, so nothing changes for a day
+  without files.
+- CSP (`staticwebapp.config.json`): `connect-src` gains
+  `https://graph.microsoft.com` and the OneDrive upload/download hosts;
+  `frame-src`/`img-src` as the preview approach requires. The service
+  worker must never cache Graph responses or download URLs.
+
+**Spike first (before building UI)** — prove on dev, signed in with the
+developer's personal account: (1) the tenant + consumer double sign-in
+works with one MSAL instance and silent renewal; (2) upload to `approot`,
+thumbnails and `downloadUrl` fetch all work from the browser under CORS;
+(3) the exact hosts the CSP needs; (4) whether Graph's embeddable
+`preview` works on personal OneDrive (if not, Office files download
+rather than preview). If (1) fails, fall back to a separate
+personal-accounts-only registration for OneDrive.
+
+**Progress**
+- 2026-11-08 — **Infra for the spike merged** (backend PR #87): a
+  per-environment `onedrive_files` switch in Terraform, **on for dev only**.
+  Dev's SPA registration widens to personal accounts, moves to v2 tokens
+  and requests Graph `Files.ReadWrite.AppFolder` + `offline_access`. Plan:
+  one in-place change to dev's SPA app; nothing for prod; the API
+  registration is untouched. **Not yet applied** — Terraform state is
+  local, so `terraform apply` on dev is a separate step.
+
+**Acceptance criteria**
+- [ ] From a class, the teacher attaches one or more images, PDFs or
+      Word/PowerPoint files (≤20MB each), from a phone camera or from
+      files; they land in the teacher's OneDrive app folder under that
+      student and class. Other types and oversize files are refused with
+      a clear message before anything uploads.
+- [ ] Uploaded images carry no EXIF/GPS metadata.
+- [ ] "Class files" finds files by date range, student, subject and class;
+      newest first; each links back to its class.
+- [ ] Images and PDFs preview in the app without a manual download.
+- [ ] A file can be captioned and deleted (from OneDrive and the index).
+- [ ] Erasing a student removes their OneDrive folder, or says clearly
+      that it could not and offers a retry.
+- [ ] Dev and prod files never share a folder.
+- [ ] No new Azure cost; no new stored secrets.
+- [ ] The API sign-in and teacher allow-list behave exactly as before.
+- [ ] `PRIVACY-ROPA.md` and `PRIVACY-RETENTION.md` record OneDrive as a
+      store and its residency; files follow the student record's retention
+      and go with it in the alumni purge.
+- [ ] Coverage holds (frontend 100% gate); works at 390px.
+
+**Owner decisions (2026-11-08)**
+- **File types:** images, PDF, **and Word/PowerPoint** (`.docx`, `.pptx`).
+  Office files preview if the spike shows Graph `preview` works on personal
+  OneDrive; otherwise they download. The picker's `accept` widens to match,
+  and anything else is refused before upload.
+- **Size cap:** **20MB per file**, checked in the browser before upload
+  (images are measured *after* the canvas re-encode, so a large phone
+  photo is not refused for its raw size).
+- **Retention:** **same as the student's record** — kept while tutoring
+  continues and for the 24 months after archiving (`PRIVACY-RETENTION.md`
+  §2), and erased with the student. No separate clock for files; the
+  alumni purge and `DELETE /students/{id}` both take the OneDrive folder
+  with them.
