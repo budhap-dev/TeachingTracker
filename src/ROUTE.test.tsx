@@ -33,6 +33,18 @@ describe('routing fallbacks', () => {
         ).toBeInTheDocument()
     })
 
+    it("opens a student's Files tab from its URL", async () => {
+        window.history.pushState({}, '', '/students/1/files')
+        render(<App />)
+
+        expect(
+            await screen.findByRole('heading', { name: /asha perera/i })
+        ).toBeInTheDocument()
+        expect(
+            await screen.findByText(/not switched on here yet/i)
+        ).toBeInTheDocument()
+    })
+
     it('redirects to the students list when the student id is unknown', async () => {
         window.history.pushState({}, '', '/students/9999999')
         render(<App />)

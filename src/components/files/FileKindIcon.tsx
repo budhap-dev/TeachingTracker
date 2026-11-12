@@ -2,7 +2,10 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import SlideshowOutlinedIcon from '@mui/icons-material/SlideshowOutlined'
-import { type AttachmentKind, attachmentKindLabels } from '../../data/attachments'
+import {
+    type AttachmentKind,
+    attachmentKindLabels,
+} from '../../data/attachments'
 
 const icons: Record<AttachmentKind, typeof ImageOutlinedIcon> = {
     photo: ImageOutlinedIcon,

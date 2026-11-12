@@ -13,7 +13,9 @@ describe('groupCopies', () => {
             row(3, 'board.jpg', 100),
             row(4, 'board.jpg', 101),
         ])
-        expect(groups.map((g) => [g.file.id, g.copies.map((c) => c.id)])).toEqual([
+        expect(
+            groups.map((g) => [g.file.id, g.copies.map((c) => c.id)])
+        ).toEqual([
             [1, [1, 3]],
             [2, [2]],
             [4, [4]],

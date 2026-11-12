@@ -17,6 +17,7 @@ import {
     restoreStudentRequested,
     archiveStudentSucceeded,
     restoreStudentSucceeded,
+    studentErased,
     archiveStudentFailed,
     dismissError,
     addSessionMemberRequested,
@@ -924,5 +925,40 @@ describe('site content (REQ-008)', () => {
         expect(published.publishingSiteContent).toBe(false)
         expect(published.siteContent.siteName).toBe('Harbour Tuition')
         expect(published.notice?.kind).toBe('success')
+    })
+})
+
+describe('studentErased (REQ-063)', () => {
+    it('drops the student with their classes and payment rows, nobody else', () => {
+        let state = studentReducer(
+            initial(),
+            fetchStudentsSucceeded([buildStudent({ id: 1 }), buildStudent({ id: 2 })])
+        )
+        state = studentReducer(
+            state,
+            fetchSessionsSucceeded([
+                buildSession({ id: 10, studentId: 1 }),
+                buildSession({ id: 11, studentId: 2 }),
+            ])
+        )
+        state = studentReducer(
+            state,
+            fetchPaymentsSucceeded([
+                buildGroup([
+                    buildPayment({ id: 1, studentId: 1 }),
+                    buildPayment({ id: 2, studentId: 2 }),
+                ]),
+            ])
+        )
+
+        const erased = studentReducer(state, studentErased(1))
+
+        expect(erased.students.map((s) => s.id)).toEqual([2])
+        expect(erased.scheduledSessions.map((s) => s.id)).toEqual([11])
+        expect(erased.paymentsByMonth[0].records.map((r) => r.studentId)).toEqual([2])
+        expect(erased.notice).toEqual({
+            kind: 'success',
+            message: expect.stringMatching(/erased/i),
+        })
     })
 })

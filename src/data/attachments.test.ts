@@ -10,7 +10,10 @@ describe('contentTypeOf', () => {
         [{ name: 'a.jpg', type: 'image/jpeg' }, 'image/jpeg'],
         // Some browsers leave the type empty for Office files.
         [{ name: 'Past Paper.DOCX', type: '' }, DOCX],
-        [{ name: 'deck.pptx', type: '' }, expect.stringContaining('presentationml')],
+        [
+            { name: 'deck.pptx', type: '' },
+            expect.stringContaining('presentationml'),
+        ],
         [{ name: 'notes.doc', type: 'application/msword' }, null],
         [{ name: 'archive.zip', type: 'application/zip' }, null],
         [{ name: 'noextension', type: '' }, null],
@@ -23,7 +26,9 @@ describe('isImageFile', () => {
     it('knows images by type, and HEIC by name when the type is empty', () => {
         expect(isImageFile({ name: 'a.png', type: 'image/png' })).toBe(true)
         expect(isImageFile({ name: 'IMG_1.HEIC', type: '' })).toBe(true)
-        expect(isImageFile({ name: 'a.pdf', type: 'application/pdf' })).toBe(false)
+        expect(isImageFile({ name: 'a.pdf', type: 'application/pdf' })).toBe(
+            false
+        )
     })
 })
 

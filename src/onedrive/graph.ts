@@ -93,9 +93,9 @@ const failure = async (response: Response, what: string) => {
     if (response.status === 401) {
         return new OneDriveNotConnectedError()
     }
-    const body = (await response
-        .json()
-        .catch(() => null)) as { error?: { message?: string } } | null
+    const body = (await response.json().catch(() => null)) as {
+        error?: { message?: string }
+    } | null
     return new OneDriveError(
         `${what} failed (${response.status})${body?.error?.message ? `: ${body.error.message}` : ''}`,
         response.status
@@ -120,7 +120,8 @@ const graph = async (
     return response
 }
 
-const approot = (path: string) => `/me/drive/special/approot:/${encodePath(path)}`
+const approot = (path: string) =>
+    `/me/drive/special/approot:/${encodePath(path)}`
 
 /**
  * Uploads one file to `<folder>/<fileName>` in the app folder, creating the
@@ -248,3 +249,60 @@ export const deleteItem = async (itemId: string): Promise<void> =>
 /** Deletes a folder in the app folder, e.g. a student's whole folder. */
 export const deleteFolder = async (folder: string): Promise<void> =>
     deleted(await raw(approot(folder), { method: 'DELETE' }), 'Delete folder')
+
+type ItemInfo = {
+    id: string
+    /** Present on folders; OneDrive's count excludes its recycle bin. */
+    folder?: { childCount: number }
+    parentReference?: { id?: string }
+}
+
+/** An item's id, folder facet and parent — or null when it is gone. */
+const itemInfo = async (itemId: string): Promise<ItemInfo | null> => {
+    const response = await raw(
+        `/me/drive/items/${encodeURIComponent(itemId)}?$select=id,folder,parentReference`,
+        { method: 'GET' }
+    )
+    if (response.status === 404) return null
+    if (!response.ok) throw await failure(response, 'Look up')
+    return (await response.json()) as ItemInfo
+}
+
+const approotId = async (): Promise<string> => {
+    const response = await graph(
+        '/me/drive/special/approot?$select=id',
+        'Look up'
+    )
+    return ((await response.json()) as { id: string }).id
+}
+
+/**
+ * Deletes a file, then any folder it leaves empty — its class folder, then
+ * the student's folder above it — stopping at the app's own folder, which is
+ * never deleted (owner ask, 2026-11-12: no empty folders left behind).
+ *
+ * The folders come from OneDrive's own record of where the file sits, not
+ * from the names the app would build, so a class that has since moved, or a
+ * file the teacher moved by hand, still tidies the right folders. The file's
+ * removal is what matters: if tidying a folder fails, it is left as it is.
+ */
+export const deleteFileAndEmptyFolders = async (
+    itemId: string
+): Promise<void> => {
+    const item = await itemInfo(itemId)
+    await deleteItem(itemId)
+    let folderId = item?.parentReference?.id
+    if (!folderId) return
+    try {
+        const rootId = await approotId()
+        while (folderId && folderId !== rootId) {
+            const folder = await itemInfo(folderId)
+            if (!folder?.folder || folder.folder.childCount > 0) return
+            const parentId = folder.parentReference?.id
+            await deleteItem(folderId)
+            folderId = parentId
+        }
+    } catch {
+        // The file is gone; an untidy folder is not worth failing over.
+    }
+}

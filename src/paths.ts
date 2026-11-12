@@ -5,6 +5,8 @@ export const paths = {
     studentDetail: (studentId: number | string) => `/students/${studentId}`,
     studentDiary: (studentId: number | string) =>
         `/students/${studentId}/diary`,
+    studentFiles: (studentId: number | string) =>
+        `/students/${studentId}/files`,
     studySnapshot: '/study-snapshot',
     alumni: '/alumni',
     payments: '/payments',

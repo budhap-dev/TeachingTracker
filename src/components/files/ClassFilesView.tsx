@@ -23,12 +23,22 @@ import { FileViewerDialog } from './FileViewerDialog'
 import { useRemoveFile } from './useRemoveFile'
 
 type Props = {
-    /** Everyone who may have files — archived students included. */
-    students: Student[]
     /** Subjects to filter by (from the classes). */
     subjects: string[]
-    onBack: () => void
-}
+} & (
+    | {
+          /** Everyone who may have files — archived students included. */
+          students: Student[]
+          onBack: () => void
+          student?: undefined
+      }
+    | {
+          /** The student page's Files tab: this student's files only. */
+          student: Student
+          students?: undefined
+          onBack?: undefined
+      }
+)
 
 const ALL = 'all'
 const KINDS = Object.keys(attachmentKindLabels) as AttachmentKind[]
@@ -52,10 +62,7 @@ const noFilters: Filters = {
     to: '',
 }
 
-const toQuery = (
-    filters: Omit<Filters, 'q'>,
-    q: string
-): AttachmentQuery => ({
+const toQuery = (filters: Omit<Filters, 'q'>, q: string): AttachmentQuery => ({
     q: q.trim() || undefined,
     type: filters.type === ALL ? undefined : filters.type,
     studentId:
@@ -71,7 +78,12 @@ const toQuery = (
  * by day, newest first. Each opens in the viewer, and each leads back to its
  * class. Search is the API's (our own index), never OneDrive's.
  */
-export const ClassFilesView = ({ students, subjects, onBack }: Props) => {
+export const ClassFilesView = ({
+    students = [],
+    subjects,
+    onBack,
+    student,
+}: Props) => {
     const status = useOneDriveStatus()
     const [filters, setFilters] = useState<Filters>(noFilters)
     const [q, setQ] = useState('')
@@ -90,9 +102,15 @@ export const ClassFilesView = ({ students, subjects, onBack }: Props) => {
     // Built from the *settled* search text only: the raw box changes on
     // every keystroke, and must not send a request each time.
     const { type, studentId, subject, from, to } = filters
+    const fixedStudentId = student?.id
     const query = useMemo(
-        () => toQuery({ type, studentId, subject, from, to }, q),
-        [type, studentId, subject, from, to, q]
+        () => ({
+            ...toQuery({ type, studentId, subject, from, to }, q),
+            ...(fixedStudentId === undefined
+                ? {}
+                : { studentId: fixedStudentId }),
+        }),
+        [type, studentId, subject, from, to, q, fixedStudentId]
     )
 
     const load = useCallback(async () => {
@@ -131,10 +149,16 @@ export const ClassFilesView = ({ students, subjects, onBack }: Props) => {
 
     const set = <K extends keyof Filters>(key: K, value: Filters[K]) =>
         setFilters((current) => ({ ...current, [key]: value }))
-    const filtered =
-        JSON.stringify(filters) !== JSON.stringify(noFilters)
+    const filtered = JSON.stringify(filters) !== JSON.stringify(noFilters)
 
-    const header = (
+    const header = student ? (
+        <div className="section-header">
+            <p className="section-subtitle">
+                Photos and documents from {student.firstName}&apos;s classes,
+                newest first. Attach new ones from the class itself.
+            </p>
+        </div>
+    ) : (
         <div className="section-header">
             <div>
                 <h3 className="page-heading">
@@ -173,8 +197,8 @@ export const ClassFilesView = ({ students, subjects, onBack }: Props) => {
                 <div className="card">
                     {header}
                     <p className="section-subtitle">
-                        Your files are kept in your own OneDrive. Connect it
-                        to see them here.
+                        Your files are kept in your own OneDrive. Connect it to
+                        see them here.
                     </p>
                     <Button
                         variant="outlined"
@@ -223,10 +247,20 @@ export const ClassFilesView = ({ students, subjects, onBack }: Props) => {
                                 label={
                                     kind === ALL
                                         ? 'All'
-                                        : attachmentKindLabels[kind as AttachmentKind]
+                                        : attachmentKindLabels[
+                                              kind as AttachmentKind
+                                          ]
                                 }
-                                color={filters.type === kind ? 'primary' : 'default'}
-                                variant={filters.type === kind ? 'filled' : 'outlined'}
+                                color={
+                                    filters.type === kind
+                                        ? 'primary'
+                                        : 'default'
+                                }
+                                variant={
+                                    filters.type === kind
+                                        ? 'filled'
+                                        : 'outlined'
+                                }
                                 aria-pressed={filters.type === kind}
                                 onClick={() =>
                                     set('type', kind as Filters['type'])
@@ -235,22 +269,27 @@ export const ClassFilesView = ({ students, subjects, onBack }: Props) => {
                         ))}
                     </div>
                     <div className="class-files-pickers">
-                        <TextField
-                            select
-                            size="small"
-                            label="Student"
-                            value={filters.studentId}
-                            onChange={(event) =>
-                                set('studentId', event.target.value)
-                            }
-                        >
-                            <MenuItem value={ALL}>All students</MenuItem>
-                            {studentOptions.map((student) => (
-                                <MenuItem key={student.id} value={String(student.id)}>
-                                    {student.firstName} {student.lastName}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                        {!student && (
+                            <TextField
+                                select
+                                size="small"
+                                label="Student"
+                                value={filters.studentId}
+                                onChange={(event) =>
+                                    set('studentId', event.target.value)
+                                }
+                            >
+                                <MenuItem value={ALL}>All students</MenuItem>
+                                {studentOptions.map((option) => (
+                                    <MenuItem
+                                        key={option.id}
+                                        value={String(option.id)}
+                                    >
+                                        {option.firstName} {option.lastName}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        )}
                         <TextField
                             select
                             size="small"
@@ -272,7 +311,9 @@ export const ClassFilesView = ({ students, subjects, onBack }: Props) => {
                             type="date"
                             label="From"
                             value={filters.from}
-                            onChange={(event) => set('from', event.target.value)}
+                            onChange={(event) =>
+                                set('from', event.target.value)
+                            }
                             slotProps={{ inputLabel: { shrink: true } }}
                         />
                         <TextField
@@ -327,6 +368,7 @@ export const ClassFilesView = ({ students, subjects, onBack }: Props) => {
                         groups={ordered}
                         onPreview={setViewing}
                         withClass
+                        showStudent={!student}
                         onRemove={removal.ask}
                         removingKey={removal.removingKey}
                     />

@@ -121,7 +121,6 @@ export const FileViewerDialog = ({
         return () => window.removeEventListener('keydown', onKey)
     }, [index, groups.length, onIndexChange])
 
-
     const saveCaption = async () => {
         if (!group) return
         setSaving(true)
@@ -229,7 +228,12 @@ export const FileViewerDialog = ({
                     >
                         Save caption
                     </Button>
-                    <Button size="small" onClick={() => attachment && void downloadAttachment(attachment)}>
+                    <Button
+                        size="small"
+                        onClick={() =>
+                            attachment && void downloadAttachment(attachment)
+                        }
+                    >
                         Download
                     </Button>
                     {showClassLink && attachment && (

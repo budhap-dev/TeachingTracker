@@ -7,8 +7,8 @@ import type { Attachment } from '../data/attachments'
 import type { ScheduledSession, Student } from '../data/students'
 import {
     classFolder,
+    deleteFileAndEmptyFolders,
     deleteFolder,
-    deleteItem,
     downloadUrl,
     OneDriveNotConnectedError,
     studentFolder,
@@ -91,21 +91,14 @@ export const failureMessage = (error: unknown): string =>
         : 'Could not upload this file. Check the connection and try again.'
 
 /**
- * Removes one file: from OneDrive first, then the index row. If OneDrive
- * fails the row stays, so the file is never orphaned out of sight.
- */
-export const removeAttachment = async (attachment: Attachment) => {
-    await deleteItem(attachment.driveItemId)
-    await deleteAttachment(attachment.id)
-}
-
-/**
- * Removes every file of a class (or a whole group class) before the class
- * itself is deleted. The API drops the index rows with the class.
+ * Removes files from OneDrive — and any folder they leave empty. Used for a
+ * class (or a whole group class) before the class itself is deleted, where
+ * the API drops the index rows with the class.
  */
 export const removeFilesOf = async (attachments: Attachment[]) => {
     for (const attachment of attachments) {
-        await deleteItem(attachment.driveItemId)
+        // Any class or student folder left empty goes with the file.
+        await deleteFileAndEmptyFolders(attachment.driveItemId)
     }
 }
 

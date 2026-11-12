@@ -19,6 +19,8 @@ type Props = {
     onPreview: (index: number) => void
     /** The Class files page: who, subject, day and a way to the class. */
     withClass?: boolean
+    /** Off on a student's own page, where "who" is a given. */
+    showStudent?: boolean
     /** The class dialog: remove a file (every student's copy). */
     onRemove?: (group: FileGroup) => void
     removingKey?: string | null
@@ -34,18 +36,21 @@ export const FilesTable = ({
     groups,
     onPreview,
     withClass = false,
+    showStudent = true,
     onRemove,
     removingKey = null,
 }: Props) => (
     <div className="table-wrapper">
-        <table className={`files-table ${withClass ? 'with-class' : ''}`.trim()}>
+        <table
+            className={`files-table ${withClass ? 'with-class' : ''}`.trim()}
+        >
             <thead>
                 <tr>
                     <th scope="col">
                         <span className="visually-hidden">Type</span>
                     </th>
                     <th scope="col">File</th>
-                    {withClass && <th scope="col">Student</th>}
+                    {withClass && showStudent && <th scope="col">Student</th>}
                     {withClass && (
                         <th scope="col" className="col-optional">
                             Subject
@@ -84,7 +89,7 @@ export const FilesTable = ({
                                 </small>
                             )}
                         </td>
-                        {withClass && <td>{whoFor(group)}</td>}
+                        {withClass && showStudent && <td>{whoFor(group)}</td>}
                         {withClass && (
                             <td className="col-optional">
                                 {group.file.subject}

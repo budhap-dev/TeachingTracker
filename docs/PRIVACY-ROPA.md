@@ -103,6 +103,7 @@ holds: nothing here survives a closed tab (REQ-058).
 | **Microsoft Entra ID** | Teacher sign-in | §2 record 5 only | Same Microsoft DPA |
 | **GitHub** | Source code and CI | **None** — no personal data in the repository (dev seed data is invented people) | n/a |
 | **The owner's own storage** | Holds the monthly JSON dumps | All of §2 records 1–4 | Not a third party; owner custody, private storage, no sharing |
+| **Microsoft OneDrive — the teacher's own personal account** (REQ-063) | Holds the files attached to classes: photos of work, worksheets, past papers | Part of §2 record 1: images and documents of pupils' work; file names and captions may name a pupil | ⚠️ Personal OneDrive runs under Microsoft's **consumer** terms (Microsoft Services Agreement), not the Products and Services DPA, and has **no region choice**. Thumbnails were served from Canada Central in the 2026-11-12 spike. Access: the app's own folder only (`Files.ReadWrite.AppFolder`), written and read by the teacher's browser; the API never touches the bytes. See §6 gap 5 |
 
 **The teacher's own reminders (REQ-057).** Notes-to-self carrying a date, an
 optional time and free text the teacher writes. They belong to no student and
@@ -110,6 +111,13 @@ are never public, but the text may name a family ("ring the Chapmans back"),
 so they are personal data of whoever is named: teacher-only on every verb,
 stored in the same Azure tables under the same DPA, and covered by the
 retention schedule.
+
+**Files on classes (REQ-063).** Photos and documents the teacher attaches to
+a class. The bytes sit in the teacher's own OneDrive, in the app's folder,
+one folder per student (`<Name> (<code>)/<date> <subject>/`). Our tables keep
+only an index row per file (class, student, date, subject, name, type, size,
+caption, OneDrive id) in UK South. Photos are redrawn in the browser before
+upload, which strips EXIF metadata including GPS. Teacher-only on every verb.
 
 **Rule — no new processor without paperwork first.** Adding analytics, an
 email/newsletter provider, a backup service, an SMS gateway or any AI service
@@ -133,8 +141,11 @@ because the policy is only as honest as this list.
 - **Managed identity / Key Vault** for the storage connection — no secrets in
   source (REQ-004/009).
 - **Erasure implemented, not promised**: `DELETE /api/students/{id}` (cascades
-  to classes and settlements), `DELETE /api/leads/{id}`,
-  `DELETE /api/testimonials/{id}`.
+  to classes, settlements and the file index), `DELETE /api/leads/{id}`,
+  `DELETE /api/testimonials/{id}`. A student's files in OneDrive are erased
+  by the app's **Erase permanently** action on an archived student (REQ-063).
+  It removes every file by id, then the student's folder, then the record,
+  and erases nothing if OneDrive fails.
 - ❌ **No independent backups** beyond the monthly dumps, and no encrypted
   off-site backup service. Stated plainly so no one claims otherwise.
 
@@ -241,6 +252,16 @@ so this document stands alone:
 3. ⚠️ **Monthly dumps outlive live erasure** by up to 12 months. The rolling
    window is the bound; the policy must not promise faster.
 4. ⚠️ **ICO registration is unconfirmed** — see §8.
+5. ⚠️ **Files on classes live under consumer terms, outside the UK**
+   (REQ-063). Personal OneDrive gives the controller the data in their own
+   account and costs nothing, but it is not covered by Microsoft's business
+   DPA and has no region choice. Before files are switched on in prod, the
+   owner decides:
+   - whether these terms are acceptable for photos of pupils' work;
+   - the wording for the public privacy page, which today says no other
+     providers are used. It must name OneDrive before prod, per the §3 rule.
+   Files deleted in the app go to the OneDrive recycle bin, which empties
+   itself after 30 days; the policy must not promise faster.
 
 ---
 

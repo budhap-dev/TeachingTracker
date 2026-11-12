@@ -274,3 +274,20 @@
         padding: 8px 4px;
     }
 }
+
+// Erasing a student (REQ-063): the archived banner's two actions, and the
+// typed-name confirmation.
+.archived-banner-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.erase-student {
+    display: grid;
+    gap: 12px;
+
+    .class-files-refusal p {
+        margin: 0 0 8px;
+    }
+}

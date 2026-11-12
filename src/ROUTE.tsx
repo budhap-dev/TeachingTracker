@@ -65,6 +65,11 @@ export const AppRoutes = () => (
                 path="/students/:studentId/diary"
                 element={teacher(<StudentDetailRoute tab="diary" />)}
             />
+            {/* The student's files (REQ-063). */}
+            <Route
+                path="/students/:studentId/files"
+                element={teacher(<StudentDetailRoute tab="files" />)}
+            />
             <Route
                 path={paths.studySnapshot}
                 element={teacher(<StudySnapshotRoute />)}

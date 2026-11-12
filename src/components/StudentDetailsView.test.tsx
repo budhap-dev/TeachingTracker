@@ -10,6 +10,19 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ScheduledSession, Student } from '../data/students'
 import { StudentDetailsView } from './StudentDetailsView'
 
+// Files on classes (REQ-063): off by default, as in every build without the
+// switch; the Files-tab tests turn it on. The tab's content has its own tests.
+const oneDrive = vi.hoisted(() => ({ enabled: false }))
+vi.mock('../auth/msal', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../auth/msal')>()),
+    isOneDriveEnabled: () => oneDrive.enabled,
+}))
+vi.mock('./files/ClassFilesView', () => ({
+    ClassFilesView: ({ student }: { student: Student }) => (
+        <div>files of {student.firstName}</div>
+    ),
+}))
+
 const buildStudent = (overrides: Partial<Student> = {}): Student => ({
     id: overrides.id ?? 10,
     studentId: overrides.studentId ?? 'STU-100010',
@@ -906,6 +919,27 @@ describe('StudentDetailsView', () => {
         expect(onSelectTab).toHaveBeenCalledWith('details')
     })
 
+    it('offers no Files tab when files are switched off', () => {
+        renderView({ student: buildStudent() })
+        expect(screen.queryByRole('tab', { name: /files/i })).not.toBeInTheDocument()
+    })
+
+    it("shows the student's files on the Files tab when switched on", async () => {
+        oneDrive.enabled = true
+        const user = userEvent.setup()
+        const onSelectTab = vi.fn()
+        renderView({ student: buildStudent(), onSelectTab })
+        await user.click(screen.getByRole('tab', { name: /files/i }))
+        expect(onSelectTab).toHaveBeenCalledWith('files')
+
+        renderView({ activeTab: 'files', student: buildStudent() })
+        expect(
+            screen.getAllByRole('tab', { name: /files/i }).at(-1)
+        ).toHaveAttribute('aria-selected', 'true')
+        expect(screen.getByText(/files of/i)).toBeInTheDocument()
+        oneDrive.enabled = false
+    })
+
     it('caps upcoming sessions at three, expandable to the full list', async () => {
         const user = userEvent.setup()
         renderView({
@@ -973,5 +1007,27 @@ describe('StudentDetailsView', () => {
         })
 
         expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
+    })
+})
+
+describe('erasing an archived student (REQ-063)', () => {
+    it('offers Erase permanently only on an archived student, and opens the confirm', async () => {
+        const user = userEvent.setup()
+        renderView({ student: buildStudent(), onErased: vi.fn() })
+        expect(
+            screen.queryByRole('button', { name: /erase permanently/i })
+        ).not.toBeInTheDocument()
+
+        renderView({ student: buildStudent({ isArchived: true }), onErased: vi.fn() })
+        await user.click(screen.getByRole('button', { name: /erase permanently/i }))
+        expect(await screen.findByRole('dialog')).toHaveTextContent(/cannot be undone/i)
+        await user.click(screen.getByRole('button', { name: 'Keep' }))
+    })
+
+    it('offers no erase where the route does not wire one', () => {
+        renderView({ student: buildStudent({ isArchived: true }) })
+        expect(
+            screen.queryByRole('button', { name: /erase permanently/i })
+        ).not.toBeInTheDocument()
     })
 })

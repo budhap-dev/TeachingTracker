@@ -26,7 +26,9 @@ beforeEach(() => {
     )
     vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
         (callback, type) =>
-            callback(new Blob([new Uint8Array(encodedSize)], { type: type ?? '' }))
+            callback(
+                new Blob([new Uint8Array(encodedSize)], { type: type ?? '' })
+            )
     )
 })
 
@@ -59,19 +61,23 @@ describe('prepareFile — photos', () => {
 
     it('measures a photo after shrinking, not before', async () => {
         // 30MB raw, small once re-encoded: accepted.
-        await expect(prepareFile(fileOf('big.jpg', 'image/jpeg', 30 * MB))).resolves.toBeTruthy()
+        await expect(
+            prepareFile(fileOf('big.jpg', 'image/jpeg', 30 * MB))
+        ).resolves.toBeTruthy()
     })
 
     it('refuses a photo still over 20MB after shrinking', async () => {
         encodedSize = 21 * MB
-        await expect(prepareFile(fileOf('huge.jpg', 'image/jpeg'))).rejects.toThrow(
-            /21\.0 MB — the limit is 20 MB/
-        )
+        await expect(
+            prepareFile(fileOf('huge.jpg', 'image/jpeg'))
+        ).rejects.toThrow(/21\.0 MB — the limit is 20 MB/)
     })
 
     it('refuses a photo the browser cannot read, with a way forward', async () => {
         vi.mocked(createImageBitmap).mockRejectedValue(new Error('decode'))
-        const error = await prepareFile(fileOf('odd.heic', 'image/heic')).catch((e) => e)
+        const error = await prepareFile(fileOf('odd.heic', 'image/heic')).catch(
+            (e) => e
+        )
         expect(error).toBeInstanceOf(FileRefusedError)
         expect(error.message).toMatch(/could not be read/)
         expect(error.fileName).toBe('odd.heic')
@@ -79,18 +85,18 @@ describe('prepareFile — photos', () => {
 
     it('refuses when there is no canvas to draw on', async () => {
         vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue(null)
-        await expect(prepareFile(fileOf('a.jpg', 'image/jpeg'))).rejects.toBeInstanceOf(
-            FileRefusedError
-        )
+        await expect(
+            prepareFile(fileOf('a.jpg', 'image/jpeg'))
+        ).rejects.toBeInstanceOf(FileRefusedError)
     })
 
     it('refuses when the canvas cannot encode', async () => {
-        vi.mocked(HTMLCanvasElement.prototype.toBlob).mockImplementation((callback) =>
-            callback(null)
+        vi.mocked(HTMLCanvasElement.prototype.toBlob).mockImplementation(
+            (callback) => callback(null)
         )
-        await expect(prepareFile(fileOf('a.jpg', 'image/jpeg'))).rejects.toBeInstanceOf(
-            FileRefusedError
-        )
+        await expect(
+            prepareFile(fileOf('a.jpg', 'image/jpeg'))
+        ).rejects.toBeInstanceOf(FileRefusedError)
     })
 })
 
@@ -110,9 +116,9 @@ describe('prepareFile — documents', () => {
     })
 
     it('refuses other types before anything uploads', async () => {
-        await expect(prepareFile(fileOf('notes.zip', 'application/zip'))).rejects.toThrow(
-            /Only photos, PDFs, and Word or PowerPoint/
-        )
+        await expect(
+            prepareFile(fileOf('notes.zip', 'application/zip'))
+        ).rejects.toThrow(/Only photos, PDFs, and Word or PowerPoint/)
     })
 
     it('refuses a document over 20MB', async () => {

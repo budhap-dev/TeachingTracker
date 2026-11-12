@@ -7,7 +7,7 @@ vi.mock('./graph', async (importOriginal) => {
     return {
         ...actual,
         uploadFile: vi.fn(),
-        deleteItem: vi.fn(),
+        deleteFileAndEmptyFolders: vi.fn(),
         deleteFolder: vi.fn(),
     }
 })
@@ -30,14 +30,13 @@ import {
     attachFiles,
     eraseStudentFiles,
     failureMessage,
-    removeAttachment,
     removeClassFiles,
     removeFileCopies,
     removeFilesOf,
 } from './attach'
 import {
     deleteFolder,
-    deleteItem,
+    deleteFileAndEmptyFolders,
     OneDriveNotConnectedError,
     uploadFile,
 } from './graph'
@@ -120,7 +119,11 @@ describe('attachFiles', () => {
                 fileName: 'b.pdf',
                 contentType: 'application/pdf',
             })
-        vi.mocked(uploadFile).mockResolvedValue({ id: 'A!2', name: 'b.pdf', size: 1 })
+        vi.mocked(uploadFile).mockResolvedValue({
+            id: 'A!2',
+            name: 'b.pdf',
+            size: 1,
+        })
         vi.mocked(createAttachment).mockResolvedValue(attachment(3, 'A!2'))
         const progress = vi.fn()
 
@@ -132,7 +135,11 @@ describe('attachFiles', () => {
 
         expect(outcomes).toEqual([
             { fileName: 'a.zip', ok: false, error: refused },
-            { fileName: 'b.pdf', ok: true, attachments: [attachment(3, 'A!2')] },
+            {
+                fileName: 'b.pdf',
+                ok: true,
+                attachments: [attachment(3, 'A!2')],
+            },
         ])
         expect(progress.mock.calls).toEqual([
             [1, 2],
@@ -147,49 +154,31 @@ describe('attachFiles', () => {
             contentType: 'application/pdf',
         })
         vi.mocked(uploadFile).mockRejectedValue(new OneDriveNotConnectedError())
-        await expect(attachFiles(group, [file('b.pdf')])).rejects.toBeInstanceOf(
-            OneDriveNotConnectedError
-        )
+        await expect(
+            attachFiles(group, [file('b.pdf')])
+        ).rejects.toBeInstanceOf(OneDriveNotConnectedError)
         expect(createAttachment).not.toHaveBeenCalled()
     })
 })
 
 describe('failureMessage', () => {
     it("uses a refusal's own words, and a generic line otherwise", () => {
-        expect(failureMessage(new FileRefusedError('a', 'Too big'))).toBe('Too big')
+        expect(failureMessage(new FileRefusedError('a', 'Too big'))).toBe(
+            'Too big'
+        )
         expect(failureMessage(new Error('500'))).toMatch(/Could not upload/)
     })
 })
 
 describe('removing', () => {
-    it('deletes a file from OneDrive before its index row', async () => {
-        const order: string[] = []
-        vi.mocked(deleteItem).mockImplementation(async () => {
-            order.push('drive')
-        })
-        vi.mocked(deleteAttachment).mockImplementation(async () => {
-            order.push('index')
-        })
-        await removeAttachment(attachment(5, 'A!5'))
-        expect(order).toEqual(['drive', 'index'])
-        expect(deleteItem).toHaveBeenCalledWith('A!5')
-        expect(deleteAttachment).toHaveBeenCalledWith(5)
-    })
-
-    it('keeps the index row when OneDrive fails', async () => {
-        vi.mocked(deleteItem).mockRejectedValue(new Error('down'))
-        await expect(removeAttachment(attachment(5, 'A!5'))).rejects.toThrow('down')
-        expect(deleteAttachment).not.toHaveBeenCalled()
-    })
-
     it("removes a class's files from OneDrive", async () => {
         await removeFilesOf([attachment(1, 'A!1'), attachment(2, 'A!2')])
-        expect(vi.mocked(deleteItem).mock.calls).toEqual([['A!1'], ['A!2']])
+        expect(vi.mocked(deleteFileAndEmptyFolders).mock.calls).toEqual([['A!1'], ['A!2']])
     })
 
     it("erases a student's files by id, then their folder", async () => {
         await eraseStudentFiles(asha, [attachment(1, 'A!1')])
-        expect(deleteItem).toHaveBeenCalledWith('A!1')
+        expect(deleteFileAndEmptyFolders).toHaveBeenCalledWith('A!1')
         expect(deleteFolder).toHaveBeenCalledWith('Asha Patel (STU-1)')
     })
 })
@@ -206,7 +195,7 @@ describe('removeClassFiles', () => {
             from: '2026-11-12',
             to: '2026-11-12',
         })
-        expect(vi.mocked(deleteItem).mock.calls).toEqual([['A!1'], ['B!1']])
+        expect(vi.mocked(deleteFileAndEmptyFolders).mock.calls).toEqual([['A!1'], ['B!1']])
     })
 
     it('does nothing for a class with no rows', async () => {
@@ -218,7 +207,7 @@ describe('removeClassFiles', () => {
 describe('removeFileCopies', () => {
     it('removes every copy from OneDrive, then each index row', async () => {
         const order: string[] = []
-        vi.mocked(deleteItem).mockImplementation(async (id) => {
+        vi.mocked(deleteFileAndEmptyFolders).mockImplementation(async (id) => {
             order.push(`drive ${id}`)
         })
         vi.mocked(deleteAttachment).mockImplementation(async (id) => {
@@ -229,8 +218,10 @@ describe('removeFileCopies', () => {
     })
 
     it('leaves every index row when OneDrive fails', async () => {
-        vi.mocked(deleteItem).mockRejectedValue(new Error('down'))
-        await expect(removeFileCopies([attachment(1, 'A!1')])).rejects.toThrow('down')
+        vi.mocked(deleteFileAndEmptyFolders).mockRejectedValue(new Error('down'))
+        await expect(removeFileCopies([attachment(1, 'A!1')])).rejects.toThrow(
+            'down'
+        )
         expect(deleteAttachment).not.toHaveBeenCalled()
     })
 })
