@@ -250,7 +250,8 @@ describe('AboutView', () => {
         expect(
             screen.getByText(/previewing unsaved changes/i)
         ).toBeInTheDocument()
-        fireEvent.change(screen.getByLabelText('Introduction'), {
+        // The editor loads on demand (LazyEditors.tsx): wait for it.
+        fireEvent.change(await screen.findByLabelText('Introduction'), {
             target: { value: '**Hello there.**' },
         })
 
@@ -420,7 +421,11 @@ describe('AboutView profile photo', () => {
         // zoom, then confirm.
         await screen.findByText(/position your photo/i)
         // A drag reports crop + zoom back; the zoom slider moves too.
-        await user.click(screen.getByRole('button', { name: 'mock-drag' }))
+        // The cropper loads on demand (LazyEditors.tsx), so it appears a
+        // moment after the dialog opens: wait for it, never assume it.
+        await user.click(
+            await screen.findByRole('button', { name: 'mock-drag' })
+        )
         fireEvent.change(
             screen.getByRole('slider', { name: /zoom/i }),
             { target: { value: 3 } }
