@@ -44,11 +44,13 @@ describe('api client', () => {
         const result = await apiRequest<{ id: number }[]>('/students')
 
         expect(result).toEqual([{ id: 1 }])
+        // No Content-Type without a body: a bare GET stays a "simple"
+        // request, so the browser skips the CORS preflight round trip.
         expect(fetchMock).toHaveBeenCalledWith(
             'https://api.example.com/api/students',
             {
                 method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {},
                 body: undefined,
             }
         )
@@ -74,10 +76,7 @@ describe('api client', () => {
 
         expect(fetchMock).toHaveBeenCalledWith('/students', {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: 'Bearer token-123',
-            },
+            headers: { Authorization: 'Bearer token-123' },
             body: undefined,
         })
     })

@@ -52,7 +52,12 @@ export async function apiRequest<T>(
     const response = await fetch(`${getApiBaseUrl()}${path}`, {
         method,
         headers: {
-            'Content-Type': 'application/json',
+            // Only with a body: on a bodiless GET the header buys nothing and
+            // makes the request "non-simple", costing a CORS preflight round
+            // trip before every public read (first-load work, 2026-11-12).
+            ...(body === undefined
+                ? {}
+                : { 'Content-Type': 'application/json' }),
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: body === undefined ? undefined : JSON.stringify(body),

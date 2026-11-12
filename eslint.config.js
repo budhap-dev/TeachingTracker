@@ -19,6 +19,15 @@ export default tseslint.config(
         },
     },
     {
+        // The API wake-up script (first-load work, 2026-11-12): plain
+        // browser JavaScript, loaded from the page's HTML before the app.
+        files: ['public/warm-api.js'],
+        languageOptions: {
+            ecmaVersion: 2020,
+            globals: globals.browser,
+        },
+    },
+    {
         files: ['**/*.{ts,tsx}'],
         languageOptions: {
             ecmaVersion: 2020,
