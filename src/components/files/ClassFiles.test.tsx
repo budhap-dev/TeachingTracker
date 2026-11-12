@@ -19,7 +19,7 @@ vi.mock('../../api/attachments', () => ({
 vi.mock('../../onedrive/attach', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../../onedrive/attach')>()),
     attachFiles: vi.fn(),
-    removeFilesOf: vi.fn(),
+    removeFileCopies: vi.fn(),
     removeClassFiles: vi.fn(),
 }))
 vi.mock('../../onedrive/graph', async (importOriginal) => ({
@@ -29,14 +29,13 @@ vi.mock('../../onedrive/graph', async (importOriginal) => ({
     previewUrl: vi.fn(),
 }))
 
-import { deleteAttachment, fetchAttachments } from '../../api/attachments'
+import { fetchAttachments } from '../../api/attachments'
 import { connectOneDrive } from '../../auth/msal'
-import { attachFiles, removeClassFiles, removeFilesOf } from '../../onedrive/attach'
+import { attachFiles, removeClassFiles, removeFileCopies } from '../../onedrive/attach'
 import {
     downloadUrl,
     OneDriveNotConnectedError,
     previewUrl,
-    thumbnailUrl,
 } from '../../onedrive/graph'
 import { FileRefusedError } from '../../onedrive/prepareFile'
 import { ClassSchedulingView } from '../ClassSchedulingView'
@@ -108,7 +107,6 @@ beforeEach(() => {
     auth.enabled = true
     auth.connected = true
     vi.mocked(fetchAttachments).mockResolvedValue([])
-    vi.mocked(thumbnailUrl).mockResolvedValue(null)
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -132,8 +130,8 @@ describe('ClassFilesSection', () => {
 
     it("lists only this class's files, a group's copies as one", async () => {
         vi.mocked(fetchAttachments).mockResolvedValue([
-            file(1, 10),
-            file(2, 11, { studentId: 2 }),
+            file(1, 10, { groupId: 'g' }),
+            file(2, 11, { studentId: 2, groupId: 'g' }),
             file(3, 99, { fileName: 'other class.pdf' }),
             file(4, 10, { fileName: 'paper.docx', kind: 'word', sizeBytes: 19000 }),
         ])
@@ -143,9 +141,12 @@ describe('ClassFilesSection', () => {
                 students={[asha, maya]}
             />
         )
-        expect(await screen.findByRole('heading', { name: 'Files (2)' })).toBeInTheDocument()
+        expect(await screen.findByText('Copy for each of 2 students')).toBeInTheDocument()
         expect(fetchAttachments).toHaveBeenCalledWith({ from: dateKey, to: dateKey })
-        expect(screen.getByText('820 KB · 2 students')).toBeInTheDocument()
+        // Header row + two files.
+        expect(screen.getAllByRole('row')).toHaveLength(3)
+        expect(screen.getByText('820 KB')).toBeInTheDocument()
+        expect(screen.getByTitle('Word')).toBeInTheDocument()
         expect(screen.getByText('paper.docx')).toBeInTheDocument()
         expect(screen.queryByText('other class.pdf')).not.toBeInTheDocument()
     })
@@ -210,7 +211,10 @@ describe('ClassFilesSection', () => {
 
     it('removes every copy of a file, behind a confirm', async () => {
         const user = userEvent.setup({ applyAccept: false })
-        vi.mocked(fetchAttachments).mockResolvedValue([file(1, 10), file(2, 11)])
+        vi.mocked(fetchAttachments).mockResolvedValue([
+            file(1, 10, { groupId: 'g' }),
+            file(2, 11, { groupId: 'g' }),
+        ])
         render(
             <ClassFilesSection members={[session(10, 1), session(11, 2)]} students={[asha, maya]} />
         )
@@ -218,30 +222,29 @@ describe('ClassFilesSection', () => {
         const confirm = screen.getByRole('dialog', { name: /remove this file/i })
         expect(confirm).toHaveTextContent(/all 2 students/)
         await user.click(within(confirm).getByRole('button', { name: 'Keep' }))
-        expect(removeFilesOf).not.toHaveBeenCalled()
+        expect(removeFileCopies).not.toHaveBeenCalled()
 
         await user.click(await screen.findByRole('button', { name: 'Remove board.jpg' }))
         await user.click(screen.getByRole('button', { name: 'Remove' }))
-        await waitFor(() => expect(deleteAttachment).toHaveBeenCalledTimes(2))
-        expect(vi.mocked(removeFilesOf).mock.calls[0][0].map((a) => a.id)).toEqual([1, 2])
+        await waitFor(() => expect(removeFileCopies).toHaveBeenCalledTimes(1))
+        expect(vi.mocked(removeFileCopies).mock.calls[0][0].map((a) => a.id)).toEqual([1, 2])
     })
 
     it('keeps the file and says so when removal fails', async () => {
         const user = userEvent.setup({ applyAccept: false })
         vi.mocked(fetchAttachments).mockResolvedValue([file(1, 10)])
-        vi.mocked(removeFilesOf).mockRejectedValueOnce(new Error('down'))
+        vi.mocked(removeFileCopies).mockRejectedValueOnce(new Error('down'))
         render(<ClassFilesSection members={[session(10, 1)]} students={[asha]} />)
         await user.click(await screen.findByRole('button', { name: 'Remove board.jpg' }))
         expect(screen.getByRole('dialog')).toHaveTextContent(/from your OneDrive/)
         await user.click(screen.getByRole('button', { name: 'Remove' }))
-        expect(await screen.findByRole('alert')).toHaveTextContent(/could not remove/i)
-        expect(deleteAttachment).not.toHaveBeenCalled()
+        expect(await screen.findByRole('alert')).toHaveTextContent(/could not remove board\.jpg/i)
     })
 
     it('asks to connect again when removal finds OneDrive disconnected', async () => {
         const user = userEvent.setup({ applyAccept: false })
         vi.mocked(fetchAttachments).mockResolvedValue([file(1, 10)])
-        vi.mocked(removeFilesOf).mockRejectedValueOnce(new OneDriveNotConnectedError())
+        vi.mocked(removeFileCopies).mockRejectedValueOnce(new OneDriveNotConnectedError())
         render(<ClassFilesSection members={[session(10, 1)]} students={[asha]} />)
         await user.click(await screen.findByRole('button', { name: 'Remove board.jpg' }))
         await user.click(screen.getByRole('button', { name: 'Remove' }))
@@ -266,16 +269,14 @@ describe('FileViewerDialog (through the class)', () => {
         return { user, dialog: await screen.findByRole('dialog') }
     }
 
-    it('shows a photo from a local blob, with its caption and a thumbnail in the list', async () => {
-        vi.mocked(thumbnailUrl).mockResolvedValue('https://x.svc.ms/t')
+    it('shows a photo from a local blob, with its caption', async () => {
         vi.mocked(downloadUrl).mockResolvedValue('https://dl/1')
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['img']) }))
         const { dialog, user } = await openFirst(file(1, 10, { caption: 'Question 2' }))
-        expect(within(dialog).getByText('Question 2')).toBeInTheDocument()
+        expect(within(dialog).getByLabelText('Caption')).toHaveValue('Question 2')
         expect(await within(dialog).findByRole('img', { name: 'board.jpg' })).toHaveAttribute('src', 'blob:local/1')
         await user.click(within(dialog).getByRole('button', { name: 'Close' }))
         await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:local/1'))
-        expect(document.querySelector('.file-thumb img')).toHaveAttribute('src', 'https://x.svc.ms/t')
     })
 
     it('shows a PDF in the browser viewer', async () => {
@@ -304,25 +305,24 @@ describe('FileViewerDialog (through the class)', () => {
         await waitFor(() => expect(click).toHaveBeenCalled())
     })
 
-    it('falls back to the icon when a thumbnail will not load', async () => {
-        vi.mocked(thumbnailUrl).mockResolvedValue('https://x.svc.ms/broken')
-        vi.mocked(fetchAttachments).mockResolvedValue([file(5, 10)])
+    it('downloads straight from the table', async () => {
+        const user = userEvent.setup()
+        vi.mocked(downloadUrl).mockResolvedValue('https://dl/7')
+        const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+        vi.mocked(fetchAttachments).mockResolvedValue([file(7, 10, { fileName: 'deck.pptx', kind: 'powerpoint' })])
         render(<ClassFilesSection members={[session(10, 1)]} students={[asha]} />)
-        const img = await waitFor(() => {
-            const found = document.querySelector('.file-thumb img')
-            expect(found).not.toBeNull()
-            return found!
-        })
-        img.dispatchEvent(new Event('error'))
-        await waitFor(() => expect(document.querySelector('.file-thumb img')).toBeNull())
+        await user.click(await screen.findByRole('button', { name: 'Download deck.pptx' }))
+        await waitFor(() => expect(click).toHaveBeenCalled())
+        expect(downloadUrl).toHaveBeenCalledWith('D!7')
     })
 
-    it('shows the icon when OneDrive has no thumbnail for it', async () => {
-        vi.mocked(thumbnailUrl).mockRejectedValue(new Error('none'))
-        vi.mocked(fetchAttachments).mockResolvedValue([file(6, 10, { kind: 'powerpoint', fileName: 'deck.pptx' })])
+    it('opens the viewer from the Preview button', async () => {
+        const user = userEvent.setup()
+        vi.mocked(previewUrl).mockResolvedValue('https://my.microsoftpersonalcontent.com/p')
+        vi.mocked(fetchAttachments).mockResolvedValue([file(8, 10, { fileName: 'paper.docx', kind: 'word' })])
         render(<ClassFilesSection members={[session(10, 1)]} students={[asha]} />)
-        await screen.findByText('deck.pptx')
-        expect(document.querySelector('.file-thumb img')).toBeNull()
+        await user.click(await screen.findByRole('button', { name: 'Preview paper.docx' }))
+        expect(await screen.findByTitle('paper.docx')).toBeInTheDocument()
     })
 })
 
@@ -347,6 +347,34 @@ describe('deleting a class with files', () => {
         expect(screen.getByText(/removes the class and its files/i)).toBeInTheDocument()
         await user.click(screen.getByRole('button', { name: /^delete$/i }))
     }
+
+    it('keeps files on their own tab, counted, with the form still there', async () => {
+        const user = userEvent.setup()
+        vi.mocked(fetchAttachments).mockResolvedValue([file(1, 1), file(2, 1, { fileName: 'b.pdf', kind: 'pdf' })])
+        renderPlanner()
+        await user.click(screen.getByRole('button', { name: `Open ${day.toDateString()}` }))
+        const filesTab = await screen.findByRole('tab', { name: 'Files (2)' })
+        expect(screen.getByRole('tab', { name: 'Details' })).toHaveAttribute('aria-selected', 'true')
+        expect(screen.getByRole('button', { name: /delete class/i })).toBeVisible()
+
+        await user.click(filesTab)
+        expect(screen.getByRole('button', { name: /attach files/i })).toBeVisible()
+        expect(screen.queryByRole('button', { name: /delete class/i })).not.toBeInTheDocument()
+        // The form is hidden, not gone: Save in the header still reaches it.
+        expect(document.getElementById('scheduling-form')).not.toBeNull()
+
+        await user.click(screen.getByRole('tab', { name: 'Details' }))
+        expect(screen.getByRole('button', { name: /delete class/i })).toBeVisible()
+    })
+
+    it('has no Files tab when the feature is off, or for a new class', async () => {
+        auth.enabled = false
+        const user = userEvent.setup()
+        renderPlanner()
+        await user.click(screen.getByRole('button', { name: `Open ${day.toDateString()}` }))
+        await screen.findByRole('button', { name: /delete class/i })
+        expect(screen.queryByRole('tab', { name: /files/i })).not.toBeInTheDocument()
+    })
 
     it('removes the files from OneDrive, then deletes the class', async () => {
         const user = userEvent.setup({ applyAccept: false })

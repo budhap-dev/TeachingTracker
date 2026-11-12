@@ -20,3 +20,13 @@ describe('groupCopies', () => {
         ])
     })
 })
+
+describe('shortDate and classLinkFor', () => {
+    it('reads a class day short, and links to its class', async () => {
+        const { classLinkFor, shortDate } = await import('./classFiles')
+        expect(shortDate('2026-01-05')).toBe('5 Jan 2026')
+        expect(classLinkFor({ date: '2026-01-05', sessionId: 7 })).toBe(
+            '/scheduling?day=2026-01-05&entry=solo-7'
+        )
+    })
+})

@@ -10,6 +10,7 @@ export const paths = {
     payments: '/payments',
     scheduling: '/scheduling',
     classNotes: '/scheduling/notes',
+    classFiles: '/scheduling/files',
     offerings: '/offerings',
     enquire: '/enquire',
     leads: '/leads',

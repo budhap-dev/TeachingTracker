@@ -1,39 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    LinearProgress,
-} from '@mui/material'
+import { Button, LinearProgress } from '@mui/material'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineRounded'
-import { deleteAttachment, fetchAttachments } from '../../api/attachments'
+import { fetchAttachments } from '../../api/attachments'
 import { connectOneDrive } from '../../auth/msal'
-import {
-    ATTACHMENT_ACCEPT,
-    type Attachment,
-    formatBytes,
-} from '../../data/attachments'
+import { ATTACHMENT_ACCEPT } from '../../data/attachments'
 import type { ScheduledSession, Student } from '../../data/students'
 import {
     type Attendee,
     attachFiles,
     failureMessage,
-    removeFilesOf,
 } from '../../onedrive/attach'
 import { OneDriveNotConnectedError } from '../../onedrive/graph'
 import { useOneDriveStatus } from '../../onedrive/useOneDrive'
 import { type FileGroup, groupCopies } from '../../utils/classFiles'
-import { FileThumb } from './FileThumb'
+import { FilesTable } from './FilesTable'
 import { FileViewerDialog } from './FileViewerDialog'
+import { useRemoveFile } from './useRemoveFile'
 
 type Props = {
     /** Every row of the class — one for a solo class, one per attendee. */
     members: ScheduledSession[]
     students: Student[]
+    /** Tells the dialog how many files there are, for its tab label. */
+    onCount?: (count: number) => void
 }
 
 type Refusal = { fileName: string; message: string }
@@ -46,16 +35,14 @@ type Refusal = { fileName: string; message: string }
  * keeps one copy per student), so here a group's copies show — and are
  * removed — as one file.
  */
-export const ClassFilesSection = ({ members, students }: Props) => {
+export const ClassFilesSection = ({ members, students, onCount }: Props) => {
     const status = useOneDriveStatus()
     const [groups, setGroups] = useState<FileGroup[]>([])
     const [loadFailed, setLoadFailed] = useState(false)
     const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
     const [refusals, setRefusals] = useState<Refusal[]>([])
     const [needsConnect, setNeedsConnect] = useState(false)
-    const [viewing, setViewing] = useState<Attachment | null>(null)
-    const [removing, setRemoving] = useState<string | null>(null)
-    const [confirming, setConfirming] = useState<FileGroup | null>(null)
+    const [viewing, setViewing] = useState<number | null>(null)
     const input = useRef<HTMLInputElement>(null)
 
     const memberIds = members.map((member) => member.id).join(',')
@@ -66,16 +53,23 @@ export const ClassFilesSection = ({ members, students }: Props) => {
         try {
             const ids = new Set(memberIds.split(',').map(Number))
             const rows = await fetchAttachments({ from: date, to: date })
-            setGroups(groupCopies(rows.filter((row) => ids.has(row.sessionId))))
+            const next = groupCopies(rows.filter((row) => ids.has(row.sessionId)))
+            setGroups(next)
+            onCount?.(next.length)
             setLoadFailed(false)
         } catch {
             setLoadFailed(true)
         }
-    }, [memberIds, date])
+    }, [memberIds, date, onCount])
 
     useEffect(() => {
         if (status === 'connected') void load()
     }, [status, load])
+
+    const removal = useRemoveFile({
+        onSettled: load,
+        onNotConnected: () => setNeedsConnect(true),
+    })
 
     if (status === 'off' || status === 'checking') {
         return null
@@ -84,7 +78,6 @@ export const ClassFilesSection = ({ members, students }: Props) => {
     if (status === 'disconnected' || needsConnect) {
         return (
             <section className="class-files" aria-label="Files">
-                <h4>Files</h4>
                 <p className="class-files-hint">
                     Photos and documents for this class are kept in your own
                     OneDrive. Connect it once to start attaching them.
@@ -138,34 +131,12 @@ export const ClassFilesSection = ({ members, students }: Props) => {
         }
     }
 
-    const onRemove = async (group: FileGroup) => {
-        setRemoving(group.key)
-        try {
-            await removeFilesOf(group.copies)
-            for (const copy of group.copies) {
-                await deleteAttachment(copy.id)
-            }
-        } catch (error) {
-            if (error instanceof OneDriveNotConnectedError) {
-                setNeedsConnect(true)
-            } else {
-                setRefusals([
-                    {
-                        fileName: group.file.fileName,
-                        message: 'Could not remove this file. Try again.',
-                    },
-                ])
-            }
-        } finally {
-            setRemoving(null)
-            await load()
-        }
-    }
-
     return (
         <section className="class-files" aria-label="Files">
             <div className="class-files-header">
-                <h4>Files{groups.length > 0 ? ` (${groups.length})` : ''}</h4>
+                <span className="class-files-hint">
+                    Kept in your OneDrive, one copy per student.
+                </span>
                 <Button
                     size="small"
                     variant="outlined"
@@ -213,6 +184,12 @@ export const ClassFilesSection = ({ members, students }: Props) => {
                 </p>
             ))}
 
+            {removal.error && (
+                <p className="class-files-refusal" role="alert">
+                    {removal.error}
+                </p>
+            )}
+
             {loadFailed && (
                 <p className="class-files-refusal" role="alert">
                     Could not load the files for this class.
@@ -227,73 +204,22 @@ export const ClassFilesSection = ({ members, students }: Props) => {
             )}
 
             {groups.length > 0 && (
-                <ul className="class-files-list">
-                    {groups.map((group) => (
-                        <li key={group.key}>
-                            <button
-                                type="button"
-                                className="class-files-open"
-                                onClick={() => setViewing(group.file)}
-                            >
-                                <FileThumb attachment={group.file} />
-                                <span className="class-files-name">
-                                    {group.file.fileName}
-                                    <small>
-                                        {formatBytes(group.file.sizeBytes)}
-                                        {group.copies.length > 1 &&
-                                            ` · ${group.copies.length} students`}
-                                    </small>
-                                </span>
-                            </button>
-                            <IconButton
-                                aria-label={`Remove ${group.file.fileName}`}
-                                size="small"
-                                disabled={removing === group.key}
-                                onClick={() => setConfirming(group)}
-                            >
-                                <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                        </li>
-                    ))}
-                </ul>
+                <FilesTable
+                    groups={groups}
+                    onPreview={setViewing}
+                    onRemove={removal.ask}
+                    removingKey={removal.removingKey}
+                />
             )}
 
             <FileViewerDialog
-                attachment={viewing}
-                onClose={() => setViewing(null)}
+                groups={groups}
+                index={viewing}
+                onIndexChange={setViewing}
+                onCaptionSaved={() => void load()}
             />
 
-            <Dialog
-                open={confirming !== null}
-                onClose={() => setConfirming(null)}
-                maxWidth="xs"
-            >
-                <DialogTitle>Remove this file?</DialogTitle>
-                <DialogContent>
-                    <p className="session-summary-meta">
-                        {confirming?.file.fileName}
-                    </p>
-                    <p className="delete-warning">
-                        {confirming && confirming.copies.length > 1
-                            ? `It goes from all ${confirming.copies.length} students' folders in your OneDrive (to its recycle bin).`
-                            : 'It goes from your OneDrive (to its recycle bin).'}
-                    </p>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setConfirming(null)}>Keep</Button>
-                    <Button
-                        color="error"
-                        variant="contained"
-                        onClick={() => {
-                            const group = confirming
-                            setConfirming(null)
-                            if (group) void onRemove(group)
-                        }}
-                    >
-                        Remove
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {removal.dialog}
         </section>
     )
 }

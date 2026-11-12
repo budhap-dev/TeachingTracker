@@ -9,6 +9,7 @@ import {
     classFolder,
     deleteFolder,
     deleteItem,
+    downloadUrl,
     OneDriveNotConnectedError,
     studentFolder,
     uploadFile,
@@ -139,4 +140,30 @@ export const eraseStudentFiles = async (
 ) => {
     await removeFilesOf(attachments)
     await deleteFolder(studentFolder(student))
+}
+
+/**
+ * Saves a file to the device. The short-lived download link is served as an
+ * attachment by OneDrive, so following it downloads rather than navigates.
+ */
+export const downloadAttachment = async (
+    attachment: Pick<Attachment, 'driveItemId' | 'fileName'>
+) => {
+    const link = document.createElement('a')
+    link.href = await downloadUrl(attachment.driveItemId)
+    link.download = attachment.fileName
+    link.rel = 'noopener'
+    link.click()
+}
+
+/**
+ * Removes one file as the teacher sees it — every student's copy: from
+ * OneDrive first (to its recycle bin), then the index rows. If OneDrive
+ * fails, the rows stay, so the file is never orphaned out of sight.
+ */
+export const removeFileCopies = async (copies: Attachment[]) => {
+    await removeFilesOf(copies)
+    for (const copy of copies) {
+        await deleteAttachment(copy.id)
+    }
 }
