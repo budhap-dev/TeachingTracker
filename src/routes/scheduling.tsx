@@ -1,4 +1,5 @@
 import { ClassNotesView } from '../components/ClassNotesView'
+import { ClassFilesView } from '../components/files/ClassFilesView'
 import { ClassSchedulingView } from '../components/ClassSchedulingView'
 import { PageLoading } from '../components/PageLoading'
 import { useAppDispatch, useAppSelector } from '../hooks'
@@ -43,6 +44,43 @@ export const ClassNotesRoute = () => {
     return (
         <ClassNotesView
             sessions={sessions}
+            onBack={() => navigate(paths.scheduling)}
+        />
+    )
+}
+
+/**
+ * Class files (REQ-063): every file on the teacher's classes, searchable.
+ * Archived students stay in the student filter — their files are kept with
+ * their record until it is erased.
+ */
+export const ClassFilesRoute = () => {
+    const navigate = useNavigate()
+    useDocumentMeta(
+        'Class files — AbhiTutor',
+        'Every photo and document on your classes, searchable.'
+    )
+    const students = useAppSelector((state) => state.students.students)
+    const sessions = useAppSelector(
+        (state) => state.students.scheduledSessions
+    )
+    const subjects = useMemo(
+        () =>
+            [...new Set(sessions.map((session) => session.subject))].sort(
+                (left, right) => left.localeCompare(right)
+            ),
+        [sessions]
+    )
+    const dataLoading = useAppSelector(
+        (state) => state.students.loading || state.students.sessionsLoading
+    )
+    if (dataLoading) {
+        return <PageLoading />
+    }
+    return (
+        <ClassFilesView
+            students={students}
+            subjects={subjects}
             onBack={() => navigate(paths.scheduling)}
         />
     )

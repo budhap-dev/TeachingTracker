@@ -21,6 +21,18 @@ describe('routing fallbacks', () => {
         ).toBeInTheDocument()
     })
 
+    it('opens Class files from its URL, saying when the feature is off', async () => {
+        window.history.pushState({}, '', '/scheduling/files')
+        render(<App />)
+
+        expect(
+            await screen.findByRole('heading', { name: /class files/i })
+        ).toBeInTheDocument()
+        expect(
+            screen.getByText(/not switched on here yet/i)
+        ).toBeInTheDocument()
+    })
+
     it('redirects to the students list when the student id is unknown', async () => {
         window.history.pushState({}, '', '/students/9999999')
         render(<App />)

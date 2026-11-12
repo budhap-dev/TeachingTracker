@@ -13,7 +13,11 @@ import { StudentsRoute, StudentDetailRoute } from './routes/students'
 import { AlumniRoute } from './routes/alumni'
 import { StudySnapshotRoute } from './routes/studySnapshot'
 import { PaymentTrackerRoute } from './routes/paymentTracker'
-import { ClassNotesRoute, SchedulingRoute } from './routes/scheduling'
+import {
+    ClassFilesRoute,
+    ClassNotesRoute,
+    SchedulingRoute,
+} from './routes/scheduling'
 import { OfferingsRoute } from './routes/offerings'
 import { SiteEditorRoute } from './routes/siteEditor'
 import { ContactRoute } from './routes/contact'
@@ -79,6 +83,11 @@ export const AppRoutes = () => (
             <Route
                 path={paths.classNotes}
                 element={teacher(<ClassNotesRoute />)}
+            />
+            {/* Files on classes, searchable (REQ-063). */}
+            <Route
+                path={paths.classFiles}
+                element={teacher(<ClassFilesRoute />)}
             />
             {/* Public by requirement (REQ-006/007): reachable signed out. */}
             <Route

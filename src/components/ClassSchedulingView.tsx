@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined'
+import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined'
 import {
     DndContext,
     PointerSensor,
@@ -21,6 +22,8 @@ import {
     DialogTitle,
     IconButton,
     MenuItem,
+    Tab,
+    Tabs,
     TextField,
     Tooltip,
 } from '@mui/material'
@@ -234,6 +237,13 @@ export const ClassSchedulingView = ({
     // Which of that day's entries the form is editing. null means the form is
     // in "add" mode. Held as the entry key (groupId / solo id), so it survives
     // the list re-sorting when a class is added.
+    // The class dialog's two tabs (REQ-063): the form, and the class's files.
+    const [dialogTab, setDialogTab] = useState<'details' | 'files'>('details')
+    const [fileCount, setFileCount] = useState<number | null>(null)
+    const resetDialogTab = () => {
+        setDialogTab('details')
+        setFileCount(null)
+    }
     const [selectedEntryKey, setSelectedEntryKey] = useState<string | null>(
         null
     )
@@ -420,6 +430,7 @@ export const ClassSchedulingView = ({
         setOpenDate(dateKey)
         setSelectedEntryKey(entry?.key ?? null)
         applyEntryToForm(entry)
+        resetDialogTab()
     }
 
     // A deep-linked day (dashboard week bar) opens once on arrival — and the
@@ -441,12 +452,14 @@ export const ClassSchedulingView = ({
     const selectEntry = (entry: DayEntry) => {
         setSelectedEntryKey(entry.key)
         applyEntryToForm(entry)
+        resetDialogTab()
     }
 
     /** Switches the form to "add a new class": clears it, edits nothing. */
     const startAdd = () => {
         setSelectedEntryKey(null)
         applyEntryToForm(undefined)
+        resetDialogTab()
     }
 
     const monthGrid = useMemo(
@@ -541,6 +554,8 @@ export const ClassSchedulingView = ({
     const editingEntry = openDateEntries.find(
         (entry) => entry.key === selectedEntryKey
     )
+    // Files belong to a booked class, and only where the feature is on.
+    const showFilesTab = Boolean(editingEntry) && isOneDriveEnabled()
 
     // The entry's values when the modal opened — the baseline the Save button
     // compares against. Students are the field's seeded attendees, in id order
@@ -698,6 +713,17 @@ export const ClassSchedulingView = ({
                         <EventNoteOutlinedIcon fontSize="small" />
                         Class notes
                     </Link>
+                    {/* Files on classes (REQ-063), beside the notes —
+                        only where the feature is switched on. */}
+                    {isOneDriveEnabled() && (
+                        <Link
+                            className="scheduling-notes-link"
+                            to={paths.classFiles}
+                        >
+                            <FolderOpenOutlinedIcon fontSize="small" />
+                            Class files
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -781,7 +807,25 @@ export const ClassSchedulingView = ({
                                 : 'Edit class'
                             : 'Add a class'}
                     </h4>
+                    {/* Files get their own tab (owner call, 2026-11-12):
+                        under the form they were a long scroll away. */}
+                    {showFilesTab && (
+                        <Tabs
+                            className="day-modal-tabs"
+                            value={dialogTab}
+                            onChange={(_event, value) => setDialogTab(value)}
+                        >
+                            <Tab value="details" label="Details" />
+                            <Tab
+                                value="files"
+                                label={
+                                    fileCount ? `Files (${fileCount})` : 'Files'
+                                }
+                            />
+                        </Tabs>
+                    )}
                     <form
+                        hidden={showFilesTab && dialogTab === 'files'}
                         id="scheduling-form"
                         className="scheduling-form"
                         onSubmit={handleSubmit}
@@ -966,15 +1010,6 @@ export const ClassSchedulingView = ({
                             </div>
                         )}
 
-                        {/* Files on the class (REQ-063): photos and documents
-                            kept in the teacher's OneDrive. */}
-                        {editingEntry && (
-                            <ClassFilesSection
-                                members={entryMembers(editingEntry)}
-                                students={students}
-                            />
-                        )}
-
                         {/* The primary action lives in the modal header; only
                             the destructive/status actions stay by the form. */}
                         {editingEntry && (
@@ -1049,6 +1084,17 @@ export const ClassSchedulingView = ({
                             </div>
                         )}
                     </form>
+                    {/* Mounted on either tab, so the tab can show a count;
+                        the form stays mounted too, so Save still works. */}
+                    {showFilesTab && editingEntry && (
+                        <div hidden={dialogTab !== 'files'}>
+                            <ClassFilesSection
+                                members={entryMembers(editingEntry)}
+                                students={students}
+                                onCount={setFileCount}
+                            />
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
 

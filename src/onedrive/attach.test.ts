@@ -32,6 +32,7 @@ import {
     failureMessage,
     removeAttachment,
     removeClassFiles,
+    removeFileCopies,
     removeFilesOf,
 } from './attach'
 import {
@@ -211,5 +212,25 @@ describe('removeClassFiles', () => {
     it('does nothing for a class with no rows', async () => {
         expect(await removeClassFiles([])).toBe(0)
         expect(fetchAttachments).not.toHaveBeenCalled()
+    })
+})
+
+describe('removeFileCopies', () => {
+    it('removes every copy from OneDrive, then each index row', async () => {
+        const order: string[] = []
+        vi.mocked(deleteItem).mockImplementation(async (id) => {
+            order.push(`drive ${id}`)
+        })
+        vi.mocked(deleteAttachment).mockImplementation(async (id) => {
+            order.push(`index ${id}`)
+        })
+        await removeFileCopies([attachment(1, 'A!1'), attachment(2, 'B!1')])
+        expect(order).toEqual(['drive A!1', 'drive B!1', 'index 1', 'index 2'])
+    })
+
+    it('leaves every index row when OneDrive fails', async () => {
+        vi.mocked(deleteItem).mockRejectedValue(new Error('down'))
+        await expect(removeFileCopies([attachment(1, 'A!1')])).rejects.toThrow('down')
+        expect(deleteAttachment).not.toHaveBeenCalled()
     })
 })
