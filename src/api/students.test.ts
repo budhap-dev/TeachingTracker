@@ -4,6 +4,7 @@ import {
     fetchStudent,
     fetchStudents,
     restoreStudent,
+    deleteStudent,
     upsertStudent,
 } from './students'
 import type { StudentInput } from './students'
@@ -97,6 +98,24 @@ describe('students api', () => {
         expect(fetchMock).toHaveBeenCalledWith(
             '/students/5/restore',
             expect.objectContaining({ method: 'POST' })
+        )
+    })
+})
+
+describe('deleteStudent', () => {
+    it('erases via DELETE /students/{id}, a 204 with no body', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 204,
+            json: async () => {
+                throw new SyntaxError('no body')
+            },
+        })
+        vi.stubGlobal('fetch', fetchMock)
+        await expect(deleteStudent(5)).resolves.toBeUndefined()
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/students/5',
+            expect.objectContaining({ method: 'DELETE' })
         )
     })
 })

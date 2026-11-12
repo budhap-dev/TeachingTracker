@@ -28,6 +28,7 @@ the policy page.
 | **Enquiries — not converted** | **12 months** after they arrive _(default)_ | `Lead.submittedOn` | `DELETE /api/leads/{id}` |
 | **Enquiries — converted to a student** | **6 months** after conversion _(default)_ | `Lead.submittedOn` (see §4) | `DELETE /api/leads/{id}` |
 | **Reviews — published** | Until removed, or immediately on request | — | `DELETE /api/testimonials/{id}` |
+| **Files on classes** (REQ-063) — in the teacher's OneDrive, plus an index row in our tables | Same as the student's record: while tutoring continues, then **24 months** after archiving | The student's record | **Erase permanently** on the archived student's page: their files by id, their OneDrive folder, then the record and its index rows. A single file: Remove, in the class or on Class files. Deleted files sit in the OneDrive recycle bin for up to 30 days |
 | **Teacher's reminders** (REQ-057) | Until the teacher deletes them | `Reminder.date` | `DELETE /api/reminders/{id}` — the teacher's own call; one naming a family is erased with that family's data on request |
 | **Page-visit rows** (REQ-058 — not personal data) | **90 days** _(default)_ | The row's own date partition | Purge the `pageviews` partitions older than the window; the per-day totals the teacher reads identify nobody and may be kept |
 | **Reviews — rejected / not published** | Until the next quarterly run (≤ 3 months) | `Testimonial.moderatedOn` | `DELETE /api/testimonials/{id}` |
@@ -52,7 +53,10 @@ publication, so they go at the next run.
 ## 2. What the routine covers
 
 - **Live tables** (prod and dev): `students`, `sessions`, `settlements`,
-  `testimonials`, `leads`. The `sitecontent`, `contact` and `counters` tables
+  `testimonials`, `leads`, `attachments` (the file index, REQ-063).
+- **The teacher's OneDrive app folder** (REQ-063): files on classes, one
+  folder per student. Erased only through the app, which is the one place
+  that can reach it. The `sitecontent`, `contact` and `counters` tables
   hold no personal data and are out of scope.
 - **Monthly JSON dumps** produced by `npm run dump`
   (`func-teaching-tracker/src/tools/dump.ts`) and held in the owner's own
@@ -95,9 +99,13 @@ as you go; §5 wants them.
 
 1. Open the **Alumni** view.
 2. For each student archived more than **24 months** ago, confirm with the
-   owner that no return is expected, then delete the student.
-3. Deleting cascades: the student's classes and settlement rows go with them
-   (verified by the service test covering `deleteStudentCascade`).
+   owner that no return is expected. Then open the student and use **Erase
+   permanently**, typing their name to confirm.
+3. Erasing removes their files from OneDrive (every file by id, then their
+   folder) and then the record. The record cascades: the student's classes,
+   settlement rows and file index go with it, verified by the service tests
+   covering `deleteStudentCascade`. If OneDrive fails, nothing is erased and
+   the app says so; retry before moving on.
 4. ⚠️ Read §4 first — this step currently destroys payment history that the
    6-year rule says to keep.
 

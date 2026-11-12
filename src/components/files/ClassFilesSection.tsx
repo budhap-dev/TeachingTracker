@@ -39,7 +39,10 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
     const status = useOneDriveStatus()
     const [groups, setGroups] = useState<FileGroup[]>([])
     const [loadFailed, setLoadFailed] = useState(false)
-    const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+    const [progress, setProgress] = useState<{
+        done: number
+        total: number
+    } | null>(null)
     const [refusals, setRefusals] = useState<Refusal[]>([])
     const [needsConnect, setNeedsConnect] = useState(false)
     const [viewing, setViewing] = useState<number | null>(null)
@@ -53,7 +56,9 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
         try {
             const ids = new Set(memberIds.split(',').map(Number))
             const rows = await fetchAttachments({ from: date, to: date })
-            const next = groupCopies(rows.filter((row) => ids.has(row.sessionId)))
+            const next = groupCopies(
+                rows.filter((row) => ids.has(row.sessionId))
+            )
             setGroups(next)
             onCount?.(next.length)
             setLoadFailed(false)
@@ -102,8 +107,10 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
         setRefusals([])
         setProgress({ done: 0, total: files.length * attendees.length })
         try {
-            const outcomes = await attachFiles(attendees, files, (done, total) =>
-                setProgress({ done, total })
+            const outcomes = await attachFiles(
+                attendees,
+                files,
+                (done, total) => setProgress({ done, total })
             )
             setRefusals(
                 outcomes.flatMap((outcome) =>
@@ -121,9 +128,7 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
             if (error instanceof OneDriveNotConnectedError) {
                 setNeedsConnect(true)
             } else {
-                setRefusals([
-                    { fileName: '', message: failureMessage(error) },
-                ])
+                setRefusals([{ fileName: '', message: failureMessage(error) }])
             }
         } finally {
             setProgress(null)

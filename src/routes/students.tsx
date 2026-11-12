@@ -5,7 +5,7 @@ import type { EditableStudentField, Lead, Student } from '../data/students'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import { useStudentForm } from '../hooks/useStudentForm'
 import { paths } from '../paths'
-import { addSessionMemberRequested, archiveStudentRequested, editSessionRequested, restoreStudentRequested, saveStudentRequested, setSessionStatusRequested } from '../store/store'
+import { addSessionMemberRequested, archiveStudentRequested, editSessionRequested, fetchPaymentsRequested, restoreStudentRequested, saveStudentRequested, setSessionStatusRequested, studentErased } from '../store/store'
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useOpenStudentPage } from '../hooks/useOpenStudentPage'
@@ -87,7 +87,7 @@ export const StudentsRoute = () => {
 export const StudentDetailRoute = ({
     tab = 'details',
 }: {
-    tab?: 'details' | 'diary'
+    tab?: 'details' | 'diary' | 'files'
 }) => {
     const navigate = useNavigate()
     const location = useLocation()
@@ -112,6 +112,9 @@ export const StudentDetailRoute = ({
         null
     )
     const [draftStudent, setDraftStudent] = useState<Student | null>(null)
+    // Set when the student on screen has just been erased (REQ-063): their
+    // disappearing from the store then means "go to Alumni", not "unknown".
+    const [erased, setErased] = useState(false)
 
     const student =
         students.find((item) => item.id === Number(studentId)) ?? null
@@ -122,7 +125,9 @@ export const StudentDetailRoute = ({
         if (loading) {
             return <PageLoading />
         }
-        return <Navigate to={paths.students} replace />
+        return (
+            <Navigate to={erased ? paths.alumni : paths.students} replace />
+        )
     }
 
     const handleSaveDetails = () => {
@@ -171,6 +176,14 @@ export const StudentDetailRoute = ({
                 setDraftStudent(null)
             }}
             onRestore={(id) => dispatch(restoreStudentRequested(id))}
+            onErased={() => {
+                // Gone server-side with their classes and payments: drop them
+                // here and reload the month totals. Their page then sees no
+                // student, and — marked erased — leaves for Alumni.
+                setErased(true)
+                dispatch(studentErased(student.id))
+                dispatch(fetchPaymentsRequested())
+            }}
             onEditSession={(id, changes, applyToGroup) =>
                 dispatch(editSessionRequested({ id, changes, applyToGroup }))
             }
@@ -209,7 +222,9 @@ export const StudentDetailRoute = ({
                 navigate(
                     next === 'diary'
                         ? paths.studentDiary(student.id)
-                        : paths.studentDetail(student.id),
+                        : next === 'files'
+                          ? paths.studentFiles(student.id)
+                          : paths.studentDetail(student.id),
                     { state: { from }, replace: true }
                 )
             }

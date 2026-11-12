@@ -37,9 +37,7 @@ export const useRemoveFile = ({ onSettled, onNotConnected }: Options) => {
             if (failure instanceof OneDriveNotConnectedError) {
                 onNotConnected()
             } else {
-                setError(
-                    `Could not remove ${group.file.fileName}. Try again.`
-                )
+                setError(`Could not remove ${group.file.fileName}. Try again.`)
             }
         } finally {
             setRemovingKey(null)

@@ -22,6 +22,9 @@ import type {
     Student,
 } from '../data/students'
 import { StudentNotesSection } from './StudentNotesSection'
+import { ClassFilesView } from './files/ClassFilesView'
+import { EraseStudentDialog } from './EraseStudentDialog'
+import { isOneDriveEnabled } from '../auth/msal'
 import {
     studyModeLabel,
     subjectOptions,
@@ -60,6 +63,8 @@ type StudentDetailsViewProps = {
     onArchive: (id: number, notes: string) => void
     /** Returns an alumnus to the active roster. */
     onRestore: (id: number) => void
+    /** The student has been erased for good (REQ-063). */
+    onErased?: (id: number) => void
     /** Saves edits to a single upcoming class, in place on the student page. */
     onEditSession: (
         id: number,
@@ -75,9 +80,9 @@ type StudentDetailsViewProps = {
     /** Persists the student's dated notes log after an add, edit or delete. */
     onUpdateNotes: (notes: DatedNote[]) => void
     /** Which tab is shown — the profile details, or the notes diary. */
-    activeTab: 'details' | 'diary'
+    activeTab: 'details' | 'diary' | 'files'
     /** Switches tab; the route reflects it in the URL for deep-linking. */
-    onSelectTab: (tab: 'details' | 'diary') => void
+    onSelectTab: (tab: 'details' | 'diary' | 'files') => void
 }
 
 const modeOptions: Student['mode'][] = ['Face to Face', 'Online', 'Both']
@@ -99,6 +104,7 @@ export const StudentDetailsView = ({
     onOpenStudentPage,
     onArchive,
     onRestore,
+    onErased,
     onEditSession,
     onCancelSession,
     onAddMember,
@@ -179,6 +185,8 @@ export const StudentDetailsView = ({
     const [cancelTarget, setCancelTarget] = useState<ScheduledSession | null>(
         null
     )
+    // The erase-for-good confirmation (REQ-063), archived students only.
+    const [erasing, setErasing] = useState(false)
     // The class being edited in place, and the form behind its dialog.
     const [editTarget, setEditTarget] = useState<ScheduledSession | null>(null)
     const [editForm, setEditForm] = useState({
@@ -341,14 +349,36 @@ export const StudentDetailsView = ({
                                 <p>{student.archiveNotes}</p>
                             )}
                         </div>
-                        <Button
-                            variant="contained"
-                            disabled={saving}
-                            onClick={() => onRestore(student.id)}
-                        >
-                            Restore to active
-                        </Button>
+                        <div className="archived-banner-actions">
+                            <Button
+                                variant="contained"
+                                disabled={saving}
+                                onClick={() => onRestore(student.id)}
+                            >
+                                Restore to active
+                            </Button>
+                            {/* Erasure, offered only on an archived student
+                                (owner decision, 2026-11-12). */}
+                            {onErased && (
+                                <Button
+                                    color="error"
+                                    variant="outlined"
+                                    disabled={saving}
+                                    onClick={() => setErasing(true)}
+                                >
+                                    Erase permanently
+                                </Button>
+                            )}
+                        </div>
                     </div>
+                )}
+                {student.isArchived && onErased && (
+                    <EraseStudentDialog
+                        student={student}
+                        open={erasing}
+                        onClose={() => setErasing(false)}
+                        onErased={onErased}
+                    />
                 )}
 
                 <div
@@ -374,6 +404,18 @@ export const StudentDetailsView = ({
                     >
                         Diary
                     </button>
+                    {/* Files on the student's classes (REQ-063). */}
+                    {isOneDriveEnabled() && (
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'files'}
+                            className={`student-tab${activeTab === 'files' ? ' active' : ''}`}
+                            onClick={() => onSelectTab('files')}
+                        >
+                            Files
+                        </button>
+                    )}
                 </div>
 
                 {activeTab === 'details' && (
@@ -926,6 +968,13 @@ export const StudentDetailsView = ({
                 </div>
                 )}
             </div>
+
+            {activeTab === 'files' && (
+                <ClassFilesView
+                    student={student}
+                    subjects={student.subjects}
+                />
+            )}
 
             {activeTab === 'diary' && (
                 <div className="card student-notes-card">

@@ -467,6 +467,25 @@ const studentSlice = createSlice({
                 message: 'Student archived — moved to Alumni.',
             }
         },
+        // Erasure (REQ-063): the API has already removed the student with
+        // their classes and payment rows — drop them from what is on screen.
+        studentErased: (state, action: PayloadAction<number>) => {
+            const id = action.payload
+            state.students = state.students.filter((s) => s.id !== id)
+            state.scheduledSessions = state.scheduledSessions.filter(
+                (session) => session.studentId !== id
+            )
+            state.paymentsByMonth = state.paymentsByMonth.map((group) => ({
+                ...group,
+                records: group.records.filter(
+                    (record) => record.studentId !== id
+                ),
+            }))
+            state.notice = {
+                kind: 'success',
+                message: 'Student erased, with their classes, payments and files.',
+            }
+        },
         restoreStudentSucceeded: (state, action: PayloadAction<Student>) => {
             state.savingStudent = false
             state.hasLocalStudentChanges = true
@@ -884,6 +903,7 @@ export const {
     restoreStudentRequested,
     archiveStudentSucceeded,
     restoreStudentSucceeded,
+    studentErased,
     archiveStudentFailed,
     dismissError,
     dismissNotice,

@@ -3207,7 +3207,7 @@ would re-render for nothing.
 
 ## REQ-063 — Files on a class, kept in the teacher's own OneDrive
 
-**Status:** 🔲 Not started · **Impact:** both + infra · **Effort:** L
+**Status:** 🚧 Built on dev (2026-11-12) · **Impact:** both + infra · **Effort:** L
 _(owner ask, 2026-11-08: "upload documents/images for each session I take,
 and preview/review them when I need with a search by date/student/session"
 — refined the same day: free of cost, and "use the user's MS account to
@@ -3376,30 +3376,79 @@ personal-accounts-only registration for OneDrive.
   PowerPoint) and a **text search** over file name and caption, alongside
   student, subject and date range; all combine. Rows grouped by day,
   newest first; each opens in the in-app viewer, and its › goes to the
-  class.
+  class. _Later the same day: a table, not a grid (see below)._
+- **Files as a table, not thumbnails.** A small icon per type, the name and
+  caption, and Preview / Download / Remove on every row; on Class files also
+  the students, the subject and the class date, which links to the class.
+- **The class dialog has Details | Files tabs**; files were a long scroll
+  away under the form.
+- **Delete with confirmation** everywhere a file is listed, taking every
+  student's copy.
+- **Erasure is a button on archived students only**: **Erase permanently**,
+  behind typing the student's name. It removes their files, then their
+  folder, then the record. Before this the app had no erase action at all;
+  the purge routine's "delete the student" referred to a button that did not
+  exist.
+- **No empty folders left behind.** Removing a file, a class or a student
+  also removes any class or student folder left empty, found from
+  OneDrive's own record of where the file sat. The app's own folder is never
+  deleted.
+- **Folder names carry the student code** — `Asha Patel (STU-4F9K2Q)` — so
+  two students sharing a name never share a folder (erasing one must not
+  touch the other's files).
 
-**Acceptance criteria**
-- [ ] From a class, the teacher attaches one or more images, PDFs or
+**Built (2026-11-12, all on dev; prod still off)**
+- Backend PR #90: the `attachments` index and its four endpoints, with
+  cascades on class delete and student erasure.
+- Frontend:
+  - PR #140: the teacher is the *tenant* account everywhere
+    (`useIsTeacher`), plus OneDrive connect behind `VITE_ONEDRIVE_FILES`.
+  - PR #141: attach, view and remove files in a class.
+  - PR #142: the Class files page, the table, the tabs.
+  - This change: the student page's Files tab, erasure, and the privacy
+    records.
+- Not done:
+  - **Group classes upload once per attendee**, rather than using
+    OneDrive's server-side `copy` (which saves phone data). It needs a
+    small spike: the copy is asynchronous, and its monitor URL is
+    untested under CORS.
+  - **Word preview in the app** is unconfirmed by the owner.
+  - **The EXIF strip** is unit-tested but not yet checked on a real phone
+    photo.
+
+**Before prod**
+1. Owner decision on [PRIVACY-ROPA §6 gap 5](./PRIVACY-ROPA.md): consumer
+   terms and residency, and the public privacy page's wording.
+2. Give the prod SPA registration a readable display name; it becomes the
+   OneDrive folder name.
+3. Terraform `onedrive_files = true` for prod, then apply.
+4. Set `VITE_ONEDRIVE_FILES=true` on the prod GitHub environment.
+
+**Acceptance criteria** _(ticked = met on dev)_
+- [x] From a class, the teacher attaches one or more images, PDFs or
       Word/PowerPoint files (≤20MB each), from a phone camera or from
       files; they land in the teacher's OneDrive app folder under that
       student and class. Other types and oversize files are refused with
       a clear message before anything uploads.
-- [ ] Uploaded images carry no EXIF/GPS metadata.
-- [ ] "Class files" (Class scheduling → Class files) finds files by date range,
+- [ ] Uploaded images carry no EXIF/GPS metadata. _(Every photo is redrawn
+      through a canvas, which drops it; unit-tested. Still to check on a real
+      phone photo.)_
+- [x] "Class files" (Class scheduling → Class files) finds files by date range,
       student, subject, class, file type (photos / PDFs / Word /
       PowerPoint) and a text search over name and caption; filters
       combine; newest first; each links back to its class.
-- [ ] Images and PDFs preview in the app without a manual download.
-- [ ] A file can be captioned and deleted (from OneDrive and the index).
-- [ ] Erasing a student removes their OneDrive folder, or says clearly
+- [x] Images and PDFs preview in the app without a manual download.
+- [x] A file can be captioned and deleted (from OneDrive and the index).
+- [x] Erasing a student removes their OneDrive folder, or says clearly
       that it could not and offers a retry.
-- [ ] Dev and prod files never share a folder.
-- [ ] No new Azure cost; no new stored secrets.
-- [ ] The API sign-in and teacher allow-list behave exactly as before.
-- [ ] `PRIVACY-ROPA.md` and `PRIVACY-RETENTION.md` record OneDrive as a
+- [x] Dev and prod files never share a folder.
+- [x] No new Azure cost; no new stored secrets.
+- [x] The API sign-in and teacher allow-list behave exactly as before.
+- [x] `PRIVACY-ROPA.md` and `PRIVACY-RETENTION.md` record OneDrive as a
       store and its residency; files follow the student record's retention
       and go with it in the alumni purge.
-- [ ] Coverage holds (frontend 100% gate); works at 390px.
+- [x] Coverage holds (the gate is 90%; new code fully covered); works at
+      390px.
 
 **Owner decisions (2026-11-08)**
 - **File types:** images, PDF, **and Word/PowerPoint** (`.docx`, `.pptx`).

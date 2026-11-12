@@ -29,3 +29,11 @@ export const archiveStudent = (
 /** POST /students/{id}/restore — return an alumnus to the active roster. */
 export const restoreStudent = (id: number): Promise<Student> =>
     apiRequest<Student>(`/students/${id}/restore`, { method: 'POST' })
+
+/**
+ * DELETE /students/{id} — erase a student and everything about them: their
+ * classes, payment rows and file index (GDPR right to erasure). Their files
+ * in OneDrive are the browser's to remove first (REQ-063).
+ */
+export const deleteStudent = (id: number): Promise<void> =>
+    apiRequest<void>(`/students/${id}`, { method: 'DELETE' })
