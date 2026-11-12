@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useIsAuthenticated } from '@azure/msal-react'
+import { useIsTeacher } from '../auth/useTeacher'
 import { isAuthConfigured } from '../auth/msal'
 import { countPageVisit, type PageKey } from '../api/pageVisits'
 
@@ -38,7 +38,7 @@ const useCount = (page: PageKey, isTeacher: boolean) => {
  * lives in its own component — the same split Sidebar and TopbarAuth use.
  */
 const CountingSignedAware = ({ page }: { page: PageKey }) => {
-    useCount(page, useIsAuthenticated())
+    useCount(page, useIsTeacher())
     return null
 }
 

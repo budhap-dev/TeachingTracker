@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
-import { useIsAuthenticated } from '@azure/msal-react'
+import { useIsTeacher } from '../auth/useTeacher'
 import { isAuthConfigured } from '../auth/msal'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
@@ -439,7 +439,7 @@ const PricingConnected = ({ canEdit }: { canEdit: boolean }) => {
     )
 }
 
-const PricingAuthed = () => <PricingConnected canEdit={useIsAuthenticated()} />
+const PricingAuthed = () => <PricingConnected canEdit={useIsTeacher()} />
 
 /** The connected pricing page: public for visitors; the signed-in teacher
     (or auth-less local dev) edits in place. */

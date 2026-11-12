@@ -1,10 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import {
-    AuthenticatedTemplate,
-    UnauthenticatedTemplate,
-} from '@azure/msal-react'
 import { isAuthConfigured } from '../auth/msal'
+import { useAuthSettled, useIsTeacher } from '../auth/useTeacher'
 import { paths } from '../paths'
 import { HomeLanding } from './HomeView'
 import { CountPageVisit } from './CountPageVisit'
@@ -36,16 +33,23 @@ const SignedOut = () => {
  * this — the Offerings and Contact pages stay reachable without an account
  * (REQ-006/007).
  */
-export const RequireTeacher = ({ children }: { children: ReactNode }) => {
-    if (!isAuthConfigured()) {
-        return <>{children}</>
-    }
-    return (
-        <>
-            <AuthenticatedTemplate>{children}</AuthenticatedTemplate>
-            <UnauthenticatedTemplate>
-                <SignedOut />
-            </UnauthenticatedTemplate>
-        </>
+export const RequireTeacher = ({ children }: { children: ReactNode }) =>
+    isAuthConfigured() ? (
+        <TeacherGate>{children}</TeacherGate>
+    ) : (
+        <>{children}</>
     )
+
+/**
+ * The gate proper. Judged on the *tenant* account (REQ-063): a connected
+ * OneDrive account alone is not the teacher. Renders nothing until the
+ * redirect handshake settles, as msal-react's templates did.
+ */
+const TeacherGate = ({ children }: { children: ReactNode }) => {
+    const settled = useAuthSettled()
+    const isTeacher = useIsTeacher()
+    if (!settled) {
+        return null
+    }
+    return isTeacher ? <>{children}</> : <SignedOut />
 }

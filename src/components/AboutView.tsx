@@ -32,7 +32,7 @@ import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded'
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded'
 import TrackChangesRoundedIcon from '@mui/icons-material/TrackChangesRounded'
 import StarRoundedIcon from '@mui/icons-material/StarRounded'
-import { useIsAuthenticated } from '@azure/msal-react'
+import { useIsTeacher } from '../auth/useTeacher'
 import { isAuthConfigured } from '../auth/msal'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
@@ -1141,7 +1141,7 @@ const AboutConnected = ({ canEdit }: { canEdit: boolean }) => {
     )
 }
 
-const AboutAuthed = () => <AboutConnected canEdit={useIsAuthenticated()} />
+const AboutAuthed = () => <AboutConnected canEdit={useIsTeacher()} />
 
 /** The connected About page: public; the teacher edits in place. */
 export const AboutLanding = () =>

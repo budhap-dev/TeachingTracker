@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useIsAuthenticated } from '@azure/msal-react'
+import { useIsTeacher } from '../auth/useTeacher'
 import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
@@ -447,7 +447,7 @@ const SidebarContent = ({
  * ever runs beneath an MsalProvider (same split as TopbarAuth).
  */
 const SidebarSignedAware = (props: SidebarProps) => (
-    <SidebarContent {...props} showTeacherItems={useIsAuthenticated()} />
+    <SidebarContent {...props} showTeacherItems={useIsTeacher()} />
 )
 
 export const Sidebar = (props: SidebarProps) =>

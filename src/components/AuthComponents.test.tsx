@@ -35,6 +35,9 @@ vi.mock('./HomeView', () => ({
 // The auth module is fully unit-tested on its own; components see a mock.
 vi.mock('../auth/msal', () => ({
     isAuthConfigured: vi.fn(),
+    // Tenant accounts are the teacher; the personal (OneDrive) one is not.
+    isTeacherAccount: (account: { tenantId?: string }) =>
+        account.tenantId !== 'msa',
     getMsalInstance: vi.fn(),
     acquireApiToken: vi.fn().mockResolvedValue(null),
     signIn: vi.fn(),
@@ -43,7 +46,8 @@ vi.mock('../auth/msal', () => ({
 
 // msal-react's templates/hooks, steered per-test via mockAccount and
 // mockInProgress ('none' = the interaction/redirect dance has settled).
-let mockAccount: { username: string; name?: string } | null = null
+let mockAccount: { username: string; name?: string; tenantId?: string } | null =
+    null
 let mockInProgress = 'none'
 const mockAuthenticated = () => mockAccount !== null
 vi.mock('@azure/msal-react', () => ({
@@ -81,6 +85,26 @@ describe('RequireTeacher', () => {
         expect(
             screen.queryByText(/welcome to springboard/i)
         ).not.toBeInTheDocument()
+    })
+
+    // REQ-063: once OneDrive is connected the cache also holds the
+    // teacher's personal account. That alone must never open the gate.
+    it('does not treat a personal (OneDrive) account as the teacher', () => {
+        mockAccount = { username: 'teacher@outlook.com', tenantId: 'msa' }
+        render(
+            <MemoryRouter initialEntries={['/']}>
+                <RequireTeacher>secret page</RequireTeacher>
+            </MemoryRouter>
+        )
+        expect(screen.queryByText('secret page')).not.toBeInTheDocument()
+        expect(screen.getByText('home landing')).toBeInTheDocument()
+    })
+
+    it('renders nothing while the sign-in redirect is being handled', () => {
+        mockInProgress = 'handleRedirect'
+        render(<RequireTeacher>secret page</RequireTeacher>)
+        expect(screen.queryByText('secret page')).not.toBeInTheDocument()
+        expect(screen.queryByText('home landing')).not.toBeInTheDocument()
     })
 
     // Signed-out behaviour is route-aware: deep links bounce to the

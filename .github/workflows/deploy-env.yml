@@ -8,6 +8,9 @@ name: Deploy frontend to environment
 #   - vars.VITE_ENTRA_TENANT_ID           -> Entra tenant (REQ-004 sign-in)
 #   - vars.VITE_ENTRA_SPA_CLIENT_ID       -> that env's SPA app registration
 #   - vars.VITE_ENTRA_API_SCOPE           -> the API scope MSAL requests
+#   - vars.VITE_ONEDRIVE_FILES            -> 'true' where the SPA registration
+#                                            accepts personal accounts (REQ-063);
+#                                            unset = files on classes are off
 #   - secrets.AZURE_STATIC_WEB_APPS_API_TOKEN -> that SWA's deployment token
 # and any protection rules (e.g. required reviewers on prod).
 on:
@@ -52,6 +55,7 @@ jobs:
           VITE_ENTRA_TENANT_ID: ${{ vars.VITE_ENTRA_TENANT_ID }}
           VITE_ENTRA_SPA_CLIENT_ID: ${{ vars.VITE_ENTRA_SPA_CLIENT_ID }}
           VITE_ENTRA_API_SCOPE: ${{ vars.VITE_ENTRA_API_SCOPE }}
+          VITE_ONEDRIVE_FILES: ${{ vars.VITE_ONEDRIVE_FILES }}
           VITE_APP_VERSION: ${{ env.APP_VERSION }}
           # The badge's ring colour keys off this: prod sky, everything
           # else yellow — the two apps can never be mistaken.

@@ -3,13 +3,10 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { Provider } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
-import {
-    MsalProvider,
-    useIsAuthenticated,
-    useMsal,
-} from '@azure/msal-react'
+import { MsalProvider, useMsal } from '@azure/msal-react'
 import { InteractionStatus } from '@azure/msal-browser'
 import { getMsalInstance, isAuthConfigured } from './auth/msal'
+import { useIsTeacher } from './auth/useTeacher'
 import {
     store,
     fetchStudentsRequested,
@@ -58,7 +55,7 @@ const InitialData = ({ ready }: { ready: boolean }) => {
  */
 const AuthGatedInitialData = () => {
     const { inProgress } = useMsal()
-    const isAuthenticated = useIsAuthenticated()
+    const isAuthenticated = useIsTeacher()
     const dispatch = useAppDispatch()
     const settled = inProgress === InteractionStatus.None
 

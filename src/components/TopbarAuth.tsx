@@ -5,7 +5,7 @@ import {
     DialogContent,
     DialogTitle,
 } from '@mui/material'
-import { useAccount, useIsAuthenticated, useMsal } from '@azure/msal-react'
+import { useIsTeacher, useTeacherAccount } from '../auth/useTeacher'
 import { useState } from 'react'
 import { isAuthConfigured, signOut } from '../auth/msal'
 import { BrandLogo } from './BrandLogo'
@@ -17,8 +17,7 @@ import { BrandLogo } from './BrandLogo'
  */
 
 const TeacherNameInner = () => {
-    const { accounts } = useMsal()
-    const account = useAccount(accounts[0] ?? {})
+    const account = useTeacherAccount()
     // First name only — a heading, not an identity record. The account's
     // display name can be absent on some account types; "Teacher" then.
     const firstName = account?.name?.trim().split(/\s+/)[0]
@@ -61,7 +60,7 @@ const VisitorGreeting = ({ quote }: { quote: string }) => (
 )
 
 const TopbarGreetingInner = ({ quote }: { quote: string }) =>
-    useIsAuthenticated() ? (
+    useIsTeacher() ? (
         <TeacherGreeting quote={quote} />
     ) : (
         <VisitorGreeting quote={quote} />
@@ -77,14 +76,12 @@ export const TopbarGreeting = ({ quote }: { quote: string }) =>
     )
 
 const TopbarAuthInner = () => {
-    const { accounts } = useMsal()
-    const account = useAccount(accounts[0] ?? {})
-    const isAuthenticated = useIsAuthenticated()
+    const account = useTeacherAccount()
     // A tap on Sign out asks first (owner ask, 2026-08-10) — it sits
     // beside the version line where a scroll-flick can graze it.
     const [confirming, setConfirming] = useState(false)
 
-    if (!isAuthenticated || !account) {
+    if (!account) {
         return null
     }
 

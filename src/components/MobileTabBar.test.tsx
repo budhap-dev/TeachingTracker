@@ -14,8 +14,8 @@ import { defaultSiteContent } from '../data/siteContent'
 // Auth-configured; the flag flips per test between visitor and teacher.
 let signedIn = false
 vi.mock('../auth/msal', () => ({ isAuthConfigured: () => true }))
-vi.mock('@azure/msal-react', () => ({
-    useIsAuthenticated: () => signedIn,
+vi.mock('../auth/useTeacher', () => ({
+    useIsTeacher: () => signedIn,
 }))
 
 const renderBar = (onMenu = vi.fn()) => {
