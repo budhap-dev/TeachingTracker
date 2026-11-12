@@ -26,6 +26,12 @@ const inventory: InventoryRow[] = [
         basis: 'Contract — delivering the tutoring you asked for',
     },
     {
+        data: 'Photos and documents from lessons — for example a photo of the whiteboard or of marked work, a worksheet, a past paper',
+        source: 'Taken or added by the teacher during or after a lesson',
+        why: 'To keep a record of the work done in each lesson, and find it again',
+        basis: 'Contract — delivering the tutoring you asked for',
+    },
+    {
         data: 'Enquiries — your name, email and/or phone, your child’s year, subjects and your goal',
         source: 'The Enquire form on this site',
         why: 'To reply to you about tutoring',
@@ -64,7 +70,7 @@ export const PrivacyView = () => {
                     needs, I never sell or share it for marketing, and you
                     can ask for it — or ask for it to be gone — at any time.
                 </p>
-                <p className="privacy-updated">Last updated: 31 July 2026</p>
+                <p className="privacy-updated">Last updated: 12 November 2026</p>
             </div>
 
             <div className="card">
@@ -148,10 +154,13 @@ export const PrivacyView = () => {
                         into the student record. Deleted sooner on request.
                     </li>
                     <li>
-                        <strong>Student records</strong> — while tutoring
+                        <strong>Student records</strong>, with the photos and
+                        documents from their lessons — while tutoring
                         continues, then two years, so a returning student
                         picks up where they left off. After that they are
-                        deleted.
+                        deleted. A deleted photo or document sits in
+                        OneDrive&apos;s recycle bin for up to 30 days before
+                        it is gone for good.
                     </li>
                     <li>
                         <strong>Payment records</strong> — up to six years,
@@ -178,14 +187,28 @@ export const PrivacyView = () => {
                     Where it lives, and who processes it
                 </h4>
                 <p>
-                    Everything is stored on Microsoft Azure in the{' '}
+                    Student records, enquiries, reviews and payment records
+                    are stored on Microsoft Azure in the{' '}
                     <strong>UK South</strong> region, encrypted at rest and
                     served over HTTPS. The teacher&apos;s area of this site
                     sits behind Microsoft Entra sign-in, and the tutor is the
                     only person with access. Microsoft processes this data as
                     my hosting provider under Microsoft&apos;s standard data
-                    protection terms. No other company receives it — there
-                    are no analytics, advertising or email-marketing
+                    protection terms.
+                </p>
+                <p>
+                    <strong>Photos and documents from lessons</strong> are
+                    kept in the tutor&apos;s own Microsoft OneDrive, in a
+                    folder that only this site can use. OneDrive is a
+                    Microsoft personal service: it is covered by
+                    Microsoft&apos;s standard consumer terms rather than the
+                    business terms above, and Microsoft may store the files
+                    outside the UK. Photos have their location and camera
+                    details removed before they are uploaded.
+                </p>
+                <p>
+                    Microsoft is the only company that receives any of this —
+                    there are no analytics, advertising or email-marketing
                     providers.
                 </p>
             </div>
