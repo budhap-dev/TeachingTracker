@@ -76,5 +76,9 @@ export async function apiRequest<T>(
         )
     }
 
+    // A 204 has no body to parse — deletes answer with one.
+    if (response.status === 204) {
+        return undefined as T
+    }
     return (await response.json()) as T
 }

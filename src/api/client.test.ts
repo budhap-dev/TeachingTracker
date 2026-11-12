@@ -82,6 +82,20 @@ describe('api client', () => {
         })
     })
 
+    it('resolves a 204 without trying to parse a body', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 204,
+            json: async () => {
+                throw new SyntaxError('Unexpected end of JSON input')
+            },
+        })
+        vi.stubGlobal('fetch', fetchMock)
+        await expect(
+            apiRequest('/reminders/1', { method: 'DELETE' })
+        ).resolves.toBeUndefined()
+    })
+
     it('throws an ApiError on a non-ok response', async () => {
         mockFetch({ error: 'nope' }, false, 404)
 

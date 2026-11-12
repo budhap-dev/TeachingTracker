@@ -43,6 +43,10 @@ import {
 import { requiredFieldProps } from '../utils/formValidation'
 import { paths } from '../paths'
 import type { ScheduledSession, SessionStatus, Student } from '../data/students'
+import { isOneDriveEnabled } from '../auth/msal'
+import { removeClassFiles } from '../onedrive/attach'
+import { OneDriveNotConnectedError } from '../onedrive/graph'
+import { ClassFilesSection } from './files/ClassFilesSection'
 
 type ClassSchedulingViewProps = {
     students: Student[]
@@ -291,6 +295,40 @@ export const ClassSchedulingView = ({
     }
     // The class the delete confirmation is about, if any (a whole entry).
     const [deleteTarget, setDeleteTarget] = useState<DayEntry | null>(null)
+    const [deleting, setDeleting] = useState(false)
+    const [deleteError, setDeleteError] = useState<string | null>(null)
+
+    const closeDelete = () => {
+        setDeleteTarget(null)
+        setDeleteError(null)
+    }
+
+    /**
+     * Deletes a class — its OneDrive files first (REQ-063). If OneDrive
+     * cannot remove them the class stays, so no file is left in the drive
+     * with nothing pointing at it.
+     */
+    const confirmDelete = async (entry: DayEntry) => {
+        if (isOneDriveEnabled()) {
+            setDeleting(true)
+            setDeleteError(null)
+            try {
+                await removeClassFiles(entryMembers(entry))
+            } catch (error) {
+                setDeleteError(
+                    error instanceof OneDriveNotConnectedError
+                        ? 'This class has files in OneDrive. Connect OneDrive (in the class, under Files) before deleting it.'
+                        : 'Could not remove this class’s files from OneDrive, so the class was kept. Try again.'
+                )
+                return
+            } finally {
+                setDeleting(false)
+            }
+        }
+        onDeleteClass(entry.lead.id)
+        closeDelete()
+        setOpenDate(null)
+    }
 
     // A day's rows folded into entries — a group class is ONE entry — sorted
     // once, here, so chips, tooltips and the day modal number identically.
@@ -928,6 +966,15 @@ export const ClassSchedulingView = ({
                             </div>
                         )}
 
+                        {/* Files on the class (REQ-063): photos and documents
+                            kept in the teacher's OneDrive. */}
+                        {editingEntry && (
+                            <ClassFilesSection
+                                members={entryMembers(editingEntry)}
+                                students={students}
+                            />
+                        )}
+
                         {/* The primary action lives in the modal header; only
                             the destructive/status actions stay by the form. */}
                         {editingEntry && (
@@ -1007,7 +1054,7 @@ export const ClassSchedulingView = ({
 
             <Dialog
                 open={deleteTarget !== null}
-                onClose={() => setDeleteTarget(null)}
+                onClose={closeDelete}
                 maxWidth="xs"
             >
                 {deleteTarget && (
@@ -1022,22 +1069,27 @@ export const ClassSchedulingView = ({
                                 {`${deleteTarget.lead.time} • ${entryTitle(deleteTarget)} • ${deleteTarget.lead.subject}`}
                             </p>
                             <p className="delete-warning">
-                                This permanently removes the class. To keep a
-                                record instead, cancel it.
+                                This permanently removes the class
+                                {isOneDriveEnabled()
+                                    ? ' and its files'
+                                    : ''}
+                                . To keep a record instead, cancel it.
                             </p>
+                            {deleteError && (
+                                <p className="class-files-refusal" role="alert">
+                                    {deleteError}
+                                </p>
+                            )}
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={() => setDeleteTarget(null)}>
+                            <Button onClick={closeDelete}>
                                 Keep
                             </Button>
                             <Button
                                 color="error"
                                 variant="contained"
-                                onClick={() => {
-                                    onDeleteClass(deleteTarget.lead.id)
-                                    setDeleteTarget(null)
-                                    setOpenDate(null)
-                                }}
+                                disabled={deleting}
+                                onClick={() => void confirmDelete(deleteTarget)}
                             >
                                 Delete
                             </Button>
