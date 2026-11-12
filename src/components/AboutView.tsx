@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import Cropper from 'react-easy-crop'
 import type { Area } from 'react-easy-crop'
 import {
     Button,
@@ -46,7 +45,7 @@ import { defaultSiteContent } from '../data/siteContent'
 import type { BioSection, CvEntry, SiteContent } from '../data/siteContent'
 import { paths } from '../paths'
 import { PageLoading } from './PageLoading'
-import { RichTextEditor } from './RichTextEditor'
+import { Cropper, RichTextEditor } from './LazyEditors'
 
 /** Editable CV rows, keyed like every list editor in the app. */
 type CvRow = CvEntry & { key: string }
