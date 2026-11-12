@@ -103,7 +103,7 @@ holds: nothing here survives a closed tab (REQ-058).
 | **Microsoft Entra ID** | Teacher sign-in | §2 record 5 only | Same Microsoft DPA |
 | **GitHub** | Source code and CI | **None** — no personal data in the repository (dev seed data is invented people) | n/a |
 | **The owner's own storage** | Holds the monthly JSON dumps | All of §2 records 1–4 | Not a third party; owner custody, private storage, no sharing |
-| **Microsoft OneDrive — the teacher's own personal account** (REQ-063) | Holds the files attached to classes: photos of work, worksheets, past papers | Part of §2 record 1: images and documents of pupils' work; file names and captions may name a pupil | ⚠️ Personal OneDrive runs under Microsoft's **consumer** terms (Microsoft Services Agreement), not the Products and Services DPA, and has **no region choice**. Thumbnails were served from Canada Central in the 2026-11-12 spike. Access: the app's own folder only (`Files.ReadWrite.AppFolder`), written and read by the teacher's browser; the API never touches the bytes. See §6 gap 5 |
+| **Microsoft OneDrive — the teacher's own personal account** (REQ-063) | Holds the files attached to classes: photos of work, worksheets, past papers | Part of §2 record 1: images and documents of pupils' work; file names and captions may name a pupil | ⚠️ Personal OneDrive runs under Microsoft's **consumer** terms (Microsoft Services Agreement), not the Products and Services DPA, and has **no region choice**. Thumbnails were served from Canada Central in the 2026-11-12 spike. Access: the app's own folder only (`Files.ReadWrite.AppFolder`), written and read by the teacher's browser; the API never touches the bytes. Accepted by the owner, 2026-11-12 — see §6 gap 5 |
 
 **The teacher's own reminders (REQ-057).** Notes-to-self carrying a date, an
 optional time and free text the teacher writes. They belong to no student and
@@ -252,17 +252,19 @@ so this document stands alone:
 3. ⚠️ **Monthly dumps outlive live erasure** by up to 12 months. The rolling
    window is the bound; the policy must not promise faster.
 4. ⚠️ **ICO registration is unconfirmed** — see §8.
-5. ⚠️ **Files on classes live under consumer terms, outside the UK**
-   (REQ-063). Personal OneDrive gives the controller the data in their own
-   account and costs nothing, but it is not covered by Microsoft's business
-   DPA and has no region choice. Before files are switched on in prod, the
-   owner decides:
-   - whether these terms are acceptable for photos of pupils' work;
-   - the wording for the public privacy page, which today says no other
-     providers are used. It must name OneDrive before prod, per the §3 rule.
-   Files deleted in the app go to the OneDrive recycle bin, which empties
-   itself after 30 days; the policy must not promise faster.
-
+5. ✅ **Files on classes live under consumer terms, outside the UK**
+   (REQ-063). **Decided by the owner, 2026-11-12: accepted.** Personal
+   OneDrive keeps the files in the controller's own account at no cost, but
+   it sits outside Microsoft's business DPA and has no region choice. The
+   owner accepts both for photos and documents of pupils' work, with these
+   mitigations:
+   - the app sees only its own folder (`Files.ReadWrite.AppFolder`);
+   - photos are stripped of EXIF/GPS before upload;
+   - files follow the student record's retention and erasure.
+   The public privacy page names OneDrive, its terms and the possible
+   non-UK storage (updated 12 November 2026, before prod went live). Files
+   deleted in the app sit in the OneDrive recycle bin for up to 30 days;
+   the policy says so.
 ---
 
 ## 7. Breach log

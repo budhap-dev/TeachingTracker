@@ -3417,10 +3417,11 @@ personal-accounts-only registration for OneDrive.
     photo.
 
 **Before prod**
-1. Owner decision on [PRIVACY-ROPA §6 gap 5](./PRIVACY-ROPA.md): consumer
-   terms and residency, and the public privacy page's wording.
-2. Give the prod SPA registration a readable display name; it becomes the
-   OneDrive folder name.
+1. ✅ Owner decision on [PRIVACY-ROPA §6 gap 5](./PRIVACY-ROPA.md)
+   (2026-11-12): consumer terms and residency accepted. The public privacy
+   page now names OneDrive.
+2. ✅ The prod SPA registration's display name is **AbhiTutor** (owner
+   choice), so the folder is `OneDrive/Apps/AbhiTutor`.
 3. Terraform `onedrive_files = true` for prod, then apply.
 4. Set `VITE_ONEDRIVE_FILES=true` on the prod GitHub environment.
 
