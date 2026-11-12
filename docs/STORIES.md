@@ -3240,8 +3240,10 @@ consent. Not Azure Blob Storage, and not the host's OneDrive:
   UK South. Record this in `PRIVACY-ROPA.md` and `PRIVACY-RETENTION.md`.
 
 **Shape (decide details at build)**
-- **Storage layout** — the app's own folder (`Files.ReadWrite.AppFolder`,
-  the narrowest scope; the app cannot see the rest of the drive):
+- **Storage layout** — _superseded by the 2026-11-12 owner decisions
+  below (student names, no `<env>` segment)._ The app's own folder
+  (`Files.ReadWrite.AppFolder`, the narrowest scope; the app cannot see
+  the rest of the drive):
   `Apps/<app>/<env>/students/<studentId>/<date>_<sessionId>/<file>`.
   Per-env so dev testing (the developer's own OneDrive) and prod never mix;
   per-student so erasing a student is **one folder delete**. A group class
@@ -3252,7 +3254,7 @@ consent. Not Azure Blob Storage, and not the host's OneDrive:
   sizeBytes, driveItemId, caption, uploadedAt`. `date`/`studentId`/
   `subject` are copied from the class (as session rows copy names), so
   search never joins. Endpoints: `GET /attachments?from&to&studentId&
-  sessionId&subject`, `POST /attachments` (after the upload succeeds),
+  sessionId&subject&type&q`, `POST /attachments` (after the upload succeeds),
   `PATCH /attachments/{id}` (caption), `DELETE /attachments/{id}`.
   Search is ours, not OneDrive's — Graph search is fuzzy and knows nothing
   about students or classes.
@@ -3311,6 +3313,70 @@ personal-accounts-only registration for OneDrive.
   one in-place change to dev's SPA app; nothing for prod; the API
   registration is untouched. **Not yet applied** — Terraform state is
   local, so `terraform apply` on dev is a separate step.
+- 2026-11-12 — **Dev apply confirmed.** A plan targeted at
+  `module.auth["dev"]` shows no changes: the apply had already run on
+  2026-11-08. Entra shows dev's SPA as `AzureADandPersonalMicrosoftAccount`,
+  v2 tokens, with `Files.ReadWrite.AppFolder` + `offline_access`.
+- 2026-11-12 — **Spike run on dev** (Chrome, the developer's personal
+  account; throwaway page `spike/onedrive.html` on branch
+  `spike/req-063-onedrive`, served by `npm start` only). Answers:
+  1. **Double sign-in works.** Tenant and `/consumers` accounts sit side
+     by side in one MSAL instance (`sessionStorage`); both renew silently
+     (forced refresh), and `GET /students` still returns 200 on the tenant
+     token. Sign-in redirects land on `/` and the app's MSAL instance
+     returns to the starting page unaided. `getAllAccounts()[0]` happened
+     to be the tenant account — luck, not design: `acquireApiToken` must
+     pick the tenant account by `tenantId`.
+  2. **Browser-only file handling works.** Simple PUT (≤4MB) and an upload
+     session (6MB, chunks PUT without a bearer token) both land in the app
+     folder (`Apps/<SPA display name>`). `downloadUrl` fetches under CORS.
+     **Thumbnail URLs fail `fetch()` under CORS but load as `<img src>`**
+     — the gallery uses them only as image sources. `GET /me/drive` is 403
+     under the AppFolder scope (expected), so OneDrive quota is not visible
+     to the app.
+  3. **CSP hosts:** `connect-src` + `https://graph.microsoft.com
+     https://my.microsoftpersonalcontent.com` (Graph, upload sessions,
+     downloads); `img-src` + `https://*.svc.ms` (thumbnails come from a
+     regional host — `canadacentral1-mediap.svc.ms` on this run, so a
+     wildcard); `frame-src` + `https://my.microsoftpersonalcontent.com`
+     (preview). `cspv2.core.microsoft` appeared while an Office preview
+     loaded — from inside Microsoft's frame, not our code; confirm on the
+     deployed dev site with the real CSP.
+  4. **Preview:** `POST /items/{id}/preview` returns a `getUrl` on
+     personal OneDrive; images render embedded (owner confirmed). Word:
+     _pending owner confirmation_. PowerPoint and a real phone photo's EXIF
+     strip not yet exercised.
+  Also: the residency loss is wider than "no region choice" — thumbnails
+  were served from Canada Central. Record in `PRIVACY-ROPA.md`.
+
+**Owner decisions (2026-11-12)**
+- **Folder layout: by student**, with readable names —
+  `Apps/<app>/<Student name>/<YYYY-MM-DD> <subject>/<file>`. Renaming a
+  student renames their folder. Dates are browsed in the app's "Class
+  files" page, not in OneDrive.
+- **No `<env>` segment.** Each app registration gets its own app folder,
+  so dev and prod are already apart. Rename the prod SPA's display name to
+  something readable (e.g. "Teaching Tracker") before first use — it
+  becomes the folder name.
+- **Group classes keep one copy per attendee** (upload once, then
+  server-side `copy` into each other attendee's folder), so erasing a
+  student never touches a file another student still needs.
+- **Erasure deletes by `driveItemId`, then the folder.** The teacher may
+  move or rename files inside the app folder in OneDrive (ids survive
+  that), so a folder delete alone could miss files. A file moved outside
+  the app folder is out of the app's reach; the app shows it as missing.
+- **Where files are seen — no new menu item.** "Class files" lives under
+  Class scheduling ("Classes" on the mobile bar) at `/scheduling/files`,
+  opened from a link beside "Class notes" there (the REQ-052 pattern). Not in Study Snapshot (a
+  per-student roster table, wrong shape for a gallery), and not a
+  top-level entry (the teacher menu and mobile bar are full). Files also
+  show in the class dialog (upload + that class's files) and as a Files
+  section on the student page.
+- **Class files filters:** a **type** filter (All · Photos · PDFs · Word ·
+  PowerPoint) and a **text search** over file name and caption, alongside
+  student, subject and date range; all combine. Rows grouped by day,
+  newest first; each opens in the in-app viewer, and its › goes to the
+  class.
 
 **Acceptance criteria**
 - [ ] From a class, the teacher attaches one or more images, PDFs or
@@ -3319,8 +3385,10 @@ personal-accounts-only registration for OneDrive.
       student and class. Other types and oversize files are refused with
       a clear message before anything uploads.
 - [ ] Uploaded images carry no EXIF/GPS metadata.
-- [ ] "Class files" finds files by date range, student, subject and class;
-      newest first; each links back to its class.
+- [ ] "Class files" (Class scheduling → Class files) finds files by date range,
+      student, subject, class, file type (photos / PDFs / Word /
+      PowerPoint) and a text search over name and caption; filters
+      combine; newest first; each links back to its class.
 - [ ] Images and PDFs preview in the app without a manual download.
 - [ ] A file can be captioned and deleted (from OneDrive and the index).
 - [ ] Erasing a student removes their OneDrive folder, or says clearly
