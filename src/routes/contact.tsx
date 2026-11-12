@@ -4,7 +4,7 @@ import { PageLoading } from '../components/PageLoading'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import { useDocumentMeta } from '../hooks/useDocumentMeta'
 import { fetchContactRequested, updateContactRequested } from '../store/store'
-import { useIsAuthenticated } from '@azure/msal-react'
+import { useIsTeacher } from '../auth/useTeacher'
 import { useEffect } from 'react'
 
 /**
@@ -43,7 +43,7 @@ const ContactRouteInner = ({ canEdit }: { canEdit: boolean }) => {
 // component chosen by isAuthConfigured — the same split the Sidebar uses. With
 // auth switched off (local dev), every visitor is treated as the teacher.
 const ContactRouteSignedAware = () => (
-    <ContactRouteInner canEdit={useIsAuthenticated()} />
+    <ContactRouteInner canEdit={useIsTeacher()} />
 )
 
 export const ContactRoute = () =>

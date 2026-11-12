@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined'
-import { useIsAuthenticated } from '@azure/msal-react'
+import { useIsTeacher } from '../auth/useTeacher'
 import { isAuthConfigured } from '../auth/msal'
 import { useAppDispatch, useAppSelector } from '../hooks'
 import {
@@ -297,7 +297,7 @@ const FaqConnected = ({ canEdit }: { canEdit: boolean }) => {
     )
 }
 
-const FaqAuthed = () => <FaqConnected canEdit={useIsAuthenticated()} />
+const FaqAuthed = () => <FaqConnected canEdit={useIsTeacher()} />
 
 /** The connected FAQ page: public accordion for visitors; the signed-in
     teacher (or auth-less local dev) also gets the inline editor. */

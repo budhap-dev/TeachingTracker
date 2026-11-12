@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { useIsAuthenticated } from '@azure/msal-react'
+import { useIsTeacher } from '../auth/useTeacher'
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
@@ -211,7 +211,7 @@ const MobileTabBarInner = ({
     teacher's carries their configured work screens, visitors' the
     public set. Auth-less local dev counts as the teacher. */
 const MobileTabBarGate = (props: MobileTabBarProps) => (
-    <MobileTabBarInner {...props} teacher={useIsAuthenticated()} />
+    <MobileTabBarInner {...props} teacher={useIsTeacher()} />
 )
 
 export const MobileTabBar = (props: MobileTabBarProps) =>
