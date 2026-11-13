@@ -39,6 +39,8 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
     const status = useOneDriveStatus()
     const [groups, setGroups] = useState<FileGroup[]>([])
     const [loadFailed, setLoadFailed] = useState(false)
+    // Until the first fetch settles, "No files yet" would be a guess.
+    const [loaded, setLoaded] = useState(false)
     const [progress, setProgress] = useState<{
         done: number
         total: number
@@ -64,6 +66,8 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
             setLoadFailed(false)
         } catch {
             setLoadFailed(true)
+        } finally {
+            setLoaded(true)
         }
     }, [memberIds, date, onCount])
 
@@ -131,8 +135,10 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
                 setRefusals([{ fileName: '', message: failureMessage(error) }])
             }
         } finally {
-            setProgress(null)
+            // Refresh first: clearing the bar before the list lands would
+            // flash "No files yet" under a file that was just uploaded.
             await load()
+            setProgress(null)
         }
     }
 
@@ -166,16 +172,31 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
                 />
             </div>
 
+            {/* Progress only ticks when a whole copy lands, so a single photo
+                would sit at 0% throughout. The buffer's moving dashes mark
+                the copy in flight; the count names it ("1 of 1", not "0"). */}
             {progress && (
                 <div className="class-files-progress" role="status">
                     <LinearProgress
-                        variant="determinate"
+                        variant="buffer"
                         value={(progress.done / progress.total) * 100}
+                        valueBuffer={
+                            (Math.min(progress.done + 1, progress.total) /
+                                progress.total) *
+                            100
+                        }
                     />
                     <span>
-                        Uploading {progress.done} of {progress.total}…
+                        Uploading {Math.min(progress.done + 1, progress.total)}{' '}
+                        of {progress.total}…
                     </span>
                 </div>
+            )}
+
+            {!loaded && (
+                <p className="class-files-hint" role="status">
+                    Loading files…
+                </p>
             )}
 
             {refusals.map((refusal) => (
@@ -201,7 +222,7 @@ export const ClassFilesSection = ({ members, students, onCount }: Props) => {
                 </p>
             )}
 
-            {groups.length === 0 && !loadFailed && !progress && (
+            {loaded && groups.length === 0 && !loadFailed && !progress && (
                 <p className="class-files-hint">
                     No files yet — a whiteboard photo, a worksheet, a past
                     paper.

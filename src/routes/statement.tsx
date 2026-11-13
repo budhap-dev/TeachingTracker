@@ -26,7 +26,11 @@ export const StatementRoute = () => {
     const paymentsByMonth = useAppSelector(
         (state) => state.students.paymentsByMonth
     )
-    const loading = useAppSelector((state) => state.students.paymentsLoading)
+    // Both halves of the statement must be in: payments landing before the
+    // students would flash "no billing record" for a student who has one.
+    const loading = useAppSelector(
+        (state) => state.students.paymentsLoading || state.students.loading
+    )
     const siteName = useAppSelector(
         (state) => state.students.siteContent.siteName
     )
