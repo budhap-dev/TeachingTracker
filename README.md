@@ -116,7 +116,5 @@ workflow (**Actions → "Deploy" → Run workflow**), and the API must be deploy
 
 ## Roadmap
 
-- Replace the API's in-memory store with Cosmos DB
-- Add authentication for teachers
 - Add analytics charts
 - Support multiple teachers
