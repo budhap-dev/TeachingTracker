@@ -486,18 +486,37 @@ export const StudentDetailsView = ({
                             </div>
                         ) : (
                             <>
-                                <Slider
-                                    value={shown.progress}
-                                    onChange={(_, value) =>
-                                        onDraftChange(
-                                            'progress',
-                                            Number(value)
-                                        )
-                                    }
-                                    aria-label="Progress"
-                                    valueLabelDisplay="auto"
-                                    disabled={!isEditing}
-                                />
+                                {/* Viewing shows the same bar as the
+                                    per-subject rows; a slider only to edit. */}
+                                {isEditing ? (
+                                    <Slider
+                                        value={shown.progress}
+                                        onChange={(_, value) =>
+                                            onDraftChange(
+                                                'progress',
+                                                Number(value)
+                                            )
+                                        }
+                                        aria-label="Progress"
+                                        valueLabelDisplay="auto"
+                                    />
+                                ) : (
+                                    <div
+                                        className="subject-progress-track"
+                                        role="progressbar"
+                                        aria-label="Progress"
+                                        aria-valuenow={shown.progress}
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                    >
+                                        <span
+                                            className="subject-progress-fill"
+                                            style={{
+                                                width: `${shown.progress}%`,
+                                            }}
+                                        />
+                                    </div>
+                                )}
                                 {isEditing && shown.subjects.length > 0 && (
                                     <Button
                                         size="small"
@@ -526,9 +545,8 @@ export const StudentDetailsView = ({
                                 Study mode:{' '}
                                 {studyModeLabel(shown.mode)}
                             </span>
-                            <span className="subject-count-pill">
-                                Subjects: {shown.subjects.length}
-                            </span>
+                            {/* No subject-count pill: the Subjects line just
+                                below names them. */}
                             <span className="fees-pill">
                                 {shown.feeType === 'none'
                                     ? 'Fees: No fee'
@@ -690,10 +708,17 @@ export const StudentDetailsView = ({
                     </div>
 
                     <div className="student-detail-text">
+                        {/* Viewing shows each fact once, as text; the form
+                            appears only under Edit. (They used to show
+                            together, the form greyed out, so every value
+                            appeared twice.) */}
+                        {!isEditing && (
                         <div className="detail-grid">
                             <p>
                                 <strong>Date of birth:</strong>{' '}
-                                {shown.dob || 'Not provided'}
+                                {shown.dob
+                                    ? formatShortDayLabel(shown.dob)
+                                    : 'Not provided'}
                             </p>
                             <p>
                                 <strong>Parent:</strong>{' '}
@@ -701,14 +726,26 @@ export const StudentDetailsView = ({
                             </p>
                             <p>
                                 <strong>Contact:</strong>{' '}
-                                {shown.contactNumber || 'Not provided'}
+                                {shown.contactNumber ? (
+                                    // One tap to call from a phone.
+                                    <a
+                                        href={`tel:${shown.contactNumber.replace(/[^\d+]/g, '')}`}
+                                        className="student-link"
+                                    >
+                                        {shown.contactNumber}
+                                    </a>
+                                ) : (
+                                    'Not provided'
+                                )}
                             </p>
                             <p className="detail-grid-full">
                                 <strong>Address:</strong>{' '}
                                 {shown.address || 'Not provided'}
                             </p>
                         </div>
+                        )}
 
+                        {isEditing && (
                         <div className="edit-fields">
                             <TextField
                                 label="First Name"
@@ -718,13 +755,10 @@ export const StudentDetailsView = ({
                                     onDraftChange('firstName', event.target.value)
                                 }
                                 fullWidth
-                                disabled={!isEditing}
-                                {...(isEditing
-                                    ? requiredFieldProps(
-                                          submitted && missing.firstName,
-                                          'First name is required'
-                                      )
-                                    : {})}
+                                {...requiredFieldProps(
+                                    submitted && missing.firstName,
+                                    'First name is required'
+                                      )}
                             />
                             <TextField
                                 label="Last Name"
@@ -734,13 +768,10 @@ export const StudentDetailsView = ({
                                     onDraftChange('lastName', event.target.value)
                                 }
                                 fullWidth
-                                disabled={!isEditing}
-                                {...(isEditing
-                                    ? requiredFieldProps(
-                                          submitted && missing.lastName,
-                                          'Last name is required'
-                                      )
-                                    : {})}
+                                {...requiredFieldProps(
+                                    submitted && missing.lastName,
+                                    'Last name is required'
+                                      )}
                             />
                             <TextField
                                 label="Date of Birth"
@@ -752,7 +783,6 @@ export const StudentDetailsView = ({
                                     onDraftChange('dob', event.target.value)
                                 }
                                 fullWidth
-                                disabled={!isEditing}
                                 slotProps={{ inputLabel: { shrink: true } }}
                             />
                             {/* Same TextField idiom as every neighbour, so
@@ -770,13 +800,10 @@ export const StudentDetailsView = ({
                                     )
                                 }
                                 fullWidth
-                                disabled={!isEditing}
-                                {...(isEditing
-                                    ? requiredFieldProps(
-                                          submitted && missing.subjects,
-                                          'Pick at least one subject'
-                                      )
-                                    : {})}
+                                {...requiredFieldProps(
+                                    submitted && missing.subjects,
+                                    'Pick at least one subject'
+                                      )}
                                 slotProps={{
                                     select: {
                                         multiple: true,
@@ -792,19 +819,14 @@ export const StudentDetailsView = ({
                                                             // this subject —
                                                             // without opening
                                                             // the menu.
-                                                            onDelete={
-                                                                isEditing
-                                                                    ? () =>
-                                                                          applySubjects(
-                                                                              shown.subjects.filter(
-                                                                                  (
-                                                                                      kept
-                                                                                  ) =>
-                                                                                      kept !==
-                                                                                      subject
-                                                                              )
-                                                                          )
-                                                                    : undefined
+                                                            onDelete={() =>
+                                                                applySubjects(
+                                                                    shown.subjects.filter(
+                                                                        (kept) =>
+                                                                            kept !==
+                                                                            subject
+                                                                    )
+                                                                )
                                                             }
                                                             onMouseDown={(
                                                                 event
@@ -833,13 +855,10 @@ export const StudentDetailsView = ({
                                     onDraftChange('school', event.target.value)
                                 }
                                 fullWidth
-                                disabled={!isEditing}
-                                {...(isEditing
-                                    ? requiredFieldProps(
-                                          submitted && missing.school,
-                                          'School is required'
-                                      )
-                                    : {})}
+                                {...requiredFieldProps(
+                                    submitted && missing.school,
+                                    'School is required'
+                                      )}
                             />
                             <TextField
                                 label="Year"
@@ -851,13 +870,10 @@ export const StudentDetailsView = ({
                                     onDraftChange('year', event.target.value)
                                 }
                                 fullWidth
-                                disabled={!isEditing}
-                                {...(isEditing
-                                    ? requiredFieldProps(
-                                          submitted && missing.year,
-                                          'Year is required'
-                                      )
-                                    : {})}
+                                {...requiredFieldProps(
+                                    submitted && missing.year,
+                                    'Year is required'
+                                      )}
                             >
                                 {yearOptions.map((year) => (
                                     <MenuItem key={year} value={year}>
@@ -875,7 +891,6 @@ export const StudentDetailsView = ({
                                     onDraftChange('mode', event.target.value)
                                 }
                                 fullWidth
-                                disabled={!isEditing}
                             >
                                 {modeOptions.map((mode) => (
                                     <MenuItem key={mode} value={mode}>
@@ -893,7 +908,6 @@ export const StudentDetailsView = ({
                                     onDraftChange('feeType', event.target.value)
                                 }
                                 fullWidth
-                                disabled={!isEditing}
                             >
                                 <MenuItem value="per-session">
                                     Per session
@@ -919,8 +933,7 @@ export const StudentDetailsView = ({
                                         )
                                     }
                                     fullWidth
-                                    disabled={!isEditing}
-                                />
+                                    />
                             )}
                             <TextField
                                 label="Parent Name"
@@ -934,10 +947,10 @@ export const StudentDetailsView = ({
                                     )
                                 }
                                 fullWidth
-                                disabled={!isEditing}
                             />
                             <TextField
                                 label="Contact Number"
+                                type="tel"
                                 className="col-6"
                                 size="small"
                                 value={shown.contactNumber}
@@ -948,7 +961,6 @@ export const StudentDetailsView = ({
                                     )
                                 }
                                 fullWidth
-                                disabled={!isEditing}
                             />
                             <TextField
                                 label="Address"
@@ -961,9 +973,9 @@ export const StudentDetailsView = ({
                                     onDraftChange('address', event.target.value)
                                 }
                                 fullWidth
-                                disabled={!isEditing}
                             />
                         </div>
+                        )}
                     </div>
                 </div>
                 )}

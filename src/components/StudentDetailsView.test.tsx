@@ -123,10 +123,14 @@ describe('StudentDetailsView', () => {
             )
         ).toBeInTheDocument()
 
-        // Read-only until Edit: the identifiers are never offered at all.
-        expect(screen.getByLabelText(/first name/i)).toBeDisabled()
-        expect(screen.getByLabelText(/fee per session/i)).toBeDisabled()
-        expect(screen.getByRole('slider', { name: /progress/i })).toBeDisabled()
+        // Viewing shows facts, not a greyed-out form: no inputs until Edit,
+        // and the identifiers are never offered at all.
+        expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument()
+        expect(
+            screen.queryByLabelText(/fee per session/i)
+        ).not.toBeInTheDocument()
+        expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
         expect(screen.queryByLabelText(/student id/i)).not.toBeInTheDocument()
 
         await user.click(
@@ -138,6 +142,40 @@ describe('StudentDetailsView', () => {
         expect(onBeginEdit).toHaveBeenCalledWith(
             expect.objectContaining({ id: 10 })
         )
+    })
+
+    it('reads each fact once, with a readable birthday and a number to call', () => {
+        renderView()
+
+        expect(
+            screen.getByText(
+                (_, element) =>
+                    element?.textContent === 'Date of birth: 14 May 2011'
+            )
+        ).toBeInTheDocument()
+        expect(
+            screen.getByRole('link', { name: '+44 7700 900123' })
+        ).toHaveAttribute('href', 'tel:+447700900123')
+        // Once each — not again in a greyed-out form beneath.
+        expect(screen.getAllByText('Nadia Patel')).toHaveLength(1)
+        expect(
+            screen.getAllByText(/12 Oak Road, Kingston upon Thames/)
+        ).toHaveLength(1)
+        expect(
+            screen.getByRole('progressbar', { name: 'Progress' })
+        ).toHaveAttribute('aria-valuenow', '88')
+    })
+
+    it('swaps the facts for the form while editing, so nothing shows twice', () => {
+        renderView({ editingStudentId: 10, draftStudent: buildStudent() })
+
+        expect(screen.getByLabelText(/parent name/i)).toHaveValue('Nadia Patel')
+        expect(screen.getByLabelText(/first name/i)).toBeEnabled()
+        expect(
+            screen.queryByText(
+                (_, element) => element?.textContent?.startsWith('Parent:') ?? false
+            )
+        ).not.toBeInTheDocument()
     })
 
     it('edits every field from the draft and saves once', async () => {
@@ -881,11 +919,11 @@ describe('StudentDetailsView', () => {
             onSelectTab,
         })
 
-        // Details tab is active: profile fields show; the diary heading does not.
+        // Details tab is active: profile facts show; the diary heading does not.
         expect(
             screen.getByRole('tab', { name: /details/i })
         ).toHaveAttribute('aria-selected', 'true')
-        expect(screen.getByLabelText(/first name/i)).toBeInTheDocument()
+        expect(screen.getByText('Nadia Patel')).toBeInTheDocument()
         expect(
             screen.queryByRole('heading', { name: /^diary$/i })
         ).not.toBeInTheDocument()
@@ -912,8 +950,8 @@ describe('StudentDetailsView', () => {
             screen.getByRole('heading', { name: /^diary$/i })
         ).toBeInTheDocument()
         expect(screen.getByText('Great progress')).toBeInTheDocument()
-        // Profile fields are hidden while the diary is open.
-        expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument()
+        // Profile facts are hidden while the diary is open.
+        expect(screen.queryByText('Nadia Patel')).not.toBeInTheDocument()
 
         await user.click(screen.getByRole('tab', { name: /details/i }))
         expect(onSelectTab).toHaveBeenCalledWith('details')

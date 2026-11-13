@@ -773,6 +773,66 @@ $note-rule: 32px;
     cursor: pointer;
 }
 
+/* The time-and-name label rides beside the number only where the cells are
+   wide enough to read it; phones keep the compact numbered chip. */
+.chip-label {
+    display: none;
+}
+
+@media (min-width: 1280px) {
+    /* One chip per line, each as wide as the cell. No wrap: in a wrapping
+       column, chips stretch to the widest chip rather than to the cell. */
+    .calendar-day-chips {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        min-width: 0;
+
+        > .draggable-entry {
+            min-width: 0;
+        }
+    }
+
+    .calendar-day-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        /* The chip sits in a drag wrapper; fill it, so a long label ends in
+           an ellipsis inside the cell rather than running past it. */
+        width: 100%;
+        min-width: 0;
+        padding: 0 8px 0 3px;
+        text-align: left;
+        overflow: hidden;
+    }
+
+    .chip-index {
+        flex: 0 0 auto;
+        min-width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        display: inline-grid;
+        place-items: center;
+        background: rgb(255 255 255 / 0.25);
+        font-size: 0.68rem;
+    }
+
+    /* A group's label carries its own ×N, so the separate badge steps
+       aside. */
+    .calendar-day-chip .chip-group-size {
+        display: none;
+    }
+
+    .chip-label {
+        display: inline;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+}
+
 .calendar-day-chip:hover,
 .calendar-day-chip:focus-visible {
     outline: 2px solid var(--accent);

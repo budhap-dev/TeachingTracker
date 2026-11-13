@@ -193,7 +193,11 @@ export const ContactView = ({
                         />
                         <TextField
                             label="Phone"
+                            // A phone keypad on a phone; no autofill — this
+                            // is the public number, not the editor's own.
+                            type="tel"
                             size="small"
+                            autoComplete="off"
                             value={phone}
                             onChange={(event) => setPhone(event.target.value)}
                             error={submitted && phoneInvalid}

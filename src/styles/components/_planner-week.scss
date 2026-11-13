@@ -37,7 +37,8 @@
         transition: transform 0.18s ease;
     }
 
-    &.week::before {
+    &.week::before,
+    &.is-second::before {
         transform: translateX(100%);
     }
 }

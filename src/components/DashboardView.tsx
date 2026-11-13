@@ -485,7 +485,7 @@ export const DashboardView = ({
                                 </>
                             ) : (
                                 <p className="attention-detail-hint">
-                                    Hover a band to list its students.
+                                    Pick a band to list its students.
                                 </p>
                             )}
                         </div>

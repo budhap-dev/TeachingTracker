@@ -239,6 +239,7 @@ export const StudentFormModal = ({
                 />
                 <TextField
                     label="Contact Number"
+                    type="tel"
                     size="small"
                     value={form.contactNumber}
                     onChange={(event) =>

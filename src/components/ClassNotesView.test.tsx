@@ -44,6 +44,13 @@ const renderNotes = (list = sessions) =>
         </MemoryRouter>
     )
 
+/** A YYYY-MM-DD `days` from today — so "taught" and "to come" never rot. */
+const fromToday = (days: number): string => {
+    const date = new Date()
+    date.setDate(date.getDate() + days)
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 describe('ClassNotesView', () => {
     it('reads the notes newest day first, and skips classes with none', () => {
         renderNotes()
@@ -99,7 +106,10 @@ describe('ClassNotesView', () => {
 
         expect(screen.getByText('Needs another go at moments.')).toBeInTheDocument()
         expect(screen.queryByText('Ratios clicked today.')).not.toBeInTheDocument()
-        expect(screen.getByText('1 note')).toBeInTheDocument()
+        // The count rides on the toggle, and follows the filter.
+        expect(
+            screen.getByRole('button', { name: 'Taught · 1' })
+        ).toBeInTheDocument()
 
         // Narrow to a month that student has nothing in.
         await user.click(screen.getByRole('combobox', { name: /month/i }))
@@ -160,5 +170,70 @@ describe('ClassNotesView', () => {
 
         expect(screen.getByText(/no class notes yet/i)).toBeInTheDocument()
         expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    })
+
+    it('opens on classes taught, newest first, not on next term’s bookings', async () => {
+        const user = userEvent.setup()
+        renderNotes([
+            session({ id: 10, date: fromToday(-7), notes: 'Last week.' }),
+            session({ id: 11, date: fromToday(0), notes: 'Today.' }),
+            session({ id: 12, date: fromToday(21), notes: 'In three weeks.' }),
+            session({ id: 13, date: fromToday(7), notes: 'Next week.' }),
+        ])
+
+        expect(
+            screen.getByRole('button', { name: 'Taught · 2' })
+        ).toHaveAttribute('aria-pressed', 'true')
+        const taught = screen
+            .getAllByRole('listitem')
+            .filter((item) => item.classList.contains('class-note'))
+            .map((item) => within(item).getByText(/\.$/).textContent)
+        expect(taught).toEqual(['Today.', 'Last week.'])
+        expect(screen.queryByText('Next week.')).not.toBeInTheDocument()
+
+        // Coming up reads the other way: soonest first.
+        await user.click(screen.getByRole('button', { name: 'Coming up · 2' }))
+        const coming = screen
+            .getAllByRole('listitem')
+            .filter((item) => item.classList.contains('class-note'))
+            .map((item) => within(item).getByText(/\.$/).textContent)
+        expect(coming).toEqual(['Next week.', 'In three weeks.'])
+    })
+
+    it('opens on what’s coming up when nothing has been taught yet', () => {
+        renderNotes([
+            session({ id: 20, date: fromToday(3), notes: 'First lesson plan.' }),
+        ])
+
+        expect(
+            screen.getByRole('button', { name: 'Coming up · 1' })
+        ).toHaveAttribute('aria-pressed', 'true')
+        expect(screen.getByText('First lesson plan.')).toBeInTheDocument()
+    })
+
+    it('shows ten days at a time, with more on request', async () => {
+        const user = userEvent.setup()
+        renderNotes(
+            Array.from({ length: 23 }, (_, index) =>
+                session({
+                    id: 100 + index,
+                    date: fromToday(-index),
+                    notes: `Note ${index}`,
+                })
+            )
+        )
+
+        expect(screen.getAllByRole('heading', { level: 4 })).toHaveLength(10)
+        await user.click(
+            screen.getByRole('button', { name: /show more \(13 days left\)/i })
+        )
+        expect(screen.getAllByRole('heading', { level: 4 })).toHaveLength(20)
+        await user.click(
+            screen.getByRole('button', { name: /show more \(3 days left\)/i })
+        )
+        expect(screen.getAllByRole('heading', { level: 4 })).toHaveLength(23)
+        expect(
+            screen.queryByRole('button', { name: /show more/i })
+        ).not.toBeInTheDocument()
     })
 })

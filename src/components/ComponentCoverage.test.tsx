@@ -351,6 +351,9 @@ describe('component-level coverage', () => {
 
         // Enter is also an explicit commit; an empty box settles to 0.
         const afterSave = onUpdatePaymentRecord.mock.calls.length
+        // (The mock store keeps 0, so the box shows empty again: type, then
+        // clear, to get a real change.)
+        fireEvent.change(amountInput, { target: { value: '7' } })
         fireEvent.change(amountInput, { target: { value: '' } })
         fireEvent.keyDown(amountInput, { key: 'Enter' })
         expect(onUpdatePaymentRecord).toHaveBeenLastCalledWith(

@@ -1204,12 +1204,9 @@ export const ClassSchedulingView = ({
                         </h3>
                         {/* One description for both views — swapping copy on
                             toggle re-wrapped the header and made the whole
-                            card jitter. */}
-                        <p>
-                            Pick a day to add a class, or one already booked
-                            to change it — and drag a class onto another day
-                            to move it.
-                        </p>
+                            card jitter. Only what the page intro above
+                            doesn't already say: picking a day is there. */}
+                        <p>Drag a class onto another day to move it.</p>
                     </div>
                     <div className="calendar-actions">
                         {/* Two distinct clusters: what you're LOOKING AT (a
@@ -1458,7 +1455,9 @@ export const ClassSchedulingView = ({
                                                     }
                                                     aria-label={`Class ${index + 1} on ${day.toDateString()}: ${entry.lead.time} ${entryTitle(entry)}, ${entry.lead.subject}${activeMembers(entry).length === 0 ? ' (cancelled)' : ''}`}
                                                 >
-                                                    {index + 1}
+                                                    <span className="chip-index">
+                                                        {index + 1}
+                                                    </span>
                                                     {entry.isGroup && (
                                                         <span className="chip-group-size">
                                                             ×
@@ -1469,6 +1468,21 @@ export const ClassSchedulingView = ({
                                                             }
                                                         </span>
                                                     )}
+                                                    {/* Wide screens only (CSS):
+                                                        when and who, beside the
+                                                        number the tooltip and
+                                                        day modal still use. */}
+                                                    <span
+                                                        className="chip-label"
+                                                        aria-hidden="true"
+                                                    >
+                                                        {entry.lead.time}{' '}
+                                                        {entry.isGroup
+                                                            ? `×${entryMembers(entry).length}`
+                                                            : entry.lead.studentName.split(
+                                                                  ' '
+                                                              )[0]}
+                                                    </span>
                                                 </button>
                                             </DraggableEntry>
                                         ))}
