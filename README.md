@@ -109,9 +109,9 @@ npm run lint       # eslint
 
 ## Deployment
 
-Push to `main` auto-deploys **dev**. Production is a separate manual
-workflow (**Actions → "Deploy frontend to Production (manual)"**), and the API
-must be deployed **before** the frontend. See
+Push to `main` auto-deploys **dev**. Production is a manual run of the same
+workflow (**Actions → "Deploy" → Run workflow**), and the API must be deployed
+**before** the frontend. See
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Known gap
