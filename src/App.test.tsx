@@ -834,7 +834,7 @@ describe('Teaching Tracker app', () => {
         // Back to Details returns to the plain student URL.
         await user.click(screen.getByRole('tab', { name: /details/i }))
         expect(window.location.pathname).toMatch(/\/students\/1$/)
-        expect(screen.getByLabelText(/first name/i)).toBeInTheDocument()
+        expect(screen.getByText(/^Date of birth:/)).toBeInTheDocument()
     })
 
     it('archives a student from their page and lists them under Alumni', async () => {
@@ -1078,9 +1078,9 @@ describe('Teaching Tracker app', () => {
             screen.getByRole('button', { name: /^edit$/i })
         ).toBeInTheDocument()
 
-        fireEvent.change(screen.getByRole('slider', { name: /progress/i }), {
-            target: { value: '91' },
-        })
+        // Cancelled: back to reading, with no form or slider left behind.
+        expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+        expect(screen.queryByLabelText(/parent name/i)).not.toBeInTheDocument()
 
         // Back returns to where we came from — the dashboard, not the roster.
         await user.click(screen.getByRole('button', { name: /^back$/i }))

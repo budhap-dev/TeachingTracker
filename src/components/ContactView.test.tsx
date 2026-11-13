@@ -127,6 +127,16 @@ describe('ContactView', () => {
         })
     })
 
+    it('edits the phone on a keypad without offering the editor’s own number', async () => {
+        const user = userEvent.setup()
+        renderView({ canEdit: true })
+
+        await user.click(screen.getByRole('button', { name: /edit details/i }))
+        const phone = screen.getByLabelText('Phone')
+        expect(phone).toHaveAttribute('type', 'tel')
+        expect(phone).toHaveAttribute('autocomplete', 'off')
+    })
+
     it('seeds the editor with the stored notes and preference', async () => {
         const user = userEvent.setup()
         renderView({

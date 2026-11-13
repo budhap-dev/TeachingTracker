@@ -140,6 +140,78 @@ describe('PaymentTrackerView amount editing', () => {
         await user.type(amountBox, '0')
         expect(saveButton).toBeDisabled()
     })
+
+    it('starts an unpaid row empty, in pounds, rather than a 0 to delete', () => {
+        renderView()
+
+        const amountBox = screen.getByRole('spinbutton', {
+            name: /amount received/i,
+        })
+        expect(amountBox).toHaveValue(null)
+        expect(amountBox).toHaveAttribute('placeholder', '0')
+        expect(amountBox).toHaveAttribute('inputmode', 'numeric')
+        expect(screen.getByText('£')).toBeInTheDocument()
+    })
+
+    it('records a payment in full with one tap', async () => {
+        const user = userEvent.setup()
+        const { onUpdatePaymentRecord } = renderView()
+
+        await user.click(
+            screen.getByRole('button', {
+                name: /mark asha perera paid in full, £120/i,
+            })
+        )
+
+        expect(onUpdatePaymentRecord).toHaveBeenCalledTimes(1)
+        expect(onUpdatePaymentRecord).toHaveBeenCalledWith({
+            studentId: 1,
+            month: currentMonth(),
+            amountPaid: 120,
+            notes: '',
+        })
+    })
+
+    it('offers Paid in full only while something is still owed', () => {
+        const paid = buildRecord({
+            amountPaid: 120,
+            outstanding: 0,
+            status: 'Paid',
+        })
+        const { rerender } = render(
+            <PaymentTrackerView
+                students={[buildStudent()]}
+                paymentsByMonth={[buildGroup(paid)]}
+                onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+                onOpenStatement={vi.fn()}
+            />
+        )
+        expect(
+            screen.queryByRole('button', { name: /paid in full/i })
+        ).not.toBeInTheDocument()
+        expect(
+            screen.getByRole('spinbutton', { name: /amount received/i })
+        ).toHaveValue(120)
+
+        const noFee = buildRecord({
+            feeType: 'none',
+            amountDue: 0,
+            outstanding: 0,
+        })
+        rerender(
+            <PaymentTrackerView
+                students={[buildStudent()]}
+                paymentsByMonth={[buildGroup(noFee)]}
+                onUpdatePaymentRecord={vi.fn()}
+                onOpenStudentPage={vi.fn()}
+                onOpenStatement={vi.fn()}
+            />
+        )
+        expect(
+            screen.queryByRole('button', { name: /paid in full/i })
+        ).not.toBeInTheDocument()
+    })
 })
 
 describe('PaymentTrackerView archived students', () => {

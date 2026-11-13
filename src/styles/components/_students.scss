@@ -179,6 +179,9 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     background: color-mix(in srgb, var(--surface-alt) 70%, transparent);
+    /* Hug the content: read-only it's four lines, and stretching it to the
+       rail's height left a tall empty panel. */
+    align-self: start;
 }
 
 .detail-grid {
@@ -336,7 +339,7 @@
 }
 
 .mode-pill,
-.subject-count-pill {
+.fees-pill {
     display: inline-flex;
     align-items: center;
     border-radius: 999px;

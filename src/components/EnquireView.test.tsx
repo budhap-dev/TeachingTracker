@@ -201,4 +201,17 @@ describe('the enquiry form respects the API\'s limits (2026-08-15)', () => {
             '254'
         )
     })
+
+    it('brings up the right keyboard and lets the browser fill the parent in', () => {
+        render(<EnquireView onSubmit={vi.fn()} saving={false} />)
+
+        const name = screen.getByLabelText(/your name/i)
+        const email = screen.getByLabelText(/email/i)
+        const phone = screen.getByLabelText(/phone/i)
+        expect(name).toHaveAttribute('autocomplete', 'name')
+        expect(email).toHaveAttribute('type', 'email')
+        expect(email).toHaveAttribute('autocomplete', 'email')
+        expect(phone).toHaveAttribute('type', 'tel')
+        expect(phone).toHaveAttribute('autocomplete', 'tel')
+    })
 })

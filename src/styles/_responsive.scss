@@ -883,3 +883,12 @@
         }
     }
 }
+
+/* The planner on a phone: the calendar is the job, so the "pick a day" line
+   steps aside (the days are plainly tappable) and the grid comes up the
+   screen. The drag hint stays: dragging is the only way to move a class. */
+@media (max-width: 640px) {
+    .scheduling-hero > div:first-child > p {
+        display: none;
+    }
+}

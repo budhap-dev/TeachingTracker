@@ -155,6 +155,7 @@ export const EnquireView = ({
                     <TextField
                         label="Your name"
                         size="small"
+                        autoComplete="name"
                         value={parentName}
                         slotProps={{ htmlInput: { maxLength: MAX_NAME } }}
                         onChange={(event) => setParentName(event.target.value)}
@@ -184,6 +185,7 @@ export const EnquireView = ({
                         label="Email"
                         type="email"
                         size="small"
+                        autoComplete="email"
                         value={email}
                         slotProps={{ htmlInput: { maxLength: MAX_CONTACT } }}
                         onChange={(event) => setEmail(event.target.value)}
@@ -201,7 +203,11 @@ export const EnquireView = ({
                     />
                     <TextField
                         label="Phone"
+                        // A phone keypad, and the browser can offer the
+                        // parent's own number.
+                        type="tel"
                         size="small"
+                        autoComplete="tel"
                         value={phone}
                         slotProps={{ htmlInput: { maxLength: MAX_CONTACT } }}
                         onChange={(event) => setPhone(event.target.value)}

@@ -286,6 +286,13 @@
     }
 }
 
+/* The one-tap shortcut under the amount box: the common case, so it's there
+   on every row with a balance, but quieter than Save. */
+.payment-paid-in-full {
+    margin-top: 6px;
+    white-space: nowrap;
+}
+
 .payment-row.paid {
     background: color-mix(in srgb, #dcfce7 45%, transparent);
 }

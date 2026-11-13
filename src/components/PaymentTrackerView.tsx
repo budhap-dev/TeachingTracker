@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
-import { Button, TextField } from '@mui/material'
+import { Button, InputAdornment, TextField } from '@mui/material'
 import { formatCurrency } from '../utils/money'
 import type {
     MonthlyPaymentGroup,
@@ -412,6 +412,22 @@ export const PaymentTrackerView = ({
         return (Number.isNaN(parsed) ? 0 : parsed) !== record.amountPaid
     }
 
+    /** The common case in one tap: the family paid what was due. Writes the
+     *  due figure straight through and drops any half-typed draft. */
+    const markPaidInFull = (record: PaymentRecord) => {
+        onUpdatePaymentRecord({
+            studentId: record.studentId,
+            month: selectedMonth,
+            amountPaid: record.amountDue,
+            notes: record.notes,
+        })
+        setAmountDrafts((drafts) => {
+            const next = { ...drafts }
+            delete next[record.studentId]
+            return next
+        })
+    }
+
     const handleNotesChange = (record: PaymentRecord, value: string) => {
         onUpdatePaymentRecord({
             studentId: record.studentId,
@@ -529,11 +545,10 @@ export const PaymentTrackerView = ({
                 <div className="section-header">
                     <div>
                         <h3>{selectedMonthLabel}</h3>
+                        {/* The fee rules are explained once, up top. */}
                         <p>
-                            Per-session students are billed only for classes
-                            that already happened; monthly students pay a flat
-                            fee and no-fee students aren&apos;t billed. Open a
-                            student to change their details.
+                            Enter what each family has paid, or tap Paid in
+                            full. Open a student to change their fee.
                         </p>
                     </div>
                 </div>
@@ -626,21 +641,37 @@ export const PaymentTrackerView = ({
                                                     No fee
                                                 </span>
                                             ) : (
+                                            <>
                                             <div className="payment-amount-cell">
                                                 <TextField
                                                     type="number"
                                                     size="small"
+                                                    // Nothing received shows an
+                                                    // empty box, not a "0" to
+                                                    // delete before typing.
+                                                    placeholder="0"
                                                     slotProps={{
+                                                        input: {
+                                                            startAdornment: (
+                                                                <InputAdornment position="start">
+                                                                    £
+                                                                </InputAdornment>
+                                                            ),
+                                                        },
                                                         htmlInput: {
                                                             'aria-label': `${student.firstName} ${student.lastName} amount received`,
                                                             min: 0,
                                                             step: 1,
+                                                            inputMode:
+                                                                'numeric',
                                                         },
                                                     }}
                                                     value={
                                                         amountDrafts[
                                                             record.studentId
-                                                        ] ?? record.amountPaid
+                                                        ] ??
+                                                        (record.amountPaid ||
+                                                            '')
                                                     }
                                                     onChange={(event) =>
                                                         setAmountDrafts(
@@ -675,6 +706,28 @@ export const PaymentTrackerView = ({
                                                     Save
                                                 </Button>
                                             </div>
+                                            {record.amountDue > 0 &&
+                                                record.amountPaid <
+                                                    record.amountDue && (
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="success"
+                                                        className="payment-paid-in-full"
+                                                        onClick={() =>
+                                                            markPaidInFull(
+                                                                record
+                                                            )
+                                                        }
+                                                        aria-label={`Mark ${student.firstName} ${student.lastName} paid in full, ${formatCurrency(record.amountDue)}`}
+                                                    >
+                                                        Paid in full ·{' '}
+                                                        {formatCurrency(
+                                                            record.amountDue
+                                                        )}
+                                                    </Button>
+                                                )}
+                                            </>
                                             )}
                                         </td>
                                         <td
