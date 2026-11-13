@@ -414,7 +414,7 @@ sequenceDiagram
 graph LR
     PR[Pull Request] -->|"CI: lint + 100% coverage + build"| M[merge to main]
     M -->|auto| DEV["deploy → dev<br/>both repos"]
-    DEV -->|"manual dispatch"| PROD["deploy-prod → prod<br/>both repos"]
+    DEV -->|"manual dispatch"| PROD["deploy → prod<br/>both repos"]
         </pre>
         <div class="cap">Fig 6 — Promotion path</div>
       </div>

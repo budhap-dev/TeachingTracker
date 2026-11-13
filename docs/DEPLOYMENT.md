@@ -83,11 +83,12 @@ Push to `main` auto-deploys **dev**. Production is deliberately separate.
 ```
 push to main ──▶ dev (auto)
 
-prod ──▶ manual only: "Deploy frontend to Production (manual)"
+Run workflow ──▶ prod (manual: "Promote to prod")
 ```
 
-- [`deploy.yml`](../.github/workflows/deploy.yml) — dev on push
-- [`deploy-prod.yml`](../.github/workflows/deploy-prod.yml) — prod, `workflow_dispatch` only
+- [`deploy.yml`](../.github/workflows/deploy.yml) — the one **Deploy** workflow:
+  a push to `main` deploys dev; a manual run (`workflow_dispatch`) promotes
+  `main` to prod, and its run Summary names the commit and PR being promoted
 - [`deploy-env.yml`](../.github/workflows/deploy-env.yml) — reusable per-env build + deploy
 
 Each job checks out, runs `npm ci`, builds with that environment's
@@ -98,17 +99,20 @@ deploy token.
 
 There is **no approval button**. GitHub Environment *required reviewers* need a
 public repo or a paid plan (setting one returns `HTTP 422` here), so prod is gated
-by being a separate manually-triggered workflow instead.
+by needing a manual run of the Deploy workflow instead. Let the dev deploy from
+the merge finish first, so prod gets a build dev has already served.
 
 ```bash
 # 1. API FIRST (other repo)
-gh workflow run deploy-prod.yml --repo budhap-dev/func-teaching-tracker --ref main
+gh workflow run deploy.yml --repo budhap-dev/func-teaching-tracker --ref main
 
 # 2. THEN the frontend
-gh workflow run deploy-prod.yml --repo budhap-dev/TeachingTracker --ref main
+gh workflow run deploy.yml --repo budhap-dev/TeachingTracker --ref main
 ```
 
-Or in the GitHub UI: **Actions → "Deploy … to Production (manual)" → Run workflow → `main`**.
+Or in the GitHub UI: **Actions → "Deploy" → Run workflow → `main`**. The run
+shows up as "Promote to prod — @you". A change to only one repo needs only that
+repo's run.
 
 > ⚠️ **Order matters — deploy the API before the frontend.** The frontend calls
 > `/sessions` and `/payments/by-month`; if the frontend ships first, those return

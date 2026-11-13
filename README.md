@@ -109,20 +109,12 @@ npm run lint       # eslint
 
 ## Deployment
 
-Push to `main` auto-deploys **dev**. Production is a separate manual
-workflow (**Actions → "Deploy frontend to Production (manual)"**), and the API
-must be deployed **before** the frontend. See
+Push to `main` auto-deploys **dev**. Production is a manual run of the same
+workflow (**Actions → "Deploy" → Run workflow**), and the API must be deployed
+**before** the frontend. See
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
-
-## Known gap
-
-Only class scheduling writes back to the API. Adding/editing a student and
-editing a payment update Redux only — they revert on reload.
 
 ## Roadmap
 
-- Persist student and payment edits via the API (`POST /students`, `POST /payments`)
-- Replace the API's in-memory store with Cosmos DB
-- Add authentication for teachers
 - Add analytics charts
 - Support multiple teachers

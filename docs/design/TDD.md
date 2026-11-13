@@ -276,13 +276,13 @@ The root wires cross-module role assignments (`func_writes_data`, `deployer_writ
 graph LR
     PR[Pull Request] -->|"CI: lint+coverage+build (frontend repo)"| M[merge to main]
     M -->|auto| DEV["deploy → dev<br/>(both repos)"]
-    DEV -->|"manual workflow_dispatch"| PROD["deploy-prod → prod<br/>(both repos)"]
+    DEV -->|"manual run (workflow_dispatch)"| PROD["deploy → prod<br/>(both repos)"]
 ```
 
-- **CI** (`TeachingTracker/ci.yml`): lint + `test:coverage` (100% gate) + build on every PR and main push. The backend has no CI workflow — its deploy builds directly.
+- **CI** (`TeachingTracker/ci.yml`): lint + `test:coverage` (100% gate) + build on every PR and main push. The backend's `ci.yml` runs on its PRs: `npm audit` (high, prod deps), build, tests.
 - **Build-once-deploy (backend):** one artifact (`dist` + pruned prod `node_modules`), OIDC login, `functions-action` deploy. Same bytes to any env; config is app settings.
 - **Build-per-env (frontend):** Vite inlines `VITE_API_BASE_URL` + Entra config at build time, so dev and prod are separate builds → separate Static Web Apps.
-- **Prod is manual** (`deploy-prod.yml`, `workflow_dispatch`) — the free-plan substitute for a required-reviewer gate.
+- **Prod is manual**: a manual run of the same `deploy.yml` (`workflow_dispatch`, shown as "Promote to prod") — the free-plan substitute for a required-reviewer gate.
 
 **Data-store cutover runbook (per env):** provision the data account (Terraform) → seed tables over AAD (`npm run seed` for dev, `--empty` for prod) → flip `data_store` to `tables` in the map and `terraform apply` (updates one app setting) → **restart/redeploy** so the process re-reads config.
 
