@@ -244,6 +244,54 @@ describe('ClassFilesSection', () => {
         expect(attachFiles).not.toHaveBeenCalled()
     })
 
+    it('says it is loading, not "No files yet", before the list arrives', async () => {
+        vi.mocked(fetchAttachments).mockReturnValue(new Promise(() => {}))
+        render(
+            <ClassFilesSection members={[session(10, 1)]} students={[asha]} />
+        )
+        expect(await screen.findByText(/loading files/i)).toBeInTheDocument()
+        expect(screen.queryByText(/no files yet/i)).not.toBeInTheDocument()
+    })
+
+    it('names the copy in flight and holds the bar until the list refreshes', async () => {
+        const user = userEvent.setup({ applyAccept: false })
+        let finishUpload: () => void = () => {}
+        vi.mocked(attachFiles).mockReturnValue(
+            new Promise((resolve) => {
+                finishUpload = () =>
+                    resolve([{ fileName: 'a.jpg', ok: true, attachments: [] }])
+            })
+        )
+        render(
+            <ClassFilesSection members={[session(10, 1)]} students={[asha]} />
+        )
+        await screen.findByText(/no files yet/i)
+
+        let finishRefresh: (rows: Attachment[]) => void = () => {}
+        vi.mocked(fetchAttachments).mockReturnValue(
+            new Promise((resolve) => {
+                finishRefresh = resolve
+            })
+        )
+        await user.upload(
+            screen.getByTestId('class-files-input'),
+            new File(['a'], 'a.jpg')
+        )
+
+        // One photo, one student: "1 of 1" while it goes — never "0 of 1".
+        expect(await screen.findByText('Uploading 1 of 1…')).toBeInTheDocument()
+
+        // Uploaded, list not yet back: still the bar, never "No files yet".
+        finishUpload()
+        await waitFor(() => expect(fetchAttachments).toHaveBeenCalledTimes(2))
+        expect(screen.getByText(/uploading/i)).toBeInTheDocument()
+        expect(screen.queryByText(/no files yet/i)).not.toBeInTheDocument()
+
+        finishRefresh([file(1, 10)])
+        expect(await screen.findByText('board.jpg')).toBeInTheDocument()
+        expect(screen.queryByText(/uploading/i)).not.toBeInTheDocument()
+    })
+
     it('falls back to "Connect OneDrive" when an upload finds it disconnected', async () => {
         const user = userEvent.setup({ applyAccept: false })
         vi.mocked(attachFiles).mockRejectedValue(
@@ -374,12 +422,10 @@ describe('FileViewerDialog (through the class)', () => {
         vi.mocked(downloadUrl).mockResolvedValue('https://dl/1')
         vi.stubGlobal(
             'fetch',
-            vi
-                .fn()
-                .mockResolvedValue({
-                    ok: true,
-                    blob: async () => new Blob(['img']),
-                })
+            vi.fn().mockResolvedValue({
+                ok: true,
+                blob: async () => new Blob(['img']),
+            })
         )
         const { dialog, user } = await openFirst(
             file(1, 10, { caption: 'Question 2' })
@@ -400,12 +446,10 @@ describe('FileViewerDialog (through the class)', () => {
         vi.mocked(downloadUrl).mockResolvedValue('https://dl/2')
         vi.stubGlobal(
             'fetch',
-            vi
-                .fn()
-                .mockResolvedValue({
-                    ok: true,
-                    blob: async () => new Blob(['%PDF']),
-                })
+            vi.fn().mockResolvedValue({
+                ok: true,
+                blob: async () => new Blob(['%PDF']),
+            })
         )
         const { dialog } = await openFirst(
             file(2, 10, {

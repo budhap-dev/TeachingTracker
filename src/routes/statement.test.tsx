@@ -1,14 +1,15 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { configureStore } from '@reduxjs/toolkit'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { describe, expect, it } from 'vitest'
-import { store } from '../store/store'
+import { fetchPaymentsSucceeded, store, studentReducer } from '../store/store'
 import { StatementRoute } from './statement'
 
 /** Renders the route at a given student/month, as the router would. */
-const renderAt = (path: string) =>
+const renderAt = (path: string, withStore = store) =>
     render(
-        <Provider store={store}>
+        <Provider store={withStore}>
             <MemoryRouter initialEntries={[path]}>
                 <Routes>
                     <Route
@@ -38,8 +39,24 @@ describe('StatementRoute (REQ-055)', () => {
 
         await waitFor(() =>
             expect(
-                screen.getByText(/no billing record for that student and month/i)
+                screen.getByText(
+                    /no billing record for that student and month/i
+                )
             ).toBeInTheDocument()
         )
+    })
+
+    it('keeps the skeleton while students are still loading', () => {
+        // A fresh store with no sagas: payments settle, students never do.
+        const pending = configureStore({
+            reducer: { students: studentReducer },
+        })
+        renderAt('/payments/statement/1/2026-01', pending)
+        act(() => {
+            pending.dispatch(fetchPaymentsSucceeded([]))
+        })
+
+        expect(screen.getByLabelText('Loading')).toBeInTheDocument()
+        expect(screen.queryByText(/no billing record/i)).not.toBeInTheDocument()
     })
 })
